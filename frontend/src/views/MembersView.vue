@@ -149,6 +149,7 @@
 
 <script>
 import api from '@/services/api'
+import * as bootstrap from 'bootstrap'
 
 export default {
   name: 'MembersView',

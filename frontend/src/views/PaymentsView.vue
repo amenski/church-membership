@@ -106,7 +106,7 @@
           <div class="modal-body" ref="receiptContent">
             <div v-if="selectedPayment" class="receipt-container">
               <div class="text-center mb-4">
-                <h3>NGO Member Management</h3>
+                <h3>Member Management</h3>
                 <p>Payment Receipt</p>
               </div>
               
@@ -168,6 +168,7 @@
 <script>
 import api from '@/services/api'
 import html2pdf from 'html2pdf.js'
+import * as bootstrap from 'bootstrap'
 
 export default {
   name: 'PaymentsView',

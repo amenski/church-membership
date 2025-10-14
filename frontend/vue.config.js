@@ -12,6 +12,8 @@ module.exports = defineConfig({
             }
         }
     },
-    // Output to Spring Boot's static resources directory when building
-    outputDir: '../src/main/resources/static'
+    // Output to dist/ directory for Gradle build integration
+    outputDir: 'dist',
+    // Configure public path for proper asset loading
+    publicPath: '/static/'
 })

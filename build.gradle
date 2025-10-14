@@ -38,6 +38,30 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+
+
+bootJar {
+    archiveFileName = "${rootProject.name}.jar"
+    destinationDirectory = file("./target")
+
+    from(tasks.getByPath(':frontend:vueBuild').outputs) {
+        into "/static"
+    }
+
+    manifest {
+        attributes "Implementation-Version": archiveVersion
+        attributes "Implementation-Title": "Members Management"
+    }
+}
+
+
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+// Development task - runs backend with hot reload
+tasks.register('dev') {
+    group 'application'
+    description 'Run backend in development mode with hot reload'
+    dependsOn 'bootRun'
 }

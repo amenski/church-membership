@@ -1,0 +1,40 @@
+plugins {
+    id "com.github.node-gradle.node" version "7.0.2"
+}
+
+group 'io.github'
+version '1.0-SNAPSHOT'
+
+node {
+    download = true
+    version = "20.9.0"
+}
+
+
+tasks.register('vueLint', NpmTask) {
+    dependsOn(npmInstall)
+    // install the express package only
+    args = ['run', 'lint']
+}
+
+tasks.register('vueRunDev', NpmTask) {
+    group 'application'
+    dependsOn(npmInstall)
+    // install the express package only
+    args = ['run', 'serve']
+}
+
+tasks.register('vueBuild', NpmTask) {
+    dependsOn(npmInstall)
+    // install the express package only
+    args = ['run', 'build']
+    delete files("dist")
+    outputs.dir("dist")
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+}

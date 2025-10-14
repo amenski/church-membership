@@ -124,7 +124,7 @@
 import api from '@/services/api'
 
 export default {
-  name: 'Dashboard',
+  name: 'DashboardView',
   data() {
     return {
       stats: {
