@@ -39,6 +39,7 @@ HELP.md
 
 ### VS Code ###
 .vscode/
+.playwright-mcp
 
 ### Frontend ###
 frontend/node_modules/
