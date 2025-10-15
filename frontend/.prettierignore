@@ -1,0 +1,16 @@
+# Build outputs
+dist
+build
+.gradle
+
+# Dependencies
+node_modules
+
+# Logs
+*.log
+
+# Environment files
+.env*
+
+# Generated files
+coverage

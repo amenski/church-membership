@@ -3,7 +3,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h2>Member Management</h2>
       <button class="btn btn-primary" @click="showAddModal">
-        <i class="fas fa-plus"></i> Add Member
+        <i class="bi bi-plus"></i> Add Member
       </button>
     </div>
 
@@ -12,7 +12,7 @@
       <div class="card-body">
         <div class="row">
           <div class="col-md-4">
-            <input type="text" v-model="filters.search" class="form-control" placeholder="Search members...">
+            <input v-model="filters.search" type="text" class="form-control" placeholder="Search members...">
           </div>
           <div class="col-md-3">
             <select v-model="filters.status" class="form-select">
@@ -66,14 +66,14 @@
                 </td>
                 <td>
                   <div class="btn-group">
-                    <button @click="showEditModal(member)" class="btn btn-sm btn-primary">
-                      <i class="fas fa-edit"></i>
+                    <button class="btn btn-sm btn-primary" @click="showEditModal(member)">
+                      <i class="bi bi-pencil"></i>
                     </button>
-                    <button @click="showDeleteModal(member)" class="btn btn-sm btn-danger">
-                      <i class="fas fa-trash"></i>
+                    <button class="btn btn-sm btn-danger" @click="showDeleteModal(member)">
+                      <i class="bi bi-trash"></i>
                     </button>
-                    <button @click="toggleStatus(member)" class="btn btn-sm" :class="member.active ? 'btn-warning' : 'btn-success'">
-                      <i :class="member.active ? 'fas fa-ban' : 'fas fa-check'"></i>
+                    <button class="btn btn-sm" :class="member.active ? 'btn-warning' : 'btn-success'" @click="toggleStatus(member)">
+                      <i :class="member.active ? 'bi bi-slash-circle' : 'bi bi-check-circle'"></i>
                     </button>
                   </div>
                 </td>
@@ -85,7 +85,7 @@
     </div>
 
     <!-- Add/Edit Member Modal -->
-    <div class="modal fade" id="memberModal" tabindex="-1">
+    <div ref="memberModal" class="modal fade" tabindex="-1">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
@@ -96,15 +96,15 @@
             <form @submit.prevent="saveMember">
               <div class="mb-3">
                 <label class="form-label">Name</label>
-                <input type="text" v-model="memberForm.name" class="form-control" required>
+                <input v-model="memberForm.name" type="text" class="form-control" required>
               </div>
               <div class="mb-3">
                 <label class="form-label">Email</label>
-                <input type="email" v-model="memberForm.email" class="form-control" required>
+                <input v-model="memberForm.email" type="email" class="form-control" required>
               </div>
               <div class="mb-3">
                 <label class="form-label">Phone</label>
-                <input type="tel" v-model="memberForm.phone" class="form-control" required>
+                <input v-model="memberForm.phone" type="tel" class="form-control" required>
               </div>
               <div class="mb-3">
                 <label class="form-label">Address</label>
@@ -112,7 +112,7 @@
               </div>
               <div class="mb-3">
                 <div class="form-check">
-                  <input type="checkbox" v-model="memberForm.active" class="form-check-input" id="activeStatus">
+                  <input id="activeStatus" v-model="memberForm.active" type="checkbox" class="form-check-input">
                   <label class="form-check-label" for="activeStatus">Active Member</label>
                 </div>
               </div>
@@ -127,7 +127,7 @@
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div class="modal fade" id="deleteModal" tabindex="-1">
+    <div ref="deleteModal" class="modal fade" tabindex="-1">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
@@ -175,11 +175,11 @@ export default {
   computed: {
     filteredMembers() {
       return this.members.filter(member => {
-        const matchesSearch = !this.filters.search || 
+        const matchesSearch = !this.filters.search ||
           member.name.toLowerCase().includes(this.filters.search.toLowerCase()) ||
           member.email.toLowerCase().includes(this.filters.search.toLowerCase())
 
-        const matchesStatus = this.filters.status === 'ALL' || 
+        const matchesStatus = this.filters.status === 'ALL' ||
           (this.filters.status === 'ACTIVE' && member.active) ||
           (this.filters.status === 'INACTIVE' && !member.active)
 
@@ -212,16 +212,16 @@ export default {
         address: '',
         active: true
       }
-      new bootstrap.Modal(document.getElementById('memberModal')).show()
+      new bootstrap.Modal(this.$refs.memberModal).show()
     },
     showEditModal(member) {
       this.editingMember = member
       this.memberForm = { ...member }
-      new bootstrap.Modal(document.getElementById('memberModal')).show()
+      new bootstrap.Modal(this.$refs.memberModal).show()
     },
     showDeleteModal(member) {
       this.selectedMember = member
-      new bootstrap.Modal(document.getElementById('deleteModal')).show()
+      new bootstrap.Modal(this.$refs.deleteModal).show()
     },
     async saveMember() {
       try {
@@ -231,7 +231,7 @@ export default {
           await api.createMember(this.memberForm)
         }
         await this.loadMembers()
-        bootstrap.Modal.getInstance(document.getElementById('memberModal')).hide()
+        bootstrap.Modal.getInstance(this.$refs.memberModal).hide()
       } catch (error) {
         console.error('Error saving member:', error)
       }
@@ -240,7 +240,7 @@ export default {
       try {
         await api.deleteMember(this.selectedMember.id)
         await this.loadMembers()
-        bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide()
+        bootstrap.Modal.getInstance(this.$refs.deleteModal).hide()
       } catch (error) {
         console.error('Error deleting member:', error)
       }
@@ -263,7 +263,7 @@ export default {
       return `badge ${member.consecutiveMonthsMissed > 0 ? 'bg-warning' : 'bg-success'}`
     },
     getPaymentStatus(member) {
-      return member.consecutiveMonthsMissed > 0 
+      return member.consecutiveMonthsMissed > 0
         ? `${member.consecutiveMonthsMissed} months overdue`
         : 'Current'
     }

@@ -83,7 +83,7 @@
                     <td>{{ member.name }}</td>
                     <td>{{ member.consecutiveMonthsMissed }}</td>
                     <td>
-                      <button @click="sendReminder(member)" class="btn btn-sm btn-warning">
+                      <button class="btn btn-sm btn-warning" @click="sendReminder(member)">
                         Send Reminder
                       </button>
                     </td>
@@ -158,7 +158,7 @@ export default {
           api.getRecentActivities(),
           api.getMembers()
         ])
-        
+
         this.stats = statsRes.data
         this.recentPayments = paymentsRes.data
         this.overdueMembers = overdueRes.data
@@ -189,11 +189,11 @@ export default {
     },
     getActivityIcon(type) {
       const icons = {
-        payment: 'fas fa-dollar-sign',
-        member: 'fas fa-user',
-        communication: 'fas fa-envelope'
+        payment: 'bi bi-currency-dollar',
+        member: 'bi bi-person',
+        communication: 'bi bi-envelope'
       }
-      return icons[type] || 'fas fa-info-circle'
+      return icons[type] || 'bi bi-info-circle'
     }
   }
 }

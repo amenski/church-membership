@@ -16,7 +16,7 @@
             </select>
           </div>
           
-          <div class="mb-3" v-if="newMessage.recipientType === 'SPECIFIC'">
+          <div v-if="newMessage.recipientType === 'SPECIFIC'" class="mb-3">
             <label class="form-label">Select Member</label>
             <select v-model="newMessage.memberId" class="form-select" required>
               <option v-for="member in members" :key="member.id" :value="member.id">
@@ -25,14 +25,14 @@
             </select>
           </div>
           
-          <div class="mb-3" v-if="newMessage.recipientType === 'OVERDUE'">
+          <div v-if="newMessage.recipientType === 'OVERDUE'" class="mb-3">
             <label class="form-label">Months Overdue</label>
-            <input type="number" v-model="newMessage.monthsOverdue" class="form-control" required>
+            <input v-model="newMessage.monthsOverdue" type="number" class="form-control" required>
           </div>
           
           <div class="mb-3">
             <label class="form-label">Subject</label>
-            <input type="text" v-model="newMessage.subject" class="form-control" required>
+            <input v-model="newMessage.subject" type="text" class="form-control" required>
           </div>
           
           <div class="mb-3">

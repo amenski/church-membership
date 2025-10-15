@@ -1,13 +1,13 @@
 <template>
-  <div id="app">
+  <div id="app" :class="themeClass">
     <!-- Bootstrap Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
       <div class="container-fluid">
-        <a class="navbar-brand" href="#">Member Tracker</a>
+        <a class="navbar-brand" href="#">{{ appTitle }}</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
           <span class="navbar-toggler-icon"></span>
         </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
+        <div id="navbarNav" class="collapse navbar-collapse">
           <ul class="navbar-nav">
             <li class="nav-item">
               <router-link to="/" class="nav-link" active-class="active">Dashboard</router-link>
@@ -31,29 +31,75 @@
       <router-view/>
     </div>
 
-    <!-- Toast Container -->
+    <!-- Toast Container for Notifications -->
     <div class="toast-container position-fixed bottom-0 end-0 p-3">
       <div
-          id="appToast"
+          v-for="notification in notifications"
+          :key="notification.id"
           class="toast"
+          :class="notificationClass(notification)"
           role="alert"
           aria-live="assertive"
           aria-atomic="true"
+          @hidden="removeNotification(notification.id)"
       >
         <div class="toast-header">
-          <strong class="me-auto">Notification</strong>
+          <strong class="me-auto">{{ notification.title || 'Notification' }}</strong>
           <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
         <div class="toast-body">
-          <!-- Toast message content will be set dynamically -->
+          {{ notification.message }}
         </div>
       </div>
     </div>
   </div>
 </template>
 
+<script setup>
+import { computed, onMounted } from 'vue'
+import { useAppStore } from '@/stores/appStore'
+
+const appStore = useAppStore()
+
+const themeClass = computed(() => {
+  const theme = appStore.currentTheme
+  if (theme === 'dark') return 'data-bs-theme="dark"'
+  if (theme === 'auto') {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'data-bs-theme="dark"' : 'data-bs-theme="light"'
+  }
+  return 'data-bs-theme="light"'
+})
+
+const appTitle = computed(() => appStore.appTitle)
+
+const notifications = computed(() => appStore.notifications)
+
+const notificationClass = (notification) => {
+  const baseClass = 'toast align-items-center text-white'
+  const typeClass = {
+    success: 'bg-success',
+    error: 'bg-danger',
+    warning: 'bg-warning',
+    info: 'bg-info'
+  }[notification.type] || 'bg-primary'
+  return `${baseClass} ${typeClass}`
+}
+
+const removeNotification = (id) => {
+  appStore.removeNotification(id)
+}
+
+onMounted(() => {
+  appStore.initialize()
+})
+</script>
+
 <style>
 .toast-container {
   z-index: 11;
+}
+
+#app {
+  min-height: 100vh;
 }
 </style>

@@ -1,7 +1,7 @@
 <template>
   <div class="container mt-4">
     <h2>Payment Management</h2>
-    
+
     <!-- Payment Form -->
     <div class="card mb-4">
       <div class="card-body">
@@ -17,7 +17,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label">Amount</label>
-            <input type="number" v-model="newPayment.amount" class="form-control" required>
+            <input v-model="newPayment.amount" type="number" class="form-control" required>
           </div>
           <div class="mb-3">
             <label class="form-label">Payment Method</label>
@@ -84,8 +84,8 @@
                 <td>{{ payment.paymentMethod }}</td>
                 <td>{{ payment.receiptNumber }}</td>
                 <td>
-                  <button @click="generateReceipt(payment)" class="btn btn-sm btn-primary">
-                    <i class="fas fa-file-pdf"></i> Receipt
+                  <button class="btn btn-sm btn-primary" @click="generateReceipt(payment)">
+                    <i class="bi bi-file-earmark-pdf"></i> Receipt
                   </button>
                 </td>
               </tr>
@@ -96,20 +96,20 @@
     </div>
 
     <!-- Receipt Modal -->
-    <div class="modal fade" id="receiptModal" tabindex="-1">
+    <div ref="receiptModal" class="modal fade" tabindex="-1">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">Payment Receipt</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
-          <div class="modal-body" ref="receiptContent">
+          <div ref="receiptContent" class="modal-body">
             <div v-if="selectedPayment" class="receipt-container">
               <div class="text-center mb-4">
                 <h3>Member Management</h3>
                 <p>Payment Receipt</p>
               </div>
-              
+
               <div class="row mb-3">
                 <div class="col-6">
                   <strong>Receipt Number:</strong><br>
@@ -120,14 +120,14 @@
                   {{ formatDate(selectedPayment.paymentDate) }}
                 </div>
               </div>
-              
+
               <div class="row mb-3">
                 <div class="col-12">
                   <strong>Received From:</strong><br>
                   {{ getMemberName(selectedPayment.memberId) }}
                 </div>
               </div>
-              
+
               <div class="row mb-3">
                 <div class="col-6">
                   <strong>Amount:</strong><br>
@@ -138,7 +138,7 @@
                   {{ selectedPayment.paymentMethod }}
                 </div>
               </div>
-              
+
               <div class="row mt-5">
                 <div class="col-6">
                   <div class="border-top">
@@ -156,7 +156,7 @@
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             <button type="button" class="btn btn-primary" @click="downloadReceipt">
-              <i class="fas fa-download"></i> Download PDF
+              <i class="bi bi-download"></i> Download PDF
             </button>
           </div>
         </div>
@@ -230,7 +230,7 @@ export default {
     },
     generateReceipt(payment) {
       this.selectedPayment = payment
-      new bootstrap.Modal(document.getElementById('receiptModal')).show()
+      new bootstrap.Modal(this.$refs.receiptModal).show()
     },
     async downloadReceipt() {
       const element = this.$refs.receiptContent
@@ -252,4 +252,4 @@ export default {
   padding: 20px;
   background: white;
 }
-</style> 
+</style>
