@@ -1,10 +1,11 @@
 import axios from 'axios'
+import { useAuthStore } from '@/stores/index.js'
 
 // Configuration from environment variables
 const API_CONFIG = {
   baseURL: process.env.VUE_APP_API_BASE_URL || '/api',
-  timeout: parseInt(process.env.VUE_APP_API_TIMEOUT) || 30000,
-  retryAttempts: parseInt(process.env.VUE_APP_API_RETRY_ATTEMPTS) || 3,
+  timeout: parseInt(process.env.VUE_APP_API_TIMEOUT || '30000') || 30000,
+  retryAttempts: parseInt(process.env.VUE_APP_API_RETRY_ATTEMPTS || '3') || 3,
   retryDelay: 1000 // 1 second
 }
 
@@ -12,11 +13,26 @@ const API_CONFIG = {
 const api = axios.create({
   baseURL: API_CONFIG.baseURL,
   timeout: API_CONFIG.timeout,
+  withCredentials: true, // Include cookies in requests
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   }
 })
+
+// Helper function to get CSRF token from cookies
+function getCsrfToken() {
+  if (typeof document === 'undefined') return null
+
+  const cookies = document.cookie.split(';')
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=')
+    if (name === 'XSRF-TOKEN') {
+      return decodeURIComponent(value)
+    }
+  }
+  return null
+}
 
 // Request interceptor
 api.interceptors.request.use(
@@ -27,6 +43,24 @@ api.interceptors.request.use(
         ...config.params,
         _t: Date.now()
       }
+    }
+
+    // Add CSRF token for non-GET requests
+    if (config.method && ['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())) {
+      const csrfToken = getCsrfToken()
+      if (csrfToken) {
+        config.headers['X-XSRF-TOKEN'] = csrfToken
+      }
+    }
+
+    // Update activity timestamp on each request
+    try {
+      const authStore = useAuthStore()
+      if (authStore && authStore.updateActivity) {
+        authStore.updateActivity()
+      }
+    } catch (error) {
+      // Store may not be available during initialization
     }
 
     // Log request in development
@@ -55,7 +89,75 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
 
-    // Check if we should retry the request
+    // Handle 401 Unauthorized (token expired) - attempt refresh
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true
+
+      // Don't try to refresh if we're already on the login or refresh endpoint
+      if (originalRequest.url?.includes('/login') || originalRequest.url?.includes('/refresh')) {
+        return Promise.reject(error)
+      }
+
+      try {
+        // Attempt to refresh tokens
+        await apiService.refreshToken()
+        // Update activity timestamp after successful refresh
+        try {
+          const authStore = useAuthStore()
+          if (authStore && authStore.updateActivity) {
+            authStore.updateActivity()
+          }
+        } catch (e) {
+          // Store may not be available
+        }
+        // Retry the original request with new tokens
+        return api(originalRequest)
+      } catch (refreshError) {
+        // Refresh failed, redirect to login
+        console.error('Token refresh failed:', refreshError)
+
+        // Clear authentication state
+        try {
+          const authStore = useAuthStore()
+          if (authStore && authStore.clearAuth) {
+            authStore.clearAuth()
+          }
+        } catch (e) {
+          // Store may not be available
+        }
+
+        // Clear any stored authentication state
+        localStorage.removeItem('user')
+        sessionStorage.removeItem('user')
+        sessionStorage.removeItem('auth_timestamp')
+
+        // Redirect to login only if not already there
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+          window.location.href = '/login?session=expired'
+        }
+        return Promise.reject(refreshError)
+      }
+    }
+
+    // Handle 403 Forbidden (access denied)
+    if (error.response?.status === 403) {
+      console.error('Access forbidden:', originalRequest?.url)
+
+      // Log security event
+      try {
+        const authStore = useAuthStore()
+        if (authStore && authStore.isLoggedIn) {
+          console.warn('User does not have permission for this resource')
+        }
+      } catch (e) {
+        // Store may not be available
+      }
+
+      // Don't retry 403 errors
+      return Promise.reject(error)
+    }
+
+    // Check if we should retry the request (non-401/403 errors)
     if (shouldRetryRequest(error) && !originalRequest._retry) {
       originalRequest._retry = true
       originalRequest._retryCount = originalRequest._retryCount || 0
@@ -224,6 +326,69 @@ const apiService = {
 
   async sendToOverdueMembers(months, communication) {
     return this.post(`/communications/send-to-overdue/${months}`, communication)
+  },
+
+  // Authentication API
+  async login(credentials) {
+    const response = await api.post('/v1/auth/login', credentials)
+
+    // Store authentication timestamp
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('auth_timestamp', Date.now().toString())
+    }
+
+    return response.data
+  },
+
+  async logout() {
+    const response = await api.post('/v1/auth/logout')
+    // Clear any stored authentication state
+    localStorage.removeItem('user')
+    sessionStorage.removeItem('user')
+    sessionStorage.removeItem('auth_timestamp')
+    return response.data
+  },
+
+  async refreshToken() {
+    try {
+      const response = await api.post('/v1/auth/refresh')
+      // Update authentication timestamp on refresh
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('auth_timestamp', Date.now().toString())
+      }
+      return response.data
+    } catch (error) {
+      console.error('Token refresh failed:', error)
+      // Clear authentication state on refresh failure
+      localStorage.removeItem('user')
+      sessionStorage.removeItem('user')
+      sessionStorage.removeItem('auth_timestamp')
+      throw error
+    }
+  },
+
+  async getCurrentUser() {
+    const response = await api.get('/users/me')
+    // Update activity timestamp on successful user data fetch
+    try {
+      const authStore = useAuthStore()
+      if (authStore && authStore.updateActivity) {
+        authStore.updateActivity()
+      }
+    } catch (error) {
+      // Store may not be available
+    }
+    return response.data
+  },
+
+  async updateProfile(profileData) {
+    const response = await api.put('/users/me/profile', profileData)
+    return response.data
+  },
+
+  async changePassword(passwordData) {
+    const response = await api.put('/users/me/password', passwordData)
+    return response.data
   },
 
   // Utility methods

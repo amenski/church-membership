@@ -8,6 +8,7 @@ import { useMemberStore } from './memberStore'
 import { usePaymentStore } from './paymentStore'
 import { useCommunicationStore } from './communicationStore'
 import { useAppStore } from './appStore'
+import { useAuthStore } from './authStore'
 
 // Create and export Pinia instance
 export const pinia = createPinia()
@@ -17,7 +18,8 @@ export {
   useMemberStore,
   usePaymentStore,
   useCommunicationStore,
-  useAppStore
+  useAppStore,
+  useAuthStore
 }
 
 // Export store initialization function
@@ -26,17 +28,18 @@ export function initializeStores(app) {
 
   // Initialize stores with any required setup
   const appStore = useAppStore()
+  const authStore = useAuthStore()
+
   appStore.initialize()
+  authStore.initialize()
 
   return {
     memberStore: useMemberStore(),
     paymentStore: usePaymentStore(),
     communicationStore: useCommunicationStore(),
-    appStore
+    appStore,
+    authStore
   }
 }
-
-// Export store utilities
-export * from './utils'
 
 export default pinia

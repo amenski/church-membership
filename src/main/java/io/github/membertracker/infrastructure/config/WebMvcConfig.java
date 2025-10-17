@@ -1,4 +1,4 @@
-package io.github.membertracker.config;
+package io.github.membertracker.infrastructure.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;

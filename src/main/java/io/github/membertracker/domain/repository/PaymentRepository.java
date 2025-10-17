@@ -16,6 +16,8 @@ public interface PaymentRepository {
     
     List<Payment> findByMemberAndPeriod(Member member, YearMonth period);
     
+    boolean existsByMemberAndPeriod(Member member, YearMonth period);
+    
     Optional<Payment> findFirstByMemberOrderByPaymentDateDesc(Member member);
     
     Payment save(Payment payment);

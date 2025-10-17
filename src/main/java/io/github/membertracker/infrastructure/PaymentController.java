@@ -1,10 +1,10 @@
 package io.github.membertracker.infrastructure;
 
 import io.github.membertracker.domain.model.Payment;
-import io.github.membertracker.service.MemberService;
-import io.github.membertracker.service.PaymentService;
+import io.github.membertracker.usecase.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,42 +19,57 @@ import java.util.List;
 @RequestMapping("/api/payments")
 public class PaymentController {
 
-    private final PaymentService paymentService;
-    private final MemberService memberService;
+    private final GetAllPaymentsUseCase getAllPaymentsUseCase;
+    private final GetPaymentByIdUseCase getPaymentByIdUseCase;
+    private final GetPaymentsByMemberUseCase getPaymentsByMemberUseCase;
+    private final RecordPaymentUseCase recordPaymentUseCase;
+    private final GetMemberByIdUseCase getMemberByIdUseCase;
 
     @Autowired
-    public PaymentController(PaymentService paymentService, MemberService memberService) {
-        this.paymentService = paymentService;
-        this.memberService = memberService;
+    public PaymentController(GetAllPaymentsUseCase getAllPaymentsUseCase,
+                            GetPaymentByIdUseCase getPaymentByIdUseCase,
+                            GetPaymentsByMemberUseCase getPaymentsByMemberUseCase,
+                            RecordPaymentUseCase recordPaymentUseCase,
+                            GetMemberByIdUseCase getMemberByIdUseCase) {
+        this.getAllPaymentsUseCase = getAllPaymentsUseCase;
+        this.getPaymentByIdUseCase = getPaymentByIdUseCase;
+        this.getPaymentsByMemberUseCase = getPaymentsByMemberUseCase;
+        this.recordPaymentUseCase = recordPaymentUseCase;
+        this.getMemberByIdUseCase = getMemberByIdUseCase;
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('USER')")
     public List<Payment> getAllPayments() {
-        return paymentService.getAllPayments();
+        return getAllPaymentsUseCase.invoke();
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<Payment> getPaymentById(@PathVariable Long id) {
-        return paymentService.getPaymentById(id)
+        return getPaymentByIdUseCase.invoke(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/member/{memberId}")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<List<Payment>> getPaymentsByMember(@PathVariable Long memberId) {
-        return memberService.getMemberById(memberId)
-                .map(member -> ResponseEntity.ok(paymentService.getPaymentsByMember(member)))
+        return getMemberByIdUseCase.invoke(memberId)
+                .map(member -> ResponseEntity.ok(getPaymentsByMemberUseCase.invoke(member)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<Payment> recordPayment(@RequestBody Payment payment) {
-        return ResponseEntity.ok(paymentService.recordPayment(payment));
+        return ResponseEntity.ok(recordPaymentUseCase.invoke(payment));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<Void> deletePayment(@PathVariable Long id) {
-        if (paymentService.getPaymentById(id).isPresent()) {
+        if (getPaymentByIdUseCase.invoke(id).isPresent()) {
             // In a real application, you might want to revert the member's last payment date
             return ResponseEntity.ok().build();
         } else {

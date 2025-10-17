@@ -1,14 +1,14 @@
 <template>
   <div id="app" :class="themeClass">
-    <!-- Bootstrap Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+    <!-- Bootstrap Navbar - Only show when authenticated -->
+    <nav v-if="isAuthenticated" class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
       <div class="container-fluid">
         <a class="navbar-brand" href="#">{{ appTitle }}</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
           <span class="navbar-toggler-icon"></span>
         </button>
         <div id="navbarNav" class="collapse navbar-collapse">
-          <ul class="navbar-nav">
+          <ul class="navbar-nav me-auto">
             <li class="nav-item">
               <router-link to="/" class="nav-link" active-class="active">Dashboard</router-link>
             </li>
@@ -22,12 +22,31 @@
               <router-link to="/communications" class="nav-link" active-class="active">Communications</router-link>
             </li>
           </ul>
+
+          <!-- User Menu -->
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-person-circle me-1"></i>
+                {{ currentUser?.firstName }} {{ currentUser?.lastName }}
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li><span class="dropdown-item-text small text-muted">Signed in as {{ currentUser?.username }}</span></li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <a class="dropdown-item" href="#" @click.prevent="handleLogout">
+                    <i class="bi bi-box-arrow-right me-2"></i>Sign Out
+                  </a>
+                </li>
+              </ul>
+            </li>
+          </ul>
         </div>
       </div>
     </nav>
 
     <!-- Main Content -->
-    <div class="container mt-4 mb-5">
+    <div :class="isAuthenticated ? 'container mt-4 mb-5' : ''">
       <router-view/>
     </div>
 
@@ -58,8 +77,12 @@
 <script setup>
 import { computed, onMounted } from 'vue'
 import { useAppStore } from '@/stores/appStore'
+import { useAuthStore } from '@/stores/authStore'
+import { useRouter } from 'vue-router'
 
 const appStore = useAppStore()
+const authStore = useAuthStore()
+const router = useRouter()
 
 const themeClass = computed(() => {
   const theme = appStore.currentTheme
@@ -71,8 +94,9 @@ const themeClass = computed(() => {
 })
 
 const appTitle = computed(() => appStore.appTitle)
-
 const notifications = computed(() => appStore.notifications)
+const isAuthenticated = computed(() => authStore.isLoggedIn)
+const currentUser = computed(() => authStore.currentUser)
 
 const notificationClass = (notification) => {
   const baseClass = 'toast align-items-center text-white'
@@ -89,8 +113,29 @@ const removeNotification = (id) => {
   appStore.removeNotification(id)
 }
 
+const handleLogout = async () => {
+  try {
+    await authStore.logout()
+    appStore.addNotification({
+      type: 'success',
+      title: 'Signed Out',
+      message: 'You have been successfully signed out',
+      isToast: true
+    })
+    router.push('/login')
+  } catch (error) {
+    appStore.addNotification({
+      type: 'error',
+      title: 'Logout Failed',
+      message: 'An error occurred while signing out',
+      isToast: true
+    })
+  }
+}
+
 onMounted(() => {
-  appStore.initialize()
+  // Stores are already initialized in main.js via initializeStores()
+  // No need to initialize again here
 })
 </script>
 

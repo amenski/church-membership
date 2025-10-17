@@ -32,41 +32,23 @@ export const debounce = (func, wait = 300) => {
 
 /**
  * Show a Bootstrap toast notification using Vue store
+ *
+ * DEPRECATED: Import and use the store directly in your components:
+ *
+ * import { useAppStore } from '@/stores/appStore'
+ * const appStore = useAppStore()
+ * appStore.addNotification({ message, type, ...options })
+ *
  * @param {string} message - The message to display
  * @param {string} type - The type of toast (success, error, warning, info)
  * @param {Object} options - Additional options for the notification
  */
 export const showToast = (message, type = 'info', options = {}) => {
-  // This function now uses Vue's Pinia store instead of direct DOM manipulation
-  // Import and use the store in your components like this:
-  // import { useAppStore } from '@/stores/appStore'
-  // const appStore = useAppStore()
-  // appStore.addNotification({ message, type, ...options })
-
-  // For backwards compatibility, we'll try to get the store if available
-  if (typeof window !== 'undefined' && window.__PINIA__) {
-    try {
-      // Dynamically import and use the store
-      import('@/stores/appStore').then(({ useAppStore }) => {
-        const appStore = useAppStore()
-        appStore.addNotification({
-          message,
-          type,
-          title: options.title || type.charAt(0).toUpperCase() + type.slice(1),
-          duration: options.duration || 5000,
-          ...options
-        })
-      }).catch(() => {
-        // Fallback to console if store is not available
-        console.log(`[${type.toUpperCase()}] ${message}`)
-      })
-    } catch (error) {
-      console.log(`[${type.toUpperCase()}] ${message}`)
-    }
-  } else {
-    // Fallback for when Pinia is not available
-    console.log(`[${type.toUpperCase()}] ${message}`)
+  // Fallback logging for legacy code - use appStore.addNotification() instead
+  if (process.env.NODE_ENV === 'development') {
+    console.warn('showToast() is deprecated. Use appStore.addNotification() instead.')
   }
+  console.log(`[${type.toUpperCase()}] ${message}`)
 }
 
 /**

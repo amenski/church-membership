@@ -5,13 +5,10 @@ import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.model.MessageDelivery;
 import io.github.membertracker.domain.repository.CommunicationRepository;
 import io.github.membertracker.domain.repository.MemberRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Service
 public class SendCommunicationToAllMembersUseCase {
 
     private final CommunicationRepository communicationRepository;
@@ -29,7 +26,6 @@ public class SendCommunicationToAllMembersUseCase {
      * @param communication the communication to send
      * @return the saved communication with delivery information
      */
-    @Transactional
     public Communication invoke(Communication communication) {
         communication.setSentToAllMembers(true);
         communication.setSentDate(LocalDateTime.now());

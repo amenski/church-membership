@@ -197,10 +197,13 @@ export default {
   methods: {
     async loadMembers() {
       try {
-        const response = await api.getMembers()
-        this.members = response.data
+        const data = await api.getMembers()
+        // Ensure members is always an array
+        this.members = Array.isArray(data) ? data : []
       } catch (error) {
         console.error('Error loading members:', error)
+        // Ensure members is set to empty array on error
+        this.members = []
       }
     },
     showAddModal() {

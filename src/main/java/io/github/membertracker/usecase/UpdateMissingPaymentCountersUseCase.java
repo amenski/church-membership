@@ -2,13 +2,10 @@ package io.github.membertracker.usecase;
 
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.repository.MemberRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.YearMonth;
 import java.util.List;
 
-@Service
 public class UpdateMissingPaymentCountersUseCase {
 
     private final MemberRepository memberRepository;
@@ -24,7 +21,6 @@ public class UpdateMissingPaymentCountersUseCase {
      * Updates the consecutive months missed counter for all members.
      * Increments the counter for members who haven't made a payment for the previous month.
      */
-    @Transactional
     public void invoke() {
         YearMonth currentMonth = YearMonth.now();
         YearMonth previousMonth = currentMonth.minusMonths(1);

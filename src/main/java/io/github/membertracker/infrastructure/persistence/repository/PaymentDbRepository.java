@@ -60,6 +60,12 @@ public class PaymentDbRepository implements PaymentRepository {
     }
 
     @Override
+    public boolean existsByMemberAndPeriod(Member member, YearMonth period) {
+        MemberEntity memberEntity = mapToMemberEntity(member);
+        return paymentJpaRepository.existsByMemberAndPeriod(memberEntity, period);
+    }
+
+    @Override
     public Payment save(Payment payment) {
         PaymentEntity entity = mapToEntity(payment);
         return mapToPayment(paymentJpaRepository.save(entity));
@@ -72,7 +78,7 @@ public class PaymentDbRepository implements PaymentRepository {
         payment.setPeriod(entity.getPeriod());
         payment.setPaymentDate(entity.getPaymentDate());
         payment.setAmount(entity.getAmount());
-        payment.setPaymentMethod(entity.getPaymentMethod());
+        payment.setPaymentMethod(io.github.membertracker.domain.enumeration.PaymentMethod.valueOf(entity.getPaymentMethod()));
         payment.setNotes(entity.getNotes());
         return payment;
     }
@@ -84,7 +90,7 @@ public class PaymentDbRepository implements PaymentRepository {
         entity.setPeriod(payment.getPeriod());
         entity.setPaymentDate(payment.getPaymentDate());
         entity.setAmount(payment.getAmount());
-        entity.setPaymentMethod(payment.getPaymentMethod());
+        entity.setPaymentMethod(payment.getPaymentMethod().name());
         entity.setNotes(payment.getNotes());
         return entity;
     }

@@ -4,12 +4,9 @@ import io.github.membertracker.domain.model.Communication;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.model.MessageDelivery;
 import io.github.membertracker.domain.repository.MemberRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-@Service
 public class SendPaymentRemindersUseCase {
 
     private final MemberRepository memberRepository;
@@ -27,7 +24,6 @@ public class SendPaymentRemindersUseCase {
      * @param monthsThreshold the number of consecutive months missed to trigger a reminder
      * @return the created communication if reminders were sent, or null if no reminders were needed
      */
-    @Transactional
     public Communication invoke(int monthsThreshold) {
         List<Member> overdueMembers = memberRepository.findByConsecutiveMonthsMissedGreaterThanEqual(monthsThreshold);
 

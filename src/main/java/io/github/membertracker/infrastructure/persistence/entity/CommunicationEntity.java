@@ -8,12 +8,14 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Table(name = "communication")
 public class CommunicationEntity {
 
     @Id
@@ -33,17 +35,14 @@ public class CommunicationEntity {
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "communication")
     private List<MessageDeliveryEntity> deliveries = new ArrayList<>();
 
-    // Enum for communication types
     public enum CommunicationType {
         ANNOUNCEMENT, REMINDER, PERSONAL
     }
 
-    // Constructors
     public CommunicationEntity() {
         this.createdDate = LocalDateTime.now();
     }
 
-    // Getters and Setters
     public Long getId() {
         return id;
     }

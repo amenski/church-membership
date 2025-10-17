@@ -33,7 +33,7 @@ export const useAppStore = defineStore('app', () => {
   })
 
   const unreadNotifications = computed(() =>
-    notifications.value.filter(notification => !notification.read)
+    (notifications.value || []).filter(notification => !notification.read)
   )
 
   // Actions
@@ -136,15 +136,28 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
+  // Keep reference to media query listener for cleanup
+  let themeMediaQuery = null
+  let themeListener = null
+
   function initialize() {
     // Load saved preferences
     loadPreferencesFromStorage()
 
     // Set up theme change listener for auto theme
-    if (currentTheme.value === 'auto') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-      const updateTheme = () => setTheme('auto')
-      mediaQuery.addEventListener('change', updateTheme)
+    if (currentTheme.value === 'auto' && typeof window !== 'undefined') {
+      themeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+      themeListener = () => setTheme('auto')
+      themeMediaQuery.addEventListener('change', themeListener)
+    }
+  }
+
+  function cleanup() {
+    // Clean up theme listener
+    if (themeMediaQuery && themeListener) {
+      themeMediaQuery.removeEventListener('change', themeListener)
+      themeMediaQuery = null
+      themeListener = null
     }
   }
 
@@ -194,6 +207,7 @@ export const useAppStore = defineStore('app', () => {
     clearAllNotifications,
     updateUserPreferences,
     initialize,
+    cleanup,
     reset
   }
 })

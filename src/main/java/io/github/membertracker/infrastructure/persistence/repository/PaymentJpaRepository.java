@@ -14,4 +14,6 @@ public interface PaymentJpaRepository extends JpaRepository<PaymentEntity, Long>
     List<PaymentEntity> findByMemberAndPeriod(MemberEntity member, YearMonth period);
 
     Optional<PaymentEntity> findFirstByMemberOrderByPaymentDateDesc(MemberEntity member);
+
+    boolean existsByMemberAndPeriod(MemberEntity member, YearMonth period);
 }

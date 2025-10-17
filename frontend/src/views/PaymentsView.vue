@@ -195,28 +195,74 @@ export default {
   methods: {
     async loadData() {
       try {
-        const [membersRes, paymentsRes, analyticsRes] = await Promise.all([
+        // Load members and payments
+        const [members, payments] = await Promise.all([
           api.getMembers(),
-          api.getPayments(),
-          api.getPaymentAnalytics()
+          api.getPayments()
         ])
-        this.members = membersRes.data
-        this.payments = paymentsRes.data
-        this.analytics = analyticsRes.data
+
+        // Ensure data is always an array
+        this.members = Array.isArray(members) ? members : []
+        this.payments = Array.isArray(payments) ? payments : []
+
+        // Calculate analytics from payment data
+        this.calculateAnalytics()
       } catch (error) {
         console.error('Error loading data:', error)
+        this.members = []
+        this.payments = []
+      }
+    },
+    calculateAnalytics() {
+      if (!this.payments || this.payments.length === 0) {
+        this.analytics = {
+          totalRevenue: 0,
+          monthlyRevenue: 0,
+          averagePayment: 0
+        }
+        return
+      }
+
+      const now = new Date()
+      const currentMonth = now.getMonth()
+      const currentYear = now.getFullYear()
+
+      // Calculate total revenue
+      const totalRevenue = this.payments.reduce((sum, p) => sum + (p.amount || 0), 0)
+
+      // Calculate monthly revenue
+      const monthlyRevenue = this.payments
+        .filter(p => {
+          const paymentDate = new Date(p.paymentDate)
+          return paymentDate.getMonth() === currentMonth &&
+                 paymentDate.getFullYear() === currentYear
+        })
+        .reduce((sum, p) => sum + (p.amount || 0), 0)
+
+      // Calculate average payment
+      const averagePayment = this.payments.length > 0
+        ? totalRevenue / this.payments.length
+        : 0
+
+      this.analytics = {
+        totalRevenue: totalRevenue.toFixed(2),
+        monthlyRevenue: monthlyRevenue.toFixed(2),
+        averagePayment: averagePayment.toFixed(2)
       }
     },
     async submitPayment() {
       try {
-        const response = await api.createPayment(this.newPayment)
+        const payment = await api.createPayment(this.newPayment)
         await this.loadData()
         this.newPayment = {
           memberId: null,
           amount: null,
           paymentMethod: 'CASH'
         }
-        this.generateReceipt(response.data)
+        // Generate receipt for the newly created payment
+        if (payment) {
+          this.generateReceipt(payment)
+        }
       } catch (error) {
         console.error('Error creating payment:', error)
       }

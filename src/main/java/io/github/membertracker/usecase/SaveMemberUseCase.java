@@ -2,10 +2,9 @@ package io.github.membertracker.usecase;
 
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.repository.MemberRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-@Service
+import java.time.LocalDate;
+
 public class SaveMemberUseCase {
 
     private final MemberRepository memberRepository;
@@ -14,14 +13,18 @@ public class SaveMemberUseCase {
         this.memberRepository = memberRepository;
     }
 
-    /**
-     * Saves a member to the database.
-     *
-     * @param member the member to save
-     * @return the saved member
-     */
-    @Transactional
     public Member invoke(Member member) {
+        // Set default values for new members
+        if (member.getId() == null) {
+            if (member.getJoinDate() == null) {
+                member.setJoinDate(LocalDate.now());
+            }
+            // Ensure active is set to true for new members if not explicitly set
+            if (!member.isActive()) {
+                member.setActive(true);
+            }
+        }
+
         return memberRepository.save(member);
     }
 }
