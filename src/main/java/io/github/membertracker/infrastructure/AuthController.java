@@ -75,39 +75,7 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<Object> register(@RequestBody RegisterRequest registerRequest) {
-        try {
-            var user = registerUserUseCase.invoke(
-                registerRequest.getEmail(),
-                registerRequest.getPassword(),
-                registerRequest.getFirstName(),
-                registerRequest.getLastName()
-            );
-
-            String accessToken = JwtUtils.generateAccessToken(user, authProperties.getJwtSecret(), authProperties.getAccessTtlSeconds());
-            String refreshToken = JwtUtils.generateRefreshToken(user, authProperties.getJwtSecret(), authProperties.getRefreshTtlSeconds());
-
-            ResponseCookie accessCookie = cookieUtils.buildAccessCookie(accessToken);
-            ResponseCookie refreshCookie = cookieUtils.buildRefreshCookie(refreshToken);
-
-            // Return user data in response body
-            Map<String, Object> response = Map.of(
-                "user", Map.of(
-                    "email", user.getUsername(),
-                    "role", user.getAuthorities().stream()
-                        .findFirst()
-                        .map(a -> a.getAuthority().replace("ROLE_", ""))
-                        .orElse("USER")
-                )
-            );
-
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
-                    .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
-                    .body(response);
-
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+        return ResponseEntity.status(403).body(Map.of("error", "Registration is disabled. Please contact administrator for access."));
     }
 
     @PostMapping("/refresh")

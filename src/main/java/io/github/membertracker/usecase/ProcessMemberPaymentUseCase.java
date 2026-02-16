@@ -8,7 +8,6 @@ import io.github.membertracker.domain.policy.MembershipPolicy;
 import io.github.membertracker.domain.repository.MemberRepository;
 import io.github.membertracker.domain.repository.PaymentRepository;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
 
@@ -27,7 +26,7 @@ public class ProcessMemberPaymentUseCase {
         this.membershipPolicy = membershipPolicy;
     }
 
-    public Payment invoke(Long memberId, BigDecimal amount, YearMonth period,
+    public Payment invoke(Long memberId, Double amount, YearMonth period,
                          String paymentMethodCode, String notes) {
         
         Member member = memberRepository.findById(memberId)
@@ -73,7 +72,7 @@ public class ProcessMemberPaymentUseCase {
         }
     }
 
-    public Payment processPaymentWithReactivation(Long memberId, BigDecimal amount,
+    public Payment processPaymentWithReactivation(Long memberId, Double amount,
                                                  YearMonth period, String paymentMethodCode) {
         
         Member member = memberRepository.findById(memberId)

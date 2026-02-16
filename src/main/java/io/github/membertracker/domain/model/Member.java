@@ -1,6 +1,10 @@
 package io.github.membertracker.domain.model;
 
 import io.github.membertracker.domain.exception.MemberDomainException;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.PastOrPresent;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -9,10 +13,20 @@ import java.time.temporal.ChronoUnit;
 public class Member {
 
     private Long id;
+    
+    @NotBlank(message = "Name is required")
     private String name;
+    
+    @NotBlank(message = "Email is required")
+    @Email(message = "Email should be valid")
     private String email;
+    
+    @Pattern(regexp = "^\\+?[0-9\\s\\-\\(\\)]{10,}$", message = "Phone number should be valid")
     private String phone;
+    
+    @PastOrPresent(message = "Join date cannot be in the future")
     private LocalDate joinDate;
+    
     private LocalDate lastPaymentDate;
     private int consecutiveMonthsMissed;
     private boolean active;

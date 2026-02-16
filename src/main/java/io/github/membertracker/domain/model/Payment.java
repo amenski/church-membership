@@ -2,8 +2,10 @@ package io.github.membertracker.domain.model;
 
 import io.github.membertracker.domain.enumeration.PaymentMethod;
 import io.github.membertracker.domain.exception.PaymentDomainException;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PastOrPresent;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
@@ -11,17 +13,29 @@ import java.time.temporal.ChronoUnit;
 public class Payment {
 
     private Long id;
+    
+    @NotNull(message = "Member is required")
     private Member member;
+    
+    @NotNull(message = "Payment period is required")
     private YearMonth period;
+    
+    @PastOrPresent(message = "Payment date cannot be in the future")
     private LocalDate paymentDate;
-    private BigDecimal amount;
+    
+    @NotNull(message = "Amount is required")
+    @DecimalMin(value = "0.01", message = "Amount must be at least 0.01")
+    private Double amount;
+    
+    @NotNull(message = "Payment method is required")
     private PaymentMethod paymentMethod;
+    
     private String notes;
 
     public Payment() {
     }
 
-    public Payment(Member member, YearMonth period, BigDecimal amount, PaymentMethod paymentMethod) {
+    public Payment(Member member, YearMonth period, Double amount, PaymentMethod paymentMethod) {
         this.member = member;
         this.period = period;
         this.paymentDate = LocalDate.now();
@@ -30,8 +44,8 @@ public class Payment {
     }
 
     public void validateAmount() {
-        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw PaymentDomainException.invalidPaymentAmount(amount, BigDecimal.TEN);
+        if (amount == null || amount <= 0.0) {
+            throw PaymentDomainException.invalidPaymentAmount(amount, 10.0);
         }
     }
 
@@ -123,11 +137,11 @@ public class Payment {
         this.paymentDate = paymentDate;
     }
 
-    public BigDecimal getAmount() {
+    public Double getAmount() {
         return amount;
     }
 
-    public void setAmount(BigDecimal amount) {
+    public void setAmount(Double amount) {
         this.amount = amount;
     }
 

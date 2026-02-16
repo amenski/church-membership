@@ -7,7 +7,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
 
@@ -24,7 +23,7 @@ public class PaymentEntity {
 
     private YearMonth period;      // Which month this payment covers
     private LocalDate paymentDate; // When they actually paid
-    private BigDecimal amount;
+    private Double amount;
     private String paymentMethod;  // CASH, BANK_TRANSFER, etc.
     private String notes;
 
@@ -32,7 +31,7 @@ public class PaymentEntity {
     public PaymentEntity() {
     }
 
-    public PaymentEntity(MemberEntity member, YearMonth period, BigDecimal amount, String paymentMethod) {
+    public PaymentEntity(MemberEntity member, YearMonth period, Double amount, String paymentMethod) {
         this.member = member;
         this.period = period;
         this.paymentDate = LocalDate.now();
@@ -73,11 +72,11 @@ public class PaymentEntity {
         this.paymentDate = paymentDate;
     }
 
-    public BigDecimal getAmount() {
+    public Double getAmount() {
         return amount;
     }
 
-    public void setAmount(BigDecimal amount) {
+    public void setAmount(Double amount) {
         this.amount = amount;
     }
 

@@ -159,11 +159,11 @@ export default {
           api.getMembers()
         ])
 
-        this.stats = statsRes.data
-        this.recentPayments = paymentsRes.data
-        this.overdueMembers = overdueRes.data
-        this.activities = activitiesRes.data
-        this.members = membersRes.data
+        this.stats = statsRes
+        this.recentPayments = paymentsRes
+        this.overdueMembers = overdueRes
+        this.activities = activitiesRes
+        this.members = membersRes
       } catch (error) {
         console.error('Error loading dashboard data:', error)
       }

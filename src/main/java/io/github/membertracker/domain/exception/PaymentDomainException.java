@@ -1,6 +1,5 @@
 package io.github.membertracker.domain.exception;
 
-import java.math.BigDecimal;
 import java.time.YearMonth;
 
 /**
@@ -27,7 +26,7 @@ public class PaymentDomainException extends DomainException {
     }
 
     // Factory methods for common payment domain violations
-    public static PaymentDomainException invalidPaymentAmount(BigDecimal amount, BigDecimal minAmount) {
+    public static PaymentDomainException invalidPaymentAmount(Double amount, Double minAmount) {
         return new PaymentDomainException(
             String.format("Payment amount %s is invalid. Minimum amount is %s", amount, minAmount),
             INVALID_PAYMENT_AMOUNT

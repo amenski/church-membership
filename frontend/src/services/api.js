@@ -418,6 +418,23 @@ const apiService = {
     })
   },
 
+  // Dashboard API
+  async getDashboardStats() {
+    return this.get('/dashboard/stats')
+  },
+
+  async getRecentPayments() {
+    return this.get('/dashboard/recent-payments')
+  },
+
+  async getOverdueMembers() {
+    return this.get('/dashboard/overdue-members')
+  },
+
+  async getRecentActivities() {
+    return this.get('/dashboard/recent-activities')
+  },
+
   // Cancel token utility
   createCancelToken() {
     return axios.CancelToken.source()

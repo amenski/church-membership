@@ -38,12 +38,6 @@ const routes = [
         component: LoginView,
         meta: { requiresGuest: true }
     },
-    {
-        path: '/register',
-        name: 'register',
-        component: RegisterView,
-        meta: { requiresGuest: true }
-    },
     // Catch all route for 404
     {
         path: '/:pathMatch(.*)*',

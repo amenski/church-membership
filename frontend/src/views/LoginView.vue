@@ -59,11 +59,10 @@
           {{ isAuthLoading ? 'Signing In...' : 'Sign In' }}
         </button>
 
-        <!-- Links -->
+        <!-- Note: Registration is disabled for this application -->
         <div class="auth-links text-center">
-          <p class="mb-0">
-            Don't have an account?
-            <router-link to="/register" class="auth-link">Sign up here</router-link>
+          <p class="mb-0 text-muted">
+            <small>Contact administrator for account access</small>
           </p>
         </div>
       </form>
