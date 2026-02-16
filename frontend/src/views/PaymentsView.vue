@@ -1,6 +1,11 @@
 <template>
   <div class="container mt-4">
-    <h2>Payment Management</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2>Payment Management</h2>
+      <button class="btn btn-success" @click="exportPayments">
+        <i class="bi bi-file-earmark-spreadsheet"></i> Export CSV
+      </button>
+    </div>
 
     <!-- Payment Form -->
     <div class="card mb-4">
@@ -288,6 +293,23 @@ export default {
         jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
       }
       await html2pdf().set(options).from(element).save()
+    },
+    async exportPayments() {
+      try {
+        const response = await api.exportPayments()
+        // Create a blob and download it
+        const blob = new Blob([response.data], { type: 'text/csv' })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `payments_${new Date().toISOString().split('T')[0]}.csv`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+      } catch (error) {
+        console.error('Error exporting payments:', error)
+      }
     }
   }
 }

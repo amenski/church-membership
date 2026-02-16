@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Our Church</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .header {
+            background-color: #27ae60;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .welcome-message {
+            font-size: 18px;
+            margin-bottom: 25px;
+        }
+        .info-box {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .highlight {
+            background-color: #e8f4fd;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+        }
+        .contact-info {
+            background-color: #f1f8ff;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 th:text="${churchName}">Church Name</h1>
+        <h2>Welcome to Our Community</h2>
+    </div>
+    
+    <div class="content">
+        <div class="welcome-message">
+            <p>Dear <span th:text="${member.name}">New Member</span>,</p>
+            <p>On behalf of the entire <span th:text="${churchName}">Church Name</span> family, 
+               we extend a warm welcome to you! We're delighted to have you join our community.</p>
+        </div>
+        
+        <div class="highlight">
+            <p><strong th:text="${welcomeMessage}">Welcome to our church community!</strong></p>
+        </div>
+        
+        <div class="info-box">
+            <h3>Getting Started:</h3>
+            <ul>
+                <li><strong>Weekly Services:</strong> Sundays at 9:00 AM and 11:00 AM</li>
+                <li><strong>Bible Study:</strong> Wednesdays at 7:00 PM</li>
+                <li><strong>Youth Group:</strong> Fridays at 6:00 PM</li>
+                <li><strong>Location:</strong> 123 Church Street, Your City</li>
+            </ul>
+        </div>
+        
+        <div class="contact-info">
+            <h3>Church Office Information:</h3>
+            <p><strong>Phone:</strong> <span th:text="${churchPhone}">(555) 123-4567</span></p>
+            <p><strong>Email:</strong> <span th:text="${churchEmail}">office@church.example.com</span></p>
+            <p><strong>Office Hours:</strong> Monday-Friday, 9:00 AM - 5:00 PM</p>
+        </div>
+        
+        <p>We encourage you to get involved in our various ministries and activities. 
+           There are many opportunities to serve, grow in faith, and build meaningful relationships.</p>
+        
+        <p>If you have any questions or need assistance, please don't hesitate to reach out to us.</p>
+        
+        <p>Blessings,<br>
+        The Pastoral Team<br>
+        <span th:text="${churchName}">Church Name</span></p>
+        
+        <div class="footer">
+            <p>This is an automated welcome message from <span th:text="${churchName}">Church Name</span>.</p>
+            <p>&copy; <span th:text="${#dates.format(#dates.createNow(), 'yyyy')}">2026</span> <span th:text="${churchName}">Church Name</span>. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

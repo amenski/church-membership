@@ -2,9 +2,14 @@
   <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h2>Member Management</h2>
-      <button class="btn btn-primary" @click="showAddModal">
-        <i class="bi bi-plus"></i> Add Member
-      </button>
+      <div>
+        <button class="btn btn-success me-2" @click="exportMembers">
+          <i class="bi bi-file-earmark-spreadsheet"></i> Export CSV
+        </button>
+        <button class="btn btn-primary" @click="showAddModal">
+          <i class="bi bi-plus"></i> Add Member
+        </button>
+      </div>
     </div>
 
     <!-- Search and Filter -->
@@ -269,6 +274,23 @@ export default {
       return member.consecutiveMonthsMissed > 0
         ? `${member.consecutiveMonthsMissed} months overdue`
         : 'Current'
+    },
+    async exportMembers() {
+      try {
+        const response = await api.exportMembers()
+        // Create a blob and download it
+        const blob = new Blob([response.data], { type: 'text/csv' })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `members_${new Date().toISOString().split('T')[0]}.csv`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+      } catch (error) {
+        console.error('Error exporting members:', error)
+      }
     }
   }
 }

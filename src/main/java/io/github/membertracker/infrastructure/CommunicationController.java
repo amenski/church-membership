@@ -27,6 +27,7 @@ public class CommunicationController {
     private final SendCommunicationToAllMembersUseCase sendCommunicationToAllMembersUseCase;
     private final SendCommunicationToMembersUseCase sendCommunicationToMembersUseCase;
     private final GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase;
+    private final GetDeliveriesByCommunicationUseCase getDeliveriesByCommunicationUseCase;
 
     @Autowired
     public CommunicationController(GetAllCommunicationsUseCase getAllCommunicationsUseCase,
@@ -34,13 +35,15 @@ public class CommunicationController {
                                    CreateCommunicationUseCase createCommunicationUseCase,
                                    SendCommunicationToAllMembersUseCase sendCommunicationToAllMembersUseCase,
                                    SendCommunicationToMembersUseCase sendCommunicationToMembersUseCase,
-                                   GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase) {
+                                   GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase,
+                                   GetDeliveriesByCommunicationUseCase getDeliveriesByCommunicationUseCase) {
         this.getAllCommunicationsUseCase = getAllCommunicationsUseCase;
         this.getCommunicationByIdUseCase = getCommunicationByIdUseCase;
         this.createCommunicationUseCase = createCommunicationUseCase;
         this.sendCommunicationToAllMembersUseCase = sendCommunicationToAllMembersUseCase;
         this.sendCommunicationToMembersUseCase = sendCommunicationToMembersUseCase;
         this.getMembersWithMissedPaymentsUseCase = getMembersWithMissedPaymentsUseCase;
+        this.getDeliveriesByCommunicationUseCase = getDeliveriesByCommunicationUseCase;
     }
 
     @GetMapping
@@ -83,6 +86,13 @@ public class CommunicationController {
                         MessageDelivery.DeliveryChannel.EMAIL
                 )
         );
+    }
+
+    @GetMapping("/{id}/deliveries")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<List<MessageDelivery>> getDeliveries(@PathVariable Long id) {
+        List<MessageDelivery> deliveries = getDeliveriesByCommunicationUseCase.invoke(id);
+        return ResponseEntity.ok(deliveries);
     }
 }
 

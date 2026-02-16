@@ -5,6 +5,7 @@ import io.github.membertracker.domain.repository.CommunicationRepository;
 import io.github.membertracker.domain.repository.MemberRepository;
 import io.github.membertracker.domain.repository.PaymentRepository;
 import io.github.membertracker.domain.repository.UserRepository;
+import io.github.membertracker.infrastructure.service.EmailService;
 import io.github.membertracker.usecase.AuthenticateUserUseCase;
 import io.github.membertracker.usecase.ChangePasswordUseCase;
 import io.github.membertracker.usecase.CreateCommunicationUseCase;
@@ -159,13 +160,18 @@ public class UseCaseConfig {
     }
 
     @Bean
-    public SendCommunicationToAllMembersUseCase sendCommunicationToAllMembersUseCase(CommunicationRepository communicationRepository, MemberRepository memberRepository) {
-        return new SendCommunicationToAllMembersUseCase(communicationRepository,  memberRepository);
+    public SendCommunicationToAllMembersUseCase sendCommunicationToAllMembersUseCase(
+            CommunicationRepository communicationRepository, 
+            MemberRepository memberRepository,
+            EmailService emailService) {
+        return new SendCommunicationToAllMembersUseCase(communicationRepository, memberRepository, emailService);
     }
 
     @Bean
-    public SendCommunicationToMembersUseCase sendCommunicationToMembersUseCase(CommunicationRepository communicationRepository) {
-        return new SendCommunicationToMembersUseCase(communicationRepository);
+    public SendCommunicationToMembersUseCase sendCommunicationToMembersUseCase(
+            CommunicationRepository communicationRepository,
+            EmailService emailService) {
+        return new SendCommunicationToMembersUseCase(communicationRepository, emailService);
     }
 
     // Scheduler-related use cases

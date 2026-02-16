@@ -298,6 +298,10 @@ const apiService = {
     return this.get(`/members/overdue/${months}`)
   },
 
+  async exportMembers() {
+    return this.get('/members/export', {}, { responseType: 'blob' })
+  },
+
   // Payments API
   async getPayments(params = {}) {
     return this.get('/payments', params)
@@ -311,9 +315,21 @@ const apiService = {
     return this.post('/payments', payment)
   },
 
+  async exportPayments() {
+    return this.get('/payments/export', {}, { responseType: 'blob' })
+  },
+
   // Communications API
   async getCommunications(params = {}) {
     return this.get('/communications', params)
+  },
+
+  async getCommunicationById(id) {
+    return this.get(`/communications/${id}`)
+  },
+
+  async getCommunicationDeliveries(id) {
+    return this.get(`/communications/${id}/deliveries`)
   },
 
   async createCommunication(communication) {
