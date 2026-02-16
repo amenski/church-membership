@@ -2,6 +2,7 @@ package io.github.membertracker.infrastructure;
 
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.usecase.*;
+import io.github.membertracker.utils.CsvUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -106,6 +107,7 @@ public class MemberController {
     }
 
     @GetMapping("/overdue/{months}")
+    @PreAuthorize("hasRole('USER')")
     public List<Member> getMembersWithOverduePayments(@PathVariable int months) {
         return getMembersWithMissedPaymentsUseCase.invoke(months);
     }
@@ -119,36 +121,33 @@ public class MemberController {
         
         StreamingResponseBody stream = out -> {
             PrintWriter writer = new PrintWriter(out);
-            
-            // CSV Header
-            writer.println("id,name,email,phone,joinDate,active,consecutiveMonthsMissed");
-            
-            // CSV Data
-            for (Member member : members) {
-                writer.printf("%d,%s,%s,%s,%s,%s,%d%n",
-                    member.getId() != null ? member.getId() : "",
-                    escapeCsv(member.getName()),
-                    escapeCsv(member.getEmail()),
-                    escapeCsv(member.getPhone()),
-                    member.getJoinDate() != null ? member.getJoinDate().format(dateFormatter) : "",
-                    member.isActive(),
-                    member.getConsecutiveMonthsMissed()
-                );
+            try {
+                // CSV Header
+                writer.println("id,name,email,phone,joinDate,active,consecutiveMonthsMissed");
+                
+                // CSV Data
+                for (Member member : members) {
+                    writer.printf("%s,%s,%s,%s,%s,%s,%d%n",
+                        member.getId() != null ? member.getId() : "0",
+                        CsvUtils.escapeCsv(member.getName()),
+                        CsvUtils.escapeCsv(member.getEmail()),
+                        CsvUtils.escapeCsv(member.getPhone()),
+                        member.getJoinDate() != null ? member.getJoinDate().format(dateFormatter) : "",
+                        member.isActive(),
+                        member.getConsecutiveMonthsMissed()
+                    );
+                }
+            } catch (Exception e) {
+                System.err.println("Error exporting members: " + e.getMessage());
+                throw new RuntimeException("Error exporting members", e);
+            } finally {
+                writer.flush();
             }
-            writer.flush();
         };
         
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=members.csv")
             .contentType(MediaType.parseMediaType("text/csv"))
             .body(stream);
-    }
-
-    private String escapeCsv(String value) {
-        if (value == null) return "";
-        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
-            return "\"" + value.replace("\"", "\"\"") + "\"";
-        }
-        return value;
     }
 }

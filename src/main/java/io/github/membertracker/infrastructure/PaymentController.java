@@ -2,6 +2,7 @@ package io.github.membertracker.infrastructure;
 
 import io.github.membertracker.domain.model.Payment;
 import io.github.membertracker.usecase.*;
+import io.github.membertracker.utils.CsvUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -92,36 +93,33 @@ public class PaymentController {
         
         StreamingResponseBody stream = out -> {
             PrintWriter writer = new PrintWriter(out);
-            
-            // CSV Header
-            writer.println("id,memberId,memberName,amount,paymentDate,period,method");
-            
-            // CSV Data
-            for (Payment payment : payments) {
-                writer.printf("%d,%d,%s,%.2f,%s,%s,%s%n",
-                    payment.getId() != null ? payment.getId() : "",
-                    payment.getMember() != null && payment.getMember().getId() != null ? payment.getMember().getId() : "",
-                    escapeCsv(payment.getMember() != null ? payment.getMember().getName() : ""),
-                    payment.getAmount() != null ? payment.getAmount() : 0.0,
-                    payment.getPaymentDate() != null ? payment.getPaymentDate().format(dateFormatter) : "",
-                    payment.getPeriod() != null ? payment.getPeriod().toString() : "",
-                    payment.getPaymentMethod() != null ? payment.getPaymentMethod().name() : ""
-                );
+            try {
+                // CSV Header
+                writer.println("id,memberId,memberName,amount,paymentDate,period,method");
+                
+                // CSV Data
+                for (Payment payment : payments) {
+                    writer.printf("%s,%s,%s,%.2f,%s,%s,%s%n",
+                        payment.getId() != null ? payment.getId() : "0",
+                        payment.getMember() != null && payment.getMember().getId() != null ? payment.getMember().getId() : "0",
+                        CsvUtils.escapeCsv(payment.getMember() != null ? payment.getMember().getName() : ""),
+                        payment.getAmount() != null ? payment.getAmount() : 0.0,
+                        payment.getPaymentDate() != null ? payment.getPaymentDate().format(dateFormatter) : "",
+                        payment.getPeriod() != null ? payment.getPeriod().toString() : "",
+                        payment.getPaymentMethod() != null ? payment.getPaymentMethod().name() : ""
+                    );
+                }
+            } catch (Exception e) {
+                System.err.println("Error exporting payments: " + e.getMessage());
+                throw new RuntimeException("Error exporting payments", e);
+            } finally {
+                writer.flush();
             }
-            writer.flush();
         };
         
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=payments.csv")
             .contentType(MediaType.parseMediaType("text/csv"))
             .body(stream);
-    }
-
-    private String escapeCsv(String value) {
-        if (value == null) return "";
-        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
-            return "\"" + value.replace("\"", "\"\"") + "\"";
-        }
-        return value;
     }
 }

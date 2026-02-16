@@ -298,7 +298,8 @@ export default {
       try {
         const response = await api.exportPayments()
         // Create a blob and download it
-        const blob = new Blob([response.data], { type: 'text/csv' })
+        // api.request() already returns response.data (the blob)
+        const blob = new Blob([response], { type: 'text/csv' })
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
