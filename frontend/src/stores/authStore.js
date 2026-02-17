@@ -13,6 +13,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoading = ref(false)
   const error = ref(null)
   const authChecked = ref(false)
+  const isInitializing = ref(false)
   const lastActivity = ref(null)
   const sessionTimeout = ref(60 * 60 * 1000) // 1 hour in milliseconds
   const refreshInterval = ref(null)
@@ -67,14 +68,14 @@ export const useAuthStore = defineStore('auth', () => {
       // Start session monitoring
       startSessionMonitoring()
 
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.DEV) {
         console.log('User login successful:', credentials.email)
       }
 
       return response
     } catch (err) {
       error.value = handleAuthError(err)
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.DEV) {
         console.warn('User login failed:', err.message)
       }
       throw err
@@ -101,14 +102,14 @@ export const useAuthStore = defineStore('auth', () => {
         lastName: userData.lastName?.trim()
       })
 
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.DEV) {
         console.log('User registration successful:', userData.email)
       }
 
       return response
     } catch (err) {
       error.value = handleAuthError(err)
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.DEV) {
         console.warn('User registration failed:', err.message)
       }
       throw err
@@ -127,7 +128,7 @@ export const useAuthStore = defineStore('auth', () => {
       // Call logout API
       await apiService.logout()
 
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.DEV) {
         console.log('User logout successful')
       }
     } catch (err) {
@@ -141,8 +142,9 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function checkAuth() {
+    if (authChecked.value) return isAuthenticated.value ? user.value : null
+
     try {
-      authChecked.value = false
       const userData = await apiService.getCurrentUser()
 
       if (userData) {
@@ -157,7 +159,7 @@ export const useAuthStore = defineStore('auth', () => {
       return userData
     } catch (err) {
       clearAuth()
-      throw err
+      return null
     } finally {
       authChecked.value = true
     }
@@ -233,7 +235,7 @@ export const useAuthStore = defineStore('auth', () => {
     // Check session every 30 seconds
     refreshInterval.value = setInterval(() => {
       if (sessionExpired.value) {
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.DEV) {
           console.warn('Session expired due to inactivity')
         }
         logout()
@@ -253,7 +255,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function forceLogout() {
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.warn('Force logout triggered')
     }
     logout()
@@ -282,6 +284,7 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading,
     error,
     authChecked,
+    isInitializing,
     lastActivity,
     sessionTimeout,
 

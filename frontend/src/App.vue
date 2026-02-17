@@ -10,7 +10,7 @@
         <div id="navbarNav" class="collapse navbar-collapse">
           <ul class="navbar-nav me-auto">
             <li class="nav-item">
-              <router-link to="/" class="nav-link" active-class="active">Dashboard</router-link>
+              <router-link to="/dashboard" class="nav-link" active-class="active">Dashboard</router-link>
             </li>
             <li class="nav-item">
               <router-link to="/members" class="nav-link" active-class="active">Members</router-link>
@@ -76,10 +76,12 @@
 
 <script setup>
 import { computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/appStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useRouter } from 'vue-router'
 
+const { t } = useI18n()
 const appStore = useAppStore()
 const authStore = useAuthStore()
 const router = useRouter()
@@ -118,7 +120,7 @@ const handleLogout = async () => {
     await authStore.logout()
     appStore.addNotification({
       type: 'success',
-      title: 'Signed Out',
+      title: t('auth.signOut'),
       message: 'You have been successfully signed out',
       isToast: true
     })
@@ -134,8 +136,7 @@ const handleLogout = async () => {
 }
 
 onMounted(() => {
-  // Stores are already initialized in main.js via initializeStores()
-  // No need to initialize again here
+  authStore.initialize()
 })
 </script>
 

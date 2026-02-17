@@ -7,6 +7,7 @@ import io.github.membertracker.domain.repository.MessageDeliveryRepository;
 import io.github.membertracker.infrastructure.persistence.entity.CommunicationEntity;
 import io.github.membertracker.infrastructure.persistence.entity.MemberEntity;
 import io.github.membertracker.infrastructure.persistence.entity.MessageDeliveryEntity;
+import io.github.membertracker.infrastructure.persistence.repository.MemberJpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;

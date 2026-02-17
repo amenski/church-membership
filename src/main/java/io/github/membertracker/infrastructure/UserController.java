@@ -51,6 +51,8 @@ public class UserController {
             return ResponseEntity.ok(userResponse);
 
         } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("Error in getCurrentUser: " + e.getMessage());
             return ResponseEntity.status(500).body(null);
         }
     }

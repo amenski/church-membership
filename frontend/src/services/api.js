@@ -3,9 +3,9 @@ import { useAuthStore } from '@/stores/index.js'
 
 // Configuration from environment variables
 const API_CONFIG = {
-  baseURL: process.env.VUE_APP_API_BASE_URL || '/api',
-  timeout: parseInt(process.env.VUE_APP_API_TIMEOUT || '30000') || 30000,
-  retryAttempts: parseInt(process.env.VUE_APP_API_RETRY_ATTEMPTS || '3') || 3,
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  timeout: parseInt(import.meta.env.VITE_API_TIMEOUT || '30000') || 30000,
+  retryAttempts: parseInt(import.meta.env.VITE_API_RETRY_ATTEMPTS || '3') || 3,
   retryDelay: 1000 // 1 second
 }
 
@@ -64,7 +64,7 @@ api.interceptors.request.use(
     }
 
     // Log request in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.debug(`API Request: ${config.method?.toUpperCase()} ${config.url}`, config.data)
     }
 
@@ -80,7 +80,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => {
     // Log successful response in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.debug(`API Response: ${response.status} ${response.config.url}`)
     }
 
@@ -346,7 +346,7 @@ const apiService = {
 
   // Authentication API
   async login(credentials) {
-    const response = await api.post('/v1/auth/login', credentials)
+    const response = await api.post('/auth/login', credentials)
 
     // Store authentication timestamp
     if (typeof window !== 'undefined') {
@@ -357,7 +357,7 @@ const apiService = {
   },
 
   async logout() {
-    const response = await api.post('/v1/auth/logout')
+    const response = await api.post('/auth/logout')
     // Clear any stored authentication state
     localStorage.removeItem('user')
     sessionStorage.removeItem('user')
@@ -367,7 +367,7 @@ const apiService = {
 
   async refreshToken() {
     try {
-      const response = await api.post('/v1/auth/refresh')
+      const response = await api.post('/auth/refresh')
       // Update authentication timestamp on refresh
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('auth_timestamp', Date.now().toString())

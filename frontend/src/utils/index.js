@@ -1,15 +1,15 @@
 // Utility functions for the application
+import { format as dateFnsFormat } from 'date-fns'
 
 /**
- * Format a date using moment.js
+ * Format a date using date-fns
  * @param {string|Date} date - The date to format
- * @param {string} format - The format string
+ * @param {string} fmt - The format string (date-fns pattern)
  * @returns {string} Formatted date string
  */
-export const formatDate = (date, format = 'MMM DD, YYYY') => {
+export const formatDate = (date, fmt = 'MMM dd, yyyy') => {
   if (!date) return ''
-  const moment = require('moment')
-  return moment(date).format(format)
+  return dateFnsFormat(new Date(date), fmt)
 }
 
 /**
@@ -45,7 +45,7 @@ export const debounce = (func, wait = 300) => {
  */
 export const showToast = (message, type = 'info', options = {}) => {
   // Fallback logging for legacy code - use appStore.addNotification() instead
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     console.warn('showToast() is deprecated. Use appStore.addNotification() instead.')
   }
   console.log(`[${type.toUpperCase()}] ${message}`)

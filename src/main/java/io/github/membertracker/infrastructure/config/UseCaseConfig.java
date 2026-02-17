@@ -2,6 +2,7 @@ package io.github.membertracker.infrastructure.config;
 
 import io.github.membertracker.domain.policy.DefaultMembershipPolicy;
 import io.github.membertracker.domain.repository.CommunicationRepository;
+import io.github.membertracker.domain.repository.MessageDeliveryRepository;
 import io.github.membertracker.domain.repository.MemberRepository;
 import io.github.membertracker.domain.repository.PaymentRepository;
 import io.github.membertracker.domain.repository.UserRepository;
@@ -16,6 +17,7 @@ import io.github.membertracker.usecase.GetAllMembersUseCase;
 import io.github.membertracker.usecase.GetAllPaymentsUseCase;
 import io.github.membertracker.usecase.GetCommunicationByIdUseCase;
 import io.github.membertracker.usecase.GetCurrentUserUseCase;
+import io.github.membertracker.usecase.GetDeliveriesByCommunicationUseCase;
 import io.github.membertracker.usecase.GetInactiveMembersUseCase;
 import io.github.membertracker.usecase.GetMemberByIdUseCase;
 import io.github.membertracker.usecase.GetMembersWithMissedPaymentsUseCase;
@@ -152,6 +154,13 @@ public class UseCaseConfig {
     @Bean
     public GetCommunicationByIdUseCase getCommunicationByIdUseCase(CommunicationRepository communicationRepository) {
         return new GetCommunicationByIdUseCase(communicationRepository);
+    }
+
+    @Bean
+    public GetDeliveriesByCommunicationUseCase getDeliveriesByCommunicationUseCase(
+            CommunicationRepository communicationRepository,
+            MessageDeliveryRepository messageDeliveryRepository) {
+        return new GetDeliveriesByCommunicationUseCase(communicationRepository, messageDeliveryRepository);
     }
 
     @Bean

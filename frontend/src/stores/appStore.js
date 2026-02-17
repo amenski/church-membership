@@ -22,10 +22,10 @@ export const useAppStore = defineStore('app', () => {
   })
 
   // Getters
-  const appVersion = computed(() => process.env.VUE_APP_APP_VERSION || '1.0.0')
-  const appTitle = computed(() => process.env.VUE_APP_APP_TITLE || 'Member Tracker')
-  const isDevelopment = computed(() => process.env.NODE_ENV === 'development')
-  const isProduction = computed(() => process.env.NODE_ENV === 'production')
+  const appVersion = computed(() => import.meta.env.VITE_APP_VERSION || '1.0.0')
+  const appTitle = computed(() => import.meta.env.VITE_APP_TITLE || 'Member Tracker')
+  const isDevelopment = computed(() => import.meta.env.DEV)
+  const isProduction = computed(() => import.meta.env.PROD)
 
   const loadingProgress = computed(() => {
     if (!isLoading.value) return 0
