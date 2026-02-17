@@ -58,13 +58,13 @@ public class MemberController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('VIEWER')")
     public List<Member> getAllMembers() {
         return getAllMembersUseCase.invoke();
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('VIEWER')")
     public ResponseEntity<Member> getMemberById(@PathVariable @Positive Long id) {
         return getMemberByIdUseCase.invoke(id)
                 .map(ResponseEntity::ok)
@@ -72,25 +72,25 @@ public class MemberController {
     }
 
     @GetMapping("/active")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('VIEWER')")
     public List<Member> getActiveMembers() {
         return getActiveMembersUseCase.invoke();
     }
 
     @GetMapping("/inactive")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('VIEWER')")
     public List<Member> getInactiveMembers() {
         return getInactiveMembersUseCase.invoke();
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public Member createMember(@Valid @RequestBody Member member) {
         return saveMemberUseCase.invoke(member);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Member> updateMember(@PathVariable @Positive Long id, @Valid @RequestBody Member member) {
         return getMemberByIdUseCase.invoke(id)
                 .map(existingMember -> {
@@ -101,7 +101,7 @@ public class MemberController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteMember(@PathVariable @Positive Long id) {
         if (getMemberByIdUseCase.invoke(id).isPresent()) {
             deleteMemberUseCase.invoke(id);
@@ -112,13 +112,13 @@ public class MemberController {
     }
 
     @GetMapping("/overdue/{months}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('VIEWER')")
     public List<Member> getMembersWithOverduePayments(@PathVariable @Min(1) int months) {
         return getMembersWithMissedPaymentsUseCase.invoke(months);
     }
 
     @GetMapping("/export")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('VIEWER')")
     public ResponseEntity<StreamingResponseBody> exportMembers() {
         List<Member> members = getAllMembersUseCase.invoke();
         
