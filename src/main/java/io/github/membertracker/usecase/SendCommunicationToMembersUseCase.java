@@ -25,7 +25,7 @@ public class SendCommunicationToMembersUseCase {
                                             EmailService emailService) {
         this.communicationRepository = communicationRepository;
         this.emailService = emailService;
-        this.executorService = Executors.newVirtualThreadPerTaskExecutor(); // Java 21+
+        this.executorService = Executors.newCachedThreadPool(); // Java 17 compatible
     }
 
     /**

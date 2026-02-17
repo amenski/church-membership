@@ -7,6 +7,7 @@ import io.github.membertracker.infrastructure.dto.UserResponseDto;
 import io.github.membertracker.usecase.ChangePasswordUseCase;
 import io.github.membertracker.usecase.GetCurrentUserUseCase;
 import io.github.membertracker.usecase.UpdateUserProfileUseCase;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -55,7 +56,7 @@ public class UserController {
     }
 
     @PutMapping("/me/profile")
-    public ResponseEntity<UserResponseDto> updateProfile(@RequestBody UpdateUserProfileRequest request) {
+    public ResponseEntity<UserResponseDto> updateProfile(@Valid @RequestBody UpdateUserProfileRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated() ||
@@ -94,7 +95,7 @@ public class UserController {
     }
 
     @PutMapping("/me/password")
-    public ResponseEntity<Map<String, String>> changePassword(@RequestBody ChangePasswordRequest request) {
+    public ResponseEntity<Map<String, String>> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated() ||

@@ -1,7 +1,16 @@
 package io.github.membertracker.infrastructure.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 public class ChangePasswordRequest {
+
+    @NotBlank(message = "Current password is required")
+    @Size(min = 6, message = "Current password must be at least 6 characters")
     private String currentPassword;
+
+    @NotBlank(message = "New password is required")
+    @Size(min = 6, max = 100, message = "New password must be between 6 and 100 characters")
     private String newPassword;
 
     public ChangePasswordRequest() {}

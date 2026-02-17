@@ -3,11 +3,14 @@ package io.github.membertracker.infrastructure;
 import io.github.membertracker.domain.model.Payment;
 import io.github.membertracker.usecase.*;
 import io.github.membertracker.utils.CsvUtils;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,6 +27,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/payments")
+@Validated
 public class PaymentController {
 
     private final GetAllPaymentsUseCase getAllPaymentsUseCase;
@@ -53,7 +57,7 @@ public class PaymentController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<Payment> getPaymentById(@PathVariable Long id) {
+    public ResponseEntity<Payment> getPaymentById(@PathVariable @Positive Long id) {
         return getPaymentByIdUseCase.invoke(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -61,7 +65,7 @@ public class PaymentController {
 
     @GetMapping("/member/{memberId}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<List<Payment>> getPaymentsByMember(@PathVariable Long memberId) {
+    public ResponseEntity<List<Payment>> getPaymentsByMember(@PathVariable @Positive Long memberId) {
         return getMemberByIdUseCase.invoke(memberId)
                 .map(member -> ResponseEntity.ok(getPaymentsByMemberUseCase.invoke(member)))
                 .orElse(ResponseEntity.notFound().build());
@@ -69,13 +73,13 @@ public class PaymentController {
 
     @PostMapping
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<Payment> recordPayment(@RequestBody Payment payment) {
+    public ResponseEntity<Payment> recordPayment(@Valid @RequestBody Payment payment) {
         return ResponseEntity.ok(recordPaymentUseCase.invoke(payment));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<Void> deletePayment(@PathVariable Long id) {
+    public ResponseEntity<Void> deletePayment(@PathVariable @Positive Long id) {
         if (getPaymentByIdUseCase.invoke(id).isPresent()) {
             // In a real application, you might want to revert the member's last payment date
             return ResponseEntity.ok().build();

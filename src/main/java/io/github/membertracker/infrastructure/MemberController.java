@@ -3,10 +3,14 @@ package io.github.membertracker.infrastructure;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.usecase.*;
 import io.github.membertracker.utils.CsvUtils;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,6 +29,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/members")
+@Validated
 public class MemberController {
 
     private final GetAllMembersUseCase getAllMembersUseCase;
@@ -60,7 +65,7 @@ public class MemberController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<Member> getMemberById(@PathVariable Long id) {
+    public ResponseEntity<Member> getMemberById(@PathVariable @Positive Long id) {
         return getMemberByIdUseCase.invoke(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -80,13 +85,13 @@ public class MemberController {
 
     @PostMapping
     @PreAuthorize("hasRole('USER')")
-    public Member createMember(@RequestBody Member member) {
+    public Member createMember(@Valid @RequestBody Member member) {
         return saveMemberUseCase.invoke(member);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<Member> updateMember(@PathVariable Long id, @RequestBody Member member) {
+    public ResponseEntity<Member> updateMember(@PathVariable @Positive Long id, @Valid @RequestBody Member member) {
         return getMemberByIdUseCase.invoke(id)
                 .map(existingMember -> {
                     member.setId(id);
@@ -97,7 +102,7 @@ public class MemberController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<Void> deleteMember(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteMember(@PathVariable @Positive Long id) {
         if (getMemberByIdUseCase.invoke(id).isPresent()) {
             deleteMemberUseCase.invoke(id);
             return ResponseEntity.ok().build();
@@ -108,7 +113,7 @@ public class MemberController {
 
     @GetMapping("/overdue/{months}")
     @PreAuthorize("hasRole('USER')")
-    public List<Member> getMembersWithOverduePayments(@PathVariable int months) {
+    public List<Member> getMembersWithOverduePayments(@PathVariable @Min(1) int months) {
         return getMembersWithMissedPaymentsUseCase.invoke(months);
     }
 

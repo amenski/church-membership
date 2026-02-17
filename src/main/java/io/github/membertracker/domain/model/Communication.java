@@ -8,6 +8,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -17,7 +19,12 @@ public class Communication {
 
     private Long id;
 
+    @NotBlank(message = "Title is required")
+    @Size(max = 200, message = "Title must not exceed 200 characters")
     private String title;
+
+    @NotBlank(message = "Message content is required")
+    @Size(max = 5000, message = "Message content must not exceed 5000 characters")
     private String messageContent;
     private LocalDateTime createdDate;
     private LocalDateTime sentDate;

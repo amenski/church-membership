@@ -29,7 +29,7 @@ public class SendCommunicationToAllMembersUseCase {
         this.communicationRepository = communicationRepository;
         this.memberRepository = memberRepository;
         this.emailService = emailService;
-        this.executorService = Executors.newVirtualThreadPerTaskExecutor(); // Java 21+
+        this.executorService = Executors.newCachedThreadPool(); // Java 17 compatible
     }
 
     /**

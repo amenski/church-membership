@@ -17,14 +17,14 @@ import java.util.stream.Collectors;
 public class MessageDeliveryDbRepository implements MessageDeliveryRepository {
 
     private final MessageDeliveryJpaRepository messageDeliveryJpaRepository;
-    private final MemberDbRepository memberDbRepository;
+    private final MemberJpaRepository memberJpaRepository;
     private final CommunicationJpaRepository communicationJpaRepository;
 
     public MessageDeliveryDbRepository(MessageDeliveryJpaRepository messageDeliveryJpaRepository,
-                                       MemberDbRepository memberDbRepository,
+                                       MemberJpaRepository memberJpaRepository,
                                        CommunicationJpaRepository communicationJpaRepository) {
         this.messageDeliveryJpaRepository = messageDeliveryJpaRepository;
-        this.memberDbRepository = memberDbRepository;
+        this.memberJpaRepository = memberJpaRepository;
         this.communicationJpaRepository = communicationJpaRepository;
     }
 
@@ -92,7 +92,7 @@ public class MessageDeliveryDbRepository implements MessageDeliveryRepository {
 
         // Map recipient
         if (delivery.getRecipient() != null && delivery.getRecipient().getId() != null) {
-            memberDbRepository.findById(delivery.getRecipient().getId())
+            memberJpaRepository.findById(delivery.getRecipient().getId())
                     .ifPresent(entity::setRecipient);
         }
 
