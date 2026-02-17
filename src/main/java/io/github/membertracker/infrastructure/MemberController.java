@@ -58,13 +58,13 @@ public class MemberController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('VIEWER')")
+    @PreAuthorize("hasRole('VOLUNTEER')")
     public List<Member> getAllMembers() {
         return getAllMembersUseCase.invoke();
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('VIEWER')")
+    @PreAuthorize("hasRole('VOLUNTEER')")
     public ResponseEntity<Member> getMemberById(@PathVariable @Positive Long id) {
         return getMemberByIdUseCase.invoke(id)
                 .map(ResponseEntity::ok)
@@ -72,25 +72,25 @@ public class MemberController {
     }
 
     @GetMapping("/active")
-    @PreAuthorize("hasRole('VIEWER')")
+    @PreAuthorize("hasRole('VOLUNTEER')")
     public List<Member> getActiveMembers() {
         return getActiveMembersUseCase.invoke();
     }
 
     @GetMapping("/inactive")
-    @PreAuthorize("hasRole('VIEWER')")
+    @PreAuthorize("hasRole('VOLUNTEER')")
     public List<Member> getInactiveMembers() {
         return getInactiveMembersUseCase.invoke();
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('STAFF')")
     public Member createMember(@Valid @RequestBody Member member) {
         return saveMemberUseCase.invoke(member);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('STAFF')")
     public ResponseEntity<Member> updateMember(@PathVariable @Positive Long id, @Valid @RequestBody Member member) {
         return getMemberByIdUseCase.invoke(id)
                 .map(existingMember -> {
@@ -112,13 +112,13 @@ public class MemberController {
     }
 
     @GetMapping("/overdue/{months}")
-    @PreAuthorize("hasRole('VIEWER')")
+    @PreAuthorize("hasRole('VOLUNTEER')")
     public List<Member> getMembersWithOverduePayments(@PathVariable @Min(1) int months) {
         return getMembersWithMissedPaymentsUseCase.invoke(months);
     }
 
     @GetMapping("/export")
-    @PreAuthorize("hasRole('VIEWER')")
+    @PreAuthorize("hasRole('VOLUNTEER')")
     public ResponseEntity<StreamingResponseBody> exportMembers() {
         List<Member> members = getAllMembersUseCase.invoke();
         

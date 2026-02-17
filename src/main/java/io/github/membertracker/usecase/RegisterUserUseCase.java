@@ -22,11 +22,11 @@ public class RegisterUserUseCase {
     }
 
     public User invoke(String email, String password) {
-        return invoke(email, password, UserRole.USER, null, null);
+        return invoke(email, password, UserRole.MEMBER, null, null);
     }
 
     public User invoke(String email, String password, String firstName, String lastName) {
-        return invoke(email, password, UserRole.USER, firstName, lastName);
+        return invoke(email, password, UserRole.MEMBER, firstName, lastName);
     }
 
     public User invoke(String email, String password, UserRole role, String firstName, String lastName) {
@@ -34,7 +34,7 @@ public class RegisterUserUseCase {
 
         User.validatePasswordStrength(password);
         Email emailValue = Email.of(email);
-        UserRole userRole = role != null ? role : UserRole.USER;
+        UserRole userRole = role != null ? role : UserRole.MEMBER;
 
         User user = new User(emailValue, passwordEncoder.encode(password), userRole);
         if (firstName != null && !firstName.trim().isEmpty()) {

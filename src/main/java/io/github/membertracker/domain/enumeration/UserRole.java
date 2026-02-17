@@ -12,11 +12,10 @@ import java.util.stream.Collectors;
  * Provides type-safe role management and validation.
  */
 public enum UserRole {
-    USER("USER", "User", "Standard user with basic permissions"),
-    ADMIN("ADMIN", "Administrator", "Full system access with administrative privileges"),
-    MANAGER("MANAGER", "Manager", "Can manage members and communications"),
-    TREASURER("TREASURER", "Treasurer", "Can manage payments and view financial data"),
-    VIEWER("VIEWER", "Viewer", "Read-only access to view members and data");
+    MEMBER("MEMBER", "Member", "Basic authenticated member with limited access"),
+    VOLUNTEER("VOLUNTEER", "Volunteer", "Volunteer with limited operational access"),
+    STAFF("STAFF", "Staff", "Staff member who can manage members and communications"),
+    ADMIN("ADMIN", "Administrator", "Full system access with administrative privileges");
 
     private final String code;
     private final String displayName;

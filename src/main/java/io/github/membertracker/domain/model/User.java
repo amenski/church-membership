@@ -42,7 +42,7 @@ public class User implements UserDetails {
     }
 
     public User(Email email, String password) {
-        this(email, password, UserRole.USER);
+        this(email, password, UserRole.MEMBER);
     }
 
     public User(Email email, String password, UserRole role) {
@@ -259,7 +259,7 @@ public class User implements UserDetails {
         }
         
         // Validate role hierarchy
-        if (newRole == UserRole.USER && this.role != null) {
+        if (newRole == UserRole.MEMBER && this.role != null) {
             throw UserDomainException.invalidUserData("role", "Cannot demote user to USER role");
         }
         
@@ -278,7 +278,7 @@ public class User implements UserDetails {
      * Checks if the user has manager or admin privileges.
      */
     public boolean isManagerOrAdmin() {
-        return this.role == UserRole.MANAGER || this.role == UserRole.ADMIN;
+        return this.role == UserRole.STAFF || this.role == UserRole.ADMIN;
     }
 
     /**
@@ -314,7 +314,7 @@ public class User implements UserDetails {
     // UserDetails implementation
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role != null ? role.toAuthority() : UserRole.USER.toAuthority()));
+        return List.of(new SimpleGrantedAuthority(role != null ? role.toAuthority() : UserRole.MEMBER.toAuthority()));
     }
 
     @Override

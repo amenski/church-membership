@@ -20,7 +20,7 @@ public class UserEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private UserRole role = UserRole.USER;
+    private UserRole role = UserRole.MEMBER;
 
     @Column(nullable = false)
     private boolean enabled = true;
@@ -59,7 +59,7 @@ public class UserEntity {
     }
 
     public UserEntity(String email, String password) {
-        this(email, password, UserRole.USER);
+        this(email, password, UserRole.MEMBER);
     }
 
     public UserEntity(String email, String password, UserRole role) {
