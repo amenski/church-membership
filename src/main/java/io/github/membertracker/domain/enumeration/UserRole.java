@@ -14,7 +14,9 @@ import java.util.stream.Collectors;
 public enum UserRole {
     USER("USER", "User", "Standard user with basic permissions"),
     ADMIN("ADMIN", "Administrator", "Full system access with administrative privileges"),
-    MANAGER("MANAGER", "Manager", "Can manage members and communications");
+    MANAGER("MANAGER", "Manager", "Can manage members and communications"),
+    TREASURER("TREASURER", "Treasurer", "Can manage payments and view financial data"),
+    VIEWER("VIEWER", "Viewer", "Read-only access to view members and data");
 
     private final String code;
     private final String displayName;
