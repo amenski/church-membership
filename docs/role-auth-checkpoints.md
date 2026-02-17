@@ -4,20 +4,20 @@
 
 ### Phase 1: Backend Role System (C1-C3)
 
-- [ ] **C1: Add TREASURER and VIEWER roles to UserRole enum**
+- [x] **C1: Add TREASURER and VIEWER roles to UserRole enum**
   - Location: `src/main/java/io/github/membertracker/domain/enumeration/UserRole.java`
   - Add VIEWER, TREASURER roles with permission levels
-  - Commit: ___
+  - Commit: 4d7c1d8 ✅
 
-- [ ] **C2: Enable method security in SecurityConfig**
+- [x] **C2: Enable method security in SecurityConfig**
   - Location: `src/main/java/io/github/membertracker/infrastructure/config/SecurityConfig.java`
   - Add @EnableMethodSecurity
-  - Commit: ___
+  - Commit: 7287f42 ✅
 
-- [ ] **C3: Add @PreAuthorize to MemberController**
+- [x] **C3: Add @PreAuthorize to MemberController**
   - Location: `src/main/java/io/github/membertracker/infrastructure/MemberController.java`
   - GET: VIEWER+, POST/PUT/DELETE: ADMIN only
-  - Commit: ___
+  - Commit: 70c16f0 ✅
 
 ### Phase 2: Controllers (C4-C7)
 
