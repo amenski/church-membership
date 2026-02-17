@@ -23,17 +23,17 @@
 
 - [ ] **C4: Add @PreAuthorize to PaymentController**
   - Location: `src/main/java/io/github/membertracker/infrastructure/PaymentController.java`
-  - GET: VIEWER+, POST: TREASURER+, DELETE: ADMIN only
+  - GET: VOLUNTEER+, POST: STAFF+, DELETE: ADMIN only
   - Commit: ___
 
 - [ ] **C5: Add @PreAuthorize to CommunicationController**
   - Location: `src/main/java/io/github/membertracker/infrastructure/CommunicationController.java`
-  - GET: VIEWER+, POST: ADMIN only
+  - GET: VOLUNTEER+, POST: ADMIN only
   - Commit: ___
 
 - [ ] **C6: Add @PreAuthorize to DashboardController**
   - Location: `src/main/java/io/github/membertracker/infrastructure/DashboardController.java`
-  - All endpoints: VIEWER+
+  - All endpoints: VOLUNTEER+
   - Commit: ___
 
 - [ ] **C7: Add @PreAuthorize to UserController**
@@ -66,20 +66,20 @@
 
 | Endpoint | Required Role |
 |----------|---------------|
-| GET /api/members | VIEWER+ |
-| POST/PUT/DELETE /api/members | ADMIN only |
-| GET /api/payments | VIEWER+ |
-| POST /api/payments | TREASURER+ |
+| GET /api/members | VOLUNTEER+ |
+| POST/PUT /api/members | STAFF+ |
+| DELETE /api/members | ADMIN only |
+| GET /api/payments | VOLUNTEER+ |
+| POST /api/payments | STAFF+ |
 | DELETE /api/payments | ADMIN only |
-| GET /api/communications | VIEWER+ |
+| GET /api/communications | VOLUNTEER+ |
 | POST /api/communications | ADMIN only |
-| GET /api/dashboard/* | VIEWER+ |
-| GET /api/users/me | USER (own data) |
-| PUT /api/users/me/* | USER (own data) |
+| GET /api/dashboard/* | VOLUNTEER+ |
+| GET /api/users/me | MEMBER (own data) |
+| PUT /api/users/me/* | MEMBER (own data) |
 
 ## Role Hierarchy
 - ADMIN: 4 (full access)
-- TREASURER: 2 (payments)
-- MANAGER: 3 (members, communications)
-- VIEWER: 1 (read-only)
-- USER: 1 (default)
+- STAFF: 3 (manage members, communications)
+- VOLUNTEER: 2 (limited operational access)
+- MEMBER: 1 (basic authenticated access)
