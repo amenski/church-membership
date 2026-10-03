@@ -42,6 +42,7 @@ The signed-in user's own profile and password, for any authenticated role. Base 
 | 400 | `@Valid` failure -> `GlobalExceptionHandler` `MethodArgumentNotValidException` (`infrastructure/handler/GlobalExceptionHandler.java:53`), RFC 7807 with field messages |
 | 400 | `updateProfile`: any exception from the use case (`UserController.java:99-101`), empty body |
 | 400 | `changePassword`: any exception, wrong current password and weak new password included (`:129-133`), body `{"error": "Failed to change password"}` (not ProblemDetail) |
+| 401 | the `sid` token is valid but its user was deleted, disabled or locked: the filter treats the request as signed out and the entry point answers (`infrastructure/filter/JwtAuthenticationFilter.java:62-66`) |
 | 401 | no usable authentication (`:44-47`, `:69-72`, `:109-112`), empty body; normally the security filter answers first |
 | 500 | `getCurrentUser`: any exception, e.g. user not found (`:57-61`), empty body |
 

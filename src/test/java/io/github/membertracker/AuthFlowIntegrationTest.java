@@ -246,4 +246,26 @@ class AuthFlowIntegrationTest {
         mockMvc.perform(get("/api/users/me").cookie(new Cookie("sid", access)))
             .andExpect(status().isOk());
     }
+
+    @Test
+    void sessionOfADeletedUserAnswers401AndSignInStillWorks() throws Exception {
+        String otherEmail = "other-flow@example.com";
+        userRepository.save(new User(Email.of(otherEmail), passwordEncoder.encode(PASSWORD), UserRole.MEMBER));
+        try {
+            String access = valueOf(headerStartingWith(login().getHeaders(HttpHeaders.SET_COOKIE), "sid"));
+            userJpaRepository.findByEmail(EMAIL).ifPresent(userJpaRepository::delete);
+
+            mockMvc.perform(get("/api/users/me").cookie(new Cookie("sid", access)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.detail").value("Authentication required"));
+
+            mockMvc.perform(withXsrf(post("/api/auth/login")).cookie(new Cookie("sid", access))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"email\":\"" + otherEmail + "\",\"password\":\"" + PASSWORD + "\"}"))
+                .andExpect(status().isOk());
+        } finally {
+            userJpaRepository.findByEmail(otherEmail).ifPresent(userJpaRepository::delete);
+        }
+    }
 }

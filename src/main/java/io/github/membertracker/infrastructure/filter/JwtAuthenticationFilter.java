@@ -7,6 +7,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,6 +21,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     private UserDetailsService userDetailsService;
     private AuthProperties authProperties;
@@ -44,19 +48,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String email = JwtUtils.extractUsername(jwt, authProperties.getJwtSecret());
             
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-                
-                if (JwtUtils.validateToken(jwt, userDetails, authProperties.getJwtSecret())) {
-                    UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContext context = SecurityContextHolder.createEmptyContext();
-                    context.setAuthentication(authentication);
-                    SecurityContextHolder.setContext(context);
+                try {
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+
+                    if (JwtUtils.validateToken(jwt, userDetails, authProperties.getJwtSecret())) {
+                        UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContext context = SecurityContextHolder.createEmptyContext();
+                        context.setAuthentication(authentication);
+                        SecurityContextHolder.setContext(context);
+                    }
+                } catch (RuntimeException e) {
+                    // A user who was deleted, disabled or locked after the token was issued:
+                    // treat the request as signed out so the entry point answers 401 and sign-in still works.
+                    SecurityContextHolder.clearContext();
+                    log.debug("Rejecting token: {}", e.getMessage());
                 }
             }
         }
-        
+
         filterChain.doFilter(request, response);
     }
 

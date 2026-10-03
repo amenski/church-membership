@@ -42,6 +42,8 @@ Every token carries a `typ` claim: `access` or `refresh` (`JwtUtils.TOKEN_TYPE_A
 
 `JwtAuthenticationFilter` reads the `sid` cookie first, then falls back to the `Authorization: Bearer` header.
 
+A valid access token for a user who no longer exists, or who is disabled, locked or has expired credentials, is treated as signed out: the filter logs it at DEBUG, leaves the request unauthenticated, and protected paths answer 401. Sign-in, refresh and logout (public paths) still work with that stale cookie.
+
 ### Configuration
 
 In `src/main/resources/application.properties`:

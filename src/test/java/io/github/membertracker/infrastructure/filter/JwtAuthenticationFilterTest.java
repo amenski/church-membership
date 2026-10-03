@@ -1,5 +1,6 @@
 package io.github.membertracker.infrastructure.filter;
 
+import io.github.membertracker.domain.exception.UserDomainException;
 import io.github.membertracker.infrastructure.config.AuthProperties;
 import io.github.membertracker.utils.JwtUtils;
 import jakarta.servlet.http.Cookie;
@@ -94,5 +95,20 @@ class JwtAuthenticationFilterTest {
         run(request);
 
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
+    void userThatCannotBeLoadedLeavesTheRequestUnauthenticatedAndTheChainRunning() throws Exception {
+        filter.setUserDetailsService(username -> {
+            throw UserDomainException.userNotFound(username);
+        });
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setCookies(new Cookie("sid", access()));
+        MockFilterChain chain = new MockFilterChain();
+
+        filter.doFilter(request, new MockHttpServletResponse(), chain);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        assertThat(chain.getRequest()).isNotNull();
     }
 }

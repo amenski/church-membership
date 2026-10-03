@@ -45,6 +45,10 @@ The auth endpoints have no `@PreAuthorize`; `/api/auth/**` is public (`infrastru
 4. Unknown URLs redirect to `/` (`router/index.js:47-50`).
 5. An idle-expired user is logged out and sent to `/login?session=expired` (`router/index.js:74-78`).
 
+### A session for an account that no longer works
+1. If a user is deleted, disabled or locked while their `sid` cookie is still valid, the next request is treated as signed out: protected endpoints answer 401 (the browser then tries `/api/auth/refresh`, which also fails, and sends the user to `/login?session=expired`).
+2. The stale cookie does not block sign-in: `/api/auth/login`, `/refresh` and `/logout` work normally with it (`src/main/java/io/github/membertracker/infrastructure/filter/JwtAuthenticationFilter.java:62-66`). Before this fix those calls returned 500 for up to 30 minutes.
+
 ### Account lockout
 1. Each wrong password for an existing email adds one to the failed-attempt counter and saves it (`AuthenticateUserUseCase.java:28-32`); an unknown email has no counter to increase.
 2. The fifth failure locks the account (`src/main/java/io/github/membertracker/domain/model/User.java:214-220`).

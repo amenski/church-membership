@@ -26,7 +26,7 @@ All under `/api/auth`. No `@PreAuthorize`; `/api/auth/**` is `permitAll` (`infra
 - `utils/CookieUtils.java:16,28,40,47`: builds access, refresh and clearing cookies from `AuthProperties`.
 - `utils/JwtUtils.java:56,62,98`: HS256 token generation and typed validation. Tokens carry subject, timestamps and a `typ` claim (`access` / `refresh`).
 - `infrastructure/config/AuthProperties.java:8`: `auth.*` (TTLs `:11-12`, cookie names/flags `:15-21`, secret `:13`).
-- `infrastructure/filter/JwtAuthenticationFilter.java:39`: accepts only `access` tokens (`:43`) from the `sid` cookie, then the Bearer header (`:63-72`), on all other endpoints.
+- `infrastructure/filter/JwtAuthenticationFilter.java:43`: accepts only `access` tokens (`:47`) from the `sid` cookie, then the Bearer header (`:74-82`), on every request, including the public `/api/auth/**` paths. If the token's user cannot be loaded, the request continues unauthenticated (`:62-66`).
 - Models: `domain/model/User` (returned by the use case; only email + role leave the controller).
 
 ## Errors
@@ -47,6 +47,7 @@ Login failures are 400, not 401, and refresh failures are 400. Unknown email and
 
 ## Gotchas
 - Tokens issued before the `typ` claim existed are rejected by both the filter and `/refresh`, so everyone signed in again once after that deploy.
+- A still-valid `sid` for a user who was deleted, disabled, locked or whose credentials expired is treated as signed out: the filter drops it (`JwtAuthenticationFilter.java:62-66`), protected paths answer 401, and `/login`, `/refresh` and `/logout` work normally. (Before, the load failure surfaced as a 500, even on `/login`, for up to 30 minutes.)
 - A request with a missing, expired or wrong-type access token gets a 401 problem from the entry point bean (`SecurityConfig.java:83-92`); the frontend answers that 401 with one `/refresh` call and a retry. 403 is only for signed-in users lacking the role.
 - Disabled, locked and expired-credential messages are only returned after the password matches, so a locked account's message appears only after the correct password (`AuthenticateUserUseCase.java:34-44`).
 - The lockout counter only counts failures for existing accounts (by design: there is nothing to count for an unknown email).
