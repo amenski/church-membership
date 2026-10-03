@@ -10,40 +10,7 @@ public class MailProperties {
     private boolean enabled = true;
     private String from;
     private Smtp smtp = new Smtp();
-    private Templates templates = new Templates();
-    private ChurchInfo church = new ChurchInfo();
     private Retry retry = new Retry();
-
-    public static class ChurchInfo {
-        private String name = "Felege Selam Church";
-        private String phone = "(555) 123-4567";
-        private String email = "office@church.example.com";
-
-        // Getters and Setters
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public String getPhone() {
-            return phone;
-        }
-
-        public void setPhone(String phone) {
-            this.phone = phone;
-        }
-
-        public String getEmail() {
-            return email;
-        }
-
-        public void setEmail(String email) {
-            this.email = email;
-        }
-    }
 
     public static class Smtp {
         private String host = "smtp.gmail.com";
@@ -139,37 +106,6 @@ public class MailProperties {
         }
     }
 
-    public static class Templates {
-        private String paymentReminder = "payment-reminder";
-        private String welcome = "welcome";
-        private String announcement = "announcement";
-
-        // Getters and Setters
-        public String getPaymentReminder() {
-            return paymentReminder;
-        }
-
-        public void setPaymentReminder(String paymentReminder) {
-            this.paymentReminder = paymentReminder;
-        }
-
-        public String getWelcome() {
-            return welcome;
-        }
-
-        public void setWelcome(String welcome) {
-            this.welcome = welcome;
-        }
-
-        public String getAnnouncement() {
-            return announcement;
-        }
-
-        public void setAnnouncement(String announcement) {
-            this.announcement = announcement;
-        }
-    }
-
     public static class Retry {
         private int maxAttempts = 3;
         private long initialDelayMs = 1000;
@@ -233,22 +169,6 @@ public class MailProperties {
 
     public void setSmtp(Smtp smtp) {
         this.smtp = smtp;
-    }
-
-    public Templates getTemplates() {
-        return templates;
-    }
-
-    public void setTemplates(Templates templates) {
-        this.templates = templates;
-    }
-
-    public ChurchInfo getChurch() {
-        return church;
-    }
-
-    public void setChurch(ChurchInfo church) {
-        this.church = church;
     }
 
     public Retry getRetry() {

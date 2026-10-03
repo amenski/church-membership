@@ -15,7 +15,7 @@ How MemberTracker sends email to members, and how to configure and test it.
 
 Each send runs on a background thread from `Executors.newCachedThreadPool()`, with a 100 ms pause between emails to stay under SMTP rate limits. A send still in progress is lost if the app restarts.
 
-`EmailService` also has HTML template methods (`sendPaymentReminder`, `sendWelcomeEmail`, `sendAnnouncement`), which use the Thymeleaf templates in `src/main/resources/templates/emails/`. **Nothing calls them yet.**
+`EmailService` sends plain text only. HTML email templates and their Thymeleaf methods existed but nothing called them; they were removed in `chore: remove the unused mail templates and email methods` and can be recovered from git history.
 
 ### Delivery tracking
 
@@ -52,11 +52,6 @@ app.mail.smtp.debug=${MAIL_DEBUG:false}
 app.mail.retry.max-attempts=${MAIL_RETRY_MAX_ATTEMPTS:3}
 app.mail.retry.initial-delay-ms=${MAIL_RETRY_INITIAL_DELAY_MS:1000}
 app.mail.retry.multiplier=${MAIL_RETRY_MULTIPLIER:2.0}
-
-# Shown in emails
-app.church.name=${CHURCH_NAME:Felege Selam Church}
-app.church.contact.phone=${CHURCH_PHONE:...}
-app.church.contact.email=${CHURCH_EMAIL:office@church.example.com}
 ```
 
 For Gmail with 2-step verification, use an app password. Never commit real SMTP credentials.
@@ -92,12 +87,6 @@ curl -b jar.txt -X POST http://localhost:8080/api/communications/send-to-all \
 
 This needs the STAFF role or higher.
 
-## Adding a template
-
-1. Add `src/main/resources/templates/emails/<name>.html`. Thymeleaf HTML-escapes the variables you pass in.
-2. Add the template name to `MailProperties.Templates` and `application.properties`.
-3. Add a method to `EmailService` that calls `sendTemplatedEmail(...)`.
-
 ## Troubleshooting
 
 Turn on debug logging:
@@ -112,7 +101,6 @@ logging.level.org.springframework.mail=DEBUG
 | Authentication failed | SMTP username and password; for Gmail, an app password |
 | Connection refused | Host and port. Test with `nc -vz <host> <port>`. |
 | Nothing sent | `app.mail.enabled=true`; look for errors from `EmailService` in the log |
-| Template not found | The file is in `templates/emails/` and its name matches `MailProperties` |
 
 ## Known gaps
 

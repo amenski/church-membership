@@ -6,7 +6,7 @@ How the code is organised, where new logic belongs, and the design decisions mad
 
 ## Stack
 
-- **Backend:** Java 17, Spring Boot 3.4.5, Spring Security, Spring Data JPA, Liquibase, MySQL, Thymeleaf (email templates only)
+- **Backend:** Java 17, Spring Boot 3.4.5, Spring Security, Spring Data JPA, Liquibase, MySQL
 - **Frontend:** Vue 3, Vite 5, Vue Router 4, Pinia, Axios, Bootstrap 5, date-fns, vue-i18n
 - **Build:** Gradle. `bootJar` packages the built frontend into the backend JAR.
 

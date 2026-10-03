@@ -51,7 +51,6 @@ A valid access token for a user who no longer exists, or who is disabled, locked
 In `src/main/resources/application.properties`:
 
 ```properties
-auth.cookies.enabled=true
 auth.cookies.access-name=sid
 auth.cookies.refresh-name=sid_refresh
 auth.cookies.secure=${COOKIE_SECURE:true}       # true by default; the dev profile sets false for local http

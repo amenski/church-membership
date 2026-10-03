@@ -19,7 +19,6 @@ public class AuthProperties {
     private String jwtSecret;
 
     public static class Cookies {
-        private boolean enabled = true;
         private String accessName = "sid";
         private String refreshName = "sid_refresh";
         private boolean secure = true;
@@ -27,14 +26,6 @@ public class AuthProperties {
         private String domain = "";
 
         // Getters and Setters
-        public boolean isEnabled() {
-            return enabled;
-        }
-
-        public void setEnabled(boolean enabled) {
-            this.enabled = enabled;
-        }
-
         public String getAccessName() {
             return accessName;
         }
