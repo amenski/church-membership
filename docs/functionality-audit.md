@@ -103,7 +103,8 @@ The refresh cookie's path is `/v1/auth`, but the endpoint is `/api/auth/refresh`
 
 **C6. Login tells an attacker which emails exist**
 The raw domain message ("User with email '…' not found" vs "Invalid password provided") is returned to the client.
-`AuthController.java:79-80`
+`AuthController.java:80-81`
+> **Status (3 Oct 2026):** fixed: one message for unknown email and wrong password, equalised timing, only domain exceptions are surfaced.
 
 **C7. Deleting a payment reports success and deletes nothing**
 The handler checks that the payment exists and returns 200 without deleting it.

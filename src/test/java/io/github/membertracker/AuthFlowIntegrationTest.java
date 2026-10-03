@@ -17,6 +17,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.jayway.jsonpath.JsonPath;
 import jakarta.servlet.http.Cookie;
 import java.util.List;
 
@@ -117,5 +118,22 @@ class AuthFlowIntegrationTest {
         assertThat(headerStartingWith(cleared, "sid")).contains("Max-Age=0");
         String clearedRefresh = headerStartingWith(cleared, "sid_refresh");
         assertThat(clearedRefresh).contains("Max-Age=0").contains("Path=/api/auth");
+    }
+
+    @Test
+    void unknownEmailAndWrongPasswordGiveTheSameError() throws Exception {
+        String unknown = mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"nobody@example.com\",\"password\":\"" + PASSWORD + "\"}"))
+            .andExpect(status().isBadRequest())
+            .andReturn().getResponse().getContentAsString();
+        String wrong = mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"" + EMAIL + "\",\"password\":\"Wrong-pass1!\"}"))
+            .andExpect(status().isBadRequest())
+            .andReturn().getResponse().getContentAsString();
+
+        String unknownDetail = JsonPath.read(unknown, "$.detail");
+        assertThat(unknownDetail).isEqualTo("Invalid email or password").isEqualTo(JsonPath.<String>read(wrong, "$.detail"));
     }
 }

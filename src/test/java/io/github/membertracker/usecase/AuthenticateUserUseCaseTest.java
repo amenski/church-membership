@@ -14,9 +14,11 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -59,7 +61,7 @@ class AuthenticateUserUseCaseTest {
 
     @Test
     void wrongPasswordIncrementsCounterSavesAndThrows() {
-        expectCode(() -> useCase.invoke(EMAIL, "wrong"), UserDomainException.INVALID_PASSWORD);
+        expectCode(() -> useCase.invoke(EMAIL, "wrong"), UserDomainException.INVALID_CREDENTIALS);
 
         assertThat(user.getFailedLoginAttempts()).isEqualTo(1);
         verify(userRepository).save(user);
@@ -69,7 +71,7 @@ class AuthenticateUserUseCaseTest {
     void fifthWrongPasswordLocksTheAccount() {
         user.setFailedLoginAttempts(4);
 
-        expectCode(() -> useCase.invoke(EMAIL, "wrong"), UserDomainException.INVALID_PASSWORD);
+        expectCode(() -> useCase.invoke(EMAIL, "wrong"), UserDomainException.INVALID_CREDENTIALS);
 
         assertThat(user.getFailedLoginAttempts()).isEqualTo(5);
         assertThat(user.isAccountLocked()).isTrue();
@@ -79,7 +81,7 @@ class AuthenticateUserUseCaseTest {
     @Test
     void fourWrongPasswordsDoNotLockTheAccount() {
         for (int i = 0; i < 4; i++) {
-            expectCode(() -> useCase.invoke(EMAIL, "wrong"), UserDomainException.INVALID_PASSWORD);
+            expectCode(() -> useCase.invoke(EMAIL, "wrong"), UserDomainException.INVALID_CREDENTIALS);
         }
 
         assertThat(user.getFailedLoginAttempts()).isEqualTo(4);
@@ -97,8 +99,8 @@ class AuthenticateUserUseCaseTest {
 
     @Test
     void successfulLoginClearsFailedAttemptsBelowLockThreshold() {
-        expectCode(() -> useCase.invoke(EMAIL, "wrong"), UserDomainException.INVALID_PASSWORD);
-        expectCode(() -> useCase.invoke(EMAIL, "wrong"), UserDomainException.INVALID_PASSWORD);
+        expectCode(() -> useCase.invoke(EMAIL, "wrong"), UserDomainException.INVALID_CREDENTIALS);
+        expectCode(() -> useCase.invoke(EMAIL, "wrong"), UserDomainException.INVALID_CREDENTIALS);
 
         useCase.invoke(EMAIL, "right");
 
@@ -106,12 +108,38 @@ class AuthenticateUserUseCaseTest {
     }
 
     @Test
-    void unknownEmailThrowsUserNotFoundAndSavesNothing() {
+    void unknownEmailThrowsInvalidCredentialsRunsDummyCheckAndSavesNothing() {
+        when(userRepository.findByEmail("nobody@example.com")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode("dummy-password")).thenReturn("dummy-hash");
+
+        expectCode(() -> useCase.invoke("nobody@example.com", "right"), UserDomainException.INVALID_CREDENTIALS);
+
+        verify(passwordEncoder).matches("right", "dummy-hash");
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void dummyHashIsComputedOnlyOnce() {
+        when(userRepository.findByEmail("nobody@example.com")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode("dummy-password")).thenReturn("dummy-hash");
+
+        expectCode(() -> useCase.invoke("nobody@example.com", "a"), UserDomainException.INVALID_CREDENTIALS);
+        expectCode(() -> useCase.invoke("nobody@example.com", "b"), UserDomainException.INVALID_CREDENTIALS);
+
+        verify(passwordEncoder, times(1)).encode("dummy-password");
+    }
+
+    @Test
+    void unknownEmailAndWrongPasswordGiveTheSameCodeAndMessage() {
         when(userRepository.findByEmail("nobody@example.com")).thenReturn(Optional.empty());
 
-        expectCode(() -> useCase.invoke("nobody@example.com", "right"), UserDomainException.USER_NOT_FOUND);
+        UserDomainException unknown = catchThrowableOfType(UserDomainException.class,
+                () -> useCase.invoke("nobody@example.com", "wrong"));
+        UserDomainException wrong = catchThrowableOfType(UserDomainException.class,
+                () -> useCase.invoke(EMAIL, "wrong"));
 
-        verify(userRepository, never()).save(any());
+        assertThat(unknown.getErrorCode()).isEqualTo(wrong.getErrorCode());
+        assertThat(unknown.getMessage()).isEqualTo(wrong.getMessage()).isEqualTo("Invalid email or password");
     }
 
     @Test

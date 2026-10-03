@@ -155,7 +155,7 @@ curl -i -b jar.txt -X POST http://localhost:8080/api/auth/logout          # then
 
 | Symptom | Check |
 |---------|-------|
-| Login fails | A failed login returns 400 with the error message, not 401. A 401 comes from protected endpoints called without a valid session. Check: backend running; email and password correct; the account is not locked (`users.account_non_locked`). Nothing unlocks an account automatically or through the API, so a locked account needs `account_non_locked` set back to true (and `failed_login_attempts` to 0) in the database |
+| Login fails | A failed login returns 400 with "Invalid email or password" (the same for an unknown email and a wrong password), not 401. A 401 comes from protected endpoints called without a valid session. Check: backend running; email and password correct; the account is not locked (`users.account_non_locked`). Nothing unlocks an account automatically or through the API, so a locked account needs `account_non_locked` set back to true (and `failed_login_attempts` to 0) in the database |
 | Logged out after about 30 minutes | The access cookie expired and the client did not renew it. The frontend only refreshes after a 401, but a request without a valid access token currently gets 403 (see Known gaps) |
 | Logged out sooner | The client-side 1-hour inactivity timeout, or the backend restarted with a different `JWT_SECRET` |
 | Redirect loop on load | `authStore.initialize()` must run in `App.vue` so `authChecked` gets set |
@@ -163,11 +163,10 @@ curl -i -b jar.txt -X POST http://localhost:8080/api/auth/logout          # then
 
 ## Known gaps
 
-Full list and fixes in [functionality-audit.md](functionality-audit.md) (C6) and [todo.md](todo.md).
+Full list and fixes in [functionality-audit.md](functionality-audit.md) and [todo.md](todo.md).
 
 - Requests without a valid access token get 403, not 401 (no authentication entry point is configured), while the frontend only calls `/api/auth/refresh` after a 401. Until that is aligned, the browser does not renew the access cookie automatically
-- Login error messages reveal whether an email exists
 - Logout does not revoke tokens, and refresh tokens are not rotated
 - No password reset, MFA, "remember me", or session list
-- Locked accounts never unlock automatically
+- Locked accounts never unlock automatically, and a locked account's message only appears after the correct password
 - Sessions are not synchronised across browser tabs

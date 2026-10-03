@@ -1,5 +1,6 @@
 package io.github.membertracker.infrastructure;
 
+import io.github.membertracker.domain.exception.UserDomainException;
 import io.github.membertracker.infrastructure.config.AuthProperties;
 import io.github.membertracker.infrastructure.handler.ProblemDetails;
 import io.swagger.v3.oas.annotations.Operation;
@@ -76,7 +77,7 @@ public class AuthController {
                     .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
                     .body(response);
 
-        } catch (RuntimeException e) {
+        } catch (UserDomainException e) {
             return ResponseEntity.badRequest().body(ProblemDetails.of(HttpStatus.BAD_REQUEST, e.getMessage()));
         }
     }

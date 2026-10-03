@@ -17,6 +17,7 @@ public class UserDomainException extends DomainException {
     public static final String INVALID_USER_DATA = "USER_008";
     public static final String ACCOUNT_LOCKED = "USER_009";
     public static final String CREDENTIALS_EXPIRED = "USER_010";
+    public static final String INVALID_CREDENTIALS = "USER_011";
 
     public UserDomainException(String message, String errorCode) {
         super(message, errorCode, "User");
@@ -38,6 +39,13 @@ public class UserDomainException extends DomainException {
         return new UserDomainException(
             "Invalid password provided",
             INVALID_PASSWORD
+        );
+    }
+
+    public static UserDomainException invalidCredentials() {
+        return new UserDomainException(
+            "Invalid email or password",
+            INVALID_CREDENTIALS
         );
     }
 

@@ -9,6 +9,7 @@ public class AuthenticateUserUseCase {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private String dummyHash;
 
     public AuthenticateUserUseCase(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
@@ -16,13 +17,18 @@ public class AuthenticateUserUseCase {
     }
 
     public User invoke(String email, String password) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> UserDomainException.userNotFound(email));
+        User user = userRepository.findByEmail(email).orElse(null);
+
+        if (user == null) {
+            // Same BCrypt cost as for a real account, so timing does not reveal whether the email exists.
+            passwordEncoder.matches(password, dummyHash());
+            throw UserDomainException.invalidCredentials();
+        }
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
             user.recordFailedLoginAttempt();
             userRepository.save(user);
-            throw UserDomainException.invalidPassword();
+            throw UserDomainException.invalidCredentials();
         }
 
         if (!user.isEnabled()) {
@@ -41,5 +47,12 @@ public class AuthenticateUserUseCase {
         userRepository.save(user);
         
         return user;
+    }
+
+    private synchronized String dummyHash() {
+        if (dummyHash == null) {
+            dummyHash = passwordEncoder.encode("dummy-password");
+        }
+        return dummyHash;
     }
 }
