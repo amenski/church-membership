@@ -6,17 +6,20 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.github.membertracker.infrastructure.dto.ChangePasswordRequest;
 import io.github.membertracker.infrastructure.dto.UpdateUserProfileRequest;
 import io.github.membertracker.infrastructure.dto.UserResponseDto;
+import io.github.membertracker.infrastructure.handler.ProblemDetails;
 import io.github.membertracker.usecase.ChangePasswordUseCase;
 import io.github.membertracker.usecase.GetCurrentUserUseCase;
 import io.github.membertracker.usecase.UpdateUserProfileUseCase;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -103,33 +106,28 @@ public class UserController {
 
     @PutMapping("/me/password")
     @Operation(summary = "Change own password (any signed-in user)")
-    public ResponseEntity<Map<String, String>> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+    public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated() ||
             authentication.getPrincipal() instanceof String) {
-            return ResponseEntity.status(401).body(null);
+            return unauthorized();
         }
 
-        try {
-            User userDetails = (User) authentication.getPrincipal();
-            Long userId = userDetails.getId();
+        User userDetails = (User) authentication.getPrincipal();
 
-            changePasswordUseCase.execute(
-                userId,
-                request.getCurrentPassword(),
-                request.getNewPassword()
-            );
+        changePasswordUseCase.execute(
+            userDetails.getId(),
+            request.getCurrentPassword(),
+            request.getNewPassword()
+        );
 
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "Password changed successfully");
+        return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
+    }
 
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Failed to change password");
-            return ResponseEntity.badRequest().body(errorResponse);
-        }
+    private static ResponseEntity<ProblemDetail> unauthorized() {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(ProblemDetails.of(HttpStatus.UNAUTHORIZED, "Authentication required"));
     }
 }

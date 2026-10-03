@@ -58,7 +58,8 @@ class ChangePasswordUseCaseTest {
 
         assertThatThrownBy(() -> useCase.execute(1L, "bad", "NewPass1!"))
                 .isInstanceOfSatisfying(UserDomainException.class,
-                        e -> assertThat(e.getErrorCode()).isEqualTo(UserDomainException.INVALID_PASSWORD));
+                        e -> assertThat(e.getErrorCode()).isEqualTo(UserDomainException.INVALID_PASSWORD))
+                .hasMessage("Current password is incorrect");
 
         assertThat(user.getPassword()).isEqualTo("oldHash");
         verify(userRepository, never()).save(any());

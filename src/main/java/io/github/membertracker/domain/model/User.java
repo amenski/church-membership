@@ -4,6 +4,7 @@ import io.github.membertracker.domain.enumeration.UserRole;
 import io.github.membertracker.domain.exception.UserDomainException;
 import io.github.membertracker.domain.valueobject.Email;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -33,10 +34,16 @@ public class User implements UserDetails {
     private String phone;
     private String bio;
 
-    // Password validation pattern
-    private static final Pattern PASSWORD_PATTERN = Pattern.compile(
-        "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$"
+    // Password rule: 8 characters minimum, 72 UTF-8 bytes maximum (BCrypt's limit)
+    private static final int PASSWORD_MIN_LENGTH = 8;
+    private static final int PASSWORD_MAX_BYTES = 72;
+    // A special character is anything that is not a letter, a digit or whitespace
+    private static final Pattern PASSWORD_SPECIAL = Pattern.compile(
+        "[^\\p{L}\\p{N}\\s]", Pattern.UNICODE_CHARACTER_CLASS
     );
+    private static final Pattern PASSWORD_LOWER = Pattern.compile("\\p{Ll}");
+    private static final Pattern PASSWORD_UPPER = Pattern.compile("\\p{Lu}");
+    private static final Pattern PASSWORD_DIGIT = Pattern.compile("\\p{Nd}");
 
     public User() {
     }
@@ -187,10 +194,17 @@ public class User implements UserDetails {
      * Throws UserDomainException if password is weak.
      */
     public static void validatePasswordStrength(String password) {
-        if (password == null || !PASSWORD_PATTERN.matcher(password).matches()) {
+        boolean valid = password != null
+            && password.length() >= PASSWORD_MIN_LENGTH
+            && password.getBytes(StandardCharsets.UTF_8).length <= PASSWORD_MAX_BYTES
+            && PASSWORD_LOWER.matcher(password).find()
+            && PASSWORD_UPPER.matcher(password).find()
+            && PASSWORD_DIGIT.matcher(password).find()
+            && PASSWORD_SPECIAL.matcher(password).find();
+        if (!valid) {
             throw UserDomainException.weakPassword(
-                "Password must be at least 8 characters long and contain at least one uppercase letter, " +
-                "one lowercase letter, one digit, and one special character (@$!%*?&)"
+                "Password must be 8 to 72 characters (bytes) and contain an uppercase letter, " +
+                "a lowercase letter, a digit and a special character"
             );
         }
     }

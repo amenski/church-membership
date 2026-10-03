@@ -65,7 +65,9 @@ CORS allows credentials, but the allowed origins are hard-coded in two places: `
 ### Passwords and lockout
 
 - Passwords are hashed with BCrypt, cost 12.
-- A new password must be at least 8 characters with an uppercase letter, a lowercase letter, a digit and one of `@$!%*?&` (`User.validatePasswordStrength`).
+- A new password must be 8 characters or more and at most 72 UTF-8 bytes (BCrypt ignores anything longer), with an uppercase letter, a lowercase letter, a digit and a special character (`User.validatePasswordStrength`). Special means any character that is not a letter, digit or whitespace, so `-`, `_`, `#` and `.` count; spaces are allowed but do not count as special. The web form checks the same rule (`frontend/src/utils/passwordRules.js`).
+- When the user changes their password the current one must be given and match; there is no minimum length on it, so the seeded 5-character admin password can be replaced. A wrong current password is a 400 "Current password is incorrect"; a weak new one is a 400 with the rule text.
+- Changing the password does not end other sessions.
 - Five failed logins lock the account. Nothing unlocks it automatically.
 
 ### CSRF

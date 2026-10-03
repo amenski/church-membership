@@ -37,7 +37,7 @@ public class UserDomainException extends DomainException {
 
     public static UserDomainException invalidPassword() {
         return new UserDomainException(
-            "Invalid password provided",
+            "Current password is incorrect",
             INVALID_PASSWORD
         );
     }
@@ -49,9 +49,9 @@ public class UserDomainException extends DomainException {
         );
     }
 
-    public static UserDomainException weakPassword(String requirements) {
+    public static UserDomainException weakPassword(String message) {
         return new UserDomainException(
-            String.format("Password does not meet strength requirements: %s", requirements),
+            message,
             WEAK_PASSWORD
         );
     }

@@ -6,11 +6,10 @@ import jakarta.validation.constraints.Size;
 public class ChangePasswordRequest {
 
     @NotBlank(message = "Current password is required")
-    @Size(min = 6, message = "Current password must be at least 6 characters")
     private String currentPassword;
 
     @NotBlank(message = "New password is required")
-    @Size(min = 6, max = 100, message = "New password must be between 6 and 100 characters")
+    @Size(min = 8, max = 72, message = "New password must be 8 to 72 characters")
     private String newPassword;
 
     public ChangePasswordRequest() {}

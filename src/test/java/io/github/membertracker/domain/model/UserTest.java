@@ -32,9 +32,38 @@ class UserTest {
     void validatePasswordStrength_acceptsStrongPasswordsIncludingBoundaryLength() {
         assertThatCode(() -> User.validatePasswordStrength(STRONG)).doesNotThrowAnyException();
         assertThatCode(() -> User.validatePasswordStrength("Zz9@Zz9@Zz9@")).doesNotThrowAnyException();
-        for (char special : "@$!%*?&".toCharArray()) {
+        for (char special : "@$!%*?&-_#.".toCharArray()) {
             assertThatCode(() -> User.validatePasswordStrength("Abcdef1" + special)).doesNotThrowAnyException();
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "Abcdef1-",
+        "Abcdef1_x",
+        "Abcdef1#",
+        "Abcdef 1!",                       // spaces are allowed (passphrases)
+        "Correct Horse 9 Battery-Staple"
+    })
+    void validatePasswordStrength_acceptsAnySpecialCharacterAndSpaces(String ok) {
+        assertThatCode(() -> User.validatePasswordStrength(ok)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void validatePasswordStrength_limitsTheLengthInUtf8BytesNotCharacters() {
+        assertThatCode(() -> User.validatePasswordStrength("Aa1!" + "x".repeat(68))).doesNotThrowAnyException(); // 72 bytes
+        assertThatCode(() -> User.validatePasswordStrength("Aa1!" + "\u00e9".repeat(34))).doesNotThrowAnyException(); // 72 bytes
+        assertThatThrownBy(() -> User.validatePasswordStrength("Aa1!" + "x".repeat(69))) // 73 bytes
+            .isInstanceOf(UserDomainException.class);
+        assertThatThrownBy(() -> User.validatePasswordStrength("Aa1!" + "\u00e9".repeat(35))) // 74 bytes, 39 chars
+            .isInstanceOf(UserDomainException.class);
+    }
+
+    @Test
+    void validatePasswordStrength_explainsTheRuleInOneMessage() {
+        assertThatThrownBy(() -> User.validatePasswordStrength("weak"))
+            .hasMessage("Password must be 8 to 72 characters (bytes) and contain an uppercase letter, "
+                + "a lowercase letter, a digit and a special character");
     }
 
     @ParameterizedTest
@@ -46,8 +75,8 @@ class UserTest {
         "ABCDEF1!",     // no lower
         "Abcdefg!",     // no digit
         "Abcdefg1",     // no special
-        "Abcdef1#",     // special not in allowed set
-        "Abcdef 1!"     // space not allowed
+        "Abcdef 1",     // whitespace is not a special character
+        "   Abcd1   "   // whitespace only as the "special"
     })
     void validatePasswordStrength_rejectsWeakPasswords(String weak) {
         assertThatThrownBy(() -> User.validatePasswordStrength(weak))

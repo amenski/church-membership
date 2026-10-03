@@ -209,7 +209,8 @@
                 <button
                   type="button"
                   class="btn btn-outline-primary btn-sm"
-                  @click="showChangePasswordModal = true"
+                  data-bs-toggle="modal"
+                  data-bs-target="#changePasswordModal"
                 >
                   <i class="bi bi-key me-1"></i>Change Password
                 </button>
@@ -224,7 +225,7 @@
     </div>
 
     <!-- Change Password Modal -->
-    <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true" ref="changePasswordModal">
+    <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
@@ -235,6 +236,9 @@
           </div>
           <div class="modal-body">
             <form @submit.prevent="handlePasswordChange">
+              <div v-if="passwordServerError" class="alert alert-danger" role="alert">
+                {{ passwordServerError }}
+              </div>
               <div class="mb-3">
                 <label for="currentPassword" class="form-label">Current Password</label>
                 <input
@@ -261,7 +265,7 @@
                   placeholder="Enter new password"
                 />
                 <div class="form-text">
-                  <i class="bi bi-info-circle me-1"></i>Password must be at least 8 characters long
+                  <i class="bi bi-info-circle me-1"></i>8 to 72 characters with an uppercase letter, a lowercase letter, a digit and a special character
                 </div>
                 <div v-if="passwordErrors.newPassword" class="invalid-feedback">
                   {{ passwordErrors.newPassword }}
@@ -299,14 +303,17 @@
 </template>
 
 <script>
-import { ref, onMounted, computed, nextTick } from 'vue'
-import { useAuthStore } from '@/stores/index.js'
+import { ref, onMounted, onBeforeUnmount, computed, nextTick } from 'vue'
+import { Modal } from 'bootstrap'
+import { useAuthStore, useAppStore } from '@/stores/index.js'
 import apiService from '@/services/api.js'
+import { validateNewPassword } from '@/utils/passwordRules.js'
 
 export default {
   name: 'ProfileView',
   setup() {
     const authStore = useAuthStore()
+    const appStore = useAppStore()
     const user = ref(authStore.user || {})
     const form = ref({
       firstName: '',
@@ -327,8 +334,8 @@ export default {
     const successMessage = ref(null)
 
     // Password change functionality
-    const showChangePasswordModal = ref(false)
     const changingPassword = ref(false)
+    const passwordServerError = ref('')
     const passwordForm = ref({
       currentPassword: '',
       newPassword: '',
@@ -480,9 +487,12 @@ export default {
       if (!passwordForm.value.newPassword) {
         passwordErrors.value.newPassword = 'New password is required'
         isValid = false
-      } else if (passwordForm.value.newPassword.length < 8) {
-        passwordErrors.value.newPassword = 'Password must be at least 8 characters long'
-        isValid = false
+      } else {
+        const rule = validateNewPassword(passwordForm.value.newPassword)
+        if (rule) {
+          passwordErrors.value.newPassword = rule
+          isValid = false
+        }
       }
 
       // Confirm password validation
@@ -509,6 +519,7 @@ export default {
         newPassword: '',
         confirmPassword: ''
       }
+      passwordServerError.value = ''
     }
 
     // Handle password change
@@ -519,24 +530,24 @@ export default {
 
       try {
         changingPassword.value = true
-        error.value = null
+        passwordServerError.value = ''
 
-        // Call API to change password
         await apiService.changePassword({
           currentPassword: passwordForm.value.currentPassword,
           newPassword: passwordForm.value.newPassword
         })
 
-        // Reset form and close modal
         resetPasswordForm()
-        showChangePasswordModal.value = false
-        successMessage.value = 'Password changed successfully!'
-
-        setTimeout(() => {
-          successMessage.value = null
-        }, 5000)
+        Modal.getOrCreateInstance(document.getElementById('changePasswordModal')).hide()
+        appStore.addNotification({
+          type: 'success',
+          title: 'Password changed',
+          message: 'Your password was changed.',
+          isToast: true
+        })
       } catch (err) {
-        error.value = 'Failed to change password. Please check your current password.'
+        // The API interceptor puts the server's reason in err.message
+        passwordServerError.value = err.fieldErrors?.[0]?.message || err.message || 'Failed to change password'
         console.error('Error changing password:', err)
       } finally {
         changingPassword.value = false
@@ -545,6 +556,11 @@ export default {
 
     onMounted(() => {
       loadProfile()
+      document.getElementById('changePasswordModal')?.addEventListener('hidden.bs.modal', resetPasswordForm)
+    })
+
+    onBeforeUnmount(() => {
+      document.getElementById('changePasswordModal')?.removeEventListener('hidden.bs.modal', resetPasswordForm)
     })
 
     return {
@@ -557,8 +573,8 @@ export default {
       error,
       successMessage,
       formatMemberSince,
-      showChangePasswordModal,
       changingPassword,
+      passwordServerError,
       passwordForm,
       passwordErrors,
       startEditing,

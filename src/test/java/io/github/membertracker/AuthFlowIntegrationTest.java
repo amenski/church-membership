@@ -268,4 +268,38 @@ class AuthFlowIntegrationTest {
             userJpaRepository.findByEmail(otherEmail).ifPresent(userJpaRepository::delete);
         }
     }
+
+    @Test
+    void changingThePasswordThenSigningInWithTheNewOne() throws Exception {
+        String access = valueOf(headerStartingWith(login().getHeaders(HttpHeaders.SET_COOKIE), "sid"));
+        String newPassword = "Newpass1-x";
+
+        mockMvc.perform(withXsrf(put("/api/users/me/password")).cookie(new Cookie("sid", access))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"currentPassword\":\"" + PASSWORD + "\",\"newPassword\":\"" + newPassword + "\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.message").value("Password changed successfully"));
+
+        mockMvc.perform(withXsrf(post("/api/auth/login"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"" + EMAIL + "\",\"password\":\"" + newPassword + "\"}"))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(withXsrf(post("/api/auth/login"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(LOGIN_BODY))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.detail").value("Invalid email or password"));
+    }
+
+    @Test
+    void aWrongCurrentPasswordIsReportedAsSuch() throws Exception {
+        String access = valueOf(headerStartingWith(login().getHeaders(HttpHeaders.SET_COOKIE), "sid"));
+
+        mockMvc.perform(withXsrf(put("/api/users/me/password")).cookie(new Cookie("sid", access))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"currentPassword\":\"nope\",\"newPassword\":\"Newpass1-x\"}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.detail").value("Current password is incorrect"));
+    }
 }
