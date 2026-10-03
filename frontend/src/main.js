@@ -1,8 +1,6 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import App from './App.vue'
-import router from './router'
-import i18n from './i18n'
+// Global styles first so component styles in App.vue can override Bootstrap
 import '@fontsource/alegreya/latin-700.css'
 import '@fontsource/alegreya-sans/latin-400.css'
 import '@fontsource/alegreya-sans/latin-500.css'
@@ -12,6 +10,9 @@ import 'bootstrap-icons/font/bootstrap-icons.css'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap'
 import '@/assets/styles/theme.css'
+import App from './App.vue'
+import router from './router'
+import i18n from './i18n'
 
 const app = createApp(App)
 const pinia = createPinia()
