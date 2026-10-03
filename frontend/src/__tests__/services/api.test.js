@@ -102,4 +102,34 @@ describe('api response interceptor', () => {
       expect.objectContaining({ title: 'Unauthorized', message: 'Full authentication is required' })
     )
   })
+
+  it('400 ProblemDetail puts its detail in error.message and exposes fieldErrors', async () => {
+    const errors = [{ field: 'email', message: 'must be a valid email' }]
+    respondWith({ '/members': { status: 400, data: { status: 400, detail: 'One or more fields are invalid', errors } } })
+
+    const error = await axiosInstance.post('/members', {}).catch((e) => e)
+
+    expect(error.message).toBe('One or more fields are invalid')
+    expect(error.fieldErrors).toEqual(errors)
+  })
+
+  it('400 without errors gives an empty fieldErrors list', async () => {
+    respondWith({ '/members': { status: 400, data: { detail: 'Business rule broken', code: 'X' } } })
+
+    const error = await axiosInstance.post('/members', {}).catch((e) => e)
+
+    expect(error.message).toBe('Business rule broken')
+    expect(error.fieldErrors).toEqual([])
+  })
+
+  it('a network error keeps its own message', async () => {
+    axiosInstance.defaults.adapter = async (config) => {
+      throw new AxiosError('Network Error', 'ERR_NETWORK', config)
+    }
+
+    const error = await axiosInstance.get('/members').catch((e) => e)
+
+    expect(error.message).toBe('Network Error')
+    expect(error.fieldErrors).toBeUndefined()
+  }, 15000)
 })

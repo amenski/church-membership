@@ -104,12 +104,12 @@ This document tracks missing features, improvements, and technical debt in the M
   - Generate interactive API documentation
   - **Location**: Swagger configuration, controller annotations
 
-- [ ] **Error Handling Consistency**
-  - Standardize error response format across all endpoints
-  - Add localized error messages
-  - Implement structured logging for errors
-  - **Location**: `GlobalExceptionHandler`, logging configuration
+- [x] **Error Handling Consistency**
+  - [x] Standardize error response format (ProblemDetail)
+  - [ ] Localized error messages: deferred until a second UI locale exists
+  - [ ] Structured (JSON) logging: deferred to the Monitoring & Logging item (infrastructure)
   - [x] Frontend notifications for session expiry, 401 and 403 (c2a58d1)
+  - **Location**: `GlobalExceptionHandler`, logging configuration
 
 ---
 

@@ -1,7 +1,8 @@
 package io.github.membertracker.infrastructure.handler;
 
 import io.github.membertracker.domain.exception.DomainException;
-import io.github.membertracker.infrastructure.dto.ErrorResponse;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
@@ -12,24 +13,40 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
+/**
+ * Every API error is an RFC 7807 {@link ProblemDetail}, built through
+ * {@link ProblemDetails}. Rejected values are never echoed back, and
+ * unexpected errors return a fixed generic message.
+ */
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @ControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    /** Gives problems built by Spring's base class (malformed JSON, 404, 405, ...) the same properties. */
+    @Override
+    protected ResponseEntity<Object> handleExceptionInternal(
+            Exception ex, Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
+        ResponseEntity<Object> response = super.handleExceptionInternal(ex, body, headers, statusCode, request);
+        if (response != null && response.getBody() instanceof ProblemDetail problem) {
+            ProblemDetails.addCommonProperties(problem, path(request));
+        }
+        return response;
+    }
 
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
@@ -38,72 +55,73 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             HttpStatusCode status,
             WebRequest request) {
 
-        List<ErrorResponse.ValidationError> validationErrors = ex.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .map(this::mapToValidationError)
-                .collect(Collectors.toList());
+        List<Map<String, String>> errors = ex.getBindingResult().getFieldErrors().stream()
+                .map(this::toError)
+                .toList();
 
-        ErrorResponse errorResponse = new ErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
-                "Validation Failed",
-                "One or more fields are invalid",
-                request.getDescription(false).replace("uri=", ""),
-                validationErrors
-        );
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, "One or more fields are invalid", request);
+        problem.setProperty("errors", errors);
+        return ResponseEntity.badRequest().body(problem);
     }
 
     @ExceptionHandler(DomainException.class)
-    public ResponseEntity<Object> handleDomainException(DomainException ex, WebRequest request) {
+    public ResponseEntity<ProblemDetail> handleDomainException(DomainException ex, WebRequest request) {
         log.error("Business rule violation: {}", ex.getMessage());
-        ErrorResponse errorResponse = new ErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
-                "Business Rule Violation",
-                ex.getUserMessage(),
-                request.getDescription(false).replace("uri=", "")
-        );
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, ex.getUserMessage(), request);
+        problem.setProperty("code", ex.getErrorCode());
+        return ResponseEntity.badRequest().body(problem);
     }
 
-    @ExceptionHandler(AccessDeniedException.class)
-    protected ResponseEntity<Object> handleAccessDenied(AccessDeniedException ex, WebRequest request) {
-        log.error("Access denied: {}", ex.getMessage());
-        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Access denied");
-        pd.setProperty("path", request.getDescription(false).replace("uri=", ""));
-        return new ResponseEntity<>(pd, HttpStatus.FORBIDDEN);
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ProblemDetail> handleConstraintViolation(ConstraintViolationException ex, WebRequest request) {
+        List<Map<String, String>> errors = ex.getConstraintViolations().stream()
+                .map(this::toError)
+                .toList();
+
+        ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, "One or more parameters are invalid", request);
+        problem.setProperty("errors", errors);
+        return ResponseEntity.badRequest().body(problem);
     }
 
-    @ExceptionHandler(AuthorizationDeniedException.class)
-    protected ResponseEntity<Object> handleAuthorizationDenied(AuthorizationDeniedException ex, WebRequest request) {
+    @ExceptionHandler({AccessDeniedException.class, AuthorizationDeniedException.class})
+    protected ResponseEntity<ProblemDetail> handleAccessDenied(AccessDeniedException ex, WebRequest request) {
         log.error("Access denied: {}", ex.getMessage());
-        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Access denied");
-        pd.setProperty("path", request.getDescription(false).replace("uri=", ""));
-        return new ResponseEntity<>(pd, HttpStatus.FORBIDDEN);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(problem(HttpStatus.FORBIDDEN, "Access denied", request));
     }
 
     @ExceptionHandler(InsufficientAuthenticationException.class)
-    protected ResponseEntity<Object> handleInsufficientAuthentication(InsufficientAuthenticationException ex, WebRequest request) {
+    protected ResponseEntity<ProblemDetail> handleInsufficientAuthentication(
+            InsufficientAuthenticationException ex, WebRequest request) {
         log.error("Insufficient authentication: {}", ex.getMessage());
-        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Authentication required");
-        pd.setProperty("path", request.getDescription(false).replace("uri=", ""));
-        return new ResponseEntity<>(pd, HttpStatus.UNAUTHORIZED);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(problem(HttpStatus.UNAUTHORIZED, "Authentication required", request));
     }
 
     @ExceptionHandler(Exception.class)
-    protected ResponseEntity<Object> handleAllExceptions(Exception ex, WebRequest request) {
+    protected ResponseEntity<ProblemDetail> handleAllExceptions(Exception ex, WebRequest request) {
         log.error("Unexpected error occurred", ex);
-        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred");
-        return new ResponseEntity<>(pd, HttpStatus.INTERNAL_SERVER_ERROR);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(problem(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred", request));
     }
 
-    private ErrorResponse.ValidationError mapToValidationError(FieldError fieldError) {
-        return new ErrorResponse.ValidationError(
-                fieldError.getField(),
-                fieldError.getDefaultMessage(),
-                fieldError.getRejectedValue()
-        );
+    private ProblemDetail problem(HttpStatus status, String detail, WebRequest request) {
+        return ProblemDetails.of(status, detail, path(request));
+    }
+
+    private String path(WebRequest request) {
+        return request instanceof ServletWebRequest servlet
+                ? servlet.getRequest().getRequestURI()
+                : request.getDescription(false).replace("uri=", "");
+    }
+
+    private Map<String, String> toError(FieldError fieldError) {
+        return Map.of("field", fieldError.getField(), "message", String.valueOf(fieldError.getDefaultMessage()));
+    }
+
+    private Map<String, String> toError(ConstraintViolation<?> violation) {
+        String path = violation.getPropertyPath().toString();
+        String field = path.substring(path.lastIndexOf('.') + 1);
+        return Map.of("field", field, "message", violation.getMessage());
     }
 }

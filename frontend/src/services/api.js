@@ -76,6 +76,18 @@ api.interceptors.request.use(
   }
 )
 
+// Surface the server's RFC 7807 ProblemDetail on the error: `message` becomes
+// the server's `detail`, `fieldErrors` the list of {field, message}.
+// Network errors (no response) are left alone.
+function applyProblemDetail(error) {
+  const data = error.response?.data
+  if (error.response && data) {
+    error.message = data.detail || error.message
+    error.fieldErrors = data.errors || []
+  }
+  return error
+}
+
 // Response interceptor
 api.interceptors.response.use(
   (response) => {
@@ -95,7 +107,7 @@ api.interceptors.response.use(
 
       // Don't try to refresh if we're already on the login or refresh endpoint
       if (originalRequest.url?.includes('/login') || originalRequest.url?.includes('/refresh')) {
-        return Promise.reject(error)
+        return Promise.reject(applyProblemDetail(error))
       }
 
       try {
@@ -178,7 +190,7 @@ api.interceptors.response.use(
         // Store may not be available
       }
 
-      return Promise.reject(error)
+      return Promise.reject(applyProblemDetail(error))
     }
 
     // Handle 403 Forbidden (access denied)
@@ -214,7 +226,7 @@ api.interceptors.response.use(
       }
 
       // Don't retry 403 errors
-      return Promise.reject(error)
+      return Promise.reject(applyProblemDetail(error))
     }
 
     // Check if we should retry the request (non-401/403 errors)
@@ -245,7 +257,7 @@ api.interceptors.response.use(
       data: error.response?.data
     })
 
-    return Promise.reject(error)
+    return Promise.reject(applyProblemDetail(error))
   }
 )
 

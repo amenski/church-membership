@@ -78,7 +78,9 @@ Current coverage: `RoleAuthorizationTest` and `ApplicationTests`. `ApplicationTe
 
 - Bean Validation annotations on domain models and request DTOs (for example `@DecimalMin(0.01)` on payment amounts).
 - Controllers use `@Validated`, `@Valid` on request bodies, and `@Positive` or `@Min(1)` on path variables.
-- `infrastructure/handler/GlobalExceptionHandler` turns validation and domain exceptions into structured JSON errors.
+- All errors are RFC 7807 `ProblemDetail` (`detail`, plus `path`, `timestamp`, optional `code` and `errors[{field,message}]`), built by `infrastructure/handler/GlobalExceptionHandler` and `ProblemDetails`.
+- Rejected values are never echoed back.
+- Unexpected errors return a generic 500 and are logged server-side.
 - Domain code throws `DomainException` subclasses, not generic exceptions.
 
 ## Frontend conventions
@@ -113,4 +115,5 @@ frontend/src/
 | 2026-10 | Any payment amount above 0 is valid; no fixed minimum | Dues vary by family and gifts can be small | In use |
 | 2026-10 | Payment reminders start 7 days before the due date (inclusive) | Matches REMINDER_DAYS_BEFORE_DUE | In use |
 | 2026-10 | OpenAPI/Swagger UI only under the dev profile | Public endpoint list helps attackers; devs still get docs | In use |
+| 2026-10 | All API errors are RFC 7807 ProblemDetail; no rejected values echoed | One format for the frontend; no input reflected back | In use |
 | 2026-10 | Roles ADMIN > STAFF > VOLUNTEER > MEMBER with `RoleHierarchy` | Replaces ADMIN/MANAGER/USER and the planned TREASURER/VIEWER | Done (3cf5d84; frontend routes in this change) |

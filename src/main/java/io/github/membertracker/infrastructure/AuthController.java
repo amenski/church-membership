@@ -1,6 +1,7 @@
 package io.github.membertracker.infrastructure;
 
 import io.github.membertracker.infrastructure.config.AuthProperties;
+import io.github.membertracker.infrastructure.handler.ProblemDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
@@ -12,6 +13,7 @@ import io.github.membertracker.utils.JwtUtils;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -75,7 +77,7 @@ public class AuthController {
                     .body(response);
 
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(ProblemDetails.of(HttpStatus.BAD_REQUEST, e.getMessage()));
         }
     }
 
@@ -83,7 +85,7 @@ public class AuthController {
     @Operation(summary = "Registration (disabled, always returns 403)")
     @SecurityRequirements
     public ResponseEntity<Object> register(@RequestBody RegisterRequest registerRequest) {
-        return ResponseEntity.status(403).body(Map.of("error", "Registration is disabled. Please contact administrator for access."));
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ProblemDetails.of(HttpStatus.FORBIDDEN, "Registration is disabled. Please contact administrator for access."));
     }
 
     @PostMapping("/refresh")
@@ -93,11 +95,11 @@ public class AuthController {
         try {
             String refreshToken = getRefreshTokenFromCookie(request);
             if (refreshToken == null) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Refresh token not found"));
+                return ResponseEntity.badRequest().body(ProblemDetails.of(HttpStatus.BAD_REQUEST, "Refresh token not found"));
             }
             
             if (!JwtUtils.validateToken(refreshToken, authProperties.getJwtSecret())) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Invalid refresh token"));
+                return ResponseEntity.badRequest().body(ProblemDetails.of(HttpStatus.BAD_REQUEST, "Invalid refresh token"));
             }
             
             String username = JwtUtils.extractUsername(refreshToken, authProperties.getJwtSecret());
@@ -115,7 +117,7 @@ public class AuthController {
                     .build();
                     
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Token refresh failed"));
+            return ResponseEntity.badRequest().body(ProblemDetails.of(HttpStatus.BAD_REQUEST, "Token refresh failed"));
         }
     }
 

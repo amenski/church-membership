@@ -212,13 +212,13 @@ export const useAuthStore = defineStore('auth', () => {
     const data = error.response?.data
 
     // Check for specific error messages from backend
-    if (data?.error) {
-      return data.error
+    if (data?.detail) {
+      return data.detail
     }
 
     switch (status) {
       case 400:
-        return data?.message || 'Invalid request. Please check your input.'
+        return 'Invalid request. Please check your input.'
       case 401:
         return 'Invalid email or password.'
       case 403:
@@ -226,7 +226,7 @@ export const useAuthStore = defineStore('auth', () => {
       case 409:
         return 'User already exists with this email.'
       case 422:
-        return data?.message || 'Validation failed. Please check your input.'
+        return 'Validation failed. Please check your input.'
       case 429:
         return 'Too many login attempts. Please try again later.'
       case 500:
