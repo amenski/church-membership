@@ -412,10 +412,6 @@ const apiService = {
     return this.post(`/communications/${communicationId}/deliveries/${deliveryId}/retry`)
   },
 
-  async createCommunication(communication) {
-    return this.post('/communications', communication)
-  },
-
   async sendToAllMembers(communication) {
     return this.post('/communications/send-to-all', communication)
   },

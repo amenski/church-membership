@@ -136,25 +136,6 @@ export const useCommunicationStore = defineStore('communications', () => {
     }
   }
 
-  async function createCommunication(communicationData) {
-    isLoading.value = true
-    error.value = null
-
-    try {
-      const newCommunication = await apiService.createCommunication(communicationData)
-      communications.value.unshift(newCommunication)
-      currentCommunication.value = newCommunication
-
-      return newCommunication
-    } catch (err) {
-      error.value = err.message || 'Failed to create communication'
-      console.error('Failed to create communication:', err)
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
-
   async function sendToAllMembers(communicationData) {
     isLoading.value = true
     error.value = null
@@ -271,7 +252,6 @@ export const useCommunicationStore = defineStore('communications', () => {
 
     // Actions
     loadCommunications,
-    createCommunication,
     sendToAllMembers,
     sendToOverdueMembers,
     setFilters,

@@ -1,0 +1,44 @@
+const TYPE_LABELS = { REMINDER: 'Reminder', ANNOUNCEMENT: 'Announcement', PERSONAL: 'Personal' }
+
+/** A plain word for the message type; an unknown type shows as it came. */
+export function typeLabel(type) {
+  return TYPE_LABELS[type] || type || ''
+}
+
+/**
+ * The delivery counts of one message as words with a tone for StatusLabel: "8 sent" (sent plus
+ * delivered, both mean the mail left), "1 failed", "1 pending". Zero counts are left out.
+ * @returns {{ key: string, text: string, tone: 'paid'|'inactive'|'behind' }[]}
+ */
+export function deliverySummaryParts(summary) {
+  const { sent = 0, delivered = 0, failed = 0, pending = 0 } = summary || {}
+  const parts = [
+    { key: 'sent', count: sent + delivered, word: 'sent', tone: 'paid' },
+    { key: 'failed', count: failed, word: 'failed', tone: 'inactive' },
+    { key: 'pending', count: pending, word: 'pending', tone: 'behind' }
+  ]
+  return parts.filter(part => part.count > 0).map(({ key, count, word, tone }) => ({ key, text: `${count} ${word}`, tone }))
+}
+
+/** StatusLabel tone and word for one delivery status. */
+export function deliveryStatus(status) {
+  switch (status) {
+    case 'SENT': return { tone: 'paid', label: 'Sent' }
+    case 'DELIVERED': return { tone: 'paid', label: 'Delivered' }
+    case 'FAILED': return { tone: 'inactive', label: 'Failed' }
+    case 'PENDING': return { tone: 'behind', label: 'Pending' }
+    default: return { tone: 'behind', label: status || '' }
+  }
+}
+
+/** Counts of one list of deliveries, in the shape of a list item's deliverySummary. */
+export function countDeliveries(deliveries) {
+  const count = status => deliveries.filter(delivery => delivery.status === status).length
+  return { sent: count('SENT'), delivered: count('DELIVERED'), failed: count('FAILED'), pending: count('PENDING') }
+}
+
+/** Newest first by sent date, then created date, then id. Does not change the input. */
+export function sortMessages(messages) {
+  const when = message => String(message.sentDate || message.createdDate || '')
+  return [...messages].sort((a, b) => when(b).localeCompare(when(a)) || b.id - a.id)
+}
