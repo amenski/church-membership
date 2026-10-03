@@ -17,7 +17,8 @@ public enum PaymentMethod {
     CREDIT_CARD("CREDIT_CARD", "Credit Card"),
     DEBIT_CARD("DEBIT_CARD", "Debit Card"),
     MOBILE_PAYMENT("MOBILE_PAYMENT", "Mobile Payment"),
-    ONLINE_PAYMENT("ONLINE_PAYMENT", "Online Payment");
+    ONLINE_PAYMENT("ONLINE_PAYMENT", "Online Payment"),
+    CHECK("CHECK", "Check");
 
     private final String code;
     private final String displayName;

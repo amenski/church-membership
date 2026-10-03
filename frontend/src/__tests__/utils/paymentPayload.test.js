@@ -28,9 +28,9 @@ describe('buildPaymentRequest', () => {
 })
 
 describe('PAYMENT_METHODS', () => {
-  it('lists the six backend codes', () => {
+  it('lists the seven backend codes', () => {
     expect(PAYMENT_METHODS.map(m => m.value)).toEqual([
-      'CASH', 'BANK_TRANSFER', 'CREDIT_CARD', 'DEBIT_CARD', 'MOBILE_PAYMENT', 'ONLINE_PAYMENT'
+      'CASH', 'BANK_TRANSFER', 'CREDIT_CARD', 'DEBIT_CARD', 'MOBILE_PAYMENT', 'ONLINE_PAYMENT', 'CHECK'
     ])
   })
 })

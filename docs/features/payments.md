@@ -46,7 +46,7 @@ A VOLUNTEER sees the page without the record form. STAFF and ADMIN see it (`isSt
 - Amount must be above 0 (`Payment.java:46-50`; bean validation `Payment.java:27`, `src/main/java/io/github/membertracker/infrastructure/dto/RecordPaymentRequest.java:20-21`). No other minimum or maximum.
 - Period cannot be in the future and cannot be more than 3 months before the current month (`Payment.java:52-66`). Example: in October, July to October are accepted.
 - One payment per member per month (`RecordPaymentUseCase.java:33-36`).
-- Method is one of 6 codes: `CASH`, `BANK_TRANSFER`, `CREDIT_CARD`, `DEBIT_CARD`, `MOBILE_PAYMENT`, `ONLINE_PAYMENT` (`src/main/java/io/github/membertracker/domain/enumeration/PaymentMethod.java:15-20`; form list `paymentPayload.js:1-8`). An unknown code is a 400.
+- Method is one of 7 codes: `CASH`, `BANK_TRANSFER`, `CREDIT_CARD`, `DEBIT_CARD`, `MOBILE_PAYMENT`, `ONLINE_PAYMENT`, `CHECK` (`src/main/java/io/github/membertracker/domain/enumeration/PaymentMethod.java:15-21`; form list `paymentPayload.js:1-9`). An unknown code is a 400.
 - The payment date is always today; the client cannot send one (`Payment.java:41`).
 - Notes, if sent through the API, are limited to 500 characters (`RecordPaymentRequest.java:29-30`).
 - Payments cannot be edited, deleted or voided. The DELETE endpoint was removed; payments are financial records.

@@ -20,7 +20,7 @@ Backend: [payment-controller.md](payment-controller.md).
 Local component `data()` (`frontend/src/views/PaymentsView.vue:204-217`):
 - `members`, `payments`: arrays, forced to `[]` if the response is not an array
 - `analytics`: `totalRevenue`, `monthlyRevenue` (payments dated in the current calendar month), `averagePayment`; strings from `toFixed(2)`, or number `0` when no payments
-- `paymentMethods`: the 6 backend codes with labels (`PAYMENT_METHODS`, `frontend/src/utils/paymentPayload.js:1-8`)
+- `paymentMethods`: the 7 backend codes with labels (`PAYMENT_METHODS`, `frontend/src/utils/paymentPayload.js:1-9`)
 - `newPayment`: form model `{ memberId, amount, paymentMethod: 'CASH', period }`; `period` defaults to the current local month as `YYYY-MM` (`PaymentsView.vue:185-194`)
 - `selectedPayment`: payment shown in the receipt modal
 

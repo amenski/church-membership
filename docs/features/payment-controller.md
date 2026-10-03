@@ -19,7 +19,7 @@ Roles and hierarchy: [../authentication.md](../authentication.md).
 `RecordPaymentRequest` (`src/main/java/io/github/membertracker/infrastructure/dto/RecordPaymentRequest.java:15-29`):
 - `memberId`: required, positive. The member is loaded by id server-side; the client never sends a member object.
 - `amount`: required, >= 0.01.
-- `paymentMethod`: required, enum code (`CASH`, `BANK_TRANSFER`, `CREDIT_CARD`, `DEBIT_CARD`, `MOBILE_PAYMENT`, `ONLINE_PAYMENT`, `domain/enumeration/PaymentMethod.java:13-18`); an unknown code is a 400.
+- `paymentMethod`: required, enum code (`CASH`, `BANK_TRANSFER`, `CREDIT_CARD`, `DEBIT_CARD`, `MOBILE_PAYMENT`, `ONLINE_PAYMENT`, `CHECK`, `domain/enumeration/PaymentMethod.java:13-19`); an unknown code is a 400.
 - `period`: optional `YearMonth`, JSON `"2026-10"`; absent means the current month.
 - `notes`: optional, max 500 characters.
 

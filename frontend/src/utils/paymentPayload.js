@@ -4,7 +4,8 @@ export const PAYMENT_METHODS = [
   { value: 'CREDIT_CARD', label: 'Credit card' },
   { value: 'DEBIT_CARD', label: 'Debit card' },
   { value: 'MOBILE_PAYMENT', label: 'Mobile payment' },
-  { value: 'ONLINE_PAYMENT', label: 'Online payment' }
+  { value: 'ONLINE_PAYMENT', label: 'Online payment' },
+  { value: 'CHECK', label: 'Check' }
 ]
 
 // Body of POST /api/payments (RecordPaymentRequest). period is "YYYY-MM".
