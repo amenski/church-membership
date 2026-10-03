@@ -8,7 +8,7 @@ How MemberTracker sends email to members, and how to configure and test it.
 
 | Trigger | Use case | Recipients | Method |
 |---------|----------|------------|--------|
-| `POST /api/communications/send-to-all` | `SendCommunicationToAllMembersUseCase` | All members | Plain text, with retry |
+| `POST /api/communications/send-to-all` | `SendCommunicationToAllMembersUseCase` | All **active** members | Plain text, with retry |
 | `POST /api/communications/send-to-overdue/{months}` | `SendCommunicationToMembersUseCase` | Members overdue by at least `months` | Plain text, no retry |
 | Daily reminder job | `SendPaymentRemindersUseCase` (2+ months missed) | Overdue members | Plain text, no retry. **Does not run:** there is no `@EnableScheduling`. |
 

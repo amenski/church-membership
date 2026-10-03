@@ -9,7 +9,6 @@ import io.github.membertracker.domain.repository.CommunicationRepository;
 import io.github.membertracker.domain.repository.MemberRepository;
 import io.github.membertracker.infrastructure.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -71,7 +70,7 @@ class SendCommunicationToAllMembersUseCaseTest {
 
     @Test
     void flagsCommunicationAsSentToAllAndCreatesPendingEmailDeliveryPerMember() {
-        when(memberRepository.findAll()).thenReturn(List.of(alice, bob));
+        when(memberRepository.findByActive(true)).thenReturn(List.of(alice, bob));
         Communication c = communication();
         LocalDateTime before = LocalDateTime.now();
 
@@ -89,7 +88,7 @@ class SendCommunicationToAllMembersUseCaseTest {
 
     @Test
     void usesTheRetryEnabledEmailPathForEveryMember() {
-        when(memberRepository.findAll()).thenReturn(List.of(alice, bob));
+        when(memberRepository.findByActive(true)).thenReturn(List.of(alice, bob));
         when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenReturn(true);
 
         useCase.invoke(communication());
@@ -101,7 +100,7 @@ class SendCommunicationToAllMembersUseCaseTest {
 
     @Test
     void failedEmailEventuallyMarksDeliveryFailed() {
-        when(memberRepository.findAll()).thenReturn(List.of(alice));
+        when(memberRepository.findByActive(true)).thenReturn(List.of(alice));
         when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenReturn(false);
         Communication c = communication();
 
@@ -115,7 +114,7 @@ class SendCommunicationToAllMembersUseCaseTest {
 
     @Test
     void noMembersSavesEmptyCommunicationAndSendsNothing() {
-        when(memberRepository.findAll()).thenReturn(List.of());
+        when(memberRepository.findByActive(true)).thenReturn(List.of());
         Communication c = communication();
 
         useCase.invoke(c);
@@ -127,10 +126,10 @@ class SendCommunicationToAllMembersUseCaseTest {
     }
 
     @Test
-    @Disabled("BUG: \"all members\" uses findAll(), so inactive members also receive the communication")
     void inactiveMembersAreNotSelectedAsRecipients() {
         Member inactive = member(3L, "Gone", false);
         when(memberRepository.findAll()).thenReturn(List.of(alice, inactive));
+        when(memberRepository.findByActive(true)).thenReturn(List.of(alice));
         Communication c = communication();
 
         useCase.invoke(c);

@@ -33,7 +33,7 @@ public class SendCommunicationToAllMembersUseCase {
     }
 
     /**
-     * Sends a communication to all members.
+     * Sends a communication to all active members.
      *
      * @param communication the communication to send
      * @return the saved communication with delivery information
@@ -42,7 +42,7 @@ public class SendCommunicationToAllMembersUseCase {
         communication.setSentToAllMembers(true);
         communication.setSentDate(LocalDateTime.now());
 
-        List<Member> allMembers = memberRepository.findAll();
+        List<Member> allMembers = memberRepository.findByActive(true);
         logger.info("Sending communication '{}' to {} members", communication.getTitle(), allMembers.size());
 
         // First save the communication with pending deliveries
