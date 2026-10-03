@@ -31,7 +31,7 @@ Request body is `SendCommunicationRequest` (`infrastructure/dto/SendCommunicatio
 
 - Send flows: build one `PENDING` `MessageDelivery` per recipient, save, return immediately. One background task per call (cached thread pool) then loops recipients with a 100 ms pause (`SendCommunicationToAllMembersUseCase.java:100`, `SendCommunicationToMembersUseCase.java:88`) and saves the whole communication after each status change (`SendCommunicationToAllMembersUseCase.java:113-128`).
 - Title and message are personalised per recipient at send time: `{{member_name}}` becomes the member's name (`MessageTemplates.personalize`, called from `SendCommunicationToAllMembersUseCase.java:75-76`, `SendCommunicationToMembersUseCase.java:77-78`, `RetryDeliveryUseCase.java:60-61`); the stored `Communication` keeps the placeholder. See [../email.md](../email.md#personalisation).
-- Response therefore shows `PENDING`; read final status via the deliveries endpoint.
+- Response is meant to show `PENDING` (but see the persistence gotcha below); read final status via the deliveries endpoint.
 - Retry: only `FAILED` (`RetryDeliveryUseCase.java:47`) and `EMAIL` (`:50`) deliveries. Success sets `SENT` + `deliveryTime` (`:65-68`); failure keeps `FAILED`, writes "Retry failed at ..." to `responseNotes` (`:70-71`).
 
 ## Collaborators
@@ -64,6 +64,7 @@ Format: [../architecture.md](../architecture.md).
 - `GET /{id}/deliveries` unknown id returns 200 with `[]` (`usecase/GetDeliveriesByCommunicationUseCase.java:36-40`).
 - A failed retry returns 200 with `status: FAILED`; check the body.
 - send-to-member with an unknown `memberId` is a 400 `MEMBER_004`, not 404 (`CommunicationController.java:121-122`).
+- Delivery rows are not persisted by `CommunicationDbRepository.save` (it ignores `deliveries`, `infrastructure/persistence/repository/CommunicationDbRepository.java:78-92`), so a send response carries no deliveries and `GET /{id}/deliveries` should return `[]`; see [communications.md](communications.md#known-issues).
 - `create` leaves `sentDate` null and sends nothing; the three send endpoints each build a new communication from the request body, so no endpoint sends an existing communication by id.
 - A client-supplied `sentDate` in the body is ignored, not rejected: the request DTO has no such field.
 - send-to-overdue has no `active` filter (`infrastructure/persistence/repository/MemberJpaRepository.java:16`), unlike send-to-all; an empty match still saves a communication marked sent with zero deliveries.

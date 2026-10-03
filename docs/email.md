@@ -9,9 +9,9 @@ How MemberTracker sends email to members, and how to configure and test it.
 | Trigger | Use case | Recipients | Method |
 |---------|----------|------------|--------|
 | `POST /api/communications/send-to-all` | `SendCommunicationToAllMembersUseCase` | All **active** members | Plain text, with retry |
-| `POST /api/communications/send-to-overdue/{months}` | `SendCommunicationToMembersUseCase` | Members overdue by at least `months` | Plain text, no retry |
-| `POST /api/communications/send-to-member/{memberId}` | `SendCommunicationToMembersUseCase` | One member (path `memberId`) | Plain text, no retry |
-| Monthly reminder job (1st, 09:00) | `SendPaymentRemindersUseCase` (`app.payment.reminder.months-threshold` months missed, default 3) | Active members at or over the threshold | Plain text, no retry. Runs only while the application is up at that time; see [features/payment-reminder-scheduler.md](features/payment-reminder-scheduler.md). |
+| `POST /api/communications/send-to-overdue/{months}` | `SendCommunicationToMembersUseCase` | Members overdue by at least `months` | Plain text, with retry |
+| `POST /api/communications/send-to-member/{memberId}` | `SendCommunicationToMembersUseCase` | One member (path `memberId`) | Plain text, with retry |
+| Monthly reminder job (1st, 09:00) | `SendPaymentRemindersUseCase` (`app.payment.reminder.months-threshold` months missed, default 3) | Active members at or over the threshold | Plain text, with retry. Runs only while the application is up at that time; see [features/payment-reminder-scheduler.md](features/payment-reminder-scheduler.md). |
 
 Each send runs on a background thread from `Executors.newCachedThreadPool()`, with a 100 ms pause between emails to stay under SMTP rate limits. A send still in progress is lost if the app restarts.
 
@@ -48,7 +48,7 @@ app.mail.smtp.auth=${MAIL_AUTH:true}
 app.mail.smtp.starttls.enable=${MAIL_STARTTLS:true}
 app.mail.smtp.debug=${MAIL_DEBUG:false}
 
-# Retry for send-to-all (exponential backoff)
+# Retry for every email send (exponential backoff)
 app.mail.retry.max-attempts=${MAIL_RETRY_MAX_ATTEMPTS:3}
 app.mail.retry.initial-delay-ms=${MAIL_RETRY_INITIAL_DELAY_MS:1000}
 app.mail.retry.multiplier=${MAIL_RETRY_MULTIPLIER:2.0}
@@ -121,4 +121,5 @@ Tracked in [functionality-audit.md](functionality-audit.md) (C3, C4) and [todo.m
 - No unsubscribe link or consent record
 - Only two audiences: everyone, or overdue members
 - No durable queue
+- Delivery rows are not saved when a communication is sent, so the delivery dialog should be empty (see [features/communications.md](features/communications.md#known-issues))
 - SMS and WhatsApp are not implemented

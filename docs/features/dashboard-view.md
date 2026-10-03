@@ -20,10 +20,10 @@ No Pinia store for data; Options API local `data()` (`frontend/src/views/Dashboa
 ## Collaborators
 | api.js method | Request | Backend |
 |---------------|---------|---------|
-| `getDashboardStats` (`frontend/src/services/api.js:518`) | GET `/dashboard/stats` | [dashboard-controller.md](dashboard-controller.md) |
-| `getRecentPayments` (`:522`) | GET `/dashboard/recent-payments` | same |
-| `getOverdueMembers` (`:526`) | GET `/dashboard/overdue-members` | same |
-| `getRecentActivities` (`:530`) | GET `/dashboard/recent-activities` | same |
+| `getDashboardStats` (`frontend/src/services/api.js:522`) | GET `/dashboard/stats` | [dashboard-controller.md](dashboard-controller.md) |
+| `getRecentPayments` (`:526`) | GET `/dashboard/recent-payments` | same |
+| `getOverdueMembers` (`:530`) | GET `/dashboard/overdue-members` | same |
+| `getRecentActivities` (`:534`) | GET `/dashboard/recent-activities` | same |
 | `sendToMember` (`:427`) | POST `/communications/send-to-member/{memberId}` | `src/main/java/io/github/membertracker/infrastructure/CommunicationController.java:114` (STAFF+) |
 
 Methods return `response.data` (`frontend/src/services/api.js:285-288`).
@@ -40,4 +40,4 @@ Methods return `response.data` (`frontend/src/services/api.js:285-288`).
 ## Gotchas
 - Backend errors are swallowed as 200 with zeros/empty lists (see dashboard-controller.md), so the view cannot show an error state.
 - Activity type `member` has an icon and style (`:209-211`, `:256`) but the backend never emits it.
-- The "Member" column reads the nested `payment.member?.name` (`:57`); payments carry no `memberId` (`src/main/java/io/github/membertracker/domain/model/Payment.java:18`), so the `Unknown` fallback only shows for a payment with no member.
+- The "Member" column reads the nested `payment.member?.name` (`:57`); payments carry no `memberId` (`src/main/java/io/github/membertracker/domain/model/Payment.java:18`), but the nested `member` is always loaded (`payment.member_id` is NOT NULL, `src/main/resources/db/sql/001.schema-creation.sql:23`; mapped at `src/main/java/io/github/membertracker/infrastructure/persistence/repository/PaymentDbRepository.java:77`), so the `Unknown` fallback is not expected to show.

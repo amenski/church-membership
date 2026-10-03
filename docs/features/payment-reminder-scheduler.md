@@ -19,7 +19,7 @@ Two monthly cron jobs (no HTTP surface) that raise members' missed-payment count
 - `UpdateMissingPaymentCountersUseCase` -> `MemberRepository.findByActive`/`save`, `HasPaymentForMonthUseCase` (`UpdateMissingPaymentCountersUseCase.java:21`; a second constructor takes a `Clock`, used by tests)
 - `SendPaymentRemindersUseCase` -> `MemberRepository.findByConsecutiveMonthsMissedGreaterThanEqual` (`SendPaymentRemindersUseCase.java:30`), `SendCommunicationToMembersUseCase.invoke` (`:40`)
 - `SendCommunicationToMembersUseCase` -> saves the `Communication` with `PENDING` deliveries, then sends async via `EmailService` (`SendCommunicationToMembersUseCase.java:40-68`, `:71`)
-- Both reminder use cases are wired as beans in `infrastructure/config/UseCaseConfig.java:197`, `:202`
+- Both reminder use cases are wired as beans in `infrastructure/config/UseCaseConfig.java:203`, `:208`
 - `MembershipPolicy`/`DefaultMembershipPolicy`: not used here (see Gotchas)
 - Mail config, retries, delivery tracking: [email.md](../email.md)
 
@@ -30,7 +30,7 @@ Two monthly cron jobs (no HTTP surface) that raise members' missed-payment count
 
 ## Side effects
 - Counter job: updates `consecutiveMonthsMissed` and `lastMissedCountMonth` on member rows.
-- Reminder job: inserts a `Communication` plus one `MessageDelivery` per overdue member; sends emails on a background thread, so the job's "Successfully sent" log (`:54`) fires before delivery finishes.
+- Reminder job: inserts a `Communication` and is meant to insert one `MessageDelivery` per overdue member, but deliveries are currently not persisted (see [communications.md](communications.md#known-issues)); sends emails on a background thread, so the job's "Successfully sent" log (`:54`) fires before delivery finishes.
 - Counter reset happens elsewhere: `Member.recordPayment` sets it to 0 when the payment covers the current period (`domain/model/Member.java:52-54`). `lastMissedCountMonth` is not reset, so a member who pays and misses a later month is counted again for that later month only.
 
 ## Gotchas

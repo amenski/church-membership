@@ -34,9 +34,9 @@ Overviews explain a feature to people (who can do what, how it works, rules, kno
 | Profile and password | [profile](docs/features/profile.md) | [user-controller](docs/features/user-controller.md) | [profile-view](docs/features/profile-view.md) |
 | Members | [members](docs/features/members.md) | [member-controller](docs/features/member-controller.md) | [members-view](docs/features/members-view.md) |
 | Payments | [payments](docs/features/payments.md) | [payment-controller](docs/features/payment-controller.md) | [payments-view](docs/features/payments-view.md) |
-| Communications | soon | [communication-controller](docs/features/communication-controller.md) | [communications-view](docs/features/communications-view.md) |
-| Dashboard | soon | [dashboard-controller](docs/features/dashboard-controller.md) | [dashboard-view](docs/features/dashboard-view.md) |
-| Payment reminders (scheduled) | soon | [payment-reminder-scheduler](docs/features/payment-reminder-scheduler.md) | none |
+| Communications | [communications](docs/features/communications.md) | [communication-controller](docs/features/communication-controller.md) | [communications-view](docs/features/communications-view.md) |
+| Dashboard | [dashboard](docs/features/dashboard.md) | [dashboard-controller](docs/features/dashboard-controller.md) | [dashboard-view](docs/features/dashboard-view.md) |
+| Payment reminders (scheduled) | [payment-reminders](docs/features/payment-reminders.md) | [payment-reminder-scheduler](docs/features/payment-reminder-scheduler.md) | none |
 
 **Planning**
 
