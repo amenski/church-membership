@@ -1,297 +1,119 @@
 <template>
-  <div class="container-fluid py-4">
-    <div class="row justify-content-center">
-      <div class="col-12 col-lg-8 col-xl-6">
-        <!-- Page Header -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <h1 class="h3 mb-0 text-dark">
-            <i class="bi bi-person-circle me-2"></i>My Profile
-          </h1>
-          <div class="badge bg-primary fs-6">
-            <i class="bi bi-shield-check me-1"></i>{{ user.role }}
-          </div>
+  <div>
+    <PageHead title="Profile" lead="Your details and password." />
+
+    <div class="tw:max-w-160">
+      <p v-if="loading" class="tw:m-0 tw:py-4 tw:text-(length:--text-body) tw:text-muted" role="status">Loading profile...</p>
+
+      <AlertBanner v-else-if="error">
+        <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3">
+          <span>{{ error }}. Check your connection and try again.</span>
+          <BaseButton variant="secondary" size="sm" @click="loadProfile">Try again</BaseButton>
         </div>
+      </AlertBanner>
 
-        <!-- Loading State -->
-        <div v-if="loading" class="text-center py-5">
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
-          </div>
-          <p class="mt-2 text-muted">Loading profile...</p>
-        </div>
+      <template v-else>
+        <section :class="CARD" aria-labelledby="details-title">
+          <SectionTitle id="details-title">Your details</SectionTitle>
 
-        <!-- Error State -->
-        <div v-else-if="error" class="alert alert-danger d-flex align-items-center" role="alert">
-          <i class="bi bi-exclamation-triangle-fill me-2"></i>
-          <div>{{ error }}</div>
-        </div>
+          <dl class="tw:m-0 tw:mb-1 tw:grid tw:grid-cols-[auto_1fr] tw:gap-x-6 tw:gap-y-1 tw:text-(length:--text-body) tw:leading-(--lh-body)">
+            <dt class="tw:font-normal tw:text-muted">Email</dt>
+            <dd class="tw:m-0 tw:min-w-0 tw:[overflow-wrap:anywhere]">{{ user.email }}</dd>
+            <dt class="tw:font-normal tw:text-muted">Role</dt>
+            <dd class="tw:m-0 tw:font-medium">{{ roleLabel }}</dd>
+          </dl>
+          <p class="tw:mt-0 tw:mb-6 tw:text-(length:--text-label) tw:leading-(--lh-label) tw:text-muted">Your email cannot be changed here.</p>
 
-        <!-- Profile Content -->
-        <div v-else>
-          <!-- Personal Information Card -->
-          <div class="card shadow-sm mb-4">
-            <div class="card-header bg-light">
-              <h5 class="card-title mb-0">
-                <i class="bi bi-person-vcard me-2"></i>Personal Information
-              </h5>
+          <AlertBanner v-if="successMessage" tone="success">{{ successMessage }}</AlertBanner>
+          <AlertBanner v-if="saveError">{{ saveError }}</AlertBanner>
+
+          <form class="tw:flex tw:flex-col tw:gap-4" novalidate @submit.prevent="handleSubmit">
+            <div class="tw:grid tw:grid-cols-1 tw:gap-4 tw:sm:grid-cols-2">
+              <BaseInput id="firstName" v-model="form.firstName" label="First name" maxlength="50" autocomplete="given-name" :error="formErrors.firstName" />
+              <BaseInput id="lastName" v-model="form.lastName" label="Last name" maxlength="50" autocomplete="family-name" :error="formErrors.lastName" />
             </div>
-            <div class="card-body">
-              <form @submit.prevent="handleSubmit">
-                <div class="row">
-                  <!-- Email (Read-only) -->
-                  <div class="col-12 mb-3">
-                    <label for="email" class="form-label">Email Address</label>
-                    <div class="input-group">
-                      <span class="input-group-text">
-                        <i class="bi bi-envelope"></i>
-                      </span>
-                      <input
-                        id="email"
-                        type="email"
-                        v-model="user.email"
-                        disabled
-                        class="form-control"
-                      />
-                    </div>
-                    <div class="form-text text-muted">
-                      <i class="bi bi-info-circle me-1"></i>Email cannot be changed
-                    </div>
-                  </div>
-
-                  <!-- First Name & Last Name -->
-                  <div class="col-md-6 mb-3">
-                    <label for="firstName" class="form-label">First Name</label>
-                    <div class="input-group">
-                      <span class="input-group-text">
-                        <i class="bi bi-person"></i>
-                      </span>
-                      <input
-                        id="firstName"
-                        type="text"
-                        v-model="form.firstName"
-                        maxlength="50"
-                        :disabled="!editing"
-                        class="form-control"
-                        :class="{ 'is-invalid': formErrors.firstName }"
-                      />
-                    </div>
-                    <div v-if="formErrors.firstName" class="invalid-feedback d-block">
-                      {{ formErrors.firstName }}
-                    </div>
-                  </div>
-
-                  <div class="col-md-6 mb-3">
-                    <label for="lastName" class="form-label">Last Name</label>
-                    <div class="input-group">
-                      <span class="input-group-text">
-                        <i class="bi bi-person"></i>
-                      </span>
-                      <input
-                        id="lastName"
-                        type="text"
-                        v-model="form.lastName"
-                        maxlength="50"
-                        :disabled="!editing"
-                        class="form-control"
-                        :class="{ 'is-invalid': formErrors.lastName }"
-                      />
-                    </div>
-                    <div v-if="formErrors.lastName" class="invalid-feedback d-block">
-                      {{ formErrors.lastName }}
-                    </div>
-                  </div>
-
-                  <!-- Phone -->
-                  <div class="col-12 mb-3">
-                    <label for="phone" class="form-label">Phone Number</label>
-                    <div class="input-group">
-                      <span class="input-group-text">
-                        <i class="bi bi-telephone"></i>
-                      </span>
-                      <input
-                        id="phone"
-                        type="tel"
-                        v-model="form.phone"
-                        :disabled="!editing"
-                        class="form-control"
-                        :class="{ 'is-invalid': formErrors.phone }"
-                        placeholder="e.g., +1234567890"
-                      />
-                    </div>
-                    <div v-if="formErrors.phone" class="invalid-feedback d-block">
-                      {{ formErrors.phone }}
-                    </div>
-                  </div>
-
-                  <!-- Bio -->
-                  <div class="col-12 mb-4">
-                    <label for="bio" class="form-label">Bio</label>
-                    <textarea
-                      id="bio"
-                      v-model="form.bio"
-                      :disabled="!editing"
-                      class="form-control"
-                      :class="{ 'is-invalid': formErrors.bio }"
-                      rows="4"
-                      placeholder="Tell us about yourself..."
-                    ></textarea>
-                    <div class="form-text text-muted">
-                      <i class="bi bi-pencil me-1"></i>Write a brief description about yourself
-                    </div>
-                    <div v-if="formErrors.bio" class="invalid-feedback d-block">
-                      {{ formErrors.bio }}
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="d-flex gap-2">
-                  <button
-                    v-if="!editing"
-                    type="button"
-                    @click="startEditing"
-                    class="btn btn-primary"
-                  >
-                    <i class="bi bi-pencil me-1"></i>Edit Profile
-                  </button>
-                  <template v-else>
-                    <button type="submit" class="btn btn-success" :disabled="saving">
-                      <i class="bi bi-check-lg me-1"></i>
-                      {{ saving ? 'Saving...' : 'Save Changes' }}
-                    </button>
-                    <button
-                      type="button"
-                      @click="cancelEditing"
-                      class="btn btn-outline-secondary"
-                      :disabled="saving"
-                    >
-                      <i class="bi bi-x-lg me-1"></i>Cancel
-                    </button>
-                  </template>
-                </div>
-              </form>
-            </div>
-          </div>
-
-          <!-- Success Message -->
-          <div v-if="successMessage" class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i>
-            <strong>Success!</strong> {{ successMessage }}
-            <button type="button" class="btn-close" @click="successMessage = null"></button>
-          </div>
-
-          <!-- Account Information Card -->
-          <div class="card shadow-sm">
-            <div class="card-header bg-light">
-              <h5 class="card-title mb-0">
-                <i class="bi bi-shield-lock me-2"></i>Account Information
-              </h5>
-            </div>
-            <div class="card-body">
-              <div class="d-flex gap-2">
-                <button
-                  type="button"
-                  class="btn btn-outline-primary btn-sm"
-                  data-bs-toggle="modal"
-                  data-bs-target="#changePasswordModal"
-                >
-                  <i class="bi bi-key me-1"></i>Change Password
-                </button>
+            <BaseInput id="phone" v-model="form.phone" label="Phone" type="tel" autocomplete="tel" hint="Optional. 10 digits or more." :error="formErrors.phone" />
+            <div>
+              <label for="bio" :class="LABEL">Bio</label>
+              <textarea
+                id="bio"
+                v-model="form.bio"
+                rows="4"
+                :aria-invalid="formErrors.bio ? 'true' : undefined"
+                aria-describedby="bio-count bio-error"
+                :class="[
+                  'tw:block tw:w-full tw:resize-y tw:rounded-md tw:border tw:bg-paper tw:px-3 tw:py-2 tw:text-lg tw:leading-normal tw:text-ink',
+                  'tw:focus:border-teal tw:focus:outline-2 tw:focus:outline-offset-1 tw:focus:outline-teal',
+                  formErrors.bio ? 'tw:border-clay' : 'tw:border-field'
+                ]"
+              ></textarea>
+              <div class="tw:mt-1 tw:flex tw:justify-between tw:gap-4 tw:text-[0.9375rem]">
+                <p v-if="formErrors.bio" id="bio-error" class="tw:m-0 tw:text-clay">{{ formErrors.bio }}</p>
+                <span v-else id="bio-error"></span>
+                <span id="bio-count" :class="['tw:tabular-nums', form.bio.length > BIO_MAX ? 'tw:text-clay' : 'tw:text-muted']">{{ form.bio.length }} of {{ BIO_MAX }}</span>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
+            <div>
+              <BaseButton type="submit" :disabled="saving" :aria-busy="saving ? 'true' : undefined" class="tw:min-h-(--control-primary-h) tw:max-sm:w-full">
+                {{ saving ? 'Saving...' : 'Save changes' }}
+              </BaseButton>
+            </div>
+          </form>
+        </section>
+
+        <section :class="CARD" aria-labelledby="password-title">
+          <SectionTitle id="password-title">Password</SectionTitle>
+          <p class="tw:mt-0 tw:mb-4 tw:text-(length:--text-body) tw:leading-(--lh-body)">Use at least 8 characters with an uppercase letter, a lowercase letter, a number and a special character.</p>
+          <BaseButton variant="secondary" class="tw:min-h-(--control-h) tw:max-sm:w-full" @click="openPasswordDialog">Change password</BaseButton>
+        </section>
+      </template>
     </div>
 
-    <!-- Change Password Modal -->
-    <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="changePasswordModalLabel">
-              <i class="bi bi-key me-2"></i>Change Password
-            </h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <form @submit.prevent="handlePasswordChange">
-              <div v-if="passwordServerError" class="alert alert-danger" role="alert">
-                {{ passwordServerError }}
-              </div>
-              <div class="mb-3">
-                <label for="currentPassword" class="form-label">Current Password</label>
-                <input
-                  id="currentPassword"
-                  type="password"
-                  v-model="passwordForm.currentPassword"
-                  class="form-control"
-                  :class="{ 'is-invalid': passwordErrors.currentPassword }"
-                  placeholder="Enter your current password"
-                />
-                <div v-if="passwordErrors.currentPassword" class="invalid-feedback">
-                  {{ passwordErrors.currentPassword }}
-                </div>
-              </div>
-
-              <div class="mb-3">
-                <label for="newPassword" class="form-label">New Password</label>
-                <input
-                  id="newPassword"
-                  type="password"
-                  v-model="passwordForm.newPassword"
-                  class="form-control"
-                  :class="{ 'is-invalid': passwordErrors.newPassword }"
-                  placeholder="Enter new password"
-                />
-                <div class="form-text">
-                  <i class="bi bi-info-circle me-1"></i>8 to 72 characters with an uppercase letter, a lowercase letter, a digit and a special character
-                </div>
-                <div v-if="passwordErrors.newPassword" class="invalid-feedback">
-                  {{ passwordErrors.newPassword }}
-                </div>
-              </div>
-
-              <div class="mb-3">
-                <label for="confirmPassword" class="form-label">Confirm New Password</label>
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  v-model="passwordForm.confirmPassword"
-                  class="form-control"
-                  :class="{ 'is-invalid': passwordErrors.confirmPassword }"
-                  placeholder="Confirm new password"
-                />
-                <div v-if="passwordErrors.confirmPassword" class="invalid-feedback">
-                  {{ passwordErrors.confirmPassword }}
-                </div>
-              </div>
-
-              <div class="d-flex gap-2 justify-content-end">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-primary" :disabled="changingPassword">
-                  <i class="bi bi-check-lg me-1"></i>
-                  {{ changingPassword ? 'Changing...' : 'Change Password' }}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
+    <BaseModal v-model="passwordOpen" title="Change password" size="md">
+      <AlertBanner v-if="passwordServerError">{{ passwordServerError }}</AlertBanner>
+      <form id="password-form" class="tw:flex tw:flex-col tw:gap-4" novalidate @submit.prevent="handlePasswordChange">
+        <BaseInput id="currentPassword" v-model="passwordForm.currentPassword" label="Current password" type="password" autocomplete="current-password" :error="passwordErrors.currentPassword" />
+        <BaseInput
+          id="newPassword"
+          v-model="passwordForm.newPassword"
+          label="New password"
+          type="password"
+          autocomplete="new-password"
+          :hint="passwordErrors.newPassword ? '' : PASSWORD_RULE_MESSAGE"
+          :error="passwordErrors.newPassword"
+        />
+        <BaseInput id="confirmPassword" v-model="passwordForm.confirmPassword" label="Confirm new password" type="password" autocomplete="new-password" :error="passwordErrors.confirmPassword" />
+      </form>
+      <template #footer>
+        <BaseButton variant="secondary" :disabled="changingPassword" @click="passwordOpen = false">Cancel</BaseButton>
+        <BaseButton type="submit" form="password-form" :disabled="changingPassword" :aria-busy="changingPassword ? 'true' : undefined">
+          {{ changingPassword ? 'Changing...' : 'Change password' }}
+        </BaseButton>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
 <script>
-import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
-import { Modal } from 'bootstrap'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useAuthStore, useAppStore } from '@/stores/index.js'
 import apiService from '@/services/api.js'
-import { validateNewPassword } from '@/utils/passwordRules.js'
+import { validateNewPassword, PASSWORD_RULE_MESSAGE } from '@/utils/passwordRules.js'
 import { isValidPhone } from '@/utils/phoneRules.js'
+import AlertBanner from '@/components/AlertBanner.vue'
+import BaseButton from '@/components/BaseButton.vue'
+import BaseInput from '@/components/BaseInput.vue'
+import BaseModal from '@/components/BaseModal.vue'
+import PageHead from '@/components/PageHead.vue'
+import SectionTitle from '@/components/SectionTitle.vue'
+
+const BIO_MAX = 500
+const CARD = 'tw:mb-6 tw:rounded-md tw:border tw:border-rule tw:bg-paper tw:p-(--card-pad)'
+const LABEL = 'tw:mb-1 tw:inline-block tw:text-base tw:font-medium tw:text-ink'
 
 export default {
   name: 'ProfileView',
+  components: { AlertBanner, BaseButton, BaseInput, BaseModal, PageHead, SectionTitle },
   setup() {
     const authStore = useAuthStore()
     const appStore = useAppStore()
@@ -308,11 +130,12 @@ export default {
       phone: '',
       bio: ''
     })
-    const editing = ref(false)
     const loading = ref(true)
     const saving = ref(false)
     const error = ref(null)
+    const saveError = ref('')
     const successMessage = ref(null)
+    const passwordOpen = ref(false)
 
     // Password change functionality
     const changingPassword = ref(false)
@@ -352,7 +175,7 @@ export default {
       }
 
       // Bio validation (optional but limit length)
-      if (form.value.bio && form.value.bio.length > 500) {
+      if (form.value.bio && form.value.bio.length > BIO_MAX) {
         formErrors.value.bio = 'Bio must be less than 500 characters'
         isValid = false
       }
@@ -380,24 +203,6 @@ export default {
       }
     }
 
-    const startEditing = () => {
-      editing.value = true
-      successMessage.value = null
-      formErrors.value = { firstName: '', lastName: '', phone: '', bio: '' }
-    }
-
-    const cancelEditing = () => {
-      editing.value = false
-      successMessage.value = null
-      form.value = {
-        firstName: user.value.firstName || '',
-        lastName: user.value.lastName || '',
-        phone: user.value.phone || '',
-        bio: user.value.bio || ''
-      }
-      formErrors.value = { firstName: '', lastName: '', phone: '', bio: '' }
-    }
-
     const handleSubmit = async () => {
       // Validate form before submission
       if (!validateForm()) {
@@ -406,20 +211,26 @@ export default {
 
       try {
         saving.value = true
-        error.value = null
+        saveError.value = ''
         successMessage.value = null
 
         const data = await apiService.updateProfile(form.value)
         user.value = data
         authStore.user = data
-        editing.value = false
         successMessage.value = 'Profile updated successfully!'
 
         setTimeout(() => {
           successMessage.value = null
         }, 5000)
       } catch (err) {
-        error.value = 'Failed to update profile'
+        // Server field errors go under their field; anything else in the card's banner
+        const rest = []
+        for (const { field, message } of err.fieldErrors || []) {
+          if (field in formErrors.value && !formErrors.value[field]) formErrors.value[field] = message
+          else rest.push(message)
+        }
+        if (!err.fieldErrors?.length) rest.push('Failed to update profile')
+        if (rest.length) saveError.value = rest.join(' ')
         console.error('Error updating profile:', err)
       } finally {
         saving.value = false
@@ -478,6 +289,7 @@ export default {
 
     // Handle password change
     const handlePasswordChange = async () => {
+      passwordServerError.value = ''
       if (!validatePasswordForm()) {
         return
       }
@@ -492,7 +304,7 @@ export default {
         })
 
         resetPasswordForm()
-        Modal.getOrCreateInstance(document.getElementById('changePasswordModal')).hide()
+        passwordOpen.value = false
         appStore.addNotification({
           type: 'success',
           title: 'Password changed',
@@ -508,125 +320,47 @@ export default {
       }
     }
 
-    onMounted(() => {
-      loadProfile()
-      document.getElementById('changePasswordModal')?.addEventListener('hidden.bs.modal', resetPasswordForm)
+    const openPasswordDialog = () => {
+      resetPasswordForm()
+      passwordOpen.value = true
+    }
+
+    // Closing the dialog by any route (Cancel, Escape, backdrop, success) clears it
+    watch(passwordOpen, (open) => {
+      if (!open) resetPasswordForm()
     })
 
-    onBeforeUnmount(() => {
-      document.getElementById('changePasswordModal')?.removeEventListener('hidden.bs.modal', resetPasswordForm)
+    const roleLabel = computed(() => {
+      const role = user.value?.role || ''
+      return role.charAt(0) + role.slice(1).toLowerCase()
     })
+
+    onMounted(loadProfile)
 
     return {
       user,
       form,
       formErrors,
-      editing,
       loading,
       saving,
       error,
+      saveError,
       successMessage,
+      passwordOpen,
+      roleLabel,
+      BIO_MAX,
+      LABEL,
+      CARD,
+      PASSWORD_RULE_MESSAGE,
       changingPassword,
       passwordServerError,
       passwordForm,
       passwordErrors,
-      startEditing,
-      cancelEditing,
+      loadProfile,
+      openPasswordDialog,
       handleSubmit,
       handlePasswordChange
     }
   }
 }
 </script>
-
-<style scoped>
-.profile-container {
-  max-width: 800px;
-  margin: 2rem auto;
-  padding: 0 1rem;
-}
-
-.profile-card {
-  background: white;
-  border-radius: 8px;
-  padding: 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-h1 {
-  margin-bottom: 2rem;
-  color: #333;
-}
-
-.profile-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-}
-
-label {
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-  color: #555;
-}
-
-.form-text {
-  margin-top: 0.25rem;
-  color: #666;
-  font-size: 0.875rem;
-}
-
-textarea.form-control {
-  resize: vertical;
-  min-height: 100px;
-}
-
-.form-actions {
-  display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.loading {
-  text-align: center;
-  padding: 2rem;
-  color: #666;
-}
-
-.error {
-  padding: 1rem;
-  background-color: #ffebee;
-  color: #c62828;
-  border-radius: 4px;
-  margin-bottom: 1rem;
-}
-
-.success-message {
-  padding: 1rem;
-  background-color: #e8f5e9;
-  color: #2e7d32;
-  border-radius: 4px;
-  margin-top: 1rem;
-}
-
-@media (max-width: 768px) {
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-
-  .form-actions {
-    flex-direction: column;
-  }
-}
-</style>

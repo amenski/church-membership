@@ -110,7 +110,7 @@ Shared patterns are small Vue components in `frontend/src/components/`, built fr
 - The popup is teleported to `body` with fixed positioning (right edge aligned to the trigger, flipped above when there is no room below), so a menu in the last row is never clipped. It closes on scroll and resize rather than chasing the trigger. Items are 44px tall, so it works by thumb.
 - Do not put more than five items in it. If a menu needs more, the screen needs a detail view.
 
-Still Bootstrap until T3 (Payments and Messages): `.btn-warning` (ochre text on an ochre tint), `.badge.bg-*` (quiet tinted text, replaced by `StatusLabel`), tables, cards, forms and modals on Payments, Messages and Profile (Members is done).
+Still Bootstrap until Payments and Messages migrate: `.btn-warning` (ochre text on an ochre tint), `.badge.bg-*` (quiet tinted text, replaced by `StatusLabel`), tables, cards, forms and modals on Payments and Messages (Members and Profile are done).
 
 ## Accessibility rules
 
@@ -134,6 +134,7 @@ Tried and removed, so nobody puts them back:
   Four equal tiles said "everything matters equally"; the page's job is "who needs a call".
 - Three coloured icon buttons on every Members row: replaced by one More menu (`ActionMenu`).
 - Showing "N months behind" for an inactive member: the server stops counting for them, so the figure is stale. Members shows an en dash, and the Dues filter and sort treat inactive members as having no dues.
+- The Profile "Edit profile" toggle with disabled fields: fields are always editable with one "Save changes" button.
 - Parsing `YYYY-MM-DD` with `new Date()`: it is midnight UTC, which renders as the previous day west of UTC. `formatDate` builds a local date for date-only strings.
 - Inter from Google Fonts and the icon CDN: the app now works offline and sends nothing to third parties.
 - A marketing landing page with a Features grid: replaced by a quiet welcome. Nobody lands
@@ -143,7 +144,7 @@ Tried and removed, so nobody puts them back:
 - Pill chips for status: replaced by a dot plus a word.
 - Client-side minimum password length on sign-in: a login form only needs a non-empty password.
 - The warning-triangle icon in the sign-in error alert: the red tint and the words already say it; the icon carried nothing.
-- Old coloured Profile button and input rules (scoped green `#4CAF50` in `ProfileView.vue`): removed so Profile uses the theme; its layout is phase B.
+- Old coloured Profile button and input rules (scoped green `#4CAF50` in `ProfileView.vue`): removed so Profile uses the theme; its layout is now the two paper cards (done in T2).
 - Tried and kept off: a woven band on the landing page. The wordmark alone is calmer, and the band stays a signature at three places only (rail, sign-in card, meter).
 - The overdue list is sorted longest-overdue first (the API order is arbitrary) and shows active members only, with a count note for inactive ones.
 
@@ -156,7 +157,7 @@ Tried and removed, so nobody puts them back:
       table with tabular amounts, right-aligned; Record payment as the one primary button.
 - [ ] Messages (route `/communications`, nav label "Messages"): compose in a paper card;
       delivery results as a ruled list with `StatusLabel`; page title still says Communications, align it.
-- [ ] Profile: forms in paper cards, one per concern (details, password); plain labels.
+- [x] Profile: forms in paper cards, one per concern (details, password); plain labels. Done (T2): the password change is a `BaseModal`.
 - [ ] Dialogs: titles in Alegreya 22, footers with one primary action, destructive actions in clay. Done on Members; Payments and Messages next.
 - [ ] Empty states: every list gets a plain sentence that invites the next action.
 - [ ] Register view: unreachable (registration is disabled); delete or keep restyled, decide.
@@ -168,8 +169,8 @@ Tailwind CSS v4, CSS-first (`@tailwindcss/vite` in `vite.config.js`, no `tailwin
 - **Tokens live in `frontend/src/assets/styles/tailwind.css`, inside `@theme static`.** Colours (`mist paper ink muted rule field teal teal-hover teal-tint ochre ochre-edge ochre-text ochre-tint fern fern-text fern-tint clay clay-tint`), fonts (`font-display`, `font-sans`, `font-ethiopic`), the type scale (`text-sm` 14, `base` 16, `lg` 18, `xl` 22, `2xl` 28, `3xl` 40), `rounded-md` (6px), `shadow-modal`, Bootstrap's breakpoints and the `animate-weave` meter sweep. Each family starts with `--x-*: initial`, so Tailwind's default palette and scale do not exist: only token colours can be used, by accident or otherwise. The hex values are the ones in the table above; `theme.css` keeps its own copies until T4.
 - **No `@apply`, no `<style scoped>`** except where Tailwind cannot say it. Shared patterns are small Vue components (or a JS constant in the component), never a custom CSS class. Use the animation as `motion-safe:animate-weave`.
 - **Every Tailwind class has the prefix `tw:`** (`tw:flex tw:gap-3 tw:md:flex tw:motion-safe:animate-weave`; the prefix comes before any variant). Reason: Bootstrap's own utility classes (`p-3`, `gap-3`, `border`, `m-0`, `text-end`) are `!important` and share names with Tailwind's but not values, and no cascade order can serve both the migrated and the unmigrated screens. Theme variables carry it too (`var(--tw-color-teal)`), which is why the theme is `@theme static` (all tokens are always emitted). The density variables are not Tailwind's and have no prefix (`tw:h-(--control-h)`). T4 removes the prefix with a mechanical search and replace of `tw:`.
-- **Bootstrap stays until T4.** Members, Payments, Messages and Profile still use Bootstrap classes, tables and modals; they migrate in T2 and T3. Until then Bootstrap's CSS and `theme.css` are imported by `tailwind.css` into one `legacy` cascade layer (one layer, so their `!important` rules keep fighting in file order), below Tailwind's `utilities` layer. This is needed because unlayered CSS beats every layer: a Bootstrap `h1` or `a` rule would otherwise beat a utility on a migrated screen. Tailwind runs WITHOUT its global reset (`preflight`) so the unmigrated screens do not change; T4 adds it, and drops the `legacy` layer.
-- **Migration order:** T1 Tailwind foundation, toast and dialog components, shell, Overview, landing, sign-in. T2 Members (done), Profile and Payments. T3 Messages. T4 remove Bootstrap (CSS, JS, `theme.css`, the `legacy` layer) and add preflight.
+- **Bootstrap stays until T4.** Payments and Messages still use Bootstrap classes, tables and modals; they migrate next. Until then Bootstrap's CSS and `theme.css` are imported by `tailwind.css` into one `legacy` cascade layer (one layer, so their `!important` rules keep fighting in file order), below Tailwind's `utilities` layer. This is needed because unlayered CSS beats every layer: a Bootstrap `h1` or `a` rule would otherwise beat a utility on a migrated screen. Tailwind runs WITHOUT its global reset (`preflight`) so the unmigrated screens do not change; T4 adds it, and drops the `legacy` layer.
+- **Migration order:** T1 Tailwind foundation, toast and dialog components, shell, Overview, landing, sign-in. T2 Members and Profile (done), then Payments. T3 Messages. T4 remove Bootstrap (CSS, JS, `theme.css`, the `legacy` layer) and add preflight.
 
 ## Density
 
@@ -186,7 +187,7 @@ Two densities share one palette and one type family. They are plain CSS custom p
 | `--text-label` / `--lh-label` | 14px / 18px | 15px / 20px |
 | `--text-title` / `--lh-title` | 18px / 24px | 20px / 26px |
 
-- **Dense:** staff screens (Overview, Members, Payments, Messages). **Comfortable:** guests (landing, sign-in) and a MEMBER's Profile.
+- **Dense:** staff screens (Overview, Members, Payments, Messages). **Comfortable:** guests (landing, sign-in) and a MEMBER's Profile (which follows `data-density`, so staff see the same page dense).
 - `App.vue` sets `data-density` on the shell root: `comfortable` when signed out or when the role is MEMBER, otherwise `dense`. `LandingView` and `LoginView` render outside the rail shell and set `data-density="comfortable"` on their own root.
 - Inputs never go below 16px text (iOS zooms the page on smaller). The primary action on a comfortable screen is 48px and full width on mobile.
 - Status, as before, is a dot plus a word, never plain coloured text. Every list has an empty state that names the next step. A switch's whole row is the click target (wrap it in a label). Disabled means a light fill, muted text and the real `disabled` attribute.
