@@ -13,6 +13,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import java.util.List;
@@ -20,6 +21,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
 
 /**
@@ -121,8 +123,12 @@ class RoleAuthorizationTest {
     void roleIsAllowedOnlyAtOrAboveMinimum(Endpoint endpoint, String role) throws Exception {
         boolean allowed = ROLES.indexOf(role) >= ROLES.indexOf(endpoint.minimumRole());
 
-        int status = mockMvc.perform(buildRequest(endpoint).with(user("tester@example.com").roles(role)))
-            .andReturn().getResponse().getStatus();
+        MvcResult result = mockMvc.perform(buildRequest(endpoint).with(user("tester@example.com").roles(role)))
+            .andReturn();
+        if (result.getRequest().isAsyncStarted()) {
+            result = mockMvc.perform(asyncDispatch(result)).andReturn();
+        }
+        int status = result.getResponse().getStatus();
 
         if (allowed) {
             assertThat(status).as("%s should reach %s", role, endpoint).isNotIn(401, 403);
@@ -134,7 +140,11 @@ class RoleAuthorizationTest {
     @ParameterizedTest(name = "anonymous -> {0}")
     @MethodSource("allEndpoints")
     void anonymousIsDenied(Endpoint endpoint) throws Exception {
-        int status = mockMvc.perform(buildRequest(endpoint)).andReturn().getResponse().getStatus();
+        MvcResult result = mockMvc.perform(buildRequest(endpoint)).andReturn();
+        if (result.getRequest().isAsyncStarted()) {
+            result = mockMvc.perform(asyncDispatch(result)).andReturn();
+        }
+        int status = result.getResponse().getStatus();
 
         assertThat(status).isIn(401, 403);
     }
