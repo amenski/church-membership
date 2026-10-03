@@ -9,15 +9,15 @@ Roles from `@PreAuthorize` and route meta; hierarchy ADMIN > STAFF > VOLUNTEER >
 |------|--------------|-------------------|
 | Open the Members screen | VOLUNTEER | `/members` (`frontend/src/router/index.js:18-22`) |
 | Browse, search, filter, sort | VOLUNTEER | `GET /api/members` (`MemberController.java:70-71`) |
-| Export all members to CSV | VOLUNTEER | `GET /api/members/export` (`MemberController.java:132-133`) |
-| Export filtered members to CSV | VOLUNTEER | `POST /api/members/export` (`MemberController.java:139-140`) |
+| Export all members to CSV | STAFF | `GET /api/members/export` (`MemberController.java:132-133`) |
+| Export filtered members to CSV | STAFF | `POST /api/members/export` (`MemberController.java:139-140`) |
 | Add a member | STAFF | `POST /api/members` (`MemberController.java:100-101`) |
 | Edit a member | STAFF | `PUT /api/members/{id}` (`MemberController.java:107-108`) |
 | Activate / deactivate | STAFF | same `PUT` (`MembersView.vue:289-297`) |
 | Delete a member | ADMIN | `DELETE /api/members/{id}` (`MemberController.java:117-118`) |
 
 Role view of the screen:
-- VOLUNTEER sees the whole table, filters and Export CSV. Add, edit, delete and activate/deactivate buttons are shown to everyone (`MembersView.vue:9`, `:95-103`); a VOLUNTEER who clicks one gets an "Access Denied" toast from the shared 403 handling (`frontend/src/services/api.js:197-224`). The Add/Edit modal stays open and the table is unchanged.
+- VOLUNTEER sees the whole table and filters; Export CSV needs STAFF (the button is still shown, a click gives a 403 toast). Add, edit, delete and activate/deactivate buttons are shown to everyone (`MembersView.vue:9`, `:95-103`); a VOLUNTEER who clicks one gets an "Access Denied" toast from the shared 403 handling (`frontend/src/services/api.js:197-224`). The Add/Edit modal stays open and the table is unchanged.
 - STAFF can add, edit and toggle status; Delete fails with 403.
 - ADMIN can do everything.
 
@@ -88,7 +88,7 @@ Role view of the screen:
 - Delete and load errors are only logged to the console (`MembersView.vue:231`, `:286`), apart from the 403 toast. Save and toggle errors show a toast.
 - "Last Payment" column shows and sorts months overdue, not the last payment date (`MembersView.vue:71-73`, `:89-91`).
 - A filter that matches every member exports through the full-list endpoint but the file is still named `members_filtered_...` (`MembersView.vue:336`).
-- Volunteers can export the full congregation (no finer role split; see `../functionality-audit.md` privacy row).
+- Exports need STAFF, so volunteers cannot download the congregation's contact details. The button is still shown to them.
 
 ## Related
 - [member-controller.md](member-controller.md): endpoints, errors, CSV details

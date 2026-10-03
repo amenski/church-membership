@@ -47,16 +47,31 @@ class PaymentTest {
     // validatePeriod
 
     @Test
-    void validatePeriod_currentAndThreeMonthsAgo_pass() {
+    void validatePeriod_currentAndAnyPastMonthUpToTenYears_pass() {
         assertThatCode(() -> payment(YearMonth.now(), 10.0).validatePeriod()).doesNotThrowAnyException();
-        assertThatCode(() -> payment(YearMonth.now().minusMonths(3), 10.0).validatePeriod()).doesNotThrowAnyException();
+        assertThatCode(() -> payment(YearMonth.now().minusMonths(4), 10.0).validatePeriod()).doesNotThrowAnyException();
+        assertThatCode(() -> payment(YearMonth.now().minusYears(10), 10.0).validatePeriod()).doesNotThrowAnyException();
     }
 
     @Test
-    void validatePeriod_fourMonthsAgo_isRejected() {
-        assertThatThrownBy(() -> payment(YearMonth.now().minusMonths(4), 10.0).validatePeriod())
+    void validatePeriod_moreThanTenYearsBack_isRejectedAsATypo() {
+        assertThatThrownBy(() -> payment(YearMonth.now().minusYears(10).minusMonths(1), 10.0).validatePeriod())
             .isInstanceOf(PaymentDomainException.class)
+            .hasMessageContaining("too far back")
             .extracting("errorCode").isEqualTo(PaymentDomainException.INVALID_PAYMENT_PERIOD);
+    }
+
+    @Test
+    void validatePaymentDate_todayAndPast_pass_future_isRejected() {
+        Payment p = payment(YearMonth.now(), 10.0);
+        assertThatCode(p::validatePaymentDate).doesNotThrowAnyException();
+        p.setPaymentDate(LocalDate.of(2020, 1, 1));
+        assertThatCode(p::validatePaymentDate).doesNotThrowAnyException();
+
+        p.setPaymentDate(LocalDate.now().plusDays(1));
+        assertThatThrownBy(p::validatePaymentDate)
+            .isInstanceOf(PaymentDomainException.class)
+            .extracting("errorCode").isEqualTo(PaymentDomainException.PAYMENT_DATE_IN_FUTURE);
     }
 
     @Test

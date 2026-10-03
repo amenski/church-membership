@@ -55,6 +55,24 @@ class MemberTest {
     }
 
     @Test
+    void recordPayment_neverMovesLastPaymentDateBackwards() {
+        Member m = newMember();
+        m.setLastPaymentDate(LocalDate.of(2026, 9, 1));
+        Payment older = paymentFor(m, YearMonth.of(2024, 3));
+        older.setPaymentDate(LocalDate.of(2024, 3, 10));
+
+        m.recordPayment(older);
+
+        assertThat(m.getLastPaymentDate()).isEqualTo(LocalDate.of(2026, 9, 1));
+
+        Payment newer = paymentFor(m, YearMonth.of(2024, 4));
+        newer.setPaymentDate(LocalDate.of(2026, 9, 15));
+        m.recordPayment(newer);
+
+        assertThat(m.getLastPaymentDate()).isEqualTo(LocalDate.of(2026, 9, 15));
+    }
+
+    @Test
     void recordPayment_withoutPeriod_doesNotResetCounter() {
         Member m = newMember();
         m.setConsecutiveMonthsMissed(1);

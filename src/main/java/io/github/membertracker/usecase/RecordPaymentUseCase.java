@@ -7,6 +7,7 @@ import io.github.membertracker.domain.model.Payment;
 import io.github.membertracker.domain.repository.MemberRepository;
 import io.github.membertracker.domain.repository.PaymentRepository;
 
+import java.time.LocalDate;
 import java.time.YearMonth;
 
 public class RecordPaymentUseCase {
@@ -19,16 +20,27 @@ public class RecordPaymentUseCase {
         this.memberRepository = memberRepository;
     }
 
+    /**
+     * @param period      the month the payment covers; null means the current month
+     * @param paymentDate the day it was paid; null means today (a back-dated entry passes the real day)
+     */
     public Payment invoke(Long memberId, Double amount, PaymentMethod paymentMethod,
-                          YearMonth period, String notes) {
+                          YearMonth period, LocalDate paymentDate, String notes) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> MemberDomainException.memberNotFound(memberId));
+        if (!member.isActive()) {
+            throw MemberDomainException.memberInactive(member.getName());
+        }
 
         Payment payment = new Payment(member, period != null ? period : YearMonth.now(), amount, paymentMethod);
+        if (paymentDate != null) {
+            payment.setPaymentDate(paymentDate);
+        }
         payment.setNotes(notes);
 
         payment.validateAmount();
         payment.validatePeriod();
+        payment.validatePaymentDate();
 
         if (paymentRepository.existsByMemberAndPeriod(member, payment.getPeriod())) {
             throw MemberDomainException.duplicatePaymentForPeriod(

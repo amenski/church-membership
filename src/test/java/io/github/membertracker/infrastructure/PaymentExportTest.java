@@ -50,7 +50,7 @@ class PaymentExportTest {
         when(getAllPaymentsUseCase.invoke()).thenReturn(List.of(first, second));
 
         MockHttpServletResponse response = mockMvc.perform(get("/api/payments/export")
-                .with(user("v@example.com").roles("VOLUNTEER")))
+                .with(user("s@example.com").roles("STAFF")))
             .andReturn().getResponse();
 
         assertThat(response.getStatus()).isEqualTo(200);

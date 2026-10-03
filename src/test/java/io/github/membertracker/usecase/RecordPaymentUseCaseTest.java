@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -50,7 +51,7 @@ class RecordPaymentUseCaseTest {
     void currentPeriodPaymentIsSavedAndResetsMissedCounter() {
         stored.setConsecutiveMonthsMissed(2);
 
-        Payment result = useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now(), "front desk");
+        Payment result = useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now(), null, "front desk");
 
         assertThat(result.getMember()).isSameAs(stored);
         assertThat(result.getAmount()).isEqualTo(25.0);
@@ -65,7 +66,7 @@ class RecordPaymentUseCaseTest {
 
     @Test
     void missingPeriodDefaultsToCurrentMonth() {
-        Payment result = useCase.invoke(1L, 25.0, PaymentMethod.CASH, null, null);
+        Payment result = useCase.invoke(1L, 25.0, PaymentMethod.CASH, null, null, null);
 
         assertThat(result.getPeriod()).isEqualTo(YearMonth.now());
         assertThat(result.getPaymentDate()).isEqualTo(LocalDate.now());
@@ -75,7 +76,7 @@ class RecordPaymentUseCaseTest {
     void pastPeriodPaymentUpdatesLastPaymentDateButKeepsMissedCounter() {
         stored.setConsecutiveMonthsMissed(2);
 
-        useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now().minusMonths(1), null);
+        useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now().minusMonths(1), null, null);
 
         ArgumentCaptor<Member> saved = ArgumentCaptor.forClass(Member.class);
         verify(memberRepository).save(saved.capture());
@@ -85,7 +86,7 @@ class RecordPaymentUseCaseTest {
 
     @Test
     void zeroAmountIsRejectedAndNothingIsSaved() {
-        assertThatThrownBy(() -> useCase.invoke(1L, 0.0, PaymentMethod.CASH, YearMonth.now(), null))
+        assertThatThrownBy(() -> useCase.invoke(1L, 0.0, PaymentMethod.CASH, YearMonth.now(), null, null))
                 .isInstanceOf(PaymentDomainException.class);
 
         verify(paymentRepository, never()).save(any());
@@ -94,23 +95,86 @@ class RecordPaymentUseCaseTest {
 
     @Test
     void nullAmountIsRejected() {
-        assertThatThrownBy(() -> useCase.invoke(1L, null, PaymentMethod.CASH, YearMonth.now(), null))
+        assertThatThrownBy(() -> useCase.invoke(1L, null, PaymentMethod.CASH, YearMonth.now(), null, null))
                 .isInstanceOf(PaymentDomainException.class);
         verify(paymentRepository, never()).save(any());
     }
 
     @Test
     void futurePeriodIsRejected() {
-        assertThatThrownBy(() -> useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now().plusMonths(1), null))
+        assertThatThrownBy(() -> useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now().plusMonths(1), null, null))
                 .isInstanceOf(PaymentDomainException.class);
         verify(paymentRepository, never()).save(any());
         verify(memberRepository, never()).save(any());
     }
 
     @Test
-    void periodOlderThanThreeMonthsIsRejected() {
-        assertThatThrownBy(() -> useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now().minusMonths(4), null))
+    void anyPastMonthUpToTenYearsBackIsAccepted() {
+        useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now().minusMonths(4), null, null);
+        useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now().minusYears(10), null, null);
+
+        verify(paymentRepository, times(2)).save(any());
+    }
+
+    @Test
+    void periodElevenYearsBackIsRejectedAsATypo() {
+        assertThatThrownBy(() -> useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now().minusYears(11), null, null))
+                .isInstanceOf(PaymentDomainException.class)
+                .hasMessageContaining("too far back");
+        verify(paymentRepository, never()).save(any());
+    }
+
+    @Test
+    void currentMonthIsAcceptedAndNextMonthRejected() {
+        useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now(), null, null);
+        verify(paymentRepository).save(any());
+
+        assertThatThrownBy(() -> useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now().plusMonths(1), null, null))
                 .isInstanceOf(PaymentDomainException.class);
+        verify(paymentRepository, times(1)).save(any());
+    }
+
+    @Test
+    void paymentForAnInactiveMemberIsRejectedAndNothingIsSaved() {
+        stored.setActive(false);
+
+        assertThatThrownBy(() -> useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now(), null, null))
+                .isInstanceOf(MemberDomainException.class)
+                .hasMessage("Member 'Alice' is inactive. Reactivate the member before recording a payment.")
+                .extracting("errorCode").isEqualTo(MemberDomainException.MEMBER_INACTIVE);
+        verify(paymentRepository, never()).save(any());
+        verify(memberRepository, never()).save(any());
+    }
+
+    @Test
+    void backDatedPaymentIsSavedWithItsDate() {
+        LocalDate paidOn = LocalDate.of(2024, 3, 10);
+
+        Payment result = useCase.invoke(1L, 50.0, PaymentMethod.CHECK, YearMonth.of(2024, 3), paidOn, null);
+
+        assertThat(result.getPaymentDate()).isEqualTo(paidOn);
+        assertThat(result.getPeriod()).isEqualTo(YearMonth.of(2024, 3));
+        ArgumentCaptor<Payment> saved = ArgumentCaptor.forClass(Payment.class);
+        verify(paymentRepository).save(saved.capture());
+        assertThat(saved.getValue().getPaymentDate()).isEqualTo(paidOn);
+        assertThat(stored.getLastPaymentDate()).isEqualTo(paidOn);
+    }
+
+    @Test
+    void lastPaymentDateKeepsTheLaterDate() {
+        stored.setLastPaymentDate(LocalDate.of(2026, 9, 1));
+
+        useCase.invoke(1L, 50.0, PaymentMethod.CASH, YearMonth.of(2024, 3), LocalDate.of(2024, 3, 10), null);
+
+        assertThat(stored.getLastPaymentDate()).isEqualTo(LocalDate.of(2026, 9, 1));
+    }
+
+    @Test
+    void paymentDateInTheFutureIsRejected() {
+        assertThatThrownBy(() -> useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now(),
+                LocalDate.now().plusDays(1), null))
+                .isInstanceOf(PaymentDomainException.class)
+                .extracting("errorCode").isEqualTo(PaymentDomainException.PAYMENT_DATE_IN_FUTURE);
         verify(paymentRepository, never()).save(any());
     }
 
@@ -119,7 +183,7 @@ class RecordPaymentUseCaseTest {
         stored.setName("Stored Name");
         stored.setActive(true);
 
-        useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now(), null);
+        useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now(), null, null);
 
         ArgumentCaptor<Member> saved = ArgumentCaptor.forClass(Member.class);
         verify(memberRepository).save(saved.capture());
@@ -132,7 +196,7 @@ class RecordPaymentUseCaseTest {
     void unknownMemberIdIsRejected() {
         when(memberRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> useCase.invoke(99L, 25.0, PaymentMethod.CASH, YearMonth.now(), null))
+        assertThatThrownBy(() -> useCase.invoke(99L, 25.0, PaymentMethod.CASH, YearMonth.now(), null, null))
                 .isInstanceOf(MemberDomainException.class);
         verify(paymentRepository, never()).save(any());
         verify(memberRepository, never()).save(any());
@@ -142,7 +206,7 @@ class RecordPaymentUseCaseTest {
     void duplicatePaymentForSameMemberAndPeriodIsRejected() {
         when(paymentRepository.existsByMemberAndPeriod(stored, YearMonth.now())).thenReturn(true);
 
-        assertThatThrownBy(() -> useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now(), null))
+        assertThatThrownBy(() -> useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now(), null, null))
                 .isInstanceOf(MemberDomainException.class);
         verify(paymentRepository, never()).save(any());
     }

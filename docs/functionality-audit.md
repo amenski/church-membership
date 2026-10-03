@@ -43,7 +43,7 @@ Scale: **0** absent · **1** stub or flat data · **2** basic, usable · **3** f
 
 | Area | Score | What exists today, and what is missing |
 |------|:-----:|----------------------------------------|
-| Giving | 1 | Monthly dues per member only. No funds or designations, one-off gifts, pledges, campaigns, batch entry for Sunday offerings, receipts or annual statements. Amounts are `Double` in the domain. Deleting a payment does nothing. Periods older than 3 months are rejected, so historic data cannot be entered. |
+| Giving | 1 | Monthly dues per member only. No funds or designations, one-off gifts, pledges, campaigns, batch entry for Sunday offerings, receipts or annual statements. Amounts are `Double` in the domain. Deleting a payment does nothing. Any month up to ten years back can be entered with an optional paid-on date, so history can be loaded (one payment per member per month; no batch import). |
 
 ### Platform
 
@@ -53,7 +53,7 @@ Scale: **0** absent · **1** stub or flat data · **2** basic, usable · **3** f
 | Search | 0 | No search or filter parameters on any endpoint, and no pagination. Filtering happens in the browser on the full list. |
 | Notifications | 0 | A monthly reminder scheduler runs on the 1st (C3 fixed); `{{member_name}}` in the reminder is filled in per recipient (C4 fixed). No in-app notifications, birthday or anniversary alerts, or staff task alerts. |
 | Import and export | 1 | CSV export of members and payments. No import, so a church moving from a spreadsheet must type every record by hand. |
-| Privacy | 0 | No consent records, retention rules, subject-access export or audit log. An `activity_log` table exists, but nothing writes to it. Volunteers can export the full member list. Deleting a member permanently deletes their giving history. |
+| Privacy | 0 | No consent records, retention rules, subject-access export or audit log. An `activity_log` table exists, but nothing writes to it. Exports (members, selected members, payments) are STAFF and above; volunteers cannot download the member list. Deleting a member permanently deletes their giving history. |
 | Security operations | 1 | CSRF protection is off while authentication uses cookies (fixed 3 Oct 2026). A default JWT secret and `root/password` database credentials ship in `application.properties`, with `useSSL=false` and SQL logging on (fixed 3 Oct 2026: no defaults in the default profile). No HTTPS configuration. The repo has one test (context load, disabled). |
 
 ## 2. Fitness by role
@@ -64,7 +64,7 @@ What each person can actually do today:
 |------|--------|-------|
 | Administrator | Blocked | Can create, edit and delete members, but cannot list them: the read endpoints require exactly Volunteer and there is no hierarchy. Payments, communications and the dashboard return 403. Cannot manage user accounts. |
 | Staff | Blocked | Same as Admin, minus delete. Can save a member but cannot see the list it lands in. |
-| Volunteer | Over-permitted | The only role that can read members, and it can export the whole congregation to CSV. Cannot do anything operational. |
+| Volunteer | Over-permitted | The only role that can read members, and it can no longer export CSV (STAFF and above). Cannot do anything operational. |
 | Member | Empty | Can sign in and change their own password and profile. No giving history, household, directory, events or groups. |
 | Visitor | Absent | No way to be recorded, welcomed or followed up. |
 
@@ -136,7 +136,7 @@ A unique, required email per member blocks children and shared inboxes, and ther
 - No member status lifecycle: transferred, deceased and inactive are all one boolean
 
 ### Usability
-- Payments are only accepted for the last 3 months, so existing records cannot be migrated
+- ~~Payments are only accepted for the last 3 months~~ fixed: any month up to 10 years back, with an optional paid-on date
 - The frontend has no role-aware navigation, so users click into 403 screens
 - ~~The dashboard swallows errors and shows zeros, which hides outages~~ fixed: a failure is a 500 problem
 - English only: i18n is wired but has one locale (assumption: the congregation may prefer Amharic or Tigrinya)
@@ -168,7 +168,7 @@ Each takes under a day. Do them in this order.
 | Return one generic "Invalid email or password" message | 10 min | C6 |
 | Enable scheduling, run the counter on the 1st of the month, send reminders monthly, fill in the member name | 1.5 h | C3, C4 |
 | Add a member request DTO, archive members instead of deleting them, make payment delete real or remove it *(payment delete removed)* | 3 h | C7, C8, C9 |
-| Restrict member export to Staff, and set `requiresRole` on frontend routes | 30 min | Over-permitted Volunteer role |
+| Restrict member export to Staff, and set `requiresRole` on frontend routes *(exports restricted to Staff)* | 30 min | Over-permitted Volunteer role |
 
 Total: about 1.5 working days, including a MockMvc test per role per endpoint group so C1 cannot come back.
 

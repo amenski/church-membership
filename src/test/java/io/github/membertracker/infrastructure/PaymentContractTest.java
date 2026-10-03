@@ -15,11 +15,13 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.time.YearMonth;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -49,7 +51,7 @@ class PaymentContractTest {
     @Test
     void fixtureBodyIsAcceptedAndReachesTheUseCase() throws Exception {
         String fixture = Files.readString(Path.of("src/test/resources/contracts/record-payment-request.json"));
-        when(recordPaymentUseCase.invoke(any(), any(), any(), any(), any())).thenReturn(new Payment());
+        when(recordPaymentUseCase.invoke(any(), any(), any(), any(), any(), any())).thenReturn(new Payment());
 
         mockMvc.perform(post("/api/payments").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
@@ -57,7 +59,35 @@ class PaymentContractTest {
                 .content(fixture))
             .andExpect(status().isOk());
 
-        verify(recordPaymentUseCase).invoke(eq(1L), eq(50.0), eq(PaymentMethod.CASH), eq(YearMonth.of(2026, 10)), any());
+        verify(recordPaymentUseCase).invoke(eq(1L), eq(50.0), eq(PaymentMethod.CASH), eq(YearMonth.of(2026, 10)), isNull(), any());
+    }
+
+    @Test
+    void backfillFixtureCarriesThePeriodAndThePaidOnDate() throws Exception {
+        String fixture = Files.readString(Path.of("src/test/resources/contracts/record-payment-request-backfill.json"));
+        when(recordPaymentUseCase.invoke(any(), any(), any(), any(), any(), any())).thenReturn(new Payment());
+
+        mockMvc.perform(post("/api/payments").with(csrf())
+                .with(user("s@example.com").roles("STAFF"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(fixture))
+            .andExpect(status().isOk());
+
+        verify(recordPaymentUseCase).invoke(eq(1L), eq(50.0), eq(PaymentMethod.CHECK),
+            eq(YearMonth.of(2024, 3)), eq(LocalDate.of(2024, 3, 10)), any());
+    }
+
+    @Test
+    void aFuturePaymentDateIsRejectedWithTheFieldName() throws Exception {
+        mockMvc.perform(post("/api/payments").with(csrf())
+                .with(user("s@example.com").roles("STAFF"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"memberId\": 1, \"amount\": 50.0, \"paymentMethod\": \"CASH\", \"paymentDate\": \""
+                    + LocalDate.now().plusDays(2) + "\"}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.errors[?(@.field == 'paymentDate')]").isNotEmpty());
+
+        verify(recordPaymentUseCase, never()).invoke(any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -69,7 +99,7 @@ class PaymentContractTest {
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.errors[?(@.field == 'memberId')]").isNotEmpty());
 
-        verify(recordPaymentUseCase, never()).invoke(any(), any(), any(), any(), any());
+        verify(recordPaymentUseCase, never()).invoke(any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -80,6 +110,6 @@ class PaymentContractTest {
                 .content("{\"memberId\": 1, \"amount\": 50.0, \"paymentMethod\": \"BITCOIN\"}"))
             .andExpect(status().isBadRequest());
 
-        verify(recordPaymentUseCase, never()).invoke(any(), any(), any(), any(), any());
+        verify(recordPaymentUseCase, never()).invoke(any(), any(), any(), any(), any(), any());
     }
 }

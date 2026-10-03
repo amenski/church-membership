@@ -130,15 +130,15 @@ public class MemberController {
     }
 
     @GetMapping("/export")
-    @PreAuthorize("hasRole('VOLUNTEER')")
-    @Operation(summary = "Export all members as CSV (VOLUNTEER+)")
+    @PreAuthorize("hasRole('STAFF')")
+    @Operation(summary = "Export all members as CSV (STAFF+)")
     public ResponseEntity<byte[]> exportMembers() {
         return csvResponse(getAllMembersUseCase.invoke());
     }
 
     @PostMapping("/export")
-    @PreAuthorize("hasRole('VOLUNTEER')")
-    @Operation(summary = "Export selected members as CSV (VOLUNTEER+)")
+    @PreAuthorize("hasRole('STAFF')")
+    @Operation(summary = "Export selected members as CSV (STAFF+)")
     public ResponseEntity<byte[]> exportSelectedMembers(@Valid @RequestBody ExportMembersRequest request) {
         Set<Long> ids = new HashSet<>(request.getIds());
         List<Member> selected = getAllMembersUseCase.invoke().stream()

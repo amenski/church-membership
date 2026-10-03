@@ -17,8 +17,8 @@ Roles per [../authentication.md](../authentication.md). All paths are under `/ap
 | PUT | `/{id}` (`:107`) | STAFF+ | `MemberRequest` body, validated | saved `Member` or 404 |
 | DELETE | `/{id}` (`:117`) | ADMIN | - | 200 empty, or 404 |
 | GET | `/overdue/{months}` (`:129`) | VOLUNTEER+ | - | ACTIVE members with `consecutiveMonthsMissed >= months`, longest behind first |
-| GET | `/export` (`:132`) | VOLUNTEER+ | - | `members.csv`, all members |
-| POST | `/export` (`:139`) | VOLUNTEER+ | `ExportMembersRequest {ids}` | `members.csv`, only the given ids |
+| GET | `/export` (`:132`) | STAFF+ | - | `members.csv`, all members |
+| POST | `/export` (`:139`) | STAFF+ | `ExportMembersRequest {ids}` | `members.csv`, only the given ids |
 
 CSV: a plain response built in memory (`byte[]`), `Content-Type: text/csv; charset=UTF-8`, `Content-Disposition: attachment; filename=members.csv`, UTF-8 with a byte order mark so Excel reads non-Latin names (Amharic) correctly (`:150-163`, `CsvUtils.attachment`). Columns: `id,name,email,phone,joinDate,active,consecutiveMonthsMissed`. `joinDate` is ISO local date.
 

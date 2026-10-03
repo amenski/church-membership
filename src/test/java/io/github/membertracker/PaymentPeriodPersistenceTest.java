@@ -71,4 +71,19 @@ class PaymentPeriodPersistenceTest {
         assertThat(paymentRepository.existsByMemberAndPeriod(member, YearMonth.of(2026, 10))).isTrue();
         assertThat(paymentRepository.existsByMemberAndPeriod(member, YearMonth.of(2026, 11))).isFalse();
     }
+
+    @Test
+    void aBackDatedPaymentRoundTripsItsPaymentDateAndPeriod() {
+        Member member = memberRepository.save(new Member("Back Date", "backdate@example.com", "+1234567890"));
+        Payment payment = new Payment(member, YearMonth.of(2024, 3), 50.0, PaymentMethod.CHECK);
+        payment.setPaymentDate(java.time.LocalDate.of(2024, 3, 10));
+
+        Payment saved = paymentRepository.save(payment);
+
+        Payment reloaded = paymentRepository.findById(saved.getId()).orElseThrow();
+        assertThat(reloaded.getPaymentDate()).isEqualTo(java.time.LocalDate.of(2024, 3, 10));
+        assertThat(reloaded.getPeriod()).isEqualTo(YearMonth.of(2024, 3));
+        assertThat(jdbc.queryForObject("SELECT payment_date FROM payment WHERE id = ?", String.class, saved.getId()))
+            .isEqualTo("2024-03-10");
+    }
 }

@@ -3,9 +3,11 @@ package io.github.membertracker.infrastructure.dto;
 import io.github.membertracker.domain.enumeration.PaymentMethod;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+import java.time.LocalDate;
 import java.time.YearMonth;
 
 /** Body of POST /api/payments. The member is referenced by id and loaded server-side. */
@@ -24,6 +26,10 @@ public class RecordPaymentRequest {
 
     /** Optional, JSON "YYYY-MM"; absent means the current month. */
     private YearMonth period;
+
+    /** Optional, JSON "YYYY-MM-DD", the day it was paid; absent means today. */
+    @PastOrPresent(message = "Payment date cannot be in the future")
+    private LocalDate paymentDate;
 
     @Size(max = 500, message = "Notes must be at most 500 characters")
     private String notes;
@@ -60,6 +66,14 @@ public class RecordPaymentRequest {
 
     public void setPeriod(YearMonth period) {
         this.period = period;
+    }
+
+    public LocalDate getPaymentDate() {
+        return paymentDate;
+    }
+
+    public void setPaymentDate(LocalDate paymentDate) {
+        this.paymentDate = paymentDate;
     }
 
     public String getNotes() {

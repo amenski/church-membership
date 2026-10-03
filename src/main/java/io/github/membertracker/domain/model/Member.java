@@ -48,11 +48,13 @@ public class Member {
             throw new IllegalArgumentException("Payment cannot be null");
         }
 
+        LocalDate paidOn = payment.getPaymentDate();
+        if (paidOn != null && (lastPaymentDate == null || paidOn.isAfter(lastPaymentDate))) {
+            this.lastPaymentDate = paidOn;
+        }
+
         if (paymentCoversCurrentPeriod(payment)) {
-            this.lastPaymentDate = payment.getPaymentDate();
             this.consecutiveMonthsMissed = 0;
-        } else {
-            this.lastPaymentDate = payment.getPaymentDate();
         }
     }
 

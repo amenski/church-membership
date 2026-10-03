@@ -80,12 +80,12 @@ public class PaymentController {
     public ResponseEntity<Payment> recordPayment(@Valid @RequestBody RecordPaymentRequest request) {
         return ResponseEntity.ok(recordPaymentUseCase.invoke(
                 request.getMemberId(), request.getAmount(), request.getPaymentMethod(),
-                request.getPeriod(), request.getNotes()));
+                request.getPeriod(), request.getPaymentDate(), request.getNotes()));
     }
 
     @GetMapping("/export")
-    @PreAuthorize("hasRole('VOLUNTEER')")
-    @Operation(summary = "Export all payments as CSV (VOLUNTEER+)")
+    @PreAuthorize("hasRole('STAFF')")
+    @Operation(summary = "Export all payments as CSV (STAFF+)")
     public ResponseEntity<byte[]> exportPayments() {
         StringBuilder csv = new StringBuilder("id,memberId,memberName,amount,paymentDate,period,method\n");
         for (Payment payment : getAllPaymentsUseCase.invoke()) {

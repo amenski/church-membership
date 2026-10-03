@@ -54,7 +54,7 @@ class MemberExportTest {
     private static final String BOM = "\uFEFF";
 
     private MockHttpServletResponse export(MockHttpServletRequestBuilder request) throws Exception {
-        MvcResult result = mockMvc.perform(request.with(csrf()).with(user("v@example.com").roles("VOLUNTEER")))
+        MvcResult result = mockMvc.perform(request.with(csrf()).with(user("s@example.com").roles("STAFF")))
             .andReturn();
         assertThat(result.getRequest().isAsyncStarted()).isFalse();
         assertThat(result.getResponse().getStatus()).isEqualTo(200);
@@ -106,7 +106,7 @@ class MemberExportTest {
     @Test
     void emptyIdsReturns400() throws Exception {
         mockMvc.perform(post("/api/members/export").with(csrf())
-                .with(user("v@example.com").roles("VOLUNTEER"))
+                .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"ids\":[]}"))
             .andExpect(status().isBadRequest());
@@ -115,7 +115,7 @@ class MemberExportTest {
     @Test
     void nonPositiveIdReturns400() throws Exception {
         mockMvc.perform(post("/api/members/export").with(csrf())
-                .with(user("v@example.com").roles("VOLUNTEER"))
+                .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"ids\":[0]}"))
             .andExpect(status().isBadRequest());

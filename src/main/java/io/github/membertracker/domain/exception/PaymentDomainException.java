@@ -1,5 +1,6 @@
 package io.github.membertracker.domain.exception;
 
+import java.time.LocalDate;
 import java.time.YearMonth;
 
 /**
@@ -13,6 +14,7 @@ public class PaymentDomainException extends DomainException {
     public static final String INVALID_PAYMENT_PERIOD = "PAYMENT_002";
     public static final String PAYMENT_METHOD_NOT_SUPPORTED = "PAYMENT_003";
     public static final String PAYMENT_PERIOD_IN_FUTURE = "PAYMENT_007";
+    public static final String PAYMENT_DATE_IN_FUTURE = "PAYMENT_008";
 
     public PaymentDomainException(String message, String errorCode) {
         super(message, errorCode, "Payment");
@@ -32,8 +34,23 @@ public class PaymentDomainException extends DomainException {
 
     public static PaymentDomainException invalidPaymentPeriod(YearMonth period) {
         return new PaymentDomainException(
-            String.format("Payment period %s is invalid. Cannot process payments for past periods beyond 3 months", period),
+            "A payment period (a month, YYYY-MM) is required",
             INVALID_PAYMENT_PERIOD
+        );
+    }
+
+    public static PaymentDomainException paymentPeriodTooOld(YearMonth period, YearMonth earliest) {
+        return new PaymentDomainException(
+            String.format("Payment period %s is too far back and looks like a typing mistake. The earliest month accepted is %s",
+                period, earliest),
+            INVALID_PAYMENT_PERIOD
+        );
+    }
+
+    public static PaymentDomainException paymentDateInFuture(LocalDate paymentDate) {
+        return new PaymentDomainException(
+            String.format("Payment date %s is in the future. Use today or an earlier date", paymentDate),
+            PAYMENT_DATE_IN_FUTURE
         );
     }
 

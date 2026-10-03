@@ -11,6 +11,9 @@ import java.time.YearMonth;
 
 public class Payment {
 
+    /** Older months are refused as a probable typo (e.g. 2204 for 2024). */
+    static final int MAX_YEARS_BACK = 10;
+
     private Long id;
     
     @NotNull(message = "Member is required")
@@ -58,9 +61,15 @@ public class Payment {
             throw PaymentDomainException.paymentPeriodInFuture(period);
         }
 
-        YearMonth threeMonthsAgo = currentMonth.minusMonths(3);
-        if (period.isBefore(threeMonthsAgo)) {
-            throw PaymentDomainException.invalidPaymentPeriod(period);
+        YearMonth earliest = currentMonth.minusYears(MAX_YEARS_BACK);
+        if (period.isBefore(earliest)) {
+            throw PaymentDomainException.paymentPeriodTooOld(period, earliest);
+        }
+    }
+
+    public void validatePaymentDate() {
+        if (paymentDate != null && paymentDate.isAfter(LocalDate.now())) {
+            throw PaymentDomainException.paymentDateInFuture(paymentDate);
         }
     }
 

@@ -77,7 +77,7 @@ This document tracks missing features, improvements, and technical debt in the M
 - [x] **Sign-in:** locks end by themselves after 15 minutes (`locked_until`); one generic message; per-IP and per-email throttle (a permanent lock with no `locked_until` still needs a database edit)
 - [x] **Profile:** changing the password ends other sessions; refresh sessions last at most 30 days from sign-in
 - [ ] **Members:** there is no automatic deactivation after 3 missed months (the unused code was removed; see git history); the add form cannot set a join date
-- [ ] **Payments:** no active-member check when recording; payments older than 3 months cannot be entered (no way to migrate history); the receipt does not show the paid month; the CSV export is open to VOLUNTEER (audit: restrict to STAFF)
+- [ ] **Payments:** the receipt does not show the paid month; the Export CSV buttons (members, payments) are still shown to volunteers although the endpoints are STAFF only; the payment form has no paid-on date field
 - [ ] **Communications and dashboard:** an empty overdue match still saves a communication marked as sent; no endpoint sends an existing draft; the delivery summary cards skip DELIVERED
 - [ ] **Communications (display):** the Recipients column shows "-" for everything except send-to-all (`CommunicationsView.vue:376`); the dashboard Send Reminder is stored as an announcement, not a REMINDER
 - [x] **Backend dead code removed (October 2026):** unused use cases, the membership policy, `PhoneNumber`, unused repository methods and exception factories, the HTML mail templates and Thymeleaf, and unused domain methods (`chore: remove unused ...` commits; recover from git history)
@@ -91,7 +91,6 @@ This document tracks missing features, improvements, and technical debt in the M
 - [x] Reminder skipped exactly 7 days before the due date *(6b31097)*
 - [x] Minimum-amount message said 10.0 while 0.01 was accepted *(fe2eac5)*
 - [x] Audit C2–C4 are pinned by @Disabled tests (all three are fixed and their tests enabled; see functionality-audit.md)
-- [ ] Open questions: `RecordPaymentUseCase` accepts payments for inactive members
 
 ### Core Features
 - [x] **Frontend Delivery Status Display**
