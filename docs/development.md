@@ -70,6 +70,27 @@ From `frontend/.env.example`:
 | `VITE_CSP_ENABLED` | `false` | Content Security Policy toggle |
 | `VITE_APP_TITLE`, `VITE_APP_VERSION` | | Display only |
 
+### Run against a real MySQL
+
+The unit and integration tests run on H2 and cannot catch MySQL type mismatches, so check payments and a send on a real MySQL before releasing.
+
+```bash
+docker run --rm -d --name mt-demo -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password -e MYSQL_DATABASE=felege_selam mysql:8
+./gradlew bootRun    # dev profile; Liquibase creates the schema and sample data
+```
+
+The seeded user hashes in `002.sample-data.sql` do not match their comments, so create a login yourself. Generate a BCrypt hash:
+
+```bash
+htpasswd -bnBC 12 "" 'YourPassword1!' | tr -d ':\n' | sed 's/^\$2y/\$2a/'
+```
+
+then set it:
+
+```sql
+UPDATE users SET password = '<hash>' WHERE email = 'admin@membertracker.com';
+```
+
 ## Build
 
 ```bash
