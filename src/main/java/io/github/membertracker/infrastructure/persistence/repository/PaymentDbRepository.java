@@ -45,21 +45,6 @@ public class PaymentDbRepository implements PaymentRepository {
     }
 
     @Override
-    public List<Payment> findByMemberAndPeriod(Member member, YearMonth period) {
-        MemberEntity memberEntity = mapToMemberEntity(member);
-        return paymentJpaRepository.findByMemberAndPeriod(memberEntity, period).stream()
-                .map(this::mapToPayment)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public Optional<Payment> findFirstByMemberOrderByPaymentDateDesc(Member member) {
-        MemberEntity memberEntity = mapToMemberEntity(member);
-        return paymentJpaRepository.findFirstByMemberOrderByPaymentDateDesc(memberEntity)
-                .map(this::mapToPayment);
-    }
-
-    @Override
     public boolean existsByMemberAndPeriod(Member member, YearMonth period) {
         MemberEntity memberEntity = mapToMemberEntity(member);
         return paymentJpaRepository.existsByMemberAndPeriod(memberEntity, period);

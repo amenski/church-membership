@@ -8,7 +8,6 @@ import io.github.membertracker.infrastructure.persistence.entity.CommunicationEn
 import io.github.membertracker.infrastructure.persistence.entity.MessageDeliveryEntity;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -40,21 +39,6 @@ public class CommunicationDbRepository implements CommunicationRepository {
     public Optional<Communication> findById(Long id) {
         return communicationJpaRepository.findById(id)
                 .map(this::mapToCommunication);
-    }
-
-    @Override
-    public List<Communication> findByType(CommunicationType type) {
-        CommunicationEntity.CommunicationType entityType = mapToEntityType(type);
-        return communicationJpaRepository.findByType(entityType).stream()
-                .map(this::mapToCommunication)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<Communication> findBySentDateBetween(LocalDateTime start, LocalDateTime end) {
-        return communicationJpaRepository.findBySentDateBetween(start, end).stream()
-                .map(this::mapToCommunication)
-                .collect(Collectors.toList());
     }
 
     @Override

@@ -12,9 +12,6 @@ public class PaymentDomainException extends DomainException {
     public static final String INVALID_PAYMENT_AMOUNT = "PAYMENT_001";
     public static final String INVALID_PAYMENT_PERIOD = "PAYMENT_002";
     public static final String PAYMENT_METHOD_NOT_SUPPORTED = "PAYMENT_003";
-    public static final String PAYMENT_ALREADY_PROCESSED = "PAYMENT_004";
-    public static final String PAYMENT_NOT_FOUND = "PAYMENT_005";
-    public static final String PAYMENT_DATE_IN_FUTURE = "PAYMENT_006";
     public static final String PAYMENT_PERIOD_IN_FUTURE = "PAYMENT_007";
 
     public PaymentDomainException(String message, String errorCode) {
@@ -44,27 +41,6 @@ public class PaymentDomainException extends DomainException {
         return new PaymentDomainException(
             String.format("Payment method '%s' is not supported", paymentMethod),
             PAYMENT_METHOD_NOT_SUPPORTED
-        );
-    }
-
-    public static PaymentDomainException paymentAlreadyProcessed(String memberName, YearMonth period) {
-        return new PaymentDomainException(
-            String.format("Payment for member '%s' for period %s has already been processed", memberName, period),
-            PAYMENT_ALREADY_PROCESSED
-        );
-    }
-
-    public static PaymentDomainException paymentNotFound(Long paymentId) {
-        return new PaymentDomainException(
-            String.format("Payment with ID %d not found", paymentId),
-            PAYMENT_NOT_FOUND
-        );
-    }
-
-    public static PaymentDomainException paymentDateInFuture() {
-        return new PaymentDomainException(
-            "Payment date cannot be in the future",
-            PAYMENT_DATE_IN_FUTURE
         );
     }
 
