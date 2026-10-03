@@ -9,6 +9,8 @@ Membership and monthly-dues tracking for a church: members, payments, and email 
 cd frontend && npm install && npm run dev   # frontend on http://localhost:3000
 ```
 
+`bootRun` uses the `dev` profile automatically; a production JAR needs `DB_USERNAME`, `DB_PASSWORD` and `JWT_SECRET` in the environment.
+
 Full setup, build and deployment steps are in [docs/development.md](docs/development.md).
 
 ## Documentation

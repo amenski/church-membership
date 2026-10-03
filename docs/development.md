@@ -8,7 +8,7 @@ How to run MemberTracker locally, build it, and deploy it.
 
 - Java 17 (set by the Gradle toolchain)
 - Node.js 20 and npm. Gradle downloads Node 20.9.0 for its own frontend build.
-- MySQL 8 on `localhost:3306` with a database named `felege_selam`. The defaults are user `root`, password `password`; see [Configuration](#configuration).
+- MySQL 8 on `localhost:3306` with a database named `felege_selam`. The `dev` profile connects as user `root`, password `password`; see [Configuration](#configuration).
 
 ## Run locally
 
@@ -20,7 +20,7 @@ Use two terminals.
 ./gradlew bootRun        # or: ./gradlew dev
 ```
 
-Liquibase runs the migrations on startup. DevTools restarts the app when Java files change.
+`bootRun` uses the `dev` profile automatically (unless `SPRING_PROFILES_ACTIVE` is set), so the local-only database and JWT values in `application-dev.properties` apply. Liquibase runs the migrations on startup. DevTools restarts the app when Java files change.
 
 **Terminal 2 — frontend on http://localhost:3000:**
 
@@ -49,7 +49,7 @@ Open **http://localhost:3000**. Vite proxies `/api/*` to the backend (`frontend/
 
 Swagger works only with the `dev` profile.
 
-1. Start the backend with `SPRING_PROFILES_ACTIVE=dev ./gradlew bootRun`.
+1. Start the backend with `./gradlew bootRun` (it uses the `dev` profile by default).
 2. In the same browser, sign in first with `POST /api/auth/login` so the `sid` cookie is set. Swagger's requests then carry the cookie.
 3. Open http://localhost:8080/swagger-ui.html (it redirects to the Swagger UI; the smoke test checks this).
 
@@ -97,6 +97,20 @@ java -jar target/membertracker.jar \
   --spring.datasource.password=change-me
 ```
 
+### Environment variables
+
+The default profile has no secret defaults: it refuses to start if a required variable is missing. The `dev` profile carries local-only values, so `./gradlew bootRun` works without any setup. The production JAR needs the environment.
+
+| Variable | Required | Meaning |
+|----------|:--------:|---------|
+| `DB_USERNAME` | yes | Database user |
+| `DB_PASSWORD` | yes | Database password |
+| `JWT_SECRET` | yes | Token signing key, at least 32 characters. Startup fails with a clear message if it is shorter |
+| `DB_URL` | no | JDBC URL. Default `jdbc:mysql://localhost:3306/felege_selam?serverTimezone=UTC` |
+| `COOKIE_SECURE` | no | Set `true` behind HTTPS |
+| `COOKIE_SAMESITE`, `COOKIE_DOMAIN`, `ACCESS_TTL`, `REFRESH_TTL` | no | See [authentication.md](authentication.md#configuration) |
+| Mail variables | no | See [email.md](email.md#configuration) |
+
 ### systemd
 
 `/etc/systemd/system/membertracker.service`:
@@ -109,7 +123,7 @@ After=mysql.service
 [Service]
 User=appuser
 WorkingDirectory=/opt/membertracker
-EnvironmentFile=/opt/membertracker/membertracker.env
+EnvironmentFile=/opt/membertracker/membertracker.env   # DB_USERNAME, DB_PASSWORD, JWT_SECRET, COOKIE_SECURE=true
 ExecStart=/usr/bin/java -jar /opt/membertracker/membertracker.jar
 Restart=on-failure
 RestartSec=10
@@ -143,10 +157,10 @@ services:
     image: membertracker:latest
     ports: ["8080:8080"]
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/felege_selam
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: change-me
-      JWT_SECRET: change-me
+      DB_URL: jdbc:mysql://db:3306/felege_selam?serverTimezone=UTC
+      DB_USERNAME: root
+      DB_PASSWORD: change-me
+      JWT_SECRET: replace-with-at-least-32-random-characters
       COOKIE_SECURE: "true"
     depends_on: [db]
     restart: unless-stopped
@@ -164,10 +178,10 @@ volumes:
 ### Production checklist
 
 - [ ] HTTPS via Caddy (see [HTTPS](#https-caddy-reverse-proxy)), app bound to 127.0.0.1, and `COOKIE_SECURE=true`
-- [ ] `JWT_SECRET` set. The default in `application.properties` is public.
-- [ ] Database credentials from the environment, not `root/password`. Remove `useSSL=false` from the JDBC URL.
+- [ ] `JWT_SECRET` set to a random value of at least 32 characters (the default profile has no default and will not start without it)
+- [ ] `DB_USERNAME` and `DB_PASSWORD` set from the environment (not `root/password`); the default JDBC URL has no `useSSL=false`
 - [ ] CORS origins changed in **both** `SecurityConfig` and `WebMvcConfig`. They are hard-coded to localhost.
-- [ ] SQL logging turned off: `spring.jpa.show-sql=false`. It is `true` in both properties files.
+- [ ] SQL logging stays off: `spring.jpa.show-sql=false` in the default profile (only `dev` turns it on)
 - [ ] Don't enable the `dev` profile in production (it turns on Swagger and SQL logging)
 - [ ] Mail settings provided (see [email.md](email.md))
 - [ ] Daily database backups
@@ -179,13 +193,13 @@ Open security items are tracked in [functionality-audit.md](functionality-audit.
 
 | File | Contents |
 |------|----------|
-| `src/main/resources/application.properties` | Default config: database, auth, mail, church info |
-| `src/main/resources/application-dev.properties` | `dev` profile overrides |
+| `src/main/resources/application.properties` | Default (production) config: database, auth, mail, church info. Secrets come from the environment, no defaults |
+| `src/main/resources/application-dev.properties` | `dev` profile: local-only database and JWT values, SQL logging, Swagger |
 | `frontend/vite.config.js` | Dev server port 3000 and `/api` proxy |
 | `src/main/java/.../infrastructure/config/SecurityConfig.java` | Security filter chain and CORS for the API |
 | `src/main/java/.../infrastructure/config/WebMvcConfig.java` | Static file serving with SPA fallback, plus a second CORS mapping |
 
-Spring maps environment variables onto properties: `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`, `SERVER_PORT`, `LOGGING_LEVEL_ROOT`, `LOGGING_FILE_NAME`. Variables for auth and mail are listed in [authentication.md](authentication.md#configuration) and [email.md](email.md#configuration).
+Spring also maps environment variables onto any property (for example `SERVER_PORT`, `LOGGING_LEVEL_ROOT`, `LOGGING_FILE_NAME`). Variables for auth and mail are listed in [authentication.md](authentication.md#configuration) and [email.md](email.md#configuration).
 
 ## Troubleshooting
 

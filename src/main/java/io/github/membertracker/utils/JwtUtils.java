@@ -108,9 +108,9 @@ public final class JwtUtils {
     }
 
     private static SecretKey getSecretKey(String jwtSecret) {
-        return Keys.hmacShaKeyFor(
-            (jwtSecret != null ? jwtSecret : "defaultSecretKeyForDevelopmentOnlyChangeInProduction")
-                .getBytes()
-        );
+        if (jwtSecret == null || jwtSecret.isBlank()) {
+            throw new IllegalStateException("JWT secret is not configured");
+        }
+        return Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }
 }

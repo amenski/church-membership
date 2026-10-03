@@ -131,4 +131,5 @@ frontend/src/
 | 2026-10 | Unauthenticated requests answer 401 (problem+json); 403 only for authenticated users lacking the role | The client refreshes the session on 401 | In use |
 | 2026-10 | The overdue counter is raised once per member per month by a monthly job (idempotent through member.last_missed_count_month) | A daily job would over-count; re-runs and restarts must be safe | In use |
 | 2026-10 | Members are written through MemberRequest; counters and payment dates are system-managed and never client-settable | Stops mass assignment; keeps the monthly job's marker intact | In use |
+| 2026-10 | The default profile has no secret defaults; local values live only in the dev profile | A production JAR must never sign tokens with a public key or connect as root/password | In use |
 | 2026-10 | Roles ADMIN > STAFF > VOLUNTEER > MEMBER with `RoleHierarchy` | Replaces ADMIN/MANAGER/USER and the planned TREASURER/VIEWER | Done (3cf5d84; frontend routes in this change) |

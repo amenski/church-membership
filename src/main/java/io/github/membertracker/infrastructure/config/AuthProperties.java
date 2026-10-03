@@ -1,15 +1,21 @@
 package io.github.membertracker.infrastructure.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
 @Component
+@Validated
 @ConfigurationProperties(prefix = "auth")
 public class AuthProperties {
 
     private Cookies cookies = new Cookies();
     private long accessTtlSeconds = 1800; // 30 minutes
     private long refreshTtlSeconds = 2592000; // 30 days
+    @NotBlank(message = "auth.jwt-secret (JWT_SECRET) must be set")
+    @Size(min = 32, message = "auth.jwt-secret (JWT_SECRET) must be at least 32 characters")
     private String jwtSecret;
 
     public static class Cookies {

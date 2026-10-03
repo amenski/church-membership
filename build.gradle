@@ -67,6 +67,18 @@ bootJar {
 
 tasks.named('test') {
     useJUnitPlatform()
+    // The default profile requires these; tests get local-only values here
+    environment 'JWT_SECRET', 'test-only-secret-never-use-in-production-0123456789'
+    environment 'DB_USERNAME', 'sa'
+    environment 'DB_PASSWORD', 'sa'
+}
+
+// Local `./gradlew bootRun` uses the dev profile unless SPRING_PROFILES_ACTIVE is set.
+// bootJar is unaffected: a production JAR never defaults to dev.
+tasks.named('bootRun') {
+    if (!System.getenv('SPRING_PROFILES_ACTIVE')) {
+        args '--spring.profiles.active=dev'
+    }
 }
 
 // Development task - runs backend with hot reload

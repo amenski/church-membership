@@ -55,7 +55,7 @@ auth.cookies.same-site=${COOKIE_SAMESITE:Lax}   # Lax | Strict | None
 auth.cookies.domain=${COOKIE_DOMAIN:}           # e.g. .example.com for subdomains
 auth.access-ttl-seconds=${ACCESS_TTL:1800}
 auth.refresh-ttl-seconds=${REFRESH_TTL:2592000}
-auth.jwt-secret=${JWT_SECRET:...}               # the default is for development only
+auth.jwt-secret=${JWT_SECRET}                   # required, no default, at least 32 characters (the dev profile sets a local-only one)
 ```
 
 CORS allows credentials, but the allowed origins are hard-coded in two places: `SecurityConfig.corsConfigurationSource()` (`localhost:3000`, `localhost:8080`) and `WebMvcConfig.addCorsMappings()` (`localhost:8080`, `8081`, `8082`). Both need changing for production.

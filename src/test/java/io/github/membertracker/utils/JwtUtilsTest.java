@@ -11,6 +11,7 @@ import java.util.Date;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class JwtUtilsTest {
 
@@ -69,5 +70,14 @@ class JwtUtilsTest {
     @Test
     void garbageFails() {
         assertThat(JwtUtils.validateToken("not-a-jwt", SECRET, JwtUtils.TOKEN_TYPE_ACCESS)).isFalse();
+    }
+
+    @Test
+    void missingSecretThrowsInsteadOfFallingBackToAKnownKey() {
+        assertThatThrownBy(() -> JwtUtils.generateAccessToken(user, null, 60))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("JWT secret is not configured");
+        assertThatThrownBy(() -> JwtUtils.generateAccessToken(user, " ", 60))
+                .isInstanceOf(IllegalStateException.class);
     }
 }
