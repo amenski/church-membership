@@ -1,5 +1,6 @@
 package io.github.membertracker.infrastructure.persistence.repository;
 
+import io.github.membertracker.domain.enumeration.CommunicationType;
 import io.github.membertracker.domain.model.Communication;
 import io.github.membertracker.domain.model.MessageDelivery;
 import io.github.membertracker.domain.repository.CommunicationRepository;
@@ -38,7 +39,7 @@ public class CommunicationDbRepository implements CommunicationRepository {
     }
 
     @Override
-    public List<Communication> findByType(Communication.CommunicationType type) {
+    public List<Communication> findByType(CommunicationType type) {
         CommunicationEntity.CommunicationType entityType = mapToEntityType(type);
         return communicationJpaRepository.findByType(entityType).stream()
                 .map(this::mapToCommunication)
@@ -90,17 +91,17 @@ public class CommunicationDbRepository implements CommunicationRepository {
         return entity;
     }
 
-    private Communication.CommunicationType mapToDomainType(CommunicationEntity.CommunicationType entityType) {
+    private CommunicationType mapToDomainType(CommunicationEntity.CommunicationType entityType) {
         if (entityType == null) return null;
         switch (entityType) {
-            case ANNOUNCEMENT: return Communication.CommunicationType.ANNOUNCEMENT;
-            case REMINDER: return Communication.CommunicationType.REMINDER;
-            case PERSONAL: return Communication.CommunicationType.PERSONAL;
+            case ANNOUNCEMENT: return CommunicationType.ANNOUNCEMENT;
+            case REMINDER: return CommunicationType.REMINDER;
+            case PERSONAL: return CommunicationType.PERSONAL;
             default: throw new IllegalArgumentException("Unknown communication type: " + entityType);
         }
     }
 
-    private CommunicationEntity.CommunicationType mapToEntityType(Communication.CommunicationType domainType) {
+    private CommunicationEntity.CommunicationType mapToEntityType(CommunicationType domainType) {
         if (domainType == null) return null;
         switch (domainType) {
             case ANNOUNCEMENT: return CommunicationEntity.CommunicationType.ANNOUNCEMENT;

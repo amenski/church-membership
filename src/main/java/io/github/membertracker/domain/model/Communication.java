@@ -1,5 +1,7 @@
 package io.github.membertracker.domain.model;
 
+import io.github.membertracker.domain.enumeration.CommunicationType;
+import io.github.membertracker.domain.exception.CommunicationDomainException;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -35,11 +37,6 @@ public class Communication {
     private boolean sentToAllMembers;
 
     private List<MessageDelivery> deliveries = new ArrayList<>();
-
-    // Enum for communication types
-    public enum CommunicationType {
-        ANNOUNCEMENT, REMINDER, PERSONAL
-    }
 
     // Constructors
     public Communication() {
@@ -109,5 +106,25 @@ public class Communication {
 
     public void setDeliveries(List<MessageDelivery> deliveries) {
         this.deliveries = deliveries;
+    }
+
+    // Behaviour
+    public boolean isSent() {
+        return sentDate != null;
+    }
+
+    public void markAsSent() {
+        if (isSent()) {
+            throw new CommunicationDomainException(
+                    "Communication has already been sent", CommunicationDomainException.ALREADY_SENT);
+        }
+        this.sentDate = LocalDateTime.now();
+    }
+
+    public void addDelivery(MessageDelivery delivery) {
+        if (deliveries == null) {
+            deliveries = new ArrayList<>();
+        }
+        deliveries.add(delivery);
     }
 }

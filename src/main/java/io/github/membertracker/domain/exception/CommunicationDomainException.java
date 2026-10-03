@@ -10,6 +10,7 @@ public class CommunicationDomainException extends DomainException {
     public static final String DELIVERY_COMMUNICATION_MISMATCH = "COMMUNICATION_002";
     public static final String DELIVERY_NOT_RETRYABLE = "COMMUNICATION_003";
     public static final String COMMUNICATION_NOT_FOUND = "COMMUNICATION_004";
+    public static final String ALREADY_SENT = "COMMUNICATION_005";
 
     public CommunicationDomainException(String message, String errorCode) {
         super(message, errorCode, "Communication");

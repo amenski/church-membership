@@ -17,7 +17,6 @@ public class DefaultMembershipPolicy implements MembershipPolicy {
     private static final int MAX_CONSECUTIVE_MISSED_MONTHS = 3;
     private static final int REMINDER_DAYS_BEFORE_DUE = 7;
     private static final int REACTIVATION_GRACE_PERIOD_DAYS = 30;
-    private static final double MINIMUM_PAYMENT_AMOUNT = 10.0;
 
     @Override
     public boolean shouldDeactivate(Member member, LocalDate currentDate) {
@@ -120,9 +119,5 @@ public class DefaultMembershipPolicy implements MembershipPolicy {
 
     public int getReactivationGracePeriodDays() {
         return REACTIVATION_GRACE_PERIOD_DAYS;
-    }
-
-    public double getMinimumPaymentAmount() {
-        return MINIMUM_PAYMENT_AMOUNT;
     }
 }

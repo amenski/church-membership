@@ -93,9 +93,9 @@ This document tracks missing features, improvements, and technical debt in the M
   - **Location**: `MemberController`, `PaymentController`, frontend views
 
 ### Code Quality
-- [ ] **Finish the Communication domain model**
-  - Add behaviour to `Communication` (e.g. `markAsSent()`, `isSent()`); it only has getters/setters
-  - Move `CommunicationType` from an inner enum to `domain/enumeration`
+- [x] **Finish the Communication domain model**
+  - [x] Add behaviour to `Communication` (e.g. `markAsSent()`, `isSent()`); it only has getters/setters
+  - [x] Move `CommunicationType` from an inner enum to `domain/enumeration`
   - **Location**: `domain/model/Communication.java`
 
 - [ ] **API Documentation**

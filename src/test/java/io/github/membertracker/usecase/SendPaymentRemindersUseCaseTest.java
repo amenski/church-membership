@@ -1,5 +1,6 @@
 package io.github.membertracker.usecase;
 
+import io.github.membertracker.domain.enumeration.CommunicationType;
 import io.github.membertracker.domain.model.Communication;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.model.MessageDelivery;
@@ -55,7 +56,7 @@ class SendPaymentRemindersUseCaseTest {
         ArgumentCaptor<Communication> comm = ArgumentCaptor.forClass(Communication.class);
         verify(sender).invoke(comm.capture(), org.mockito.ArgumentMatchers.eq(overdue),
                 org.mockito.ArgumentMatchers.eq(MessageDelivery.DeliveryChannel.EMAIL));
-        assertThat(comm.getValue().getType()).isEqualTo(Communication.CommunicationType.REMINDER);
+        assertThat(comm.getValue().getType()).isEqualTo(CommunicationType.REMINDER);
         assertThat(comm.getValue().getTitle()).isEqualTo("Payment Reminder");
     }
 

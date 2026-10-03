@@ -37,7 +37,7 @@ public class SendCommunicationToMembersUseCase {
      * @return the saved communication with delivery information
      */
     public Communication invoke(Communication communication, List<Member> members, MessageDelivery.DeliveryChannel channel) {
-        communication.setSentDate(LocalDateTime.now());
+        communication.markAsSent();
 
         logger.info("Sending communication '{}' to {} members via {}", 
             communication.getTitle(), members.size(), channel);
@@ -46,7 +46,7 @@ public class SendCommunicationToMembersUseCase {
         for (Member member : members) {
             MessageDelivery delivery = new MessageDelivery(member, communication, channel);
             delivery.setStatus(MessageDelivery.DeliveryStatus.PENDING);
-            communication.getDeliveries().add(delivery);
+            communication.addDelivery(delivery);
         }
         
         Communication savedCommunication = communicationRepository.save(communication);

@@ -40,7 +40,7 @@ public class SendCommunicationToAllMembersUseCase {
      */
     public Communication invoke(Communication communication) {
         communication.setSentToAllMembers(true);
-        communication.setSentDate(LocalDateTime.now());
+        communication.markAsSent();
 
         List<Member> allMembers = memberRepository.findByActive(true);
         logger.info("Sending communication '{}' to {} members", communication.getTitle(), allMembers.size());
@@ -53,7 +53,7 @@ public class SendCommunicationToAllMembersUseCase {
                     MessageDelivery.DeliveryChannel.EMAIL
             );
             delivery.setStatus(MessageDelivery.DeliveryStatus.PENDING);
-            communication.getDeliveries().add(delivery);
+            communication.addDelivery(delivery);
         }
         
         Communication savedCommunication = communicationRepository.save(communication);

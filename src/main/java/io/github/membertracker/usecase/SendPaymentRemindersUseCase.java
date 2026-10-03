@@ -1,5 +1,6 @@
 package io.github.membertracker.usecase;
 
+import io.github.membertracker.domain.enumeration.CommunicationType;
 import io.github.membertracker.domain.model.Communication;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.model.MessageDelivery;
@@ -31,7 +32,7 @@ public class SendPaymentRemindersUseCase {
             Communication reminder = new Communication();
             reminder.setTitle("Payment Reminder");
             reminder.setMessageContent("Dear {{member_name}}, this is a friendly reminder that your membership payment is overdue. Please contact us at your earliest convenience.");
-            reminder.setType(Communication.CommunicationType.REMINDER);
+            reminder.setType(CommunicationType.REMINDER);
 
             return sendCommunicationToMembersUseCase.invoke(reminder, overdueMembers, MessageDelivery.DeliveryChannel.EMAIL);
         }

@@ -19,7 +19,7 @@ src/main/java/io/github/membertracker/
 ├── domain/
 │   ├── model/          Member, Payment, User, Communication, MessageDelivery
 │   ├── valueobject/    Email, PhoneNumber
-│   ├── enumeration/    PaymentMethod, UserRole
+│   ├── enumeration/    PaymentMethod, UserRole, CommunicationType
 │   ├── exception/      DomainException + Member/Payment/User subclasses
 │   ├── policy/         MembershipPolicy, DefaultMembershipPolicy
 │   └── repository/     Repository interfaces
@@ -64,7 +64,7 @@ public Payment invoke(Payment payment) {
 }
 ```
 
-**Not done yet:** `Communication` has no behaviour (getters and setters only), and `CommunicationType` is still an inner enum of `Communication`.
+`Communication` owns its sent state (`markAsSent()`, `isSent()`) and its deliveries (`addDelivery()`).
 
 ### Testing by layer
 
