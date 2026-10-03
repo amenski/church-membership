@@ -35,7 +35,7 @@ This document tracks missing features, improvements, and technical debt in the M
   - **Location**: All controller classes, frontend route guards
   - **Tracking**: `role-auth-checkpoints.md`
 
-- [ ] **HTTPS Configuration**
+- [x] **HTTPS Configuration** *(done: Caddy reverse proxy, `deploy/Caddyfile`; forward headers enabled)*
   - Generate/obtain SSL certificates
   - Configure Spring Boot for HTTPS in production
   - Set up redirect from HTTP to HTTPS

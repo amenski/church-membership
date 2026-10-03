@@ -68,6 +68,16 @@ This builds the frontend (`:frontend:vueBuild`), copies it into the JAR's `/stat
 
 ## Deploy
 
+### HTTPS (Caddy reverse proxy)
+
+1. Install Caddy: <https://caddyserver.com/docs/install>
+2. Copy `deploy/Caddyfile` to `/etc/caddy/Caddyfile` and set your domain.
+3. Point DNS at the server and open ports 80 and 443.
+4. Run the app with `SERVER_ADDRESS=127.0.0.1 COOKIE_SECURE=true`.
+5. Reload Caddy: `sudo systemctl reload caddy`
+
+Caddy renews certificates automatically, and `server.forward-headers-strategy=framework` makes Spring see the original https scheme and client IP.
+
 ### Run the JAR
 
 ```bash
@@ -143,7 +153,7 @@ volumes:
 
 ### Production checklist
 
-- [ ] HTTPS in front of the app (reverse proxy or Spring SSL), and `COOKIE_SECURE=true`
+- [ ] HTTPS via Caddy (see [HTTPS](#https-caddy-reverse-proxy)), app bound to 127.0.0.1, and `COOKIE_SECURE=true`
 - [ ] `JWT_SECRET` set. The default in `application.properties` is public.
 - [ ] Database credentials from the environment, not `root/password`. Remove `useSSL=false` from the JDBC URL.
 - [ ] CORS origins changed in **both** `SecurityConfig` and `WebMvcConfig`. They are hard-coded to localhost.

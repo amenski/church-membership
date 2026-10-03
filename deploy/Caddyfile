@@ -1,0 +1,16 @@
+# Replace members.example.org with your domain.
+# Caddy gets and renews Let's Encrypt certificates automatically and
+# redirects HTTP to HTTPS.
+# Run the app with COOKIE_SECURE=true, and make it listen on localhost only
+# (SERVER_ADDRESS=127.0.0.1).
+
+members.example.org {
+	encode gzip
+	reverse_proxy 127.0.0.1:8080
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+}
