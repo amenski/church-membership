@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
@@ -175,7 +176,7 @@ class RoleAuthorizationTest {
     }
 
     private MockHttpServletRequestBuilder buildRequest(Endpoint endpoint) {
-        MockHttpServletRequestBuilder builder = request(endpoint.method(), endpoint.path());
+        MockHttpServletRequestBuilder builder = request(endpoint.method(), endpoint.path()).with(csrf());
         if (endpoint.body() != null) {
             builder.contentType(MediaType.APPLICATION_JSON).content(endpoint.body());
         }

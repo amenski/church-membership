@@ -17,6 +17,7 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.Optional;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -60,7 +61,7 @@ class MemberContractTest {
     void postFixtureIsAcceptedAndReachesTheUseCase() throws Exception {
         when(saveMemberUseCase.invoke(any(), any(), any(), any())).thenReturn(new Member());
 
-        mockMvc.perform(post("/api/members")
+        mockMvc.perform(post("/api/members").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(fixture()))
@@ -73,7 +74,7 @@ class MemberContractTest {
     void putFixtureIsAcceptedAndReachesTheUseCase() throws Exception {
         when(updateMemberUseCase.invoke(any(), any(), any(), any(), any(), any())).thenReturn(Optional.of(new Member()));
 
-        mockMvc.perform(put("/api/members/1")
+        mockMvc.perform(put("/api/members/1").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(fixture()))
@@ -87,7 +88,7 @@ class MemberContractTest {
     void putForUnknownIdIsNotFound() throws Exception {
         when(updateMemberUseCase.invoke(any(), any(), any(), any(), any(), any())).thenReturn(Optional.empty());
 
-        mockMvc.perform(put("/api/members/99")
+        mockMvc.perform(put("/api/members/99").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(fixture()))
@@ -100,7 +101,7 @@ class MemberContractTest {
         String body = fixture().replace("}", ", \"id\": 99, \"consecutiveMonthsMissed\": 7, "
             + "\"lastPaymentDate\": \"2020-01-01\", \"lastMissedCountMonth\": \"2026-09\"}");
 
-        mockMvc.perform(put("/api/members/1")
+        mockMvc.perform(put("/api/members/1").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
@@ -111,7 +112,7 @@ class MemberContractTest {
             eq("+39 333 1234567"), eq(JOIN), eq(true));
 
         when(saveMemberUseCase.invoke(any(), any(), any(), any())).thenReturn(new Member());
-        mockMvc.perform(post("/api/members")
+        mockMvc.perform(post("/api/members").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
@@ -123,7 +124,7 @@ class MemberContractTest {
     void blankPhoneIsAcceptedAndBecomesNull() throws Exception {
         when(saveMemberUseCase.invoke(any(), any(), any(), any())).thenReturn(new Member());
 
-        mockMvc.perform(post("/api/members")
+        mockMvc.perform(post("/api/members").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(fixture().replace("+39 333 1234567", "")))
@@ -136,7 +137,7 @@ class MemberContractTest {
     void blankNameAndMalformedEmailAreRejectedWithoutEchoingValues() throws Exception {
         String body = "{\"name\": \"\", \"email\": \"not-an-email-xyz\"}";
 
-        String response = mockMvc.perform(post("/api/members")
+        String response = mockMvc.perform(post("/api/members").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))

@@ -14,6 +14,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -73,7 +74,7 @@ class ValidationResponseTest {
     void invalidMemberBodyListsFieldsWithoutEchoingRejectedValues() throws Exception {
         String body = "{\"name\":\"\",\"email\":\"" + BAD_EMAIL + "\",\"phone\":\"+390612345678\",\"joinDate\":\"2025-01-01\"}";
 
-        String response = mockMvc.perform(post("/api/members")
+        String response = mockMvc.perform(post("/api/members").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))

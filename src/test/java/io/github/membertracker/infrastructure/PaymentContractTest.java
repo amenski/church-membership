@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.YearMonth;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -50,7 +51,7 @@ class PaymentContractTest {
         String fixture = Files.readString(Path.of("src/test/resources/contracts/record-payment-request.json"));
         when(recordPaymentUseCase.invoke(any(), any(), any(), any(), any())).thenReturn(new Payment());
 
-        mockMvc.perform(post("/api/payments")
+        mockMvc.perform(post("/api/payments").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(fixture))
@@ -61,7 +62,7 @@ class PaymentContractTest {
 
     @Test
     void missingMemberIdIsRejectedWithTheFieldName() throws Exception {
-        mockMvc.perform(post("/api/payments")
+        mockMvc.perform(post("/api/payments").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"amount\": 50.0, \"paymentMethod\": \"CASH\"}"))
@@ -73,7 +74,7 @@ class PaymentContractTest {
 
     @Test
     void unknownPaymentMethodIsRejected() throws Exception {
-        mockMvc.perform(post("/api/payments")
+        mockMvc.perform(post("/api/payments").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"memberId\": 1, \"amount\": 50.0, \"paymentMethod\": \"BITCOIN\"}"))

@@ -12,7 +12,7 @@ How staff, volunteers and members sign in, stay signed in, and get sent to the r
 | Open `/dashboard`, `/members`, `/payments`, `/communications` | VOLUNTEER+ | `router/index.js:11-34` |
 | Open `/profile` | MEMBER+ (any signed-in user) | `router/index.js:35-40` |
 
-The auth endpoints have no `@PreAuthorize`; `/api/auth/**` is public (`infrastructure/config/SecurityConfig.java:97-98`).
+The auth endpoints have no `@PreAuthorize`; `/api/auth/**` is public (`infrastructure/config/SecurityConfig.java:125-126`). CSRF protection still applies: the browser first gets the `XSRF-TOKEN` cookie from any GET (the app's first call is `/api/users/me`), and every POST, including login, refresh and logout, carries it back as `X-XSRF-TOKEN`; without it the answer is 403 "Invalid or missing CSRF token".
 
 ## How it works
 ### Sign in

@@ -11,7 +11,7 @@ The signed-in user's own profile and password, for any authenticated role. Base 
 | PUT | `/api/users/me/profile` | any signed-in user | `UpdateUserProfileRequest` | `UserResponseDto` |
 | PUT | `/api/users/me/password` | any signed-in user | `ChangePasswordRequest` | `{"message": "Password changed successfully"}` |
 
-- No `@PreAuthorize` on any method; access comes from `anyRequest().authenticated()` (`infrastructure/config/SecurityConfig.java:102`). Roles: see [../authentication.md](../authentication.md).
+- No `@PreAuthorize` on any method; access comes from `anyRequest().authenticated()` (`infrastructure/config/SecurityConfig.java:130`). Roles: see [../authentication.md](../authentication.md).
 - The user is always the one in the security context. No id in the path, so no way to touch another user.
 - `UserResponseDto`: `id`, `email`, `enabled`, `role`, `firstName`, `lastName`, `phone`, `bio` (`infrastructure/dto/UserResponseDto.java:4-11`). No `createdAt`.
 

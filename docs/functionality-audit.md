@@ -54,7 +54,7 @@ Scale: **0** absent · **1** stub or flat data · **2** basic, usable · **3** f
 | Notifications | 0 | A monthly reminder scheduler runs on the 1st (C3 fixed); `{{member_name}}` in the reminder is filled in per recipient (C4 fixed). No in-app notifications, birthday or anniversary alerts, or staff task alerts. |
 | Import and export | 1 | CSV export of members and payments. No import, so a church moving from a spreadsheet must type every record by hand. |
 | Privacy | 0 | No consent records, retention rules, subject-access export or audit log. An `activity_log` table exists, but nothing writes to it. Volunteers can export the full member list. Deleting a member permanently deletes their giving history. |
-| Security operations | 1 | CSRF protection is off while authentication uses cookies. A default JWT secret and `root/password` database credentials ship in `application.properties`, with `useSSL=false` and SQL logging on (fixed 3 Oct 2026: no defaults in the default profile). No HTTPS configuration. The repo has one test (context load, disabled). |
+| Security operations | 1 | CSRF protection is off while authentication uses cookies (fixed 3 Oct 2026). A default JWT secret and `root/password` database credentials ship in `application.properties`, with `useSSL=false` and SQL logging on (fixed 3 Oct 2026: no defaults in the default profile). No HTTPS configuration. The repo has one test (context load, disabled). |
 
 ## 2. Fitness by role
 

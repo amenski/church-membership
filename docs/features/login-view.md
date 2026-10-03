@@ -41,7 +41,7 @@ View:
 - `handleLogin` (`LoginView.vue:149`): clears error, validates (email format, password >= 6 chars, `:118-146`), calls `authStore.login`, toasts, then `router.push` to `?redirect` or `/` (`:184-197`). Failure toasts `authStore.authError` (`:198-205`).
 
 ## Interceptor (`api.js`, auth parts)
-- Request: copies `XSRF-TOKEN` cookie into `X-XSRF-TOKEN` (`:30-52`); see CSRF in [../authentication.md](../authentication.md).
+- Request: copies `XSRF-TOKEN` cookie into `X-XSRF-TOKEN` on post/put/patch/delete (`:30-52`). The backend requires it on every write, login included, and sets the cookie on its first response; see CSRF in [../authentication.md](../authentication.md).
 - Response 401 (`:105`): skips URLs containing `/login` or `/refresh` (`:109`); otherwise calls `refreshToken`, bumps activity, retries the request once (`_retry`, `:106`, `:126`).
 - Refresh failure (`:127-170`): `clearAuth`, removes `user`/`auth_timestamp` from local/session storage, toasts "Session Expired" and hard-redirects to `/login?session=expired`, both only if the user was signed in (`:166`).
 - Other 401 shows an "Unauthorized" toast (`:174-195`).

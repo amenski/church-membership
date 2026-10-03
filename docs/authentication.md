@@ -9,7 +9,7 @@ How users sign in, how sessions are kept, and which role can call which endpoint
 - **Status:** accepted (first written 5 September 2025)
 - **Decision:** stateless JWTs carried in two HttpOnly cookies, `sid` (access) and `sid_refresh` (refresh). The `Authorization: Bearer` header is still accepted as a fallback for mobile or legacy clients.
 - **Why:** keeps tokens out of JavaScript, needs no server session store, and fits the clean-architecture layering.
-- **Mobile (out of scope for now):** native clients should keep using the Bearer header, store tokens in Keychain or Keystore, and need no CSRF protection.
+- **Mobile (out of scope for now):** native clients should keep using the Bearer header, store tokens in Keychain or Keystore, and are not exposed to cookie-based CSRF, but the server still requires the `X-XSRF-TOKEN` header on writes (read the `XSRF-TOKEN` cookie from any response and echo it).
 
 ## Backend
 
@@ -68,16 +68,15 @@ CORS allows credentials, but the allowed origins are hard-coded in two places: `
 
 ### CSRF
 
-CSRF protection is **disabled** (`SecurityConfig`). Same-site cookies (`SameSite=Lax`) are the only protection today.
+CSRF protection is **on** (`SecurityConfig.filterChain`), because the browser sends the `sid` cookie automatically.
 
-The frontend is already prepared: it copies an `XSRF-TOKEN` cookie into an `X-XSRF-TOKEN` header on every non-GET request. To turn protection on:
+- Spring uses `CookieCsrfTokenRepository.withHttpOnlyFalse()` with the plain `CsrfTokenRequestAttributeHandler`, so the raw cookie value is what the header must carry. The `XSRF-TOKEN` cookie has `Path=/`, the same `SameSite` and `Secure` settings as the auth cookies, and is readable by JavaScript.
+- `CsrfCookieFilter` reads the token on every request, so the cookie is written on every response, including 401 and GET ones. The browser gets it from its first call (`GET /api/users/me`).
+- `POST`, `PUT`, `PATCH` and `DELETE` need an `X-XSRF-TOKEN` header equal to the cookie. No endpoint is exempt: login, refresh and logout need it too. GET, HEAD and OPTIONS do not.
+- A missing or wrong token gets 403 `application/problem+json` with detail "Invalid or missing CSRF token" (`SecurityConfig.accessDeniedHandler`). Any other filter-level denial answers 403 "Access denied".
+- The web app already echoes the cookie into the header (`api.js`), and CORS allows the `x-xsrf-token` header. Other clients must read the `XSRF-TOKEN` cookie and send it back as the header.
 
-```java
-http.csrf(csrf -> csrf
-    .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()));
-```
-
-If the frontend and API ever run on different sites, use `SameSite=None; Secure` and CSRF protection together.
+If the frontend and API ever run on different sites, use `SameSite=None; Secure`; the cookie and header scheme stays the same.
 
 ## Roles and permissions
 
@@ -124,7 +123,7 @@ await authStore.logout()
 
 - Axios with `withCredentials: true`, so cookies go with every request. Base URL: `VITE_API_BASE_URL`, default `/api`.
 - **401:** calls refresh once, then retries the original request. If refresh fails, it clears auth state and redirects to login.
-- **403:** no retry. Only a signed-in user whose role is too low gets 403; a missing, expired or wrong-type access token gets a 401 `application/problem+json` (`SecurityConfig.authenticationEntryPoint`), which is what triggers the refresh.
+- **403:** no retry. A signed-in user whose role is too low gets 403, and so does a write without a valid CSRF token; a missing, expired or wrong-type access token gets a 401 `application/problem+json` (`SecurityConfig.authenticationEntryPoint`), which is what triggers the refresh. The CSRF 403 is not retried.
 - **Network errors and 5xx:** retried after a delay. `VITE_API_RETRY_ATTEMPTS` (default 3) is meant to set the limit, but the `_retry` flag stops it after one retry.
 - Adds the `X-XSRF-TOKEN` header described under [CSRF](#csrf).
 
@@ -140,15 +139,21 @@ Dashboard, members, payments and communications require VOLUNTEER; `/profile` is
 
 ## Manual test
 
+Writes need the CSRF header, so fetch the token cookie first and echo it.
+
 ```bash
+# First GET sets the XSRF-TOKEN cookie (a 401 here is fine)
+curl -s -c jar.txt http://localhost:8080/api/users/me > /dev/null
+XSRF=$(awk '$6=="XSRF-TOKEN"{print $7}' jar.txt)
+
 # Log in and save cookies
-curl -i -c jar.txt -X POST http://localhost:8080/api/auth/login \
-  -H 'Content-Type: application/json' \
+curl -i -b jar.txt -c jar.txt -X POST http://localhost:8080/api/auth/login \
+  -H "X-XSRF-TOKEN: $XSRF" -H 'Content-Type: application/json' \
   -d '{"email":"admin@membertracker.com","password":"<password>"}'
 
 curl -b jar.txt http://localhost:8080/api/users/me                       # expect 200
-curl -i -b jar.txt -c jar.txt -X POST http://localhost:8080/api/auth/refresh
-curl -i -b jar.txt -X POST http://localhost:8080/api/auth/logout          # then /users/me returns 401
+curl -i -b jar.txt -c jar.txt -X POST -H "X-XSRF-TOKEN: $XSRF" http://localhost:8080/api/auth/refresh
+curl -i -b jar.txt -X POST -H "X-XSRF-TOKEN: $XSRF" http://localhost:8080/api/auth/logout   # then /users/me returns 401
 ```
 
 ## Troubleshooting
@@ -159,6 +164,7 @@ curl -i -b jar.txt -X POST http://localhost:8080/api/auth/logout          # then
 | Logged out after about 30 minutes | Should not happen while active: an expired access cookie gets a 401 and the client refreshes. Check that the browser sends `sid_refresh` to `/api/auth/refresh` (cookie path `/api/auth`) and that `JWT_SECRET` did not change |
 | Logged out sooner | The client-side 1-hour inactivity timeout, or the backend restarted with a different `JWT_SECRET` |
 | Redirect loop on load | `authStore.initialize()` must run in `App.vue` so `authChecked` gets set |
+| 403 "Invalid or missing CSRF token" on a write | The `XSRF-TOKEN` cookie was not sent or the header does not match (clients other than the web app must read the cookie and echo it) |
 | CORS error in the browser | The frontend origin must be in both CORS lists (see [Configuration](#configuration)) |
 
 ## Known gaps

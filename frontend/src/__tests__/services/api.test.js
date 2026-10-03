@@ -196,3 +196,37 @@ describe('api response interceptor', () => {
     expect(error.fieldErrors).toBeUndefined()
   }, 15000)
 })
+
+describe('api CSRF header', () => {
+  let originalAdapter
+  let sent
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    originalAdapter = axiosInstance.defaults.adapter
+    sent = null
+    axiosInstance.defaults.adapter = async (config) => {
+      sent = config
+      return { status: 200, data: {}, headers: {}, config, statusText: 'OK' }
+    }
+    document.cookie = 'XSRF-TOKEN=token-from-cookie; path=/'
+  })
+
+  afterEach(() => {
+    axiosInstance.defaults.adapter = originalAdapter
+    document.cookie = 'XSRF-TOKEN=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+    vi.restoreAllMocks()
+  })
+
+  it.each(['post', 'put', 'patch', 'delete'])('a %s request carries X-XSRF-TOKEN read from the cookie', async (method) => {
+    await axiosInstance[method]('/members/1')
+
+    expect(sent.headers['X-XSRF-TOKEN']).toBe('token-from-cookie')
+  })
+
+  it('a GET request does not carry X-XSRF-TOKEN', async () => {
+    await axiosInstance.get('/members')
+
+    expect(sent.headers['X-XSRF-TOKEN']).toBeUndefined()
+  })
+})

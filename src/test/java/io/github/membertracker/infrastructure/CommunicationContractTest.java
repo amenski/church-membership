@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -72,7 +73,7 @@ class CommunicationContractTest {
     void createBindsTheFixture() throws Exception {
         when(createCommunicationUseCase.invoke(any())).thenReturn(new Communication());
 
-        mockMvc.perform(post("/api/communications")
+        mockMvc.perform(post("/api/communications").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(fixture()))
@@ -87,7 +88,7 @@ class CommunicationContractTest {
     void sendToAllBindsTheFixture() throws Exception {
         when(sendCommunicationToAllMembersUseCase.invoke(any())).thenReturn(new Communication());
 
-        mockMvc.perform(post("/api/communications/send-to-all")
+        mockMvc.perform(post("/api/communications/send-to-all").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(fixture()))
@@ -103,7 +104,7 @@ class CommunicationContractTest {
         when(getMembersWithMissedPaymentsUseCase.invoke(2)).thenReturn(List.of());
         when(sendCommunicationToMembersUseCase.invoke(any(), anyList(), any())).thenReturn(new Communication());
 
-        mockMvc.perform(post("/api/communications/send-to-overdue/2")
+        mockMvc.perform(post("/api/communications/send-to-overdue/2").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(fixture()))
@@ -119,7 +120,7 @@ class CommunicationContractTest {
         when(getMemberByIdUseCase.invoke(1L)).thenReturn(Optional.of(new Member()));
         when(sendCommunicationToMembersUseCase.invoke(any(), anyList(), any())).thenReturn(new Communication());
 
-        mockMvc.perform(post("/api/communications/send-to-member/1")
+        mockMvc.perform(post("/api/communications/send-to-member/1").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(fixture()))
@@ -134,7 +135,7 @@ class CommunicationContractTest {
     void clientSuppliedSentDateIsIgnored() throws Exception {
         when(createCommunicationUseCase.invoke(any())).thenReturn(new Communication());
 
-        mockMvc.perform(post("/api/communications")
+        mockMvc.perform(post("/api/communications").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"title\": \"Payment reminder\", \"messageContent\": \"Dear member, your payment is overdue.\", \"sentDate\": \"2020-01-01T00:00:00\"}"))
@@ -147,7 +148,7 @@ class CommunicationContractTest {
 
     @Test
     void blankTitleIsRejectedWithTheFieldName() throws Exception {
-        mockMvc.perform(post("/api/communications")
+        mockMvc.perform(post("/api/communications").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"title\": \"\", \"messageContent\": \"m\"}"))
@@ -161,7 +162,7 @@ class CommunicationContractTest {
     void sendToMemberWithUnknownMemberIsRejected() throws Exception {
         when(getMemberByIdUseCase.invoke(99L)).thenReturn(Optional.empty());
 
-        mockMvc.perform(post("/api/communications/send-to-member/99")
+        mockMvc.perform(post("/api/communications/send-to-member/99").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(fixture()))

@@ -68,7 +68,8 @@ This document tracks missing features, improvements, and technical debt in the M
 - [x] Phase 1a: C5 token type + refresh cookie path, C6 generic login error
 - [x] Phase 1b: C3 scheduling monthly + idempotent counter (changeset 005), C4 {{member_name}}
 - [x] Phase 2: C8 MemberRequest DTO
-- [ ] Phase 3: secrets out of config, CSRF back on, activity log writes
+- [x] Phase 3: secrets out of config, CSRF back on (activity log writes deferred: see below)
+- [ ] Activity log writes: record sign-in, member create/edit/delete, exports and payments in the existing activity_log table (table exists, nothing writes to it; dashboard recent activities could then read it)
 - [ ] Phase 4: Person/Membership split (needs a decision, not started)
 
 ### Bugs found by checking the docs against the code (October 2026)

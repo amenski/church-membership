@@ -10,7 +10,7 @@ Every signed-in user views and edits their own name, phone and bio, and changes 
 | Change own password | MEMBER | `PUT /api/users/me/password` (button on `/profile` is dead, see Known issues) |
 | Edit email, role or another user | nobody | no UI or API |
 
-- No `@PreAuthorize` on these endpoints; any authenticated user passes (`src/main/java/io/github/membertracker/infrastructure/config/SecurityConfig.java:102`).
+- No `@PreAuthorize` on these endpoints; any authenticated user passes (`src/main/java/io/github/membertracker/infrastructure/config/SecurityConfig.java:130`).
 - The user always comes from the security context, never from an id in the request (`src/main/java/io/github/membertracker/infrastructure/UserController.java:75-76`, `:115-116`).
 - Route `/profile` only needs sign-in (`frontend/src/router/index.js:36-39`).
 

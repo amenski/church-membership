@@ -22,6 +22,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import java.time.LocalDate;
 import java.util.List;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -68,7 +69,7 @@ class MemberExportTest {
     }
 
     private String exportBody(String json) throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/members/export")
+        MvcResult result = mockMvc.perform(post("/api/members/export").with(csrf())
                 .with(user("v@example.com").roles("VOLUNTEER"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
@@ -97,7 +98,7 @@ class MemberExportTest {
 
     @Test
     void emptyIdsReturns400() throws Exception {
-        mockMvc.perform(post("/api/members/export")
+        mockMvc.perform(post("/api/members/export").with(csrf())
                 .with(user("v@example.com").roles("VOLUNTEER"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"ids\":[]}"))
@@ -106,7 +107,7 @@ class MemberExportTest {
 
     @Test
     void nonPositiveIdReturns400() throws Exception {
-        mockMvc.perform(post("/api/members/export")
+        mockMvc.perform(post("/api/members/export").with(csrf())
                 .with(user("v@example.com").roles("VOLUNTEER"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"ids\":[0]}"))

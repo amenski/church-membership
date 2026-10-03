@@ -49,6 +49,8 @@ Open **http://localhost:3000**. Vite proxies `/api/*` to the backend (`frontend/
 
 Swagger works only with the `dev` profile.
 
+CSRF protection is on: "Try it out" on POST, PUT and DELETE needs the `X-XSRF-TOKEN` header, set to the value of the `XSRF-TOKEN` cookie from the browser (any GET, such as `/api/users/me`, sets it). GETs work without it.
+
 1. Start the backend with `./gradlew bootRun` (it uses the `dev` profile by default).
 2. In the same browser, sign in first with `POST /api/auth/login` so the `sid` cookie is set. Swagger's requests then carry the cookie.
 3. Open http://localhost:8080/swagger-ui.html (it redirects to the Swagger UI; the smoke test checks this).
