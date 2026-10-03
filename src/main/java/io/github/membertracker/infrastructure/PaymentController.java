@@ -50,13 +50,13 @@ public class PaymentController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('VOLUNTEER')")
     public List<Payment> getAllPayments() {
         return getAllPaymentsUseCase.invoke();
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('VOLUNTEER')")
     public ResponseEntity<Payment> getPaymentById(@PathVariable @Positive Long id) {
         return getPaymentByIdUseCase.invoke(id)
                 .map(ResponseEntity::ok)
@@ -64,7 +64,7 @@ public class PaymentController {
     }
 
     @GetMapping("/member/{memberId}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('VOLUNTEER')")
     public ResponseEntity<List<Payment>> getPaymentsByMember(@PathVariable @Positive Long memberId) {
         return getMemberByIdUseCase.invoke(memberId)
                 .map(member -> ResponseEntity.ok(getPaymentsByMemberUseCase.invoke(member)))
@@ -72,13 +72,13 @@ public class PaymentController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('STAFF')")
     public ResponseEntity<Payment> recordPayment(@Valid @RequestBody Payment payment) {
         return ResponseEntity.ok(recordPaymentUseCase.invoke(payment));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deletePayment(@PathVariable @Positive Long id) {
         if (getPaymentByIdUseCase.invoke(id).isPresent()) {
             // In a real application, you might want to revert the member's last payment date
@@ -89,7 +89,7 @@ public class PaymentController {
     }
 
     @GetMapping("/export")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('VOLUNTEER')")
     public ResponseEntity<StreamingResponseBody> exportPayments() {
         List<Payment> payments = getAllPaymentsUseCase.invoke();
         

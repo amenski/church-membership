@@ -4,6 +4,8 @@ import io.github.membertracker.infrastructure.filter.JwtAuthenticationFilter;
 import io.github.membertracker.usecase.LoadUserByUsernameUseCase;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -40,6 +42,15 @@ public class SecurityConfig {
         filter.setUserDetailsService(userDetailsService);
         filter.setAuthProperties(authProperties);
         return filter;
+    }
+
+    @Bean
+    static RoleHierarchy roleHierarchy() {
+        return RoleHierarchyImpl.withDefaultRolePrefix()
+            .role("ADMIN").implies("STAFF")
+            .role("STAFF").implies("VOLUNTEER")
+            .role("VOLUNTEER").implies("MEMBER")
+            .build();
     }
 
     @Bean

@@ -42,7 +42,7 @@ public class DashboardController {
     }
 
     @GetMapping("/stats")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('VOLUNTEER')")
     public ResponseEntity<Map<String, Object>> getDashboardStats() {
         Map<String, Object> stats = new HashMap<>();
 
@@ -96,7 +96,7 @@ public class DashboardController {
     }
 
     @GetMapping("/recent-payments")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('VOLUNTEER')")
     public ResponseEntity<List<?>> getRecentPayments() {
         try {
             List<?> allPayments = getAllPaymentsUseCase.invoke();
@@ -120,7 +120,7 @@ public class DashboardController {
     }
 
     @GetMapping("/overdue-members")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('VOLUNTEER')")
     public ResponseEntity<List<?>> getOverdueMembers() {
         try {
             // Get members with overdue payments (last 1 month)
@@ -132,7 +132,7 @@ public class DashboardController {
     }
 
     @GetMapping("/recent-activities")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('VOLUNTEER')")
     public ResponseEntity<List<Map<String, Object>>> getRecentActivities() {
         try {
             List<Map<String, Object>> activities = new java.util.ArrayList<>();

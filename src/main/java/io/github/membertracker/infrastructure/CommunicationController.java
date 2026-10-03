@@ -53,13 +53,13 @@ public class CommunicationController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('VOLUNTEER')")
     public List<Communication> getAllCommunications() {
         return getAllCommunicationsUseCase.invoke();
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('VOLUNTEER')")
     public ResponseEntity<Communication> getCommunicationById(@PathVariable @Positive Long id) {
         return getCommunicationByIdUseCase.invoke(id)
                 .map(ResponseEntity::ok)
@@ -67,19 +67,19 @@ public class CommunicationController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('STAFF')")
     public ResponseEntity<Communication> createCommunication(@Valid @RequestBody Communication communication) {
         return ResponseEntity.ok(createCommunicationUseCase.invoke(communication));
     }
 
     @PostMapping("/send-to-all")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('STAFF')")
     public ResponseEntity<Communication> sendToAllMembers(@Valid @RequestBody Communication communication) {
         return ResponseEntity.ok(sendCommunicationToAllMembersUseCase.invoke(communication));
     }
 
     @PostMapping("/send-to-overdue/{months}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('STAFF')")
     public ResponseEntity<Communication> sendToOverdueMembers(
             @PathVariable @Min(1) int months,
             @Valid @RequestBody Communication communication
@@ -95,7 +95,7 @@ public class CommunicationController {
     }
 
     @GetMapping("/{id}/deliveries")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('VOLUNTEER')")
     public ResponseEntity<List<MessageDelivery>> getDeliveries(@PathVariable @Positive Long id) {
         List<MessageDelivery> deliveries = getDeliveriesByCommunicationUseCase.invoke(id);
         return ResponseEntity.ok(deliveries);
