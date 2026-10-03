@@ -45,7 +45,7 @@ app.mail.smtp.port=${MAIL_PORT:587}
 app.mail.smtp.username=${MAIL_USERNAME:}
 app.mail.smtp.password=${MAIL_PASSWORD:}
 app.mail.smtp.auth=${MAIL_AUTH:true}
-app.mail.smtp.starttls.enable=${MAIL_STARTTLS:true}
+app.mail.smtp.starttls-enable=${MAIL_STARTTLS:true}
 app.mail.smtp.debug=${MAIL_DEBUG:false}
 
 # Retry for every email send (exponential backoff)
@@ -55,6 +55,8 @@ app.mail.retry.multiplier=${MAIL_RETRY_MULTIPLIER:2.0}
 ```
 
 For Gmail with 2-step verification, use an app password. Never commit real SMTP credentials.
+
+The STARTTLS key is `app.mail.smtp.starttls-enable` (a hyphen). The earlier dotted spelling `starttls.enable` never bound, so `MAIL_STARTTLS=false` and the dev profile's `false` were ignored and STARTTLS always stayed on (`MailPropertiesBindingTest` guards this).
 
 ### Local testing with MailHog
 
@@ -71,7 +73,7 @@ app.mail.from=dev-noreply@localhost
 app.mail.smtp.host=localhost
 app.mail.smtp.port=1025
 app.mail.smtp.auth=false
-app.mail.smtp.starttls.enable=false
+app.mail.smtp.starttls-enable=false
 app.mail.smtp.debug=true
 ```
 
