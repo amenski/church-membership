@@ -22,7 +22,7 @@ public class UpdateUserProfileRequest {
     public UpdateUserProfileRequest(String firstName, String lastName, String phone, String bio) {
         this.firstName = firstName;
         this.lastName = lastName;
-        this.phone = phone;
+        setPhone(phone);
         this.bio = bio;
     }
 
@@ -46,8 +46,9 @@ public class UpdateUserProfileRequest {
         return phone;
     }
 
+    /** A blank phone means "no phone": it becomes null so the pattern below is skipped. */
     public void setPhone(String phone) {
-        this.phone = phone;
+        this.phone = phone == null || phone.isBlank() ? null : phone;
     }
 
     public String getBio() {

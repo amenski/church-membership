@@ -41,67 +41,49 @@ public class UserController {
 
     @GetMapping("/me")
     @Operation(summary = "Get the signed-in user (any signed-in user)")
-    public ResponseEntity<UserResponseDto> getCurrentUser() {
+    public ResponseEntity<?> getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated() ||
             authentication.getPrincipal() instanceof String) {
-            return ResponseEntity.status(401).body(null);
+            return unauthorized();
         }
 
-        try {
-            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-            String email = userDetails.getUsername();
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
 
-            UserResponseDto userResponse = getCurrentUserUseCase.execute(email);
-
-            return ResponseEntity.ok(userResponse);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.err.println("Error in getCurrentUser: " + e.getMessage());
-            return ResponseEntity.status(500).body(null);
-        }
+        return ResponseEntity.ok(getCurrentUserUseCase.execute(userDetails.getUsername()));
     }
 
     @PutMapping("/me/profile")
     @Operation(summary = "Update own profile (any signed-in user)")
-    public ResponseEntity<UserResponseDto> updateProfile(@Valid @RequestBody UpdateUserProfileRequest request) {
+    public ResponseEntity<?> updateProfile(@Valid @RequestBody UpdateUserProfileRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated() ||
             authentication.getPrincipal() instanceof String) {
-            return ResponseEntity.status(401).body(null);
+            return unauthorized();
         }
 
-        try {
-            User userDetails = (User) authentication.getPrincipal();
-            Long userId = userDetails.getId();
+        User userDetails = (User) authentication.getPrincipal();
 
-            User updatedUser = updateUserProfileUseCase.execute(
-                userId,
-                request.getFirstName(),
-                request.getLastName(),
-                request.getPhone(),
-                request.getBio()
-            );
+        User updatedUser = updateUserProfileUseCase.execute(
+            userDetails.getId(),
+            request.getFirstName(),
+            request.getLastName(),
+            request.getPhone(),
+            request.getBio()
+        );
 
-            UserResponseDto response = new UserResponseDto(
-                updatedUser.getId(),
-                updatedUser.getEmailValue(),
-                updatedUser.isEnabled(),
-                updatedUser.getRole().name(),
-                updatedUser.getFirstName(),
-                updatedUser.getLastName(),
-                updatedUser.getPhone(),
-                updatedUser.getBio()
-            );
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(null);
-        }
+        return ResponseEntity.ok(new UserResponseDto(
+            updatedUser.getId(),
+            updatedUser.getEmailValue(),
+            updatedUser.isEnabled(),
+            updatedUser.getRole().name(),
+            updatedUser.getFirstName(),
+            updatedUser.getLastName(),
+            updatedUser.getPhone(),
+            updatedUser.getBio()
+        ));
     }
 
     @PutMapping("/me/password")

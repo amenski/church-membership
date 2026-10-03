@@ -19,15 +19,15 @@ The signed-in user's own profile and password, for any authenticated role. Base 
 | DTO | Field | Rule |
 |-----|-------|------|
 | `UpdateUserProfileRequest` | `firstName`, `lastName` | max 50 (`UpdateUserProfileRequest.java:8,11`) |
-| | `phone` | regex `^\+?[0-9\s\-\(\)]{10,}$` (`:14`) |
+| | `phone` | regex `^\+?[0-9\s\-\(\)]{10,}$` (`:14`); a blank phone is set to null by the setter (`:49-52`), so `""` passes |
 | | `bio` | max 500 (`:17`) |
 | `ChangePasswordRequest` | `currentPassword` | not blank only (the seeded admin's is 5 characters) (`ChangePasswordRequest.java:8-9`) |
 | | `newPassword` | not blank, 8-72 characters (`:11-12`); the full rule is checked in the domain |
 
 ## Actions
-- `getCurrentUser` -> reads email from principal, calls `GetCurrentUserUseCase.execute(email)` (`UserController.java:39-62`).
-- `updateProfile` -> calls `UpdateUserProfileUseCase.execute(userId, firstName, lastName, phone, bio)`, maps the saved `User` to the DTO (`:64-102`).
-- `changePassword` -> calls `ChangePasswordUseCase.execute(userId, current, new)` and returns 200 `{"message": "Password changed successfully"}`; no try/catch, so domain exceptions reach `GlobalExceptionHandler` (`:107-126`).
+- `getCurrentUser` -> reads email from principal, calls `GetCurrentUserUseCase.execute(email)` (`UserController.java:42-55`); no try/catch.
+- `updateProfile` -> calls `UpdateUserProfileUseCase.execute(userId, firstName, lastName, phone, bio)`, maps the saved `User` to the DTO (`:57-87`); no try/catch.
+- `changePassword` -> calls `ChangePasswordUseCase.execute(userId, current, new)` and returns 200 `{"message": "Password changed successfully"}`; no try/catch, so domain exceptions reach `GlobalExceptionHandler` (`:89-108`).
 
 ## Collaborators
 - `GetCurrentUserUseCase` `usecase/GetCurrentUserUseCase.java:16`: `findByEmail`, builds the DTO.
@@ -40,19 +40,17 @@ The signed-in user's own profile and password, for any authenticated role. Base 
 | Status | Source |
 |--------|--------|
 | 400 | `@Valid` failure -> `GlobalExceptionHandler` `MethodArgumentNotValidException` (`infrastructure/handler/GlobalExceptionHandler.java:53`), RFC 7807 with field messages |
-| 400 | `updateProfile`: any exception from the use case (`UserController.java:99-101`), empty body |
+| 400 | `updateProfile` / `getCurrentUser`: a `UserDomainException` from the use case (for example user not found) -> `GlobalExceptionHandler` ProblemDetail with the message in `detail` and a `code` |
 | 400 | `changePassword`: `UserDomainException` -> `GlobalExceptionHandler` ProblemDetail with the real reason in `detail`: "Current password is incorrect" (`code` `USER_003`) or "Password must be 8 to 72 characters (bytes) and contain an uppercase letter, a lowercase letter, a digit and a special character" (`code` `USER_004`) |
 | 401 | the `sid` token is valid but its user was deleted, disabled or locked: the filter treats the request as signed out and the entry point answers (`infrastructure/filter/JwtAuthenticationFilter.java:62-66`) |
-| 401 | no usable authentication (`:44-47`, `:69-72`), empty body; normally the security filter answers first |
-| 401 | `changePassword`: no usable principal (`:111-115`), ProblemDetail "Authentication required" (`unauthorized()`, `:128`) |
-| 500 | `getCurrentUser`: any exception, e.g. user not found (`:57-61`), empty body |
+| 401 | each method: no usable principal (`:47-50`, `:62-65`, `:94-97`) -> ProblemDetail "Authentication required" (`unauthorized()`, `:110`); normally the security filter answers first |
 
 ## Side effects
 - `updateProfile` writes `phone`/`bio`/names and `updatedAt`.
-- `changePassword` writes the password hash, `lastPasswordChange`, `updatedAt`, and resets `failedLoginAttempts` to 0 (`domain/model/User.java:204-209`). Existing sessions/tokens are not revoked.
+- `changePassword` writes the password hash, `lastPasswordChange`, `updatedAt`, and resets `failedLoginAttempts` to 0 (`domain/model/User.java:218-223`). Existing sessions/tokens are not revoked.
 
 ## Gotchas
-- The catch-all block in `updateProfile` hides the cause (user not found and other failures all return the same empty 400).
-- `getCurrentUser` returns 500, not 404, when the user row is gone (`:57-61`); it also prints the stack trace to stderr.
-- `User.updateProfile` ignores blank/null `firstName` and `lastName` (keeps old value) but sets `phone` and `bio` to null when null is sent (`domain/model/User.java:304-311`).
-- `updateProfile` casts the principal to `User` (`:75`) while `getCurrentUser` casts to `UserDetails` (`:50`); both rely on the principal being the domain `User`.
+- There are no catch-all blocks any more: every failure reaches `GlobalExceptionHandler`. A user row that is gone is a 400 ProblemDetail (domain exceptions all map to 400), not an empty 500; a session for a user deleted after sign-in is already a 401 at the filter.
+- `phone` `""` is accepted and clears the phone.
+- `User.updateProfile` ignores blank/null `firstName` and `lastName` (keeps old value) but sets `phone` and `bio` to null when null is sent (`domain/model/User.java:317-326`).
+- `updateProfile` casts the principal to `User` (`:67`) while `getCurrentUser` casts to `UserDetails` (`:52`); both rely on the principal being the domain `User`.

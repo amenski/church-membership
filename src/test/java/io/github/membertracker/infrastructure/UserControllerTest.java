@@ -6,6 +6,7 @@ import io.github.membertracker.domain.model.User;
 import io.github.membertracker.domain.valueobject.Email;
 import io.github.membertracker.infrastructure.config.AuthProperties;
 import io.github.membertracker.infrastructure.config.SecurityConfig;
+import io.github.membertracker.infrastructure.dto.UserResponseDto;
 import io.github.membertracker.usecase.ChangePasswordUseCase;
 import io.github.membertracker.usecase.GetCurrentUserUseCase;
 import io.github.membertracker.usecase.LoadUserByUsernameUseCase;
@@ -23,10 +24,12 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -116,5 +119,68 @@ class UserControllerTest {
             .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
             .andExpect(jsonPath("$.detail").value("Authentication required"));
         verifyNoInteractions(changePasswordUseCase);
+    }
+
+    // profile and /me
+
+    @Test
+    void updatingTheProfileWithAnEmptyPhoneGives200AndClearsThePhone() throws Exception {
+        when(updateUserProfileUseCase.execute(eq(7L), eq("Ada"), eq("Lovelace"), isNull(), any())).thenReturn(principal);
+
+        mockMvc.perform(put("/api/users/me/profile").with(csrf()).with(user(principal))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"firstName\":\"Ada\",\"lastName\":\"Lovelace\",\"phone\":\"\",\"bio\":\"\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.email").value("member@example.com"));
+    }
+
+    @Test
+    void aTooShortPhoneIsRejectedAsAProblem() throws Exception {
+        mockMvc.perform(put("/api/users/me/profile").with(csrf()).with(user(principal))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"firstName\":\"Ada\",\"phone\":\"5551234\"}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.errors[?(@.field == 'phone')]").isNotEmpty());
+    }
+
+    @Test
+    void aUseCaseFailureOnProfileUpdateIsAProblemWithTheReason() throws Exception {
+        when(updateUserProfileUseCase.execute(anyLong(), any(), any(), any(), any()))
+            .thenThrow(UserDomainException.userNotFound("7"));
+
+        mockMvc.perform(put("/api/users/me/profile").with(csrf()).with(user(principal))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"firstName\":\"Ada\"}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.detail").isNotEmpty());
+    }
+
+    @Test
+    void meGives200() throws Exception {
+        when(getCurrentUserUseCase.execute("member@example.com")).thenReturn(
+            new UserResponseDto(7L, "member@example.com", true, "MEMBER", "Ada", "Lovelace", null, null));
+
+        mockMvc.perform(get("/api/users/me").with(user(principal)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.email").value("member@example.com"))
+            .andExpect(jsonPath("$.role").value("MEMBER"));
+    }
+
+    @Test
+    void meWithoutSignInGives401Problem() throws Exception {
+        mockMvc.perform(get("/api/users/me"))
+            .andExpect(status().isUnauthorized())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON));
+    }
+
+    @Test
+    void meForAUserWhoIsGoneIsAProblemNotAnEmpty500() throws Exception {
+        when(getCurrentUserUseCase.execute("member@example.com")).thenThrow(UserDomainException.userNotFound("member@example.com"));
+
+        mockMvc.perform(get("/api/users/me").with(user(principal)))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.detail").isNotEmpty());
     }
 }

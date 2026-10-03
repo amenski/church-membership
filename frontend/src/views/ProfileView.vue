@@ -69,6 +69,7 @@
                         id="firstName"
                         type="text"
                         v-model="form.firstName"
+                        maxlength="50"
                         :disabled="!editing"
                         class="form-control"
                         :class="{ 'is-invalid': formErrors.firstName }"
@@ -89,6 +90,7 @@
                         id="lastName"
                         type="text"
                         v-model="form.lastName"
+                        maxlength="50"
                         :disabled="!editing"
                         class="form-control"
                         :class="{ 'is-invalid': formErrors.lastName }"
@@ -186,25 +188,6 @@
               </h5>
             </div>
             <div class="card-body">
-              <div class="row">
-                <div class="col-md-6 mb-3">
-                  <label class="form-label text-muted">Account Status</label>
-                  <div class="d-flex align-items-center">
-                    <span class="badge bg-success me-2">
-                      <i class="bi bi-check-circle me-1"></i>Active
-                    </span>
-                    <small class="text-muted">Verified account</small>
-                  </div>
-                </div>
-                <div class="col-md-6 mb-3">
-                  <label class="form-label text-muted">Member Since</label>
-                  <div class="d-flex align-items-center">
-                    <i class="bi bi-calendar3 me-2 text-muted"></i>
-                    <span class="text-dark">{{ formatMemberSince }}</span>
-                  </div>
-                </div>
-              </div>
-              <hr>
               <div class="d-flex gap-2">
                 <button
                   type="button"
@@ -213,9 +196,6 @@
                   data-bs-target="#changePasswordModal"
                 >
                   <i class="bi bi-key me-1"></i>Change Password
-                </button>
-                <button type="button" class="btn btn-outline-secondary btn-sm">
-                  <i class="bi bi-download me-1"></i>Export Data
                 </button>
               </div>
             </div>
@@ -303,11 +283,12 @@
 </template>
 
 <script>
-import { ref, onMounted, onBeforeUnmount, computed, nextTick } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { Modal } from 'bootstrap'
 import { useAuthStore, useAppStore } from '@/stores/index.js'
 import apiService from '@/services/api.js'
 import { validateNewPassword } from '@/utils/passwordRules.js'
+import { isValidPhone } from '@/utils/phoneRules.js'
 
 export default {
   name: 'ProfileView',
@@ -347,21 +328,6 @@ export default {
       confirmPassword: ''
     })
 
-    // Computed property for member since date
-    const formatMemberSince = computed(() => {
-      if (!user.value.createdAt) return 'N/A'
-      try {
-        const date = new Date(user.value.createdAt)
-        return date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        })
-      } catch {
-        return 'N/A'
-      }
-    })
-
     // Form validation
     const validateForm = () => {
       let isValid = true
@@ -371,22 +337,16 @@ export default {
       if (!form.value.firstName?.trim()) {
         formErrors.value.firstName = 'First name is required'
         isValid = false
-      } else if (form.value.firstName.trim().length < 2) {
-        formErrors.value.firstName = 'First name must be at least 2 characters'
-        isValid = false
       }
 
       // Last name validation
       if (!form.value.lastName?.trim()) {
         formErrors.value.lastName = 'Last name is required'
         isValid = false
-      } else if (form.value.lastName.trim().length < 2) {
-        formErrors.value.lastName = 'Last name must be at least 2 characters'
-        isValid = false
       }
 
-      // Phone validation (optional but must be valid if provided)
-      if (form.value.phone && !isValidPhone(form.value.phone)) {
+      // Phone validation (optional but must match the server's pattern if provided)
+      if (!isValidPhone(form.value.phone)) {
         formErrors.value.phone = 'Please enter a valid phone number'
         isValid = false
       }
@@ -398,12 +358,6 @@ export default {
       }
 
       return isValid
-    }
-
-    // Phone validation helper
-    const isValidPhone = (phone) => {
-      const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/
-      return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''))
     }
 
     const loadProfile = async () => {
@@ -572,7 +526,6 @@ export default {
       saving,
       error,
       successMessage,
-      formatMemberSince,
       changingPassword,
       passwordServerError,
       passwordForm,

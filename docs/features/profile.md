@@ -11,30 +11,30 @@ Every signed-in user views and edits their own name, phone and bio, and changes 
 | Edit email, role or another user | nobody | no UI or API |
 
 - No `@PreAuthorize` on these endpoints; any authenticated user passes (`src/main/java/io/github/membertracker/infrastructure/config/SecurityConfig.java:130`).
-- The user always comes from the security context, never from an id in the request (`src/main/java/io/github/membertracker/infrastructure/UserController.java:75-76`, `:115-116`).
+- The user always comes from the security context, never from an id in the request (`src/main/java/io/github/membertracker/infrastructure/UserController.java:52`, `:67-70`, `:99-102`).
 - Route `/profile` only needs sign-in (`frontend/src/router/index.js:36-39`).
 
 ## How it works
 ### View own profile
 1. Open "Profile" in the top nav; it is shown to every role (`frontend/src/App.vue:24-26`).
-2. The page loads `GET /users/me` and fills the form (`frontend/src/views/ProfileView.vue:402-413`).
-3. Email is shown but disabled: "Email cannot be changed" (`ProfileView.vue:52`, `:57`). The role appears as a badge (`:10-12`).
-4. Success: fields show, disabled until Edit is clicked. Failure: the whole page is replaced by "Failed to load profile" (`:415`, `:24-27`).
+2. The page loads `GET /users/me` and fills the form (`frontend/src/views/ProfileView.vue:363-374`).
+3. Email is shown but disabled: "Email cannot be changed" (`ProfileView.vue:52`, `:57`). The role appears as a badge (`:10-12`). The Account Information card holds only the Change Password button.
+4. Success: fields show, disabled until Edit is clicked. Failure: the whole page is replaced by "Failed to load profile" (`:376`, `:24-27`).
 
 ### Edit own profile
-1. Click Edit (`ProfileView.vue:150`); fields unlock (`:422-426`).
-2. Change first name, last name, phone, bio. Client checks run on Save (`:359-394`).
-3. Save sends `PUT /users/me/profile` (`:451`, `frontend/src/services/api.js:484-486`). The server validates the DTO (`src/main/java/io/github/membertracker/infrastructure/dto/UpdateUserProfileRequest.java:8-17`), then `User.updateProfile` trims and stores the values (`src/main/java/io/github/membertracker/domain/model/User.java:304-312`).
-4. Success: green "Profile updated successfully!" for 5 s, edit mode ends, the signed-in user in the store is replaced (`ProfileView.vue:452-459`). The nav name updates (`App.vue:34`).
-5. Failure: the whole page is replaced by "Failed to update profile" with no retry; reload to recover (`ProfileView.vue:460-462`). Cancel restores the last saved values (`:428-438`).
+1. Click Edit (`ProfileView.vue:152`); fields unlock (`:383-387`).
+2. Change first name, last name, phone, bio. Client checks run on Save (`:332-361`). The name inputs stop at 50 characters (`maxlength`, `:72`, `:93`).
+3. Save sends `PUT /users/me/profile` (`:412`, `frontend/src/services/api.js:484-486`). The server turns a blank phone into null, validates the DTO (`src/main/java/io/github/membertracker/infrastructure/dto/UpdateUserProfileRequest.java:8-17`, setter `:49-52`), then `User.updateProfile` trims and stores the values (`src/main/java/io/github/membertracker/domain/model/User.java:317-327`).
+4. Success: green "Profile updated successfully!" for 5 s, edit mode ends, the signed-in user in the store is replaced (`ProfileView.vue:413-420`). The nav name updates (`App.vue:34`).
+5. Failure: the whole page is replaced by "Failed to update profile" with no retry; reload to recover (`ProfileView.vue:421-423`). Cancel restores the last saved values (`:389-399`).
 
 ### Change password
-1. The Change Password button opens a dialog through Bootstrap's data API (`data-bs-toggle="modal"`, `frontend/src/views/ProfileView.vue:212-213`, dialog `:228`) with current, new and confirm fields.
-2. Client checks on submit: current is present, new follows the password rule (`frontend/src/utils/passwordRules.js`, same rule as the server), confirm matches (`ProfileView.vue:476-508`).
+1. The Change Password button opens a dialog through Bootstrap's data API (`data-bs-toggle="modal"`, `frontend/src/views/ProfileView.vue:195-196`, dialog `:208`) with current, new and confirm fields.
+2. Client checks on submit: current is present, new follows the password rule (`frontend/src/utils/passwordRules.js`, same rule as the server), confirm matches (`ProfileView.vue:430-462`).
 3. `PUT /users/me/password`. The server checks the current password (`src/main/java/io/github/membertracker/usecase/ChangePasswordUseCase.java:27`), then the strength rule (`:32`), then stores the new hash (`:35-37`).
-4. Success: `{"message": "Password changed successfully"}` (`src/main/java/io/github/membertracker/infrastructure/UserController.java:117-125`); the dialog closes, its fields are cleared and a "Password changed" toast shows (`ProfileView.vue:540-547`).
-5. Failure: the dialog stays open and shows the server's reason in a red alert (`ProfileView.vue:549-551`): "Current password is incorrect" (400, code `USER_003`) or the password rule text (400, code `USER_004`). Both are ProblemDetail responses.
-6. Closing the dialog by any route (Cancel, X, Escape, backdrop) clears the fields and the alert (`hidden.bs.modal`, `ProfileView.vue:559`).
+4. Success: `{"message": "Password changed successfully"}` (`src/main/java/io/github/membertracker/infrastructure/UserController.java:101-107`); the dialog closes, its fields are cleared and a "Password changed" toast shows (`ProfileView.vue:494-501`).
+5. Failure: the dialog stays open and shows the server's reason in a red alert (`ProfileView.vue:503-505`): "Current password is incorrect" (400, code `USER_003`) or the password rule text (400, code `USER_004`). Both are ProblemDetail responses.
+6. Closing the dialog by any route (Cancel, X, Escape, backdrop) clears the fields and the alert (`hidden.bs.modal`, `ProfileView.vue:513`).
 
 ### What a MEMBER user can do
 1. Signing in sends a MEMBER to `/profile` (`frontend/src/stores/authStore.js:43`, `frontend/src/router/index.js:92-93`).
@@ -44,28 +44,18 @@ Every signed-in user views and edits their own name, phone and bio, and changes 
 
 ## Rules
 - Server, first and last name: max 50 chars each, no minimum (`UpdateUserProfileRequest.java:8`, `:11`).
-- Server, phone: regex `^\+?[0-9\s\-\(\)]{10,}$` (`UpdateUserProfileRequest.java:14`).
+- Server, phone: regex `^\+?[0-9\s\-\(\)]{10,}$` (`UpdateUserProfileRequest.java:14`); a blank phone (`""` or spaces) is turned into null by the setter and skips the check (`:49-52`).
 - Server, bio: max 500 (`UpdateUserProfileRequest.java:17`).
-- A blank or null first/last name is ignored and the old value is kept; phone and bio are overwritten, null clears them (`User.java:304-311`).
-- Client: first and last name required, min 2 (`ProfileView.vue:364-379`); phone optional, regex after stripping spaces, `-`, `(`, `)` (`:397-399`); bio max 500 (`:388`).
+- A blank or null first/last name is ignored and the old value is kept; phone and bio are overwritten, null clears them (`User.java:317-326`).
+- Client: first and last name required (the form insists on a name even though the server only ignores blank ones), no minimum, 50 characters via `maxlength` (`ProfileView.vue:336-346`); phone optional and checked with the server's exact pattern (`frontend/src/utils/phoneRules.js`, `ProfileView.vue:349-352`); bio max 500 (`:355`).
 - Password strength lives in the domain (`User.validatePasswordStrength`, `src/main/java/io/github/membertracker/domain/model/User.java:196-210`): at least 8 characters, at most 72 UTF-8 bytes (BCrypt's limit), one lowercase letter, one uppercase letter, one digit and one special character. Special means anything that is not a letter, digit or whitespace, so `-`, `_`, `#`, `.` all count; spaces are allowed (passphrases) but do not count as special. One message for every failure: "Password must be 8 to 72 characters (bytes) and contain an uppercase letter, a lowercase letter, a digit and a special character". The client repeats the same rule (`frontend/src/utils/passwordRules.js`).
 - DTO password rule: current password only not blank (the seeded admin's is `admin`, 5 characters); new password not blank and 8-72 characters (`src/main/java/io/github/membertracker/infrastructure/dto/ChangePasswordRequest.java:8-13`).
 - Changing the password resets failed-login attempts to 0 and stamps `lastPasswordChange` (`User.java:218-223`). Existing sessions stay valid.
 
 ## Known issues
-- Client phone regex disagrees with the server (`ProfileView.vue:398` vs `UpdateUserProfileRequest.java:14`):
-  - Empty phone: the form sends `""` for users with no phone (`ProfileView.vue:411`); the server regex needs 10 or more characters, so `""` fails. Saving any profile without a phone fails with the generic error.
-  - Short numbers such as `5551234` pass the client and fail the server (needs 10+ chars).
-  - Numbers starting with `0` fail the client but would pass the server.
-  - Client allows up to 16 digits with no `)`/`-` position rules; server counts formatting characters toward its 10.
-- Name length: client requires 2+, server has no minimum; server caps at 50, client has no cap (`ProfileView.vue:367`, `:376`; `UpdateUserProfileRequest.java:8`, `:11`). A 51-char name passes the client and fails the server.
 - Any profile save failure replaces the whole page with one red message; the form is hidden until reload (`ProfileView.vue:24-27`). Server field messages are discarded. (Password errors no longer do this: they show inside the dialog.)
 - Changing the password does not end other sessions: existing access and refresh tokens stay valid (`User.changePassword`, `User.java:218-223`, only updates the hash).
-- "Member Since" always shows `N/A`: the DTO has no `createdAt` (`src/main/java/io/github/membertracker/infrastructure/dto/UserResponseDto.java:4-11`; `ProfileView.vue:345`).
-- "Account Status: Active" is hard-coded, not read from `enabled` (`ProfileView.vue:190-196`).
-- "Export Data" button has no handler (`ProfileView.vue:216`).
 - `?error=access_denied` redirect shows no message to the MEMBER (`router/index.js:103`; nothing in `ProfileView.vue` reads it).
-- `GET /users/me` returns an empty 500 if the user row is gone (`UserController.java:57-61`); profile updates return an empty 400 for every cause (`UserController.java:99-101`).
 - No password reset, and locked accounts never unlock; see [../authentication.md](../authentication.md) known gaps and audit user-management item in [../functionality-audit.md](../functionality-audit.md).
 
 ## Related

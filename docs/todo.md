@@ -75,7 +75,7 @@ This document tracks missing features, improvements, and technical debt in the M
 ### Bugs found by checking the docs against the code (October 2026)
 - [ ] **Overdue tracking:** the reminder job does not use the reminder-window policy (`DefaultMembershipPolicy.shouldSendReminder`)
 - [ ] **Sign-in:** the landing-page Register button links to a non-existent `/register`; unlocking is not possible without editing the database
-- [ ] **Profile:** saving with an empty phone fails; client/server rule mismatches for phone and name length; `/api/users/me` returns 500 instead of 404 when the user is missing; `?error=access_denied` is never shown
+- [ ] **Profile:** `?error=access_denied` is never shown; changing the password does not end other sessions
 - [ ] **Members:** automatic deactivation after 3 missed months never runs; the add form cannot set a join date
 - [ ] **Payments:** no active-member check when recording; payments older than 3 months cannot be entered (no way to migrate history); the receipt does not show the paid month; the CSV export is open to VOLUNTEER (audit: restrict to STAFF)
 - [ ] **Communications and dashboard:** send-to-overdue has no active-member filter; an empty overdue match still saves a communication marked as sent; no endpoint sends an existing draft; the delivery summary cards skip DELIVERED; dashboard endpoints return 200 with zeros on any exception (errors hidden); payments are loaded several times per dashboard load
