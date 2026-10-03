@@ -76,6 +76,7 @@ CSRF protection is **on** (`SecurityConfig.filterChain`), because the browser se
 
 - Spring uses `CookieCsrfTokenRepository.withHttpOnlyFalse()` with the plain `CsrfTokenRequestAttributeHandler`, so the raw cookie value is what the header must carry. The `XSRF-TOKEN` cookie has `Path=/`, the same `SameSite` and `Secure` settings as the auth cookies, and is readable by JavaScript.
 - `CsrfCookieFilter` reads the token on every request, so the cookie is written on every response, including 401 and GET ones. The browser gets it from its first call (`GET /api/users/me`).
+- The token cookie is kept for the whole browser session: rotation on authentication is disabled (`NullAuthenticatedSessionStrategy`) because the API is stateless. With the default strategy the cookie was cleared on every JWT-authenticated request and about every second write got 403.
 - `POST`, `PUT`, `PATCH` and `DELETE` need an `X-XSRF-TOKEN` header equal to the cookie. No endpoint is exempt: login, refresh and logout need it too. GET, HEAD and OPTIONS do not.
 - A missing or wrong token gets 403 `application/problem+json` with detail "Invalid or missing CSRF token" (`SecurityConfig.accessDeniedHandler`). Any other filter-level denial answers 403 "Access denied".
 - The web app already echoes the cookie into the header (`api.js`), and CORS allows the `x-xsrf-token` header. Other clients must read the `XSRF-TOKEN` cookie and send it back as the header.
@@ -168,7 +169,7 @@ curl -i -b jar.txt -X POST -H "X-XSRF-TOKEN: $XSRF" http://localhost:8080/api/au
 | Logged out after about 30 minutes | Should not happen while active: an expired access cookie gets a 401 and the client refreshes. Check that the browser sends `sid_refresh` to `/api/auth/refresh` (cookie path `/api/auth`) and that `JWT_SECRET` did not change |
 | Logged out sooner | The client-side 1-hour inactivity timeout, or the backend restarted with a different `JWT_SECRET` |
 | Redirect loop on load | `authStore.initialize()` must run in `App.vue` so `authChecked` gets set |
-| 403 "Invalid or missing CSRF token" on a write | The `XSRF-TOKEN` cookie was not sent or the header does not match (clients other than the web app must read the cookie and echo it) |
+| 403 "Invalid or missing CSRF token" on a write | The `XSRF-TOKEN` cookie was not sent or the header does not match (clients other than the web app must read the cookie and echo it). If it happens on every second write, check that no response carries `Set-Cookie: XSRF-TOKEN=; Max-Age=0` |
 | CORS error in the browser | The frontend origin must be in both CORS lists (see [Configuration](#configuration)) |
 
 ## Known gaps

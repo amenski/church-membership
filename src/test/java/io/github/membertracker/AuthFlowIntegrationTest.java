@@ -95,6 +95,10 @@ class AuthFlowIntegrationTest {
         return headers.stream().filter(h -> h.startsWith(name + "=")).findFirst().orElseThrow();
     }
 
+    private static boolean clearsXsrfCookie(String setCookie) {
+        return setCookie.startsWith(XSRF_COOKIE + "=") && (setCookie.contains("Max-Age=0") || valueOf(setCookie).isEmpty());
+    }
+
     private static String valueOf(String setCookie) {
         String pair = setCookie.substring(0, setCookie.indexOf(';'));
         return pair.substring(pair.indexOf('=') + 1);
@@ -237,6 +241,27 @@ class AuthFlowIntegrationTest {
 
         mockMvc.perform(post("/api/auth/logout").cookie(new Cookie("sid", access)))
             .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void anAuthenticatedRequestKeepsTheXsrfCookieSoConsecutiveWritesSucceed() throws Exception {
+        String access = valueOf(headerStartingWith(login().getHeaders(HttpHeaders.SET_COOKIE), "sid"));
+
+        // an authenticated GET that carries the cookie must not clear it
+        List<String> setCookies = mockMvc.perform(withXsrf(get("/api/users/me")).cookie(new Cookie("sid", access)))
+            .andExpect(status().isOk())
+            .andReturn().getResponse().getHeaders(HttpHeaders.SET_COOKIE);
+        assertThat(setCookies).noneMatch(AuthFlowIntegrationTest::clearsXsrfCookie);
+
+        // two writes in a row with the same cookie/header pair and no GET in between
+        for (String name : new String[] {"Flo", "Flora"}) {
+            MockHttpServletResponse response = mockMvc.perform(withXsrf(put("/api/users/me/profile"))
+                    .cookie(new Cookie("sid", access))
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"firstName\":\"" + name + "\"}"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse();
+            assertThat(response.getHeaders(HttpHeaders.SET_COOKIE)).noneMatch(AuthFlowIntegrationTest::clearsXsrfCookie);
+        }
     }
 
     @Test
