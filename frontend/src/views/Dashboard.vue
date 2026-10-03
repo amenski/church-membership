@@ -1,146 +1,114 @@
 <template>
-  <div class="container mt-4">
-    <!-- Stats Cards -->
-    <div class="row mb-4">
-      <div class="col-md-3">
-        <div class="card bg-primary text-white">
-          <div class="card-body">
-            <h5 class="card-title">Total Members</h5>
-            <h2>{{ stats.totalMembers }}</h2>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card bg-success text-white">
-          <div class="card-body">
-            <h5 class="card-title">Active Members</h5>
-            <h2>{{ stats.activeMembers }}</h2>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card bg-warning text-white">
-          <div class="card-body">
-            <h5 class="card-title">Overdue Members</h5>
-            <h2>{{ stats.overdueMembers }}</h2>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card bg-info text-white">
-          <div class="card-body">
-            <h5 class="card-title">This Month's Revenue</h5>
-            <h2>${{ stats.monthlyRevenue }}</h2>
-          </div>
-        </div>
-      </div>
-    </div>
+  <div class="overview">
+    <header class="page-head">
+      <h1 class="page-title">Overview</h1>
+      <p class="page-lead">Who is behind on dues, and how this month is going.</p>
+    </header>
 
-    <div class="row">
-      <!-- Recent Payments -->
-      <div class="col-md-6 mb-4">
-        <div class="card">
-          <div class="card-body">
-            <h5 class="card-title">Recent Payments</h5>
-            <div class="table-responsive">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Member</th>
-                    <th>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="payment in recentPayments" :key="payment.id">
-                    <td>{{ formatDate(payment.paymentDate) }}</td>
-                    <td>{{ payment.member?.name || 'Unknown' }}</td>
-                    <td>${{ payment.amount }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
+    <p v-if="loadError" class="alert alert-danger" role="alert">
+      The overview did not load. Reload the page, or sign in again if it keeps happening.
+    </p>
 
-      <!-- Overdue Members -->
-      <div class="col-md-6 mb-4">
-        <div class="card">
-          <div class="card-body">
-            <h5 class="card-title">Overdue Members</h5>
-            <div class="table-responsive">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>Member</th>
-                    <th>Months Overdue</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="member in overdueMembers" :key="member.id">
-                    <td>{{ member.name }}</td>
-                    <td>{{ member.consecutiveMonthsMissed }}</td>
-                    <td>
-                      <button
-                        v-if="authStore.isStaff"
-                        class="btn btn-sm btn-warning"
-                        :disabled="remindingIds.includes(member.id)"
-                        @click="sendReminder(member)"
-                      >
-                        Send Reminder
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- The thesis: who needs a call -->
+    <section class="hero" aria-labelledby="hero-title">
+      <h2 id="hero-title" class="hero__title">Who needs a call</h2>
 
-    <!-- Activity Timeline -->
-    <div class="row">
-      <div class="col-12">
-        <div class="card">
-          <div class="card-body">
-            <h5 class="card-title">Recent Activity</h5>
-            <div class="timeline">
-              <div v-for="activity in activities" :key="activity.id" class="timeline-item">
-                <div class="timeline-date">{{ formatDate(activity.date) }}</div>
-                <div class="timeline-content">
-                  <div class="timeline-icon" :class="activity.type">
-                    <i :class="getActivityIcon(activity.type)"></i>
-                  </div>
-                  <div class="timeline-text">{{ activity.description }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      <template v-if="loaded">
+        <template v-if="activeCount > 0">
+          <p class="hero__sentence">
+            <span class="figure-display">{{ paidCount }}</span> of
+            <span class="figure-display">{{ activeCount }}</span> active members are paid up
+          </p>
+          <DuesMeter :total="activeCount" :paid="paidCount" />
+        </template>
+        <p v-else class="empty-note">No active members yet. Add the first one under Members.</p>
+
+        <ul v-if="behindMembers.length" class="ruled-list hero__list">
+          <li v-for="member in behindMembers" :key="member.id" class="ruled-list__row">
+            <span class="ruled-list__main">{{ member.name }}</span>
+            <span class="status status--behind">{{ monthsBehind(member.consecutiveMonthsMissed) }}</span>
+            <button
+              v-if="authStore.isStaff"
+              type="button"
+              class="text-action"
+              :disabled="remindingIds.includes(member.id)"
+              @click="sendReminder(member)"
+            >
+              Send reminder
+              <span class="visually-hidden">to {{ member.name }}</span>
+            </button>
+          </li>
+        </ul>
+        <p v-else-if="activeCount > 0" class="empty-note">No overdue members. Everyone is paid up for this month.</p>
+        <p v-if="inactiveBehindCount" class="hero__note">
+          {{ inactiveBehindCount }} inactive {{ inactiveBehindCount === 1 ? 'member is' : 'members are' }} not shown.
+        </p>
+      </template>
+    </section>
+
+    <!-- Quiet secondary figures -->
+    <dl class="figures">
+      <div class="figures__item">
+        <dt>This month's payments</dt>
+        <dd class="figure-display">{{ formatAmount(stats.monthlyRevenue) }}</dd>
       </div>
+      <div class="figures__item">
+        <dt>Active members</dt>
+        <dd class="figure-display">{{ stats.activeMembers }}</dd>
+      </div>
+    </dl>
+
+    <div class="row g-5">
+      <section class="col-lg-6" aria-labelledby="payments-title">
+        <h2 id="payments-title" class="section-title">Recent payments</h2>
+        <ul v-if="recentPayments.length" class="ruled-list">
+          <li v-for="payment in recentPayments" :key="payment.id" class="ruled-list__row">
+            <span class="ruled-list__date">{{ formatDate(payment.paymentDate) }}</span>
+            <span class="ruled-list__main">{{ payment.member?.name || 'Unknown' }}</span>
+            <span class="ruled-list__amount">{{ formatAmount(payment.amount) }}</span>
+          </li>
+        </ul>
+        <p v-else-if="loaded" class="empty-note">No payments recorded yet. Record the first one under Payments.</p>
+      </section>
+
+      <section class="col-lg-6" aria-labelledby="activity-title">
+        <h2 id="activity-title" class="section-title">Recent activity</h2>
+        <ul v-if="activities.length" class="ruled-list">
+          <li v-for="activity in activities" :key="activity.id" class="ruled-list__row">
+            <span class="ruled-list__date">{{ formatDate(activity.date) }}</span>
+            <span class="ruled-list__main">{{ activity.description }}</span>
+          </li>
+        </ul>
+        <p v-else-if="loaded" class="empty-note">Nothing has happened yet. Payments and messages will show up here.</p>
+      </section>
     </div>
   </div>
 </template>
 
 <script>
 import api from '@/services/api'
+import DuesMeter from '@/components/DuesMeter.vue'
 import { useAuthStore } from '../stores/authStore'
 import { useAppStore } from '../stores/appStore'
 import { buildReminderRequest } from '@/utils/communicationPayload'
+import { monthsBehind } from '@/utils/dashboardMeter'
+
+const currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
 
 export default {
   name: 'DashboardView',
+  components: { DuesMeter },
   setup() {
     return {
       authStore: useAuthStore(),
-      appStore: useAppStore()
+      appStore: useAppStore(),
+      monthsBehind
     }
   },
   data() {
     return {
+      loaded: false,
+      loadError: false,
       remindingIds: [],
       stats: {
         totalMembers: 0,
@@ -151,6 +119,23 @@ export default {
       recentPayments: [],
       overdueMembers: [],
       activities: []
+    }
+  },
+  computed: {
+    activeCount() {
+      return Number(this.stats.activeMembers) || 0
+    },
+    // Worst first: the longest-overdue members are the first calls to make
+    behindMembers() {
+      return this.overdueMembers
+        .filter(member => member.active)
+        .sort((a, b) => b.consecutiveMonthsMissed - a.consecutiveMonthsMissed)
+    },
+    inactiveBehindCount() {
+      return this.overdueMembers.filter(member => !member.active).length
+    },
+    paidCount() {
+      return Math.max(0, this.activeCount - this.behindMembers.length)
     }
   },
   async created() {
@@ -175,12 +160,19 @@ export default {
         this.recentPayments = paymentsRes
         this.overdueMembers = overdueRes
         this.activities = activitiesRes
+        this.loadError = false
       } catch (error) {
         console.error('Error loading dashboard data:', error)
+        this.loadError = true
+      } finally {
+        this.loaded = true
       }
     },
     formatDate(date) {
       return new Date(date).toLocaleDateString()
+    },
+    formatAmount(amount) {
+      return currency.format(Number(amount) || 0)
     },
     async sendReminder(member) {
       this.remindingIds.push(member.id)
@@ -188,7 +180,7 @@ export default {
         await api.sendToMember(member.id, buildReminderRequest(member))
         this.appStore.addNotification({
           type: 'success',
-          title: 'Success',
+          title: 'Send reminder',
           message: `Reminder sent to ${member.name}`,
           isToast: true
         })
@@ -196,63 +188,71 @@ export default {
       } catch (error) {
         this.appStore.addNotification({
           type: 'error',
-          title: 'Error',
-          message: error.message || 'Failed to send reminder',
+          title: 'Send reminder',
+          message: error.message || 'The reminder was not sent. Try again.',
           isToast: true
         })
       } finally {
         this.remindingIds = this.remindingIds.filter(id => id !== member.id)
       }
-    },
-    getActivityIcon(type) {
-      const icons = {
-        payment: 'bi bi-currency-dollar',
-        member: 'bi bi-person',
-        communication: 'bi bi-envelope'
-      }
-      return icons[type] || 'bi bi-info-circle'
     }
   }
 }
 </script>
 
 <style scoped>
-.timeline {
-  position: relative;
-  padding: 20px 0;
+.hero {
+  padding-bottom: var(--space-5);
+}
+.hero__title {
+  font-size: 1.375rem;
+  margin-bottom: var(--space-3);
+}
+.hero__sentence {
+  font-family: var(--felege-font-display);
+  font-size: 2.5rem;
+  line-height: 1.15;
+  text-wrap: balance;
+  margin-bottom: var(--space-5);
+}
+.hero__sentence .figure-display { font-size: 2.5rem; }
+.hero__list { margin-top: var(--space-5); }
+.hero__list .status { min-width: 10.5rem; }
+.hero__note {
+  margin: var(--space-3) 0 0;
+  font-size: 0.875rem;
+  color: var(--felege-muted);
 }
 
-.timeline-item {
+.figures {
   display: flex;
-  margin-bottom: 20px;
+  margin: var(--space-5) 0 var(--space-6);
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--felege-rule);
+  border-bottom: 1px solid var(--felege-rule);
+}
+.figures__item {
+  flex: 1 1 0;
+  padding: 0 var(--space-5);
+}
+.figures__item:first-child { padding-left: 0; }
+.figures__item + .figures__item { border-left: 1px solid var(--felege-rule); }
+.figures dt {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--felege-muted);
+}
+.figures dd {
+  margin: 0;
+  font-size: 1.75rem;
+  line-height: 1.3;
 }
 
-.timeline-date {
-  width: 100px;
-  padding-right: 20px;
-  text-align: right;
+@media (max-width: 575.98px) {
+  .hero__list .ruled-list__main { flex-basis: 100%; }
+  .hero__list .status { flex: 1 1 auto; min-width: 0; }
+  .hero__sentence,
+  .hero__sentence .figure-display { font-size: 1.75rem; }
+  .figures__item { padding: 0 var(--space-3); }
 }
-
-.timeline-content {
-  display: flex;
-  align-items: center;
-  flex: 1;
-  padding-left: 20px;
-  border-left: 2px solid #e9ecef;
-}
-
-.timeline-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 15px;
-  color: white;
-}
-
-.timeline-icon.payment { background-color: #28a745; }
-.timeline-icon.member { background-color: #007bff; }
-.timeline-icon.communication { background-color: #17a2b8; }
 </style>

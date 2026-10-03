@@ -43,11 +43,11 @@ Self-hosted through npm (`@fontsource/*`, imported in `main.js`), no CDN.
 
 | Role | Face | Weights |
 |---|---|---|
-| Headings, big figures | Alegreya | 700, tabular lining figures where numbers align |
+| Headings, big figures | Alegreya | 700 (400 only for the words of the hero sentence), tabular lining figures where numbers align |
 | Interface text | Alegreya Sans | 400, 500, 700; `tabular-nums` in tables |
 | Wordmark (Ge'ez) | Noto Sans Ethiopic | 700 |
 
-Scale: 14 / 16 / 18 / 22 / 28 / 40 px. Body is 18, labels and buttons 16, small
+The wordmark on the landing page is a logo, outside the scale (40 to 64px, fluid). Scale: 14 / 16 / 18 / 22 / 28 / 40 px. Body is 18, labels and buttons 16, small
 print 14, modal titles and h3 22, page titles 28, hero sentence 40. Headings are
 sentence case. Table headers are 15px, medium weight, muted: no uppercase, no tracking.
 Spacing scale: 4 / 8 / 12 / 16 / 24 / 40 / 64 (`--space-1` to `--space-7`). Radius 6px.
@@ -84,6 +84,12 @@ owes. It is a picture of "who is left to call".
 |---|---|
 | `.status`, `.status--paid`, `.status--behind`, `.status--inactive` | small dot plus the word, in fern-text, ochre-text, clay. Not a pill chip |
 | `.figure-display` | Alegreya 700, tabular lining figures |
+| `.page-head`, `.page-title`, `.page-lead` | page title (Alegreya 28/700) with a one-line plain description beneath |
+| `.section-title` | Alegreya 22/700 heading for a list or block |
+| `.ruled-list`, `.ruled-list__row`, `__main`, `__date`, `__amount` | rows on 1px rules, 56px tall, no boxes |
+| `.empty-note` | muted plain sentence that invites the next action |
+| `.text-action` | plain teal text button for row actions ("Send reminder") |
+| `.rail`, `.rail__link`, `.rail__user`, `.topbar` | app shell in `App.vue`: 248px left rail from lg, slim top bar plus offcanvas below |
 | `.toast-note`, `--success`, `--error`, `--warning` | paper toast with a 4px colour edge |
 | `.btn-warning` | ochre text on an ochre tint (secondary), not white on orange |
 | `.badge.bg-*` | quiet tinted text, kept only until phase B replaces badges with `.status` |
@@ -116,6 +122,10 @@ Tried and removed, so nobody puts them back:
   The activity list is plain ruled rows (date, text).
 - Pill chips for status: replaced by a dot plus a word.
 - Client-side minimum password length on sign-in: a login form only needs a non-empty password.
+- The warning-triangle icon in the sign-in error alert: the red tint and the words already say it; the icon carried nothing.
+- Old coloured Profile button and input rules (scoped green `#4CAF50` in `ProfileView.vue`): removed so Profile uses the theme; its layout is phase B.
+- Tried and kept off: a woven band on the landing page. The wordmark alone is calmer, and the band stays a signature at three places only (rail, sign-in card, meter).
+- The overdue list is sorted longest-overdue first (the API order is arbitrary) and shows active members only, with a count note for inactive ones.
 
 ## Phase B checklist (remaining screens)
 
@@ -130,3 +140,12 @@ Tried and removed, so nobody puts them back:
 - [ ] Dialogs: titles in Alegreya 22, footers with one primary action, destructive actions in clay.
 - [ ] Empty states: every list gets a plain sentence that invites the next action.
 - [ ] Register view: unreachable (registration is disabled); delete or keep restyled, decide.
+
+## Tailwind migration (next)
+
+The frontend is moving to Tailwind CSS. What stays: the tokens (names and hex values), the
+self-hosted fonts, `WovenBand`, `DuesMeter`, the `dashboardMeter` helpers, the copy rules and the
+layout decisions (left rail, 1100px content area, hero sentence plus meter, ruled lists, status dot
+plus word). What goes: the Bootstrap class markup and the Bootstrap-variable overrides in
+`theme.css`, replaced by Tailwind v4 utilities with CSS-first `@theme` tokens in phases T1 to T4,
+done by other agents. Bootstrap's JS (modal, toast, offcanvas) needs replacements at the same time.

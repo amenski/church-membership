@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 // Global styles first so component styles in App.vue can override Bootstrap
+import '@fontsource/alegreya/latin-400.css'
 import '@fontsource/alegreya/latin-700.css'
 import '@fontsource/alegreya-sans/latin-400.css'
 import '@fontsource/alegreya-sans/latin-500.css'

@@ -122,7 +122,6 @@ const themeClass = computed(() => {
   return 'data-bs-theme="light"'
 })
 
-const appTitle = computed(() => appStore.appTitle)
 const notifications = computed(() => appStore.notifications)
 const isAuthenticated = computed(() => authStore.isLoggedIn)
 const currentUser = computed(() => authStore.currentUser)

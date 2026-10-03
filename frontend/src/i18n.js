@@ -19,16 +19,10 @@ const messages = {
       signOut: 'Sign Out'
     },
     landing: {
-      title: 'Member Tracker',
-      subtitle: 'Manage your organization\'s members, payments, and communications all in one place.',
-      signIn: 'Sign In',
-      features: 'Features',
-      memberManagement: 'Member Management',
-      memberManagementDesc: 'Easily add, update, and manage your organization\'s members with detailed profiles.',
-      paymentTracking: 'Payment Tracking',
-      paymentTrackingDesc: 'Track membership payments, view payment history, and send payment reminders.',
-      communications: 'Communications',
-      communicationsDesc: 'Send announcements and notifications to all members or specific groups.'
+      title: 'Felege Selam',
+      tagline: 'Membership and dues for the church community.',
+      signIn: 'Sign in',
+      note: 'Accounts are set up by the church office.'
     },
     common: {
       save: 'Save',

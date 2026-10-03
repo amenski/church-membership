@@ -581,24 +581,6 @@ label {
   color: #555;
 }
 
-.form-control {
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
-  transition: border-color 0.2s;
-}
-
-.form-control:focus {
-  outline: none;
-  border-color: #4CAF50;
-}
-
-.form-control:disabled {
-  background-color: #f5f5f5;
-  cursor: not-allowed;
-}
-
 .form-text {
   margin-top: 0.25rem;
   color: #666;
@@ -614,38 +596,6 @@ textarea.form-control {
   display: flex;
   gap: 1rem;
   margin-top: 1rem;
-}
-
-.btn {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.btn-primary {
-  background-color: #4CAF50;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: #45a049;
-}
-
-.btn-secondary {
-  background-color: #757575;
-  color: white;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background-color: #616161;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .loading {
