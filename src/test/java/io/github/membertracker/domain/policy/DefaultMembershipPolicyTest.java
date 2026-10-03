@@ -1,7 +1,6 @@
 package io.github.membertracker.domain.policy;
 
 import io.github.membertracker.domain.model.Member;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -82,7 +81,6 @@ class DefaultMembershipPolicyTest {
     }
 
     @Test
-    @Disabled("BUG: reminder skips exactly 7 days before due date (isAfter(due-7)) although REMINDER_DAYS_BEFORE_DUE is 7")
     void shouldSendReminder_exactlySevenDaysBeforeDue_isTrue() {
         // 2024-02-22 is 7 days before 2024-02-29
         assertThat(policy.daysUntilPaymentDue(member(), LocalDate.of(2024, 2, 22))).isEqualTo(7);

@@ -38,7 +38,7 @@ public class DefaultMembershipPolicy implements MembershipPolicy {
         
         // Send reminder if we're within REMINDER_DAYS_BEFORE_DUE of the due date
         // and the member hasn't paid for the current month
-        boolean isWithinReminderPeriod = currentDate.isAfter(dueDate.minusDays(REMINDER_DAYS_BEFORE_DUE));
+        boolean isWithinReminderPeriod = !currentDate.isBefore(dueDate.minusDays(REMINDER_DAYS_BEFORE_DUE));
         boolean hasNotPaidForCurrentMonth = !hasPaymentForMonth(member, currentMonth);
         
         return isWithinReminderPeriod && hasNotPaidForCurrentMonth;
