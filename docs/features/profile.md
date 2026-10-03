@@ -12,7 +12,7 @@ Every signed-in user views and edits their own name, phone and bio, and changes 
 
 - No `@PreAuthorize` on these endpoints; any authenticated user passes (`src/main/java/io/github/membertracker/infrastructure/config/SecurityConfig.java:130`).
 - The user always comes from the security context, never from an id in the request (`src/main/java/io/github/membertracker/infrastructure/UserController.java:52`, `:67-70`, `:99-102`).
-- Route `/profile` only needs sign-in (`frontend/src/router/index.js:36-39`).
+- Route `/profile` only needs sign-in (`frontend/src/router/index.js:37-40`).
 
 ## How it works
 ### View own profile
@@ -37,9 +37,9 @@ Every signed-in user views and edits their own name, phone and bio, and changes 
 6. Closing the dialog by any route (Cancel, X, Escape, backdrop) clears the fields and the alert (`hidden.bs.modal`, `ProfileView.vue:513`).
 
 ### What a MEMBER user can do
-1. Signing in sends a MEMBER to `/profile` (`frontend/src/stores/authStore.js:43`, `frontend/src/router/index.js:92-93`).
+1. Signing in sends a MEMBER to `/profile` (`frontend/src/stores/authStore.js:43`, `frontend/src/router/index.js:93-94`).
 2. Nav shows only Profile for MEMBER; the other links need VOLUNTEER (`App.vue:12-26`).
-3. Typing a staff-only URL redirects back to `/profile?error=access_denied` (`router/index.js:102-105`). Nothing on the page reads that query, so no message appears.
+3. Typing a staff-only URL shows an "Access denied" warning toast and redirects back to `/profile`, with no query parameter (`router/index.js:103-112`).
 4. They can edit their profile, change their password, and sign out via the user menu.
 
 ## Rules
@@ -55,7 +55,6 @@ Every signed-in user views and edits their own name, phone and bio, and changes 
 ## Known issues
 - Any profile save failure replaces the whole page with one red message; the form is hidden until reload (`ProfileView.vue:24-27`). Server field messages are discarded. (Password errors no longer do this: they show inside the dialog.)
 - Changing the password does not end other sessions: existing access and refresh tokens stay valid (`User.changePassword`, `User.java:218-223`, only updates the hash).
-- `?error=access_denied` redirect shows no message to the MEMBER (`router/index.js:103`; nothing in `ProfileView.vue` reads it).
 - No password reset, and locked accounts never unlock; see [../authentication.md](../authentication.md) known gaps and audit user-management item in [../functionality-audit.md](../functionality-audit.md).
 
 ## Related

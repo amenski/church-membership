@@ -2,7 +2,7 @@
 
 `frontend/src/views/PaymentsView.vue` (store: `frontend/src/stores/paymentStore.js`)
 
-Payments page: record a payment (STAFF+ only), revenue cards, payments table, receipt modal with PDF download, CSV export. Route `/payments`, minimum role VOLUNTEER (`frontend/src/router/index.js:24-28`; guard `frontend/src/router/index.js:101-104`, see [../authentication.md](../authentication.md)).
+Payments page: record a payment (STAFF+ only), revenue cards, payments table, receipt modal with PDF download, CSV export. Route `/payments`, minimum role VOLUNTEER (`frontend/src/router/index.js:25-29`; guard `frontend/src/router/index.js:102-105`, see [../authentication.md](../authentication.md)).
 
 ## Endpoints
 Calls made through `frontend/src/services/api.js`:

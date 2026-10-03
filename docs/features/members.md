@@ -7,7 +7,7 @@ Roles from `@PreAuthorize` and route meta; hierarchy ADMIN > STAFF > VOLUNTEER >
 
 | Task | Minimum role | Screen / endpoint |
 |------|--------------|-------------------|
-| Open the Members screen | VOLUNTEER | `/members` (`frontend/src/router/index.js:17-21`) |
+| Open the Members screen | VOLUNTEER | `/members` (`frontend/src/router/index.js:18-22`) |
 | Browse, search, filter, sort | VOLUNTEER | `GET /api/members` (`MemberController.java:70-71`) |
 | Export all members to CSV | VOLUNTEER | `GET /api/members/export` (`MemberController.java:136-137`) |
 | Export filtered members to CSV | VOLUNTEER | `POST /api/members/export` (`MemberController.java:143-144`) |

@@ -2,7 +2,7 @@
 
 `frontend/src/views/LoginView.vue`, `frontend/src/stores/authStore.js`
 
-Sign-in form at `/login` (guest-only, no minimum role: `frontend/src/router/index.js:42-45`) and the Pinia store that holds the session. Route guards and role table: [../authentication.md](../authentication.md).
+Sign-in form at `/login` (guest-only, no minimum role: `frontend/src/router/index.js:43-46`) and the Pinia store that holds the session. Route guards and role table: [../authentication.md](../authentication.md).
 
 ## Endpoints used
 Via `frontend/src/services/api.js` (`baseURL` `/api`, `:6`; `withCredentials`, `:16`). Backend: [auth-controller.md](auth-controller.md).
@@ -28,7 +28,7 @@ Via `frontend/src/services/api.js` (`baseURL` `/api`, `:6`; `withCredentials`, `
 Store:
 - `login(credentials)` (`:62`): validates email, lowercases it, calls api, sets `user`/`isAuthenticated`/`lastActivity`, starts the 30 s inactivity timer. Rethrows after setting `error`.
 - `logout()` (`:136`): stops timer, calls api, always `clearAuth()` even if the call fails.
-- `checkAuth()` (`:159`): runs once (cached by `authChecked`); `GET /users/me`; on any failure clears auth and returns null. Called by the router guard (`router/index.js:66`).
+- `checkAuth()` (`:159`): runs once (cached by `authChecked`); `GET /users/me`; on any failure clears auth and returns null. Called by the router guard (`router/index.js:67`).
 - `refreshToken()` (`:183`): calls api; on failure `clearAuth()` and rethrows.
 - `hasRole(minRole)` (`:24`): rank compare `MEMBER < VOLUNTEER < STAFF < ADMIN` (`:21`); false when signed out or role unknown. Mirrors the backend hierarchy.
 - `isSessionExpired()` / `getTimeUntilExpiry()` (`:46`, `:50`): plain functions (read the clock each call).
@@ -48,7 +48,7 @@ View:
 
 ## Collaborators
 - `frontend/src/services/api.js` (above), `frontend/src/stores/appStore` (`addNotification`), `vue-router`.
-- Router guard: `router/index.js:74-76` logs out and redirects to `/login?session=expired` when `isSessionExpired()`; `:91-93` sends a signed-in user from `/login` to `homePath`.
+- Router guard: `router/index.js:75-77` logs out and redirects to `/login?session=expired` when `isSessionExpired()`; `:91-93` sends a signed-in user from `/login` to `homePath`.
 
 ## Errors
 Shown in the form alert (`LoginView.vue:11`) and a toast.

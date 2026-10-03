@@ -137,7 +137,7 @@ await authStore.logout()
 |------------|--------|
 | `requiresAuth: true` | Signed-out users go to `/login?redirect=<path>` |
 | `requiresGuest: true` | Signed-in users go to their home page (used by `/` and `/login`) |
-| `requiresRole: 'VOLUNTEER'` | Minimum role, using the same hierarchy as the backend. Users without it go to their home page (`/dashboard`, or `/profile` for MEMBER) with `?error=access_denied` |
+| `requiresRole: 'VOLUNTEER'` | Minimum role, using the same hierarchy as the backend. Users without it see an "Access denied" warning notification and go to their home page (`/dashboard`, or `/profile` for MEMBER) with no query parameter |
 
 Dashboard, members, payments and communications require VOLUNTEER; `/profile` is open to every signed-in user.
 

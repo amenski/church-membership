@@ -22,7 +22,6 @@ const messages = {
       title: 'Member Tracker',
       subtitle: 'Manage your organization\'s members, payments, and communications all in one place.',
       signIn: 'Sign In',
-      register: 'Register',
       features: 'Features',
       memberManagement: 'Member Management',
       memberManagementDesc: 'Easily add, update, and manage your organization\'s members with detailed profiles.',

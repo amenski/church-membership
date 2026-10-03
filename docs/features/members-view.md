@@ -2,7 +2,7 @@
 
 `frontend/src/views/MembersView.vue`
 
-Members screen: searchable, filterable, sortable table with add, edit, delete, activate/deactivate and CSV export. Route `/members`, minimum role VOLUNTEER (`frontend/src/router/index.js:17-21`; guards in [../authentication.md](../authentication.md)).
+Members screen: searchable, filterable, sortable table with add, edit, delete, activate/deactivate and CSV export. Route `/members`, minimum role VOLUNTEER (`frontend/src/router/index.js:18-22`; guards in [../authentication.md](../authentication.md)).
 
 ## State
 Options API component; local `data()`, not the Pinia store.

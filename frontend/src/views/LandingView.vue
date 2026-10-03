@@ -12,10 +12,6 @@
                 <i class="bi bi-box-arrow-in-right me-2"></i>
                 {{ $t('landing.signIn') }}
               </router-link>
-              <router-link to="/register" class="btn btn-outline-light btn-lg">
-                <i class="bi bi-person-plus me-2"></i>
-                {{ $t('landing.register') }}
-              </router-link>
             </div>
           </div>
           <div class="col-lg-6 text-center">

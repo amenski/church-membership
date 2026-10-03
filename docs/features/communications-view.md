@@ -2,7 +2,7 @@
 
 `frontend/src/views/CommunicationsView.vue` (store: `frontend/src/stores/communicationStore.js`, see Gotchas)
 
-Page to compose and send emails to members, list past communications and inspect or retry deliveries. Route `/communications`, minimum role VOLUNTEER (`frontend/src/router/index.js:30-33`, guard `:101-102`); sending and retrying need STAFF+ on the server ([communication-controller.md](communication-controller.md), [../authentication.md](../authentication.md)).
+Page to compose and send emails to members, list past communications and inspect or retry deliveries. Route `/communications`, minimum role VOLUNTEER (`frontend/src/router/index.js:31-34`, guard `:102-103`); sending and retrying need STAFF+ on the server ([communication-controller.md](communication-controller.md), [../authentication.md](../authentication.md)).
 
 Paths below are relative to `frontend/src/`.
 

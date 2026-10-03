@@ -7,7 +7,7 @@ Roles from `@PreAuthorize` and route meta; hierarchy ADMIN > STAFF > VOLUNTEER >
 
 | Task | Minimum role | Screen / endpoint |
 |------|--------------|-------------------|
-| Open the Communications screen | VOLUNTEER | `/communications` (`frontend/src/router/index.js:29-34`, guard `:101-105`) |
+| Open the Communications screen | VOLUNTEER | `/communications` (`frontend/src/router/index.js:30-35`, guard `:102-106`) |
 | View the message list | VOLUNTEER | `GET /api/communications` (`src/main/java/io/github/membertracker/infrastructure/CommunicationController.java:67-72`) |
 | View one message's deliveries | VOLUNTEER | delivery dialog, `GET /api/communications/{id}/deliveries` (`CommunicationController.java:141-147`) |
 | Send to all active members | STAFF | `POST /api/communications/send-to-all` (`CommunicationController.java:90-95`) |
@@ -18,7 +18,7 @@ Roles from `@PreAuthorize` and route meta; hierarchy ADMIN > STAFF > VOLUNTEER >
 Role view of the screen:
 - VOLUNTEER sees the list and the delivery dialog, without the compose form and without Retry buttons (`frontend/src/views/CommunicationsView.vue:6`, `:167`).
 - STAFF and ADMIN see the compose form and Retry (`isStaff`, `frontend/src/stores/authStore.js:41`).
-- MEMBER cannot open the screen: the route sends them to their profile with `?error=access_denied` (`frontend/src/router/index.js:102-104`, `authStore.js:43`); the API answers 403.
+- MEMBER cannot open the screen: the route guard shows an "Access denied" warning toast and sends them to their profile (`frontend/src/router/index.js:103-112`, `authStore.js:43`); the API answers 403.
 
 ## How it works
 ### View the message list

@@ -5,7 +5,7 @@ Monthly membership dues: staff record who paid what for which month, everyone wi
 ## Who can do what
 | Task | Minimum role | Screen / endpoint |
 |------|--------------|-------------------|
-| View payment history and totals | VOLUNTEER | `/payments` (`frontend/src/router/index.js:24-28`), `GET /api/payments` (`src/main/java/io/github/membertracker/infrastructure/PaymentController.java:56`) |
+| View payment history and totals | VOLUNTEER | `/payments` (`frontend/src/router/index.js:25-29`), `GET /api/payments` (`src/main/java/io/github/membertracker/infrastructure/PaymentController.java:56`) |
 | View one payment, or one member's payments | VOLUNTEER | `GET /api/payments/{id}` (`PaymentController.java:63`), `GET /api/payments/member/{memberId}` (`PaymentController.java:72`); API only, no screen uses them |
 | Record a payment | STAFF | form on `/payments` (`frontend/src/views/PaymentsView.vue:11`), `POST /api/payments` (`PaymentController.java:81`) |
 | View / print a receipt | VOLUNTEER | Receipt button on a table row (`PaymentsView.vue:96`) |

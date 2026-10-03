@@ -2,7 +2,7 @@
 
 `frontend/src/views/ProfileView.vue`
 
-"My Profile" page: view and edit own name, phone, bio, and change password. Route `/profile`, any signed-in user (`requiresAuth`, `frontend/src/router/index.js:36-39`); MEMBER's home page. Guards: see [../authentication.md](../authentication.md).
+"My Profile" page: view and edit own name, phone, bio, and change password. Route `/profile`, any signed-in user (`requiresAuth`, `frontend/src/router/index.js:37-40`); MEMBER's home page. Guards: see [../authentication.md](../authentication.md).
 
 ## State
 Local `ref`s; no store of its own. Reads `useAuthStore().user` only as the initial `user` value (`ProfileView.vue:298`).
@@ -56,4 +56,4 @@ Local `ref`s; no store of its own. Reads `useAuthStore().user` only as the initi
 ## Gotchas
 - The Account Information card used to show a hard-coded "Active" status, an always-N/A "Member Since" and an "Export Data" button with no handler; all three were removed. Showing a real status or join date would need `enabled`/`createdAt` in the API first (`UserResponseDto` has no `createdAt`).
 - A failed profile save sets the page-level `error`, which hides the whole profile and offers no retry; reload to recover. Password failures stay in the dialog.
-- `?error=access_denied` (added by the router guard, `router/index.js:103`) is never read by this view, so a MEMBER redirected here sees no message.
+- A MEMBER sent here after trying a staff URL sees the router guard's "Access denied" warning toast (`router/index.js:103-112`); the view itself reads nothing.

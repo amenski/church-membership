@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
+import { useAppStore } from '../stores/appStore'
 
 const routes = [
   {
@@ -100,7 +101,13 @@ router.beforeEach(async (to, from, next) => {
 
   // Check role-based access (requiresRole is a minimum role)
   if (to.meta.requiresRole && isAuthenticated && !authStore.hasRole(to.meta.requiresRole)) {
-    next(`${authStore.homePath}?error=access_denied`)
+    useAppStore().addNotification({
+      type: 'warning',
+      title: 'Access denied',
+      message: "You don't have access to that page.",
+      duration: 5000
+    })
+    next(authStore.homePath)
     return
   }
 

@@ -2,7 +2,7 @@
 
 `frontend/src/views/Dashboard.vue`
 
-Home screen with stat cards, recent payments, overdue members (with a reminder button) and an activity timeline. Route `/dashboard` (`frontend/src/router/index.js:12-15`), minimum role VOLUNTEER; `homePath` for VOLUNTEER and above (`frontend/src/stores/authStore.js:43`). Guards: [../authentication.md](../authentication.md).
+Home screen with stat cards, recent payments, overdue members (with a reminder button) and an activity timeline. Route `/dashboard` (`frontend/src/router/index.js:13-16`), minimum role VOLUNTEER; `homePath` for VOLUNTEER and above (`frontend/src/stores/authStore.js:43`). Guards: [../authentication.md](../authentication.md).
 
 ## State
 No Pinia store for data; Options API local `data()` (`frontend/src/views/Dashboard.vue:142-155`), with `authStore` / `appStore` from `setup()` (`:136-141`).
@@ -31,7 +31,7 @@ Methods return `response.data` (`frontend/src/services/api.js:285-288`).
 ## Errors
 - 401: api.js interceptor refreshes the token, retries, else clears auth and redirects (`frontend/src/services/api.js:92-170`; see [../authentication.md](../authentication.md)).
 - Load failures: logged to console (`:179`); nothing shown to the user. Send-reminder failures show an error toast with the server `detail` (`:196-202`).
-- Role-denied route access lands here via `?error=access_denied` redirect (`frontend/src/router/index.js:103`); this view does not read or display it.
+- A role-denied visit to another page lands here (VOLUNTEER and above) with an "Access denied" warning toast raised by the router guard (`frontend/src/router/index.js:103-112`); the URL has no query parameter and this view reads nothing.
 
 ## Side effects
 - "Send Reminder" sends one real email to that member through the backend (background thread); the response returns before delivery, so a `SENT`/`FAILED` result is only visible via the deliveries endpoint.

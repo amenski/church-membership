@@ -24,8 +24,10 @@ async function setup({ role = null, lastActivity = null, sessionTimeout } = {}) 
     store.lastActivity = lastActivity ?? Date.now()
   }
   if (sessionTimeout) store.sessionTimeout = sessionTimeout
+  const { useAppStore } = await import('@/stores/appStore')
+  const appStore = useAppStore()
   const { default: router } = await import('@/router/index')
-  return { router, store }
+  return { router, store, appStore }
 }
 
 describe('router beforeEach guard', () => {
@@ -48,23 +50,36 @@ describe('router beforeEach guard', () => {
     expect(router.currentRoute.value.fullPath).toBe('/login')
   })
 
-  it('sends a MEMBER away from /members to /profile?error=access_denied without looping', async () => {
-    const { router } = await setup({ role: 'MEMBER' })
+  it('sends a MEMBER away from /members to /profile with a notice and no query, without looping', async () => {
+    const { router, appStore } = await setup({ role: 'MEMBER' })
     await router.push('/members')
     await router.isReady()
     const route = router.currentRoute.value
     expect(route.path).toBe('/profile')
-    expect(route.query).toEqual({ error: 'access_denied' })
-    expect(route.fullPath).toBe('/profile?error=access_denied')
+    expect(route.query).toEqual({})
+    expect(route.fullPath).toBe('/profile')
+    expect(appStore.notifications).toHaveLength(1)
+    expect(appStore.notifications[0]).toMatchObject({
+      type: 'warning',
+      title: 'Access denied',
+      message: "You don't have access to that page."
+    })
   })
 
-  it('settles on /profile for MEMBER after the denial (no further redirect)', async () => {
-    const { router } = await setup({ role: 'MEMBER' })
+  it('settles on /profile for MEMBER after the denial (no further redirect, one notice)', async () => {
+    const { router, appStore } = await setup({ role: 'MEMBER' })
     await router.push('/payments')
     const first = router.currentRoute.value.fullPath
     await new Promise(r => setTimeout(r, 20))
     expect(router.currentRoute.value.fullPath).toBe(first)
-    expect(first).toBe('/profile?error=access_denied')
+    expect(first).toBe('/profile')
+    expect(appStore.notifications).toHaveLength(1)
+  })
+
+  it('shows no notice when access is allowed', async () => {
+    const { router, appStore } = await setup({ role: 'VOLUNTEER' })
+    await router.push('/members')
+    expect(appStore.notifications).toHaveLength(0)
   })
 
   it('sends a MEMBER at / to /profile', async () => {
