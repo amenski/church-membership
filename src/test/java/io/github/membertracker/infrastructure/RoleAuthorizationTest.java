@@ -8,13 +8,19 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.task.SyncTaskExecutor;
+import org.springframework.core.task.support.TaskExecutorAdapter;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -34,8 +40,22 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
     CommunicationController.class,
     DashboardController.class
 })
-@Import({SecurityConfig.class, AuthProperties.class})
+@Import({SecurityConfig.class, AuthProperties.class, RoleAuthorizationTest.SyncAsyncConfig.class})
 class RoleAuthorizationTest {
+
+    /** Runs StreamingResponseBody on the request thread so header writes cannot race. */
+    @TestConfiguration
+    static class SyncAsyncConfig {
+        @Bean
+        WebMvcConfigurer syncAsyncExecutor() {
+            return new WebMvcConfigurer() {
+                @Override
+                public void configureAsyncSupport(AsyncSupportConfigurer configurer) {
+                    configurer.setTaskExecutor(new TaskExecutorAdapter(new SyncTaskExecutor()));
+                }
+            };
+        }
+    }
 
     // Lowest to highest; each role inherits everything below it
     private static final List<String> ROLES = List.of("MEMBER", "VOLUNTEER", "STAFF", "ADMIN");
