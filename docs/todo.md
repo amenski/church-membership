@@ -78,8 +78,8 @@ This document tracks missing features, improvements, and technical debt in the M
 - [x] **Profile:** changing the password ends other sessions; refresh sessions last at most 30 days from sign-in
 - [ ] **Members:** there is no automatic deactivation after 3 missed months (the unused code was removed; see git history); the add form cannot set a join date
 - [ ] **Payments:** the receipt does not show the paid month; the Export CSV buttons (members, payments) are still shown to volunteers although the endpoints are STAFF only; the payment form has no paid-on date field
-- [ ] **Communications and dashboard:** an empty overdue match still saves a communication marked as sent; no endpoint sends an existing draft; the delivery summary cards skip DELIVERED
-- [ ] **Communications (display):** the Recipients column shows "-" for everything except send-to-all (`CommunicationsView.vue:376`); the dashboard Send Reminder is stored as an announcement, not a REMINDER
+- [ ] **Communications and dashboard:** the delivery summary cards skip DELIVERED
+- [ ] **Communications (display):** the list screen must show the new `recipientCount` and `deliverySummary` fields (the Recipients column still shows "-" for everything except send-to-all, `CommunicationsView.vue:376`); the dashboard Send Reminder is stored as an announcement, not a REMINDER
 - [x] **Backend dead code removed (October 2026):** unused use cases, the membership policy, `PhoneNumber`, unused repository methods and exception factories, the HTML mail templates and Thymeleaf, and unused domain methods (`chore: remove unused ...` commits; recover from git history)
 - [ ] **Dead code to delete or wire in:** `memberStore`, `paymentStore`, `communicationStore`, `RegisterView.vue` (the backend half, `ProcessMemberPaymentUseCase`, `RegisterUserUseCase` and the policy, was removed in `chore: remove unused use cases, the membership policy and PhoneNumber`)
 

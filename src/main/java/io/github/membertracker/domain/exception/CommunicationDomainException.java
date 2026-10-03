@@ -11,12 +11,17 @@ public class CommunicationDomainException extends DomainException {
     public static final String DELIVERY_NOT_RETRYABLE = "COMMUNICATION_003";
     public static final String COMMUNICATION_NOT_FOUND = "COMMUNICATION_004";
     public static final String ALREADY_SENT = "COMMUNICATION_005";
+    public static final String NO_RECIPIENTS = "COMMUNICATION_006";
 
     public CommunicationDomainException(String message, String errorCode) {
         super(message, errorCode, "Communication");
     }
 
     // Factory methods for common communication domain violations
+    public static CommunicationDomainException noRecipients() {
+        return new CommunicationDomainException("There is nobody to send this to.", NO_RECIPIENTS);
+    }
+
     public static CommunicationDomainException deliveryNotFound(Long deliveryId) {
         return new CommunicationDomainException(
             String.format("Delivery with ID %d not found", deliveryId),

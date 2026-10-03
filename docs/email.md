@@ -9,7 +9,7 @@ How MemberTracker sends email to members, and how to configure and test it.
 | Trigger | Use case | Recipients | Method |
 |---------|----------|------------|--------|
 | `POST /api/communications/send-to-all` | `SendCommunicationToAllMembersUseCase` | All **active** members | Plain text, with retry |
-| `POST /api/communications/send-to-overdue/{months}` | `SendCommunicationToMembersUseCase` | Members overdue by at least `months` | Plain text, with retry |
+| `POST /api/communications/send-to-overdue/{months}` | `SendCommunicationToMembersUseCase` | ACTIVE members overdue by at least `months` | Plain text, with retry |
 | `POST /api/communications/send-to-member/{memberId}` | `SendCommunicationToMembersUseCase` | One member (path `memberId`) | Plain text, with retry |
 | Monthly reminder job (1st, 09:00) | `SendPaymentRemindersUseCase` (`app.payment.reminder.months-threshold` months missed, default 3) | Active members at or over the threshold | Plain text, with retry. Runs only while the application is up at that time; see [features/payment-reminder-scheduler.md](features/payment-reminder-scheduler.md). |
 
@@ -106,9 +106,11 @@ logging.level.org.springframework.mail=DEBUG
 
 ## Known gaps
 
+An empty audience (no active members, or no active member behind by the given months) is a 400 `COMMUNICATION_006` and nothing is stored. `GET /api/communications` returns, per message, `recipientCount` and a `deliverySummary` (`sent`, `failed`, `pending`, `delivered`) counted by one grouped query.
+
 Tracked in [functionality-audit.md](functionality-audit.md) (C3, C4) and [todo.md](todo.md).
 
 - No unsubscribe link or consent record
-- Only two audiences: everyone, or overdue members
+- Only two audiences: everyone, or active overdue members (plus one member)
 - No durable queue
 - SMS and WhatsApp are not implemented

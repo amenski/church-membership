@@ -66,7 +66,6 @@ class RoleAuthorizationTest {
     @MockitoBean private RecordPaymentUseCase recordPaymentUseCase;
     @MockitoBean private GetAllCommunicationsUseCase getAllCommunicationsUseCase;
     @MockitoBean private GetCommunicationByIdUseCase getCommunicationByIdUseCase;
-    @MockitoBean private CreateCommunicationUseCase createCommunicationUseCase;
     @MockitoBean private SendCommunicationToAllMembersUseCase sendCommunicationToAllMembersUseCase;
     @MockitoBean private SendCommunicationToMembersUseCase sendCommunicationToMembersUseCase;
     @MockitoBean private GetDeliveriesByCommunicationUseCase getDeliveriesByCommunicationUseCase;
@@ -104,7 +103,6 @@ class RoleAuthorizationTest {
             new Endpoint(HttpMethod.GET, "/api/communications", null, "VOLUNTEER"),
             new Endpoint(HttpMethod.GET, "/api/communications/1", null, "VOLUNTEER"),
             new Endpoint(HttpMethod.GET, "/api/communications/1/deliveries", null, "VOLUNTEER"),
-            new Endpoint(HttpMethod.POST, "/api/communications", COMMUNICATION_JSON, "STAFF"),
             new Endpoint(HttpMethod.POST, "/api/communications/send-to-all", COMMUNICATION_JSON, "STAFF"),
             new Endpoint(HttpMethod.POST, "/api/communications/send-to-overdue/1", COMMUNICATION_JSON, "STAFF"),
             new Endpoint(HttpMethod.POST, "/api/communications/send-to-member/1", COMMUNICATION_JSON, "STAFF"),

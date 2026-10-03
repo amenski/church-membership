@@ -51,7 +51,6 @@ class CommunicationContractTest {
     @MockitoBean private GetAllCommunicationsUseCase getAllCommunicationsUseCase;
     @MockitoBean private GetCommunicationByIdUseCase getCommunicationByIdUseCase;
     @MockitoBean private GetMemberByIdUseCase getMemberByIdUseCase;
-    @MockitoBean private CreateCommunicationUseCase createCommunicationUseCase;
     @MockitoBean private SendCommunicationToAllMembersUseCase sendCommunicationToAllMembersUseCase;
     @MockitoBean private SendCommunicationToMembersUseCase sendCommunicationToMembersUseCase;
     @MockitoBean private GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase;
@@ -67,21 +66,6 @@ class CommunicationContractTest {
         assertThat(communication.getMessageContent()).isEqualTo("Dear member, your payment is overdue.");
         assertThat(communication.getType()).isEqualTo(CommunicationType.ANNOUNCEMENT);
         assertThat(communication.getSentDate()).isNull();
-    }
-
-    @Test
-    void createBindsTheFixture() throws Exception {
-        when(createCommunicationUseCase.invoke(any())).thenReturn(new Communication());
-
-        mockMvc.perform(post("/api/communications").with(csrf())
-                .with(user("s@example.com").roles("STAFF"))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(fixture()))
-            .andExpect(status().isOk());
-
-        ArgumentCaptor<Communication> captor = ArgumentCaptor.forClass(Communication.class);
-        verify(createCommunicationUseCase).invoke(captor.capture());
-        assertBound(captor.getValue());
     }
 
     @Test
@@ -133,29 +117,38 @@ class CommunicationContractTest {
 
     @Test
     void clientSuppliedSentDateIsIgnored() throws Exception {
-        when(createCommunicationUseCase.invoke(any())).thenReturn(new Communication());
+        when(sendCommunicationToAllMembersUseCase.invoke(any())).thenReturn(new Communication());
 
-        mockMvc.perform(post("/api/communications").with(csrf())
+        mockMvc.perform(post("/api/communications/send-to-all").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"title\": \"Payment reminder\", \"messageContent\": \"Dear member, your payment is overdue.\", \"sentDate\": \"2020-01-01T00:00:00\"}"))
             .andExpect(status().isOk());
 
         ArgumentCaptor<Communication> captor = ArgumentCaptor.forClass(Communication.class);
-        verify(createCommunicationUseCase).invoke(captor.capture());
+        verify(sendCommunicationToAllMembersUseCase).invoke(captor.capture());
         assertBound(captor.getValue());
     }
 
     @Test
     void blankTitleIsRejectedWithTheFieldName() throws Exception {
-        mockMvc.perform(post("/api/communications").with(csrf())
+        mockMvc.perform(post("/api/communications/send-to-all").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"title\": \"\", \"messageContent\": \"m\"}"))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.errors[?(@.field == 'title')]").isNotEmpty());
 
-        verify(createCommunicationUseCase, never()).invoke(any());
+        verify(sendCommunicationToAllMembersUseCase, never()).invoke(any());
+    }
+
+    @Test
+    void theDraftEndpointIsGone() throws Exception {
+        mockMvc.perform(post("/api/communications").with(csrf())
+                .with(user("s@example.com").roles("STAFF"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(fixture()))
+            .andExpect(status().isMethodNotAllowed());
     }
 
     @Test

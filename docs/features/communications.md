@@ -24,7 +24,7 @@ Role view of the screen:
 ### View the message list
 1. The screen loads all members and all communications once on open and again after every send (`CommunicationsView.vue:236-247`, `:280`).
 2. "Recent Communications" shows date sent, title, recipients, a delivery button and a View button (`CommunicationsView.vue:53-97`). The list is not sorted, paged or filtered by the screen.
-3. Recipients reads "All Members" for a send-to-all message and "-" for everything else (`CommunicationsView.vue:372-381`).
+3. Recipients reads "All Members" for a send-to-all message and "-" for everything else (`CommunicationsView.vue:372-381`). The API now also returns `recipientCount` and `deliverySummary` for every message; the screen does not show them yet.
 4. The delivery button reads "Click to view" (`CommunicationsView.vue:351-359`).
 5. On a load failure the list stays empty and nothing is shown to the user (`CommunicationsView.vue:244-246`).
 
@@ -47,7 +47,7 @@ Role view of the screen:
 1. Choose Overdue Members and enter N (`CommunicationsView.vue:28-31`). A browser confirm asks "Send to M members?" where M counts members with `consecutiveMonthsMissed >= N` in the loaded list (`CommunicationsView.vue:252-253`, `:259-263`).
 2. `POST /api/communications/send-to-overdue/{N}`; N must be at least 1, otherwise 400 (`CommunicationController.java:100-101`).
 3. The server selects members with `consecutiveMonthsMissed >= N`, active or not (`src/main/java/io/github/membertracker/usecase/GetMembersWithMissedPaymentsUseCase.java:22-24`), and sends by email (`CommunicationController.java:104-111`).
-4. If nobody matches, the message is still saved and marked as sent, with no recipients (`src/main/java/io/github/membertracker/usecase/SendCommunicationToMembersUseCase.java:44-57`).
+4. If nobody matches (no active member is N months behind), the server answers 400 `COMMUNICATION_006` "There is nobody to send this to." and stores nothing.
 
 ### Send to one member (STAFF+)
 1. Choose Specific Member and pick the member; no confirmation is asked (`CommunicationsView.vue:19-26`, `:259`).
@@ -80,16 +80,15 @@ Role view of the screen:
 
 ## Rules
 - Request body: `title` required (max 200), `messageContent` required (max 5000), optional `type` (default ANNOUNCEMENT); the client cannot set the sent date or recipient flags (`CommunicationController.java:132-139`). Details: [communication-controller.md](communication-controller.md).
-- Send to all reaches active members only; send to overdue and send to one member do not check `active` (`SendCommunicationToAllMembersUseCase.java:50`, `GetMembersWithMissedPaymentsUseCase.java:23`).
+- Send to all and send to overdue reach active members only; send to one member sends to the member chosen. Sending to nobody is a 400 and stores nothing.
+- There is no draft endpoint any more (`POST /api/communications` was removed).
 - A message can be sent only once: every send builds a new message, and marking a message sent twice is refused (`src/main/java/io/github/membertracker/domain/model/Communication.java:119-125`).
 - Send and retry are STAFF+ on the server too; a VOLUNTEER calling them gets 403 (`CommunicationController.java:84`, `:91`, `:98`, `:115`, `:150`).
 - A send in progress is lost if the application restarts; recipients not yet reached stay PENDING ([../email.md](../email.md#what-gets-sent)).
 - The same mechanism sends the automatic payment reminders: [payment-reminders.md](payment-reminders.md).
 
 ## Known issues
-- Recipients column shows "-" for send-to-overdue, send-to-one and reminder messages: the screen looks for a `memberId` that `Communication` does not have (`CommunicationsView.vue:376`, `Communication.java:22-39`).
-- Send-to-overdue has no active filter: inactive members with missed months are emailed ([communication-controller.md](communication-controller.md#gotchas)).
-- An empty overdue match is saved as a sent message with zero recipients ([communication-controller.md](communication-controller.md#gotchas)).
+- Recipients column shows "-" for send-to-overdue, send-to-one and reminder messages although the API returns `recipientCount`: the screen looks for a `memberId` that `Communication` does not have (`CommunicationsView.vue:376`, `Communication.java:22-39`).
 - Summary cards ignore DELIVERED (`CommunicationsView.vue:311-317`).
 - The confirm count comes from the member list loaded when the screen opened, so it can differ from what the server sends (`CommunicationsView.vue:248-254`).
 - The list and the dialog do not refresh by themselves; pending sends show only after a reload (`CommunicationsView.vue:299-310`).

@@ -39,6 +39,10 @@ public class Communication {
 
     private List<MessageDelivery> deliveries = new ArrayList<>();
 
+    // Derived from the deliveries when a communication is read or saved; not stored on the communication
+    private int recipientCount;
+    private DeliverySummary deliverySummary = DeliverySummary.EMPTY;
+
     // Constructors
     public Communication() {
         this.createdDate = LocalDateTime.now();
@@ -109,6 +113,24 @@ public class Communication {
 
     public void setDeliveries(List<MessageDelivery> deliveries) {
         this.deliveries = deliveries;
+    }
+
+    /** Number of deliveries (recipients); 0 when nothing was sent. Not persisted. */
+    public int getRecipientCount() {
+        return recipientCount;
+    }
+
+    public void setRecipientCount(int recipientCount) {
+        this.recipientCount = recipientCount;
+    }
+
+    /** Deliveries per status; all zero when nothing was sent. Not persisted. */
+    public DeliverySummary getDeliverySummary() {
+        return deliverySummary;
+    }
+
+    public void setDeliverySummary(DeliverySummary deliverySummary) {
+        this.deliverySummary = deliverySummary == null ? DeliverySummary.EMPTY : deliverySummary;
     }
 
     // Behaviour

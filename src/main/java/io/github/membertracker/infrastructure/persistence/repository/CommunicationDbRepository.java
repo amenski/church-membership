@@ -2,6 +2,7 @@ package io.github.membertracker.infrastructure.persistence.repository;
 
 import io.github.membertracker.domain.enumeration.CommunicationType;
 import io.github.membertracker.domain.model.Communication;
+import io.github.membertracker.domain.model.DeliverySummary;
 import io.github.membertracker.domain.model.MessageDelivery;
 import io.github.membertracker.domain.repository.CommunicationRepository;
 import io.github.membertracker.infrastructure.persistence.entity.CommunicationEntity;
@@ -11,6 +12,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -21,20 +24,25 @@ public class CommunicationDbRepository implements CommunicationRepository {
     private final CommunicationJpaRepository communicationJpaRepository;
     private final MemberDbRepository memberDbRepository;
     private final MemberJpaRepository memberJpaRepository;
+    private final MessageDeliveryJpaRepository messageDeliveryJpaRepository;
 
     public CommunicationDbRepository(CommunicationJpaRepository communicationJpaRepository,
                                      MemberDbRepository memberDbRepository,
-                                     MemberJpaRepository memberJpaRepository) {
+                                     MemberJpaRepository memberJpaRepository,
+                                     MessageDeliveryJpaRepository messageDeliveryJpaRepository) {
         this.communicationJpaRepository = communicationJpaRepository;
         this.memberDbRepository = memberDbRepository;
         this.memberJpaRepository = memberJpaRepository;
+        this.messageDeliveryJpaRepository = messageDeliveryJpaRepository;
     }
 
     @Override
     public List<Communication> findAll() {
-        return communicationJpaRepository.findAll().stream()
+        List<Communication> communications = communicationJpaRepository.findAll().stream()
                 .map(this::mapToCommunication)
                 .collect(Collectors.toList());
+        fillDeliveryCounts(communications);
+        return communications;
     }
 
     @Override
@@ -47,8 +55,44 @@ public class CommunicationDbRepository implements CommunicationRepository {
 
     @Override
     public Optional<Communication> findById(Long id) {
-        return communicationJpaRepository.findById(id)
+        Optional<Communication> found = communicationJpaRepository.findById(id)
                 .map(this::mapToCommunication);
+        found.ifPresent(c -> fillDeliveryCounts(List.of(c)));
+        return found;
+    }
+
+    /** One grouped query for all the given communications: recipient count and deliveries per status. */
+    private void fillDeliveryCounts(List<Communication> communications) {
+        List<Long> ids = communications.stream().map(Communication::getId).toList();
+        if (ids.isEmpty()) {
+            return;
+        }
+        Map<Long, int[]> perCommunication = new HashMap<>();
+        for (Object[] row : messageDeliveryJpaRepository.countByCommunicationIdsGroupedByStatus(ids)) {
+            int[] counts = perCommunication.computeIfAbsent((Long) row[0], k -> new int[4]);
+            counts[statusIndex((MessageDeliveryEntity.DeliveryStatus) row[1])] += ((Number) row[2]).intValue();
+        }
+        for (Communication communication : communications) {
+            int[] counts = perCommunication.getOrDefault(communication.getId(), new int[4]);
+            applyCounts(communication, counts);
+        }
+    }
+
+    private static int statusIndex(MessageDeliveryEntity.DeliveryStatus status) {
+        if (status == null) {
+            return 2; // a delivery without a status has not been sent yet
+        }
+        return switch (status) {
+            case SENT -> 0;
+            case FAILED -> 1;
+            case PENDING -> 2;
+            case DELIVERED -> 3;
+        };
+    }
+
+    private static void applyCounts(Communication communication, int[] counts) {
+        communication.setDeliverySummary(new DeliverySummary(counts[0], counts[1], counts[2], counts[3]));
+        communication.setRecipientCount(counts[0] + counts[1] + counts[2] + counts[3]);
     }
 
     @Override
@@ -58,6 +102,17 @@ public class CommunicationDbRepository implements CommunicationRepository {
 
         Communication result = mapToCommunication(saved);
         attachDeliveries(result, communication.getDeliveries(), saved.getDeliveries());
+        if (communication.getDeliveries() != null && !communication.getDeliveries().isEmpty()) {
+            int[] counts = new int[4];
+            for (MessageDelivery delivery : communication.getDeliveries()) {
+                counts[statusIndex(delivery.getStatus() == null ? null
+                        : MessageDeliveryEntity.DeliveryStatus.valueOf(delivery.getStatus().name()))]++;
+            }
+            applyCounts(result, counts);
+        } else {
+            // saved without deliveries: the stored rows (if any) are untouched, so ask the database
+            fillDeliveryCounts(List.of(result));
+        }
         return result;
     }
 

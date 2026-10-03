@@ -1,5 +1,6 @@
 package io.github.membertracker.usecase;
 
+import io.github.membertracker.domain.exception.CommunicationDomainException;
 import io.github.membertracker.domain.model.Communication;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.model.MessageDelivery;
@@ -39,15 +40,19 @@ public class SendCommunicationToAllMembersUseCase {
 
     /**
      * Sends a communication to all active members.
+     * Nothing is stored when there are none ({@link CommunicationDomainException#noRecipients()}).
      *
      * @param communication the communication to send
      * @return the saved communication with delivery information
      */
     public Communication invoke(Communication communication) {
+        List<Member> allMembers = memberRepository.findByActive(true);
+        if (allMembers.isEmpty()) {
+            throw CommunicationDomainException.noRecipients();
+        }
+
         communication.setSentToAllMembers(true);
         communication.markAsSent();
-
-        List<Member> allMembers = memberRepository.findByActive(true);
         logger.info("Sending communication '{}' to {} members", communication.getTitle(), allMembers.size());
 
         // First save the communication with pending deliveries

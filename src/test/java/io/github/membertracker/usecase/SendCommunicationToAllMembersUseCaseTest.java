@@ -1,5 +1,6 @@
 package io.github.membertracker.usecase;
 
+import io.github.membertracker.domain.exception.CommunicationDomainException;
 import io.github.membertracker.domain.model.Communication;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.model.MessageDelivery;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -94,6 +96,22 @@ class SendCommunicationToAllMembersUseCaseTest {
     }
 
     @Test
+    void noActiveMembersIsRejectedBeforeAnythingIsMarkedSentSavedOrSent() {
+        when(memberRepository.findByActive(true)).thenReturn(List.of());
+        Communication c = communication();
+
+        assertThatThrownBy(() -> useCase.invoke(c))
+                .isInstanceOf(CommunicationDomainException.class)
+                .hasMessage("There is nobody to send this to.")
+                .extracting("errorCode").isEqualTo(CommunicationDomainException.NO_RECIPIENTS);
+
+        assertThat(c.isSent()).isFalse();
+        assertThat(c.isSentToAllMembers()).isFalse();
+        verify(communicationRepository, never()).save(any());
+        verifyNoInteractions(emailService, messageDeliveryRepository);
+    }
+
+    @Test
     void usesTheRetryEnabledEmailPathForEveryMember() {
         when(memberRepository.findByActive(true)).thenReturn(List.of(alice, bob));
         when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenReturn(true);
@@ -167,20 +185,6 @@ class SendCommunicationToAllMembersUseCaseTest {
 
         verify(messageDeliveryRepository, timeout(5000).times(2)).save(any(MessageDelivery.class));
         verify(emailService, timeout(5000)).sendSimpleEmailWithRetry(org.mockito.ArgumentMatchers.eq(bob), any(), any(), any());
-    }
-
-    @Test
-    void noMembersSavesEmptyCommunicationAndSendsNothing() {
-        when(memberRepository.findByActive(true)).thenReturn(List.of());
-        Communication c = communication();
-
-        useCase.invoke(c);
-
-        assertThat(c.getDeliveries()).isEmpty();
-        assertThat(c.isSentToAllMembers()).isTrue();
-        verify(communicationRepository).save(c);
-        verifyNoInteractions(emailService);
-        verify(messageDeliveryRepository, never()).save(any(MessageDelivery.class));
     }
 
     @Test

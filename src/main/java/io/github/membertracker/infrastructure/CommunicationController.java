@@ -36,7 +36,6 @@ public class CommunicationController {
     private final GetAllCommunicationsUseCase getAllCommunicationsUseCase;
     private final GetCommunicationByIdUseCase getCommunicationByIdUseCase;
     private final GetMemberByIdUseCase getMemberByIdUseCase;
-    private final CreateCommunicationUseCase createCommunicationUseCase;
     private final SendCommunicationToAllMembersUseCase sendCommunicationToAllMembersUseCase;
     private final SendCommunicationToMembersUseCase sendCommunicationToMembersUseCase;
     private final GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase;
@@ -47,7 +46,6 @@ public class CommunicationController {
     public CommunicationController(GetAllCommunicationsUseCase getAllCommunicationsUseCase,
                                    GetCommunicationByIdUseCase getCommunicationByIdUseCase,
                                    GetMemberByIdUseCase getMemberByIdUseCase,
-                                   CreateCommunicationUseCase createCommunicationUseCase,
                                    SendCommunicationToAllMembersUseCase sendCommunicationToAllMembersUseCase,
                                    SendCommunicationToMembersUseCase sendCommunicationToMembersUseCase,
                                    GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase,
@@ -56,7 +54,6 @@ public class CommunicationController {
         this.getAllCommunicationsUseCase = getAllCommunicationsUseCase;
         this.getCommunicationByIdUseCase = getCommunicationByIdUseCase;
         this.getMemberByIdUseCase = getMemberByIdUseCase;
-        this.createCommunicationUseCase = createCommunicationUseCase;
         this.sendCommunicationToAllMembersUseCase = sendCommunicationToAllMembersUseCase;
         this.sendCommunicationToMembersUseCase = sendCommunicationToMembersUseCase;
         this.getMembersWithMissedPaymentsUseCase = getMembersWithMissedPaymentsUseCase;
@@ -66,7 +63,7 @@ public class CommunicationController {
 
     @GetMapping
     @PreAuthorize("hasRole('VOLUNTEER')")
-    @Operation(summary = "List communications (VOLUNTEER+)")
+    @Operation(summary = "List communications with recipient count and delivery summary (VOLUNTEER+)")
     public List<Communication> getAllCommunications() {
         return getAllCommunicationsUseCase.invoke();
     }
@@ -80,13 +77,6 @@ public class CommunicationController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping
-    @PreAuthorize("hasRole('STAFF')")
-    @Operation(summary = "Create a communication without sending it (STAFF+)")
-    public ResponseEntity<Communication> createCommunication(@Valid @RequestBody SendCommunicationRequest request) {
-        return ResponseEntity.ok(createCommunicationUseCase.invoke(toCommunication(request)));
-    }
-
     @PostMapping("/send-to-all")
     @PreAuthorize("hasRole('STAFF')")
     @Operation(summary = "Send a communication to all members (STAFF+)")
@@ -96,7 +86,7 @@ public class CommunicationController {
 
     @PostMapping("/send-to-overdue/{months}")
     @PreAuthorize("hasRole('STAFF')")
-    @Operation(summary = "Send a communication by email to members overdue by the given months (STAFF+)")
+    @Operation(summary = "Send a communication by email to active members overdue by the given months (STAFF+)")
     public ResponseEntity<Communication> sendToOverdueMembers(
             @PathVariable @Min(1) int months,
             @Valid @RequestBody SendCommunicationRequest request

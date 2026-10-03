@@ -1,5 +1,6 @@
 package io.github.membertracker.usecase;
 
+import io.github.membertracker.domain.exception.CommunicationDomainException;
 import io.github.membertracker.domain.model.Communication;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.model.MessageDelivery;
@@ -17,9 +18,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -69,6 +72,21 @@ class SendCommunicationToMembersUseCaseTest {
         c.setTitle("Hello");
         c.setMessageContent("Body");
         return c;
+    }
+
+    @Test
+    void noRecipientsIsRejectedBeforeAnythingIsMarkedSentSavedOrSent() {
+        Communication c = communication();
+
+        assertThatThrownBy(() -> useCase.invoke(c, List.of(), DeliveryChannel.EMAIL))
+                .isInstanceOf(CommunicationDomainException.class)
+                .extracting("errorCode").isEqualTo(CommunicationDomainException.NO_RECIPIENTS);
+        assertThatThrownBy(() -> useCase.invoke(c, null, DeliveryChannel.EMAIL))
+                .isInstanceOf(CommunicationDomainException.class);
+
+        assertThat(c.isSent()).isFalse();
+        verify(communicationRepository, never()).save(any());
+        verifyNoInteractions(emailService, messageDeliveryRepository);
     }
 
     @Test
@@ -191,14 +209,4 @@ class SendCommunicationToMembersUseCaseTest {
         verifyNoInteractions(emailService);
     }
 
-    @Test
-    void emptyRecipientListSavesCommunicationWithNoDeliveries() {
-        Communication c = communication();
-
-        useCase.invoke(c, List.of(), DeliveryChannel.SMS);
-
-        assertThat(c.getDeliveries()).isEmpty();
-        verify(communicationRepository, times(1)).save(c);
-        verifyNoInteractions(emailService);
-    }
 }

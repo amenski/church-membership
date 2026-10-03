@@ -8,7 +8,6 @@ import io.github.membertracker.domain.repository.UserRepository;
 import io.github.membertracker.infrastructure.service.EmailService;
 import io.github.membertracker.usecase.AuthenticateUserUseCase;
 import io.github.membertracker.usecase.ChangePasswordUseCase;
-import io.github.membertracker.usecase.CreateCommunicationUseCase;
 import io.github.membertracker.usecase.DeleteMemberUseCase;
 import io.github.membertracker.usecase.GetActiveMembersUseCase;
 import io.github.membertracker.usecase.GetAllCommunicationsUseCase;
@@ -160,11 +159,6 @@ public class UseCaseConfig {
             MessageDeliveryRepository messageDeliveryRepository,
             EmailService emailService) {
         return new RetryDeliveryUseCase(communicationRepository, messageDeliveryRepository, emailService);
-    }
-
-    @Bean
-    public CreateCommunicationUseCase createCommunicationUseCase(CommunicationRepository communicationRepository) {
-        return new CreateCommunicationUseCase(communicationRepository);
     }
 
     @Bean

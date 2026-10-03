@@ -28,11 +28,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -157,13 +159,95 @@ class CommunicationDeliveryPersistenceTest {
         assertThat((List<String>) JsonPath.read(deliveries, "$[*].channel")).containsExactly("EMAIL");
     }
 
+    private String asVolunteerList() throws Exception {
+        return asVolunteer("/api/communications");
+    }
+
     @Test
-    void aDraftHasNoDeliveries() throws Exception {
-        String response = asStaff(post("/api/communications"), BODY);
+    void theListShowsRecipientCountAndDeliverySummaryOnceTheBackgroundSendFinished() throws Exception {
+        Member cy = memberRepository.save(new Member("Cy", "cy@example.com", "+1234567892"));
+        when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any()))
+                .thenAnswer(i -> !((Member) i.getArgument(0)).getEmail().equals("bob@example.com"));
+
+        String response = asStaff(post("/api/communications/send-to-all"), BODY);
 
         int communicationId = JsonPath.read(response, "$.id");
+        assertThat((Integer) JsonPath.read(response, "$.recipientCount")).isEqualTo(3);
+        awaitNoPendingDeliveries(communicationId, 3);
+
+        String list = asVolunteerList();
+        String path = "$[?(@.id==" + communicationId + ")]";
+        assertThat(JsonPath.<List<Integer>>read(list, path + ".recipientCount")).containsExactly(3);
+        assertThat(JsonPath.<List<Integer>>read(list, path + ".deliverySummary.sent")).containsExactly(2);
+        assertThat(JsonPath.<List<Integer>>read(list, path + ".deliverySummary.failed")).containsExactly(1);
+        assertThat(JsonPath.<List<Integer>>read(list, path + ".deliverySummary.pending")).containsExactly(0);
+        assertThat(JsonPath.<List<Integer>>read(list, path + ".deliverySummary.delivered")).containsExactly(0);
+        assertThat(list).doesNotContain("deliveries\"");
+        String one = asVolunteer("/api/communications/" + communicationId);
+        assertThat((Integer) JsonPath.read(one, "$.recipientCount")).isEqualTo(3);
+        assertThat((Integer) JsonPath.read(one, "$.deliverySummary.failed")).isEqualTo(1);
+        assertThat(cy.getId()).isNotNull();
+    }
+
+    @Test
+    void aCommunicationWithoutDeliveriesListsZeroRecipientsAndAnAllZeroSummary() throws Exception {
+        Communication communication = new Communication();
+        communication.setTitle("Unsent");
+        communication.setMessageContent("Body");
+        Communication saved = communicationRepository.save(communication);
+
+        String list = asVolunteerList();
+
+        String path = "$[?(@.id==" + saved.getId() + ")]";
+        assertThat(JsonPath.<List<Integer>>read(list, path + ".recipientCount")).containsExactly(0);
+        assertThat(JsonPath.<List<Integer>>read(list, path + ".deliverySummary.sent")).containsExactly(0);
+        assertThat(JsonPath.<List<Integer>>read(list, path + ".deliverySummary.failed")).containsExactly(0);
+        assertThat(JsonPath.<List<Integer>>read(list, path + ".deliverySummary.pending")).containsExactly(0);
+        assertThat(JsonPath.<List<Integer>>read(list, path + ".deliverySummary.delivered")).containsExactly(0);
         assertThat((List<?>) JsonPath.read(
-                asVolunteer("/api/communications/" + communicationId + "/deliveries"), "$")).isEmpty();
+                asVolunteer("/api/communications/" + saved.getId() + "/deliveries"), "$")).isEmpty();
+    }
+
+    @Test
+    void sendToAllWithNoActiveMembersIsA400AndStoresNothing() throws Exception {
+        alice.setActive(false);
+        memberRepository.save(alice);
+        bob.setActive(false);
+        memberRepository.save(bob);
+
+        mockMvc.perform(post("/api/communications/send-to-all").with(user("staff@example.com").roles("STAFF")).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(BODY))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COMMUNICATION_006"))
+                .andExpect(jsonPath("$.detail").value("There is nobody to send this to."));
+
+        assertThat(communicationJpaRepository.count()).isZero();
+        assertThat(messageDeliveryJpaRepository.count()).isZero();
+        verifyNoInteractions(emailService);
+    }
+
+    @Test
+    void sendToOverdueReachesActiveMembersOnlyAndNobodyBehindIsA400WithNothingStored() throws Exception {
+        alice.setConsecutiveMonthsMissed(2);
+        memberRepository.save(alice);
+        bob.setConsecutiveMonthsMissed(3);
+        bob.setActive(false);
+        memberRepository.save(bob);
+        aliceSucceedsBobFails();
+
+        String response = asStaff(post("/api/communications/send-to-overdue/1"), BODY);
+
+        int communicationId = JsonPath.read(response, "$.id");
+        assertThat((Integer) JsonPath.read(response, "$.recipientCount")).isEqualTo(1);
+        awaitNoPendingDeliveries(communicationId, 1);
+        assertThat(JsonPath.<List<String>>read(asVolunteer("/api/communications/" + communicationId + "/deliveries"),
+                "$[*].recipient.name")).containsExactly("Alice");
+
+        long before = communicationJpaRepository.count();
+        mockMvc.perform(post("/api/communications/send-to-overdue/12").with(user("staff@example.com").roles("STAFF")).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(BODY))
+                .andExpect(status().isBadRequest());
+        assertThat(communicationJpaRepository.count()).isEqualTo(before);
     }
 
     @Test
