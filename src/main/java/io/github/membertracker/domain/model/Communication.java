@@ -1,5 +1,6 @@
 package io.github.membertracker.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.github.membertracker.domain.enumeration.CommunicationType;
 import io.github.membertracker.domain.exception.CommunicationDomainException;
 import jakarta.persistence.CascadeType;
@@ -100,6 +101,8 @@ public class Communication {
         this.sentToAllMembers = sentToAllMembers;
     }
 
+    /** Not serialised: a delivery points back to its communication, and deliveries have their own endpoint. */
+    @JsonIgnore
     public List<MessageDelivery> getDeliveries() {
         return deliveries;
     }

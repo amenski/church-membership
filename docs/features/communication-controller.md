@@ -10,9 +10,9 @@ REST API under `/api/communications` to create, email and track announcements to
 | GET | `/api/communications` | VOLUNTEER+ | - | `Communication[]` (`:67-72`) |
 | GET | `/api/communications/{id}` | VOLUNTEER+ | `id` > 0 | `Communication`, or empty 404 (`:74-81`) |
 | POST | `/api/communications` | STAFF+ | `SendCommunicationRequest` body | saved `Communication`, nothing sent (`:83-88`) |
-| POST | `/api/communications/send-to-all` | STAFF+ | `SendCommunicationRequest` body | saved `Communication` with PENDING deliveries (`:90-95`) |
-| POST | `/api/communications/send-to-overdue/{months}` | STAFF+ | `months` >= 1, `SendCommunicationRequest` body | saved `Communication` with PENDING deliveries (`:97-112`) |
-| POST | `/api/communications/send-to-member/{memberId}` | STAFF+ | `memberId` > 0, `SendCommunicationRequest` body | saved `Communication` with one PENDING delivery (`:114-130`) |
+| POST | `/api/communications/send-to-all` | STAFF+ | `SendCommunicationRequest` body | saved `Communication` (no `deliveries` in the JSON; deliveries are stored with PENDING status, read them with `GET /{id}/deliveries`) (`:90-95`) |
+| POST | `/api/communications/send-to-overdue/{months}` | STAFF+ | `months` >= 1, `SendCommunicationRequest` body | saved `Communication` (no `deliveries` in the JSON, see send-to-all) (`:97-112`) |
+| POST | `/api/communications/send-to-member/{memberId}` | STAFF+ | `memberId` > 0, `SendCommunicationRequest` body | saved `Communication` (no `deliveries` in the JSON, one delivery stored) (`:114-130`) |
 | GET | `/api/communications/{id}/deliveries` | VOLUNTEER+ | `id` > 0 | `MessageDelivery[]` (`:141-147`) |
 | POST | `/api/communications/{id}/deliveries/{deliveryId}/retry` | STAFF+ | both ids > 0 | `MessageDelivery` (`:149-155`) |
 
@@ -24,14 +24,14 @@ Request body is `SendCommunicationRequest` (`infrastructure/dto/SendCommunicatio
 | Flow | Audience | Sends email | Thread |
 |------|----------|-------------|--------|
 | create | none | no. Sets `createdDate` only (`usecase/CreateCommunicationUseCase.java:16-19`) | request |
-| send-to-all | active members only, `findByActive(true)` (`usecase/SendCommunicationToAllMembersUseCase.java:46`) | yes, sets `sentToAllMembers` (`:43`) | save on request; emails on background thread (`:63`, `:68-111`) |
-| send-to-overdue | members with `consecutiveMonthsMissed >= months` (`usecase/GetMembersWithMissedPaymentsUseCase.java:22-24`), channel fixed to EMAIL | yes | save on request; emails on background thread (`usecase/SendCommunicationToMembersUseCase.java:56-57`, `:71-99`) |
-| send-to-member | the single member loaded by id (`CommunicationController.java:121-122`); unknown id -> 400 | yes | save on request; emails on background thread (`usecase/SendCommunicationToMembersUseCase.java:56-57`, `:71-99`) |
+| send-to-all | active members only, `findByActive(true)` (`usecase/SendCommunicationToAllMembersUseCase.java:50`) | yes, sets `sentToAllMembers` (`:47`) | save on request; emails on background thread (`:64`, `:72-115`) |
+| send-to-overdue | members with `consecutiveMonthsMissed >= months` (`usecase/GetMembersWithMissedPaymentsUseCase.java:22-24`), channel fixed to EMAIL | yes | save on request; emails on background thread (`usecase/SendCommunicationToMembersUseCase.java:57-61`, `:75-103`) |
+| send-to-member | the single member loaded by id (`CommunicationController.java:121-122`); unknown id -> 400 | yes | save on request; emails on background thread (`usecase/SendCommunicationToMembersUseCase.java:57-61`, `:75-103`) |
 | retry | one delivery | yes, once | request thread, blocks until the SMTP attempts finish (`usecase/RetryDeliveryUseCase.java:58-63`) |
 
-- Send flows: build one `PENDING` `MessageDelivery` per recipient, save, return immediately. One background task per call (cached thread pool) then loops recipients with a 100 ms pause (`SendCommunicationToAllMembersUseCase.java:100`, `SendCommunicationToMembersUseCase.java:88`) and saves the whole communication after each status change (`SendCommunicationToAllMembersUseCase.java:113-128`).
-- Title and message are personalised per recipient at send time: `{{member_name}}` becomes the member's name (`MessageTemplates.personalize`, called from `SendCommunicationToAllMembersUseCase.java:75-76`, `SendCommunicationToMembersUseCase.java:77-78`, `RetryDeliveryUseCase.java:60-61`); the stored `Communication` keeps the placeholder. See [../email.md](../email.md#personalisation).
-- Response is meant to show `PENDING` (but see the persistence gotcha below); read final status via the deliveries endpoint.
+- Send flows: build one `PENDING` `MessageDelivery` per recipient, save the communication with them (`CommunicationDbRepository.save` writes the deliveries through the JPA cascade and returns them with their ids, `infrastructure/persistence/repository/CommunicationDbRepository.java:61-86`), return immediately. One background task per call (cached thread pool) then loops recipients with a 100 ms pause (`SendCommunicationToAllMembersUseCase.java:104`, `SendCommunicationToMembersUseCase.java:92`) and saves only the one delivery row after each status change via `MessageDeliveryRepository.save` (`SendCommunicationToAllMembersUseCase.java:117-136`, `SendCommunicationToMembersUseCase.java:105-124`); a failed row save is logged and the loop continues.
+- Title and message are personalised per recipient at send time: `{{member_name}}` becomes the member's name (`MessageTemplates.personalize`, called from `SendCommunicationToAllMembersUseCase.java:79-80`, `SendCommunicationToMembersUseCase.java:81-82`, `RetryDeliveryUseCase.java:60-61`); the stored `Communication` keeps the placeholder. See [../email.md](../email.md#personalisation).
+- The send response does not include the deliveries: `Communication.getDeliveries()` is `@JsonIgnore` (`domain/model/Communication.java:105-106`) because a delivery points back to its communication and the list would repeat every recipient's personal data. Read statuses with `GET /{id}/deliveries`.
 - Retry: only `FAILED` (`RetryDeliveryUseCase.java:47`) and `EMAIL` (`:50`) deliveries. Success sets `SENT` + `deliveryTime` (`:65-68`); failure keeps `FAILED`, writes "Retry failed at ..." to `responseNotes` (`:70-71`).
 
 ## Collaborators
@@ -56,7 +56,7 @@ Format: [../architecture.md](../architecture.md).
 ## Side effects
 - Emails via SMTP; disabled mail returns `false` immediately, so deliveries become `FAILED` (`EmailService.java:73-76`). See [../email.md](../email.md).
 - Rows in communications and message deliveries tables; background thread keeps writing after the response.
-- SMS/WhatsApp branch of the shared use case marks deliveries `FAILED` ("not implemented") (`SendCommunicationToMembersUseCase.java:58-65`); the controller only ever passes EMAIL (`CommunicationController.java:109`, `:127`).
+- SMS/WhatsApp branch of the shared use case marks deliveries `FAILED` ("not implemented") (`SendCommunicationToMembersUseCase.java:62-69`); the controller only ever passes EMAIL (`CommunicationController.java:109`, `:127`).
 
 ## Gotchas
 - Not-found is a 400, not 404, for retry (`RetryDeliveryUseCase.java:40-41` throws a domain exception; `GlobalExceptionHandler.java:70`).
@@ -64,7 +64,7 @@ Format: [../architecture.md](../architecture.md).
 - `GET /{id}/deliveries` unknown id returns 200 with `[]` (`usecase/GetDeliveriesByCommunicationUseCase.java:36-40`).
 - A failed retry returns 200 with `status: FAILED`; check the body.
 - send-to-member with an unknown `memberId` is a 400 `MEMBER_004`, not 404 (`CommunicationController.java:121-122`).
-- Delivery rows are not persisted by `CommunicationDbRepository.save` (it ignores `deliveries`, `infrastructure/persistence/repository/CommunicationDbRepository.java:78-92`), so a send response carries no deliveries and `GET /{id}/deliveries` should return `[]`; see [communications.md](communications.md#known-issues).
+- `CommunicationDbRepository.save` writes the deliveries of the communication it is given; `findAll`/`findById` never load them, and saving a communication that has no deliveries (for example one read back with `findById`) leaves the stored delivery rows alone (no orphan removal). Covered by `CommunicationDeliveryPersistenceTest`.
 - `create` leaves `sentDate` null and sends nothing; the three send endpoints each build a new communication from the request body, so no endpoint sends an existing communication by id.
 - A client-supplied `sentDate` in the body is ignored, not rejected: the request DTO has no such field.
 - send-to-overdue has no `active` filter (`infrastructure/persistence/repository/MemberJpaRepository.java:16`), unlike send-to-all; an empty match still saves a communication marked sent with zero deliveries.

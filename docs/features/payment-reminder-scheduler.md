@@ -18,7 +18,7 @@ Two monthly cron jobs (no HTTP surface) that raise members' missed-payment count
 ## Collaborators
 - `UpdateMissingPaymentCountersUseCase` -> `MemberRepository.findByActive`/`save`, `HasPaymentForMonthUseCase` (`UpdateMissingPaymentCountersUseCase.java:21`; a second constructor takes a `Clock`, used by tests)
 - `SendPaymentRemindersUseCase` -> `MemberRepository.findByConsecutiveMonthsMissedGreaterThanEqual` (`SendPaymentRemindersUseCase.java:30`), `SendCommunicationToMembersUseCase.invoke` (`:40`)
-- `SendCommunicationToMembersUseCase` -> saves the `Communication` with `PENDING` deliveries, then sends async via `EmailService` (`SendCommunicationToMembersUseCase.java:40-68`, `:71`)
+- `SendCommunicationToMembersUseCase` -> saves the `Communication` with `PENDING` deliveries, then sends async via `EmailService` and saves each delivery's result through `MessageDeliveryRepository` (`SendCommunicationToMembersUseCase.java:44-73`, `:75-103`, `:105-124`)
 - Both reminder use cases are wired as beans in `infrastructure/config/UseCaseConfig.java:203`, `:208`
 - `MembershipPolicy`/`DefaultMembershipPolicy`: not used here (see Gotchas)
 - Mail config, retries, delivery tracking: [email.md](../email.md)
@@ -26,17 +26,17 @@ Two monthly cron jobs (no HTTP surface) that raise members' missed-payment count
 ## Errors
 - Each job wraps its call in `try/catch (Exception)` and logs `error` (`PaymentReminderScheduler.java:39-41`, `:59-61`); nothing is rethrown or retried.
 - If the application is down at 06:00 or 09:00 on the 1st, that run is skipped: there is no catch-up. Missing the counter run means members are not counted for that month; the next month's run counts only the next month.
-- Per-recipient email failures are handled inside `SendCommunicationToMembersUseCase`, not by the scheduler: delivery marked `FAILED`, loop continues (`SendCommunicationToMembersUseCase.java:89-95`). See [email.md](../email.md).
+- Per-recipient email failures are handled inside `SendCommunicationToMembersUseCase`, not by the scheduler: delivery marked `FAILED`, loop continues (`SendCommunicationToMembersUseCase.java:93-99`). See [email.md](../email.md).
 
 ## Side effects
 - Counter job: updates `consecutiveMonthsMissed` and `lastMissedCountMonth` on member rows.
-- Reminder job: inserts a `Communication` and is meant to insert one `MessageDelivery` per overdue member, but deliveries are currently not persisted (see [communications.md](communications.md#known-issues)); sends emails on a background thread, so the job's "Successfully sent" log (`:54`) fires before delivery finishes.
+- Reminder job: inserts a `Communication` and one `MessageDelivery` per overdue member (PENDING, then SENT or FAILED as each email result comes in); sends emails on a background thread, so the job's "Successfully sent ... to N members" log (`:54-55`, N is the number of deliveries) fires before delivery finishes.
 - Counter reset happens elsewhere: `Member.recordPayment` sets it to 0 when the payment covers the current period (`domain/model/Member.java:52-54`). `lastMissedCountMonth` is not reset, so a member who pays and misses a later month is counted again for that later month only.
 
 ## Gotchas
 - A single application instance is assumed: with two instances both would run the jobs, and reminders would be sent twice (the counter job is safe to run twice, the reminder job is not).
 - Inactive members are skipped by both jobs, and members who joined after the counted month are not counted for it.
-- The reminder text is stored once with the `{{member_name}}` placeholder (`SendPaymentRemindersUseCase.java:37`); each recipient's name is filled in at send time by `MessageTemplates.personalize` (`SendCommunicationToMembersUseCase.java:77-78`). See [email.md](../email.md#personalisation).
+- The reminder text is stored once with the `{{member_name}}` placeholder (`SendPaymentRemindersUseCase.java:37`); each recipient's name is filled in at send time by `MessageTemplates.personalize` (`SendCommunicationToMembersUseCase.java:81-82`). See [email.md](../email.md#personalisation).
 - Members at or over the threshold are reminded every month until they pay (no "already reminded" state).
 - The reminder window in `DefaultMembershipPolicy.shouldSendReminder` (last 7 days of the month, `DefaultMembershipPolicy.java:30-43`) is not consulted by the scheduler; only `ProcessMemberPaymentUseCase` calls it (`usecase/ProcessMemberPaymentUseCase.java:104`).
 - The reminder threshold is unrelated to `MAX_CONSECUTIVE_MISSED_MONTHS = 3` (`DefaultMembershipPolicy.java:17`), the automatic-deactivation rule.

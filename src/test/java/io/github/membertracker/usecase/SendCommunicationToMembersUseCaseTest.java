@@ -6,9 +6,11 @@ import io.github.membertracker.domain.model.MessageDelivery;
 import io.github.membertracker.domain.model.MessageDelivery.DeliveryChannel;
 import io.github.membertracker.domain.model.MessageDelivery.DeliveryStatus;
 import io.github.membertracker.domain.repository.CommunicationRepository;
+import io.github.membertracker.domain.repository.MessageDeliveryRepository;
 import io.github.membertracker.infrastructure.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -32,6 +34,7 @@ import static org.mockito.Mockito.when;
 class SendCommunicationToMembersUseCaseTest {
 
     private CommunicationRepository communicationRepository;
+    private MessageDeliveryRepository messageDeliveryRepository;
     private EmailService emailService;
     private SendCommunicationToMembersUseCase useCase;
     private final List<List<DeliveryStatus>> statusesAtEachSave = new ArrayList<>();
@@ -41,8 +44,9 @@ class SendCommunicationToMembersUseCaseTest {
     @BeforeEach
     void setUp() {
         communicationRepository = mock(CommunicationRepository.class);
+        messageDeliveryRepository = mock(MessageDeliveryRepository.class);
         emailService = mock(EmailService.class);
-        useCase = new SendCommunicationToMembersUseCase(communicationRepository, emailService);
+        useCase = new SendCommunicationToMembersUseCase(communicationRepository, messageDeliveryRepository, emailService);
         when(communicationRepository.save(any(Communication.class))).thenAnswer(i -> {
             Communication c = i.getArgument(0);
             synchronized (statusesAtEachSave) {
@@ -113,33 +117,52 @@ class SendCommunicationToMembersUseCaseTest {
     }
 
     @Test
-    void successfulEmailsEventuallyMarkDeliveriesSent() {
+    void successfulEmailsSaveEachDeliveryAsSentAndTheCommunicationIsSavedOnlyOnce() {
         when(emailService.sendSimpleEmail(any(), any(), any())).thenReturn(true);
         Communication c = communication();
 
         useCase.invoke(c, List.of(alice, bob), DeliveryChannel.EMAIL);
 
-        verify(communicationRepository, timeout(5000).times(3)).save(c);
-        assertThat(c.getDeliveries()).extracting(MessageDelivery::getStatus)
-                .containsExactly(DeliveryStatus.SENT, DeliveryStatus.SENT);
+        ArgumentCaptor<MessageDelivery> saved = ArgumentCaptor.forClass(MessageDelivery.class);
+        verify(messageDeliveryRepository, timeout(5000).times(2)).save(saved.capture());
+        assertThat(saved.getAllValues()).extracting(d -> d.getRecipient().getId()).containsExactlyInAnyOrder(1L, 2L);
+        assertThat(saved.getAllValues()).allSatisfy(d -> {
+            assertThat(d.getStatus()).isEqualTo(DeliveryStatus.SENT);
+            assertThat(d.getDeliveryTime()).isNotNull();
+        });
+        verify(communicationRepository, times(1)).save(c);
     }
 
     @Test
-    void failedEmailEventuallyMarksDeliveryFailedWithNote() {
+    void failedEmailSavesTheDeliveryAsFailedWithNote() {
         when(emailService.sendSimpleEmail(eq(alice), any(), any())).thenReturn(false);
         Communication c = communication();
 
         useCase.invoke(c, List.of(alice), DeliveryChannel.EMAIL);
 
-        verify(communicationRepository, timeout(5000).times(2)).save(c);
-        MessageDelivery d = c.getDeliveries().get(0);
-        assertThat(d.getStatus()).isEqualTo(DeliveryStatus.FAILED);
-        assertThat(d.getResponseNotes()).isEqualTo("Failed to send email");
-        assertThat(d.getDeliveryTime()).isNotNull();
+        ArgumentCaptor<MessageDelivery> saved = ArgumentCaptor.forClass(MessageDelivery.class);
+        verify(messageDeliveryRepository, timeout(5000)).save(saved.capture());
+        assertThat(saved.getValue()).isSameAs(c.getDeliveries().get(0));
+        assertThat(saved.getValue().getStatus()).isEqualTo(DeliveryStatus.FAILED);
+        assertThat(saved.getValue().getResponseNotes()).isEqualTo("Failed to send email");
+        assertThat(saved.getValue().getDeliveryTime()).isNotNull();
+        verify(communicationRepository, times(1)).save(c);
     }
 
     @Test
-    void smsIsMarkedFailedImmediatelyAndNoEmailIsSent() {
+    void aFailingDeliverySaveDoesNotStopTheLoop() {
+        when(emailService.sendSimpleEmail(any(), any(), any())).thenReturn(true);
+        when(messageDeliveryRepository.save(any(MessageDelivery.class)))
+                .thenThrow(new RuntimeException("db down"));
+
+        useCase.invoke(communication(), List.of(alice, bob), DeliveryChannel.EMAIL);
+
+        verify(messageDeliveryRepository, timeout(5000).times(2)).save(any(MessageDelivery.class));
+        verify(emailService, timeout(5000)).sendSimpleEmail(eq(bob), any(), any());
+    }
+
+    @Test
+    void smsIsSavedAsFailedImmediatelyAndNoEmailIsSent() {
         Communication c = communication();
 
         useCase.invoke(c, List.of(alice, bob), DeliveryChannel.SMS);
@@ -149,12 +172,13 @@ class SendCommunicationToMembersUseCaseTest {
             assertThat(d.getStatus()).isEqualTo(DeliveryStatus.FAILED);
             assertThat(d.getResponseNotes()).isEqualTo("SMS not implemented");
         });
-        verify(communicationRepository, times(2)).save(c);
+        verify(messageDeliveryRepository).saveAll(c.getDeliveries());
+        verify(communicationRepository, times(1)).save(c);
         verifyNoInteractions(emailService);
     }
 
     @Test
-    void whatsappIsMarkedFailedImmediatelyAndNoEmailIsSent() {
+    void whatsappIsSavedAsFailedImmediatelyAndNoEmailIsSent() {
         Communication c = communication();
 
         useCase.invoke(c, List.of(alice), DeliveryChannel.WHATSAPP);
@@ -163,6 +187,7 @@ class SendCommunicationToMembersUseCaseTest {
             assertThat(d.getStatus()).isEqualTo(DeliveryStatus.FAILED);
             assertThat(d.getResponseNotes()).isEqualTo("WhatsApp not implemented");
         });
+        verify(messageDeliveryRepository).saveAll(c.getDeliveries());
         verifyNoInteractions(emailService);
     }
 
@@ -173,7 +198,7 @@ class SendCommunicationToMembersUseCaseTest {
         useCase.invoke(c, List.of(), DeliveryChannel.SMS);
 
         assertThat(c.getDeliveries()).isEmpty();
-        verify(communicationRepository, times(2)).save(c);
+        verify(communicationRepository, times(1)).save(c);
         verifyNoInteractions(emailService);
     }
 }

@@ -55,7 +55,7 @@ No `isLoading` / `error` state in the view.
 - Load and delivery-load failures: `console.error` only in the view (`:244-246`, `:306-309`); 401/403 also raise a global notification from the api interceptor (`services/api.js:177-224`).
 
 ## Side effects
-- Sends real emails (send-to-all, send-to-overdue, send-to-member), all on a background thread; the response returns `PENDING` deliveries.
+- Sends real emails (send-to-all, send-to-overdue, send-to-member), all on a background thread; the response carries no deliveries (read them with the deliveries endpoint).
 - Retry re-sends one email synchronously; the request blocks for the SMTP attempts.
 - No localStorage or cache writes.
 

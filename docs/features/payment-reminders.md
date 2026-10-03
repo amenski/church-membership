@@ -47,7 +47,7 @@ Example with the default threshold 3, for a member who paid through September an
 ### What the admin sees
 1. Members screen: payment badge "N months overdue", and the "Overdue" filter shows members with a counter above 0 (`frontend/src/utils/memberFilters.js:20-22`, `MembersView.vue:319`).
 2. Dashboard: the Overdue Members card and list, with a Send Reminder button for STAFF+ ([dashboard.md](dashboard.md)).
-3. Communications: the "Payment Reminder" message appears in the list with the date the job ran, and its deliveries in the dialog (see Known issues for the delivery list).
+3. Communications: the "Payment Reminder" message appears in the list with the date the job ran, and its deliveries (one per overdue member, with SENT or FAILED status) in the dialog.
 4. The jobs write to the application log only ("Starting payment reminder process", errors) (`PaymentReminderScheduler.java:36-41`, `:51-61`).
 
 ### Manual alternatives
@@ -67,7 +67,6 @@ Example with the default threshold 3, for a member who paid through September an
 
 ## Known issues
 - **Reminder window and auto-deactivation never run:** `DefaultMembershipPolicy.shouldSendReminder` (last 7 days of the month) and `shouldDeactivate` (3 or more missed months) are called only by `ProcessMemberPaymentUseCase` (`src/main/java/io/github/membertracker/usecase/ProcessMemberPaymentUseCase.java:70`, `:104`), which is only declared as a bean and never invoked by any controller or job (`src/main/java/io/github/membertracker/infrastructure/config/UseCaseConfig.java:150-153`). So there is no pre-due-date reminder and members are never deactivated automatically, however many months they miss. Logged in [../todo.md](../todo.md).
-- **Reminder deliveries are not stored (code reading, not run):** the saved reminder has no delivery rows, so Communications should show no recipients for it and the job's log line reports 0 members (`src/main/java/io/github/membertracker/infrastructure/persistence/repository/CommunicationDbRepository.java:78-92`, `PaymentReminderScheduler.java:54-55`). Emails are still sent. Details: [communications.md](communications.md#known-issues).
 - Members are reminded every month at or above the threshold, with no cap and no "reminded already" record.
 - Overdue members are not told how many months they owe: the text is fixed.
 - A missed run is lost (see Rules); there is no catch-up and no admin screen showing when the jobs last ran.

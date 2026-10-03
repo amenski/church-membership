@@ -1,6 +1,6 @@
 # Email and Communications
 
-*Last checked against the code: 3 October 2026.*
+*Last checked against the code: 4 October 2026.*
 
 How MemberTracker sends email to members, and how to configure and test it.
 
@@ -25,7 +25,7 @@ Each recipient gets a `MessageDelivery` row:
 - **Status:** `PENDING`, `SENT`, `FAILED` or `DELIVERED`
 - **Also stored:** timestamp and failure notes
 
-To see deliveries, call `GET /api/communications/{id}/deliveries`, or open the delivery dialog on the Communications page.
+The rows are written when the communication is saved (status `PENDING`) and each one is updated as soon as its email result is known. The send response itself does not list them: to see deliveries, call `GET /api/communications/{id}/deliveries`, or open the delivery dialog on the Communications page.
 
 STAFF can retry a `FAILED` email delivery from the delivery dialog (`POST /api/communications/{id}/deliveries/{deliveryId}/retry`). It re-sends once, synchronously.
 
@@ -121,5 +121,4 @@ Tracked in [functionality-audit.md](functionality-audit.md) (C3, C4) and [todo.m
 - No unsubscribe link or consent record
 - Only two audiences: everyone, or overdue members
 - No durable queue
-- Delivery rows are not saved when a communication is sent, so the delivery dialog should be empty (see [features/communications.md](features/communications.md#known-issues))
 - SMS and WhatsApp are not implemented

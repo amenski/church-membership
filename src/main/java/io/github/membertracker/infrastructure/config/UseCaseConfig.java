@@ -187,15 +187,18 @@ public class UseCaseConfig {
     public SendCommunicationToAllMembersUseCase sendCommunicationToAllMembersUseCase(
             CommunicationRepository communicationRepository, 
             MemberRepository memberRepository,
+            MessageDeliveryRepository messageDeliveryRepository,
             EmailService emailService) {
-        return new SendCommunicationToAllMembersUseCase(communicationRepository, memberRepository, emailService);
+        return new SendCommunicationToAllMembersUseCase(communicationRepository, memberRepository,
+                messageDeliveryRepository, emailService);
     }
 
     @Bean
     public SendCommunicationToMembersUseCase sendCommunicationToMembersUseCase(
             CommunicationRepository communicationRepository,
+            MessageDeliveryRepository messageDeliveryRepository,
             EmailService emailService) {
-        return new SendCommunicationToMembersUseCase(communicationRepository, emailService);
+        return new SendCommunicationToMembersUseCase(communicationRepository, messageDeliveryRepository, emailService);
     }
 
     // Scheduler-related use cases

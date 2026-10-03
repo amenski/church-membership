@@ -6,6 +6,7 @@ import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.model.MessageDelivery;
 import io.github.membertracker.domain.repository.CommunicationRepository;
 import io.github.membertracker.domain.repository.MemberRepository;
+import io.github.membertracker.domain.repository.MessageDeliveryRepository;
 import io.github.membertracker.infrastructure.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -109,7 +110,8 @@ class SendPaymentRemindersUseCaseTest {
         alice.setId(1L);
         when(memberRepository.findByConsecutiveMonthsMissedGreaterThanEqual(3)).thenReturn(List.of(alice));
         SendPaymentRemindersUseCase endToEnd = new SendPaymentRemindersUseCase(memberRepository,
-                new SendCommunicationToMembersUseCase(communicationRepository, emailService));
+                new SendCommunicationToMembersUseCase(communicationRepository,
+                        mock(MessageDeliveryRepository.class), emailService));
 
         endToEnd.invoke(3);
 

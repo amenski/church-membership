@@ -7,9 +7,11 @@ import io.github.membertracker.domain.model.MessageDelivery.DeliveryChannel;
 import io.github.membertracker.domain.model.MessageDelivery.DeliveryStatus;
 import io.github.membertracker.domain.repository.CommunicationRepository;
 import io.github.membertracker.domain.repository.MemberRepository;
+import io.github.membertracker.domain.repository.MessageDeliveryRepository;
 import io.github.membertracker.infrastructure.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -18,7 +20,9 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -31,6 +35,7 @@ class SendCommunicationToAllMembersUseCaseTest {
 
     private CommunicationRepository communicationRepository;
     private MemberRepository memberRepository;
+    private MessageDeliveryRepository messageDeliveryRepository;
     private EmailService emailService;
     private SendCommunicationToAllMembersUseCase useCase;
     private final List<List<DeliveryStatus>> statusesAtEachSave = new ArrayList<>();
@@ -41,8 +46,10 @@ class SendCommunicationToAllMembersUseCaseTest {
     void setUp() {
         communicationRepository = mock(CommunicationRepository.class);
         memberRepository = mock(MemberRepository.class);
+        messageDeliveryRepository = mock(MessageDeliveryRepository.class);
         emailService = mock(EmailService.class);
-        useCase = new SendCommunicationToAllMembersUseCase(communicationRepository, memberRepository, emailService);
+        useCase = new SendCommunicationToAllMembersUseCase(communicationRepository, memberRepository,
+                messageDeliveryRepository, emailService);
         when(communicationRepository.save(any(Communication.class))).thenAnswer(i -> {
             Communication c = i.getArgument(0);
             synchronized (statusesAtEachSave) {
@@ -119,17 +126,47 @@ class SendCommunicationToAllMembersUseCaseTest {
     }
 
     @Test
-    void failedEmailEventuallyMarksDeliveryFailed() {
+    void failedEmailEventuallySavesTheDeliveryAsFailedWithNote() {
         when(memberRepository.findByActive(true)).thenReturn(List.of(alice));
         when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenReturn(false);
         Communication c = communication();
 
         useCase.invoke(c);
 
-        verify(communicationRepository, timeout(5000).times(2)).save(c);
-        MessageDelivery d = c.getDeliveries().get(0);
-        assertThat(d.getStatus()).isEqualTo(DeliveryStatus.FAILED);
-        assertThat(d.getResponseNotes()).isEqualTo("Failed after max retry attempts");
+        ArgumentCaptor<MessageDelivery> saved = ArgumentCaptor.forClass(MessageDelivery.class);
+        verify(messageDeliveryRepository, timeout(5000)).save(saved.capture());
+        assertThat(saved.getValue()).isSameAs(c.getDeliveries().get(0));
+        assertThat(saved.getValue().getStatus()).isEqualTo(DeliveryStatus.FAILED);
+        assertThat(saved.getValue().getResponseNotes()).isEqualTo("Failed after max retry attempts");
+        assertThat(saved.getValue().getDeliveryTime()).isNotNull();
+    }
+
+    @Test
+    void successfulEmailsSaveEachDeliveryAsSentAndTheCommunicationIsSavedOnlyOnce() {
+        when(memberRepository.findByActive(true)).thenReturn(List.of(alice, bob));
+        when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenReturn(true);
+        Communication c = communication();
+
+        useCase.invoke(c);
+
+        ArgumentCaptor<MessageDelivery> saved = ArgumentCaptor.forClass(MessageDelivery.class);
+        verify(messageDeliveryRepository, timeout(5000).times(2)).save(saved.capture());
+        assertThat(saved.getAllValues()).extracting(d -> d.getRecipient().getId()).containsExactlyInAnyOrder(1L, 2L);
+        assertThat(saved.getAllValues()).allSatisfy(d -> assertThat(d.getStatus()).isEqualTo(DeliveryStatus.SENT));
+        verify(communicationRepository, times(1)).save(c);
+    }
+
+    @Test
+    void aFailingDeliverySaveDoesNotStopTheLoop() {
+        when(memberRepository.findByActive(true)).thenReturn(List.of(alice, bob));
+        when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenReturn(true);
+        when(messageDeliveryRepository.save(any(MessageDelivery.class)))
+                .thenThrow(new RuntimeException("db down"));
+
+        useCase.invoke(communication());
+
+        verify(messageDeliveryRepository, timeout(5000).times(2)).save(any(MessageDelivery.class));
+        verify(emailService, timeout(5000)).sendSimpleEmailWithRetry(org.mockito.ArgumentMatchers.eq(bob), any(), any(), any());
     }
 
     @Test
@@ -143,6 +180,7 @@ class SendCommunicationToAllMembersUseCaseTest {
         assertThat(c.isSentToAllMembers()).isTrue();
         verify(communicationRepository).save(c);
         verifyNoInteractions(emailService);
+        verify(messageDeliveryRepository, never()).save(any(MessageDelivery.class));
     }
 
     @Test

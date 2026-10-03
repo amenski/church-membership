@@ -40,14 +40,14 @@ Role view of the screen:
 ### Send to all active members (STAFF+)
 1. Choose All Members and Send Message. A browser confirm asks "Send to N members?" where N counts active members in the loaded list; Cancel stops (`CommunicationsView.vue:259-263`, `:248-251`).
 2. `POST /api/communications/send-to-all` (`CommunicationsView.vue:267-268`).
-3. The server marks the message as sent and as sent to all members, and looks up the active members only (`src/main/java/io/github/membertracker/usecase/SendCommunicationToAllMembersUseCase.java:42-47`).
-4. It prepares one PENDING delivery per member, saves, and starts the background send (`SendCommunicationToAllMembersUseCase.java:49-65`). See "What happens after Send".
+3. The server marks the message as sent and as sent to all members, and looks up the active members only (`src/main/java/io/github/membertracker/usecase/SendCommunicationToAllMembersUseCase.java:46-50`).
+4. It prepares one PENDING delivery per member, saves the message together with its deliveries, and starts the background send (`SendCommunicationToAllMembersUseCase.java:53-67`). See "What happens after Send".
 
 ### Send to members overdue by N months (STAFF+)
 1. Choose Overdue Members and enter N (`CommunicationsView.vue:28-31`). A browser confirm asks "Send to M members?" where M counts members with `consecutiveMonthsMissed >= N` in the loaded list (`CommunicationsView.vue:252-253`, `:259-263`).
 2. `POST /api/communications/send-to-overdue/{N}`; N must be at least 1, otherwise 400 (`CommunicationController.java:100-101`).
 3. The server selects members with `consecutiveMonthsMissed >= N`, active or not (`src/main/java/io/github/membertracker/usecase/GetMembersWithMissedPaymentsUseCase.java:22-24`), and sends by email (`CommunicationController.java:104-111`).
-4. If nobody matches, the message is still saved and marked as sent, with no recipients (`src/main/java/io/github/membertracker/usecase/SendCommunicationToMembersUseCase.java:41-53`).
+4. If nobody matches, the message is still saved and marked as sent, with no recipients (`src/main/java/io/github/membertracker/usecase/SendCommunicationToMembersUseCase.java:44-57`).
 
 ### Send to one member (STAFF+)
 1. Choose Specific Member and pick the member; no confirmation is asked (`CommunicationsView.vue:19-26`, `:259`).
@@ -69,25 +69,24 @@ Role view of the screen:
 5. Not retryable (not FAILED, not EMAIL, wrong message, unknown id): 400, error toast with the server's message (`CommunicationsView.vue:340-346`).
 
 ### What happens after Send
-1. The request thread saves the message and its deliveries, then returns at once (`SendCommunicationToAllMembersUseCase.java:60-65`, `SendCommunicationToMembersUseCase.java:53-57`).
-2. One background thread per send walks the recipients in order (`SendCommunicationToAllMembersUseCase.java:68-70`, `SendCommunicationToMembersUseCase.java:71-73`).
+1. The request thread saves the message and writes one `message_delivery` row (status PENDING) per recipient together with it (`src/main/java/io/github/membertracker/infrastructure/persistence/repository/CommunicationDbRepository.java:61-68`, `:103-124`), then returns at once (`SendCommunicationToAllMembersUseCase.java:64-69`, `SendCommunicationToMembersUseCase.java:57-72`). The response carries no `deliveries` list (`@JsonIgnore` on `Communication.getDeliveries()`, `Communication.java:105-106`); read them with `GET /api/communications/{id}/deliveries`.
+2. One background thread per send walks the recipients in order (`SendCommunicationToAllMembersUseCase.java:66-67`, `SendCommunicationToMembersUseCase.java:60-61`).
 3. For each recipient, title and message are personalised: `{{member_name}}` becomes the member's name, or "member" when the name is blank; other text is left as written (`src/main/java/io/github/membertracker/utils/MessageTemplates.java:21-28`). The stored message keeps the placeholder.
 4. The email goes out with up to 3 attempts and exponential backoff by default (`src/main/java/io/github/membertracker/infrastructure/service/EmailService.java:64-66`, `:71-120`). With mail disabled, the attempt fails at once (`EmailService.java:73-76`). Settings: [../email.md](../email.md#configuration).
-5. The delivery becomes SENT with a time, or FAILED with a note ("Failed after max retry attempts" for send-to-all, "Failed to send email" for the other two flows) (`SendCommunicationToAllMembersUseCase.java:86-97`, `SendCommunicationToMembersUseCase.java:81-85`).
-6. The thread waits 100 ms before the next recipient (`SendCommunicationToAllMembersUseCase.java:100`, `SendCommunicationToMembersUseCase.java:88`).
-7. SMS and WhatsApp are stubs: a send on those channels marks every delivery FAILED ("SMS not implemented" / "WhatsApp not implemented") (`SendCommunicationToMembersUseCase.java:58-66`). No screen or endpoint chooses them; the controller passes EMAIL only (`CommunicationController.java:109`, `:127`).
+5. The delivery becomes SENT with a time, or FAILED with a note ("Failed after max retry attempts" for send-to-all, "Failed to send email" for the other two flows) (`SendCommunicationToAllMembersUseCase.java:90-101`, `SendCommunicationToMembersUseCase.java:85-89`). Each result is saved as that one delivery row (`MessageDeliveryRepository.save`, `SendCommunicationToAllMembersUseCase.java:117-136`, `SendCommunicationToMembersUseCase.java:105-124`); if one row cannot be saved the error is logged and the loop goes on.
+6. The thread waits 100 ms before the next recipient (`SendCommunicationToAllMembersUseCase.java:104`, `SendCommunicationToMembersUseCase.java:92`).
+7. SMS and WhatsApp are stubs: a send on those channels marks every delivery FAILED ("SMS not implemented" / "WhatsApp not implemented") and saves them together (`SendCommunicationToMembersUseCase.java:62-69`, `:126-136`). No screen or endpoint chooses them; the controller passes EMAIL only (`CommunicationController.java:109`, `:127`).
 8. Status path: PENDING, then SENT or FAILED. DELIVERED exists in the model but nothing sets it (`src/main/java/io/github/membertracker/domain/model/MessageDelivery.java:15-17`).
 
 ## Rules
 - Request body: `title` required (max 200), `messageContent` required (max 5000), optional `type` (default ANNOUNCEMENT); the client cannot set the sent date or recipient flags (`CommunicationController.java:132-139`). Details: [communication-controller.md](communication-controller.md).
-- Send to all reaches active members only; send to overdue and send to one member do not check `active` (`SendCommunicationToAllMembersUseCase.java:46`, `GetMembersWithMissedPaymentsUseCase.java:23`).
-- A message can be sent only once: every send builds a new message, and marking a message sent twice is refused (`src/main/java/io/github/membertracker/domain/model/Communication.java:116-122`).
+- Send to all reaches active members only; send to overdue and send to one member do not check `active` (`SendCommunicationToAllMembersUseCase.java:50`, `GetMembersWithMissedPaymentsUseCase.java:23`).
+- A message can be sent only once: every send builds a new message, and marking a message sent twice is refused (`src/main/java/io/github/membertracker/domain/model/Communication.java:119-125`).
 - Send and retry are STAFF+ on the server too; a VOLUNTEER calling them gets 403 (`CommunicationController.java:84`, `:91`, `:98`, `:115`, `:150`).
 - A send in progress is lost if the application restarts; recipients not yet reached stay PENDING ([../email.md](../email.md#what-gets-sent)).
 - The same mechanism sends the automatic payment reminders: [payment-reminders.md](payment-reminders.md).
 
 ## Known issues
-- **Deliveries are not stored (code reading, not run):** saving a communication ignores its deliveries (`src/main/java/io/github/membertracker/infrastructure/persistence/repository/CommunicationDbRepository.java:78-92`), and no other code inserts delivery rows (`MessageDeliveryDbRepository.save` is called only by retry, `RetryDeliveryUseCase.java:74`). So emails are sent, but the delivery dialog should show no rows, the cards show 0, Retry has nothing to act on, and the response of a send carries no deliveries (`CommunicationDbRepository.java:62-76`). Logged in [../todo.md](../todo.md).
 - Recipients column shows "-" for send-to-overdue, send-to-one and reminder messages: the screen looks for a `memberId` that `Communication` does not have (`CommunicationsView.vue:376`, `Communication.java:22-39`).
 - Send-to-overdue has no active filter: inactive members with missed months are emailed ([communication-controller.md](communication-controller.md#gotchas)).
 - An empty overdue match is saved as a sent message with zero recipients ([communication-controller.md](communication-controller.md#gotchas)).

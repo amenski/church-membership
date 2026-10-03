@@ -71,7 +71,6 @@ Role view of the screen:
 - The overdue list and count include inactive members, and a reminder can be sent to them.
 - Dashboard dates parse the server's date text as UTC, so in time zones west of UTC a date can show one day early (`Dashboard.vue:182-184`).
 - The reminder text is fixed and the message is recorded as an announcement, not as type REMINDER (`communicationPayload.js:10-15`, `CommunicationController.java:137`).
-- Delivery results for a reminder cannot be checked in Communications at the moment (see [communications.md](communications.md#known-issues)).
 - Load failures are only logged to the console (`Dashboard.vue:179`).
 - The money cards and lists use a hard-coded `$` and unformatted amounts (`Dashboard.vue:33`, `:58`, `DashboardController.java:167`).
 - `/stats` returns `monthlyRevenue` as `0` on failure and as a decimal on success (`DashboardController.java:87`, `:97`).

@@ -19,10 +19,14 @@ public class CommunicationDbRepository implements CommunicationRepository {
 
     private final CommunicationJpaRepository communicationJpaRepository;
     private final MemberDbRepository memberDbRepository;
+    private final MemberJpaRepository memberJpaRepository;
 
-    public CommunicationDbRepository(CommunicationJpaRepository communicationJpaRepository, MemberDbRepository memberDbRepository) {
+    public CommunicationDbRepository(CommunicationJpaRepository communicationJpaRepository,
+                                     MemberDbRepository memberDbRepository,
+                                     MemberJpaRepository memberJpaRepository) {
         this.communicationJpaRepository = communicationJpaRepository;
         this.memberDbRepository = memberDbRepository;
+        this.memberJpaRepository = memberJpaRepository;
     }
 
     @Override
@@ -56,7 +60,29 @@ public class CommunicationDbRepository implements CommunicationRepository {
     @Override
     public Communication save(Communication communication) {
         CommunicationEntity entity = mapToEntity(communication);
-        return mapToCommunication(communicationJpaRepository.save(entity));
+        CommunicationEntity saved = communicationJpaRepository.save(entity);
+
+        Communication result = mapToCommunication(saved);
+        attachDeliveries(result, communication.getDeliveries(), saved.getDeliveries());
+        return result;
+    }
+
+    /**
+     * The returned communication carries the caller's own deliveries (their recipients are already full
+     * members, so nothing is loaded lazily), with the ids the database generated and a pointer back to it.
+     */
+    private void attachDeliveries(Communication result, List<MessageDelivery> deliveries,
+                                  List<MessageDeliveryEntity> savedDeliveries) {
+        if (deliveries == null) {
+            return;
+        }
+        for (int i = 0; i < deliveries.size() && i < savedDeliveries.size(); i++) {
+            deliveries.get(i).setId(savedDeliveries.get(i).getId());
+        }
+        for (MessageDelivery delivery : deliveries) {
+            delivery.setCommunication(result);
+        }
+        result.setDeliveries(deliveries);
     }
 
     private Communication mapToCommunication(CommunicationEntity entity) {
@@ -69,8 +95,7 @@ public class CommunicationDbRepository implements CommunicationRepository {
         communication.setType(mapToDomainType(entity.getType()));
         communication.setSentToAllMembers(entity.isSentToAllMembers());
 
-        // Map deliveries if needed
-        // This is a simplified version, in a real application you would need to map the deliveries as well
+        // Deliveries are not loaded here: they are served by MessageDeliveryRepository (GET /{id}/deliveries)
 
         return communication;
     }
@@ -85,9 +110,32 @@ public class CommunicationDbRepository implements CommunicationRepository {
         entity.setType(mapToEntityType(communication.getType()));
         entity.setSentToAllMembers(communication.isSentToAllMembers());
 
-        // Map deliveries if needed
-        // This is a simplified version, in a real application you would need to map the deliveries as well
+        // Deliveries ride on the cascade. findAll/findById never load them (see GET /{id}/deliveries), so a
+        // communication saved without deliveries leaves the stored delivery rows alone: there is no orphanRemoval.
+        if (communication.getDeliveries() != null) {
+            List<MessageDeliveryEntity> deliveries = new ArrayList<>();
+            for (MessageDelivery delivery : communication.getDeliveries()) {
+                deliveries.add(mapToDeliveryEntity(delivery, entity));
+            }
+            entity.setDeliveries(deliveries);
+        }
 
+        return entity;
+    }
+
+    private MessageDeliveryEntity mapToDeliveryEntity(MessageDelivery delivery, CommunicationEntity communication) {
+        MessageDeliveryEntity entity = new MessageDeliveryEntity();
+        entity.setId(delivery.getId());
+        entity.setCommunication(communication);
+        if (delivery.getRecipient() != null && delivery.getRecipient().getId() != null) {
+            entity.setRecipient(memberJpaRepository.getReferenceById(delivery.getRecipient().getId()));
+        }
+        entity.setStatus(delivery.getStatus() == null ? null
+                : MessageDeliveryEntity.DeliveryStatus.valueOf(delivery.getStatus().name()));
+        entity.setChannel(delivery.getChannel() == null ? null
+                : MessageDeliveryEntity.DeliveryChannel.valueOf(delivery.getChannel().name()));
+        entity.setDeliveryTime(delivery.getDeliveryTime());
+        entity.setResponseNotes(delivery.getResponseNotes());
         return entity;
     }
 

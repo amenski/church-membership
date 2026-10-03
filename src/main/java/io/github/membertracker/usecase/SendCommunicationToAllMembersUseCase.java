@@ -5,6 +5,7 @@ import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.model.MessageDelivery;
 import io.github.membertracker.domain.repository.CommunicationRepository;
 import io.github.membertracker.domain.repository.MemberRepository;
+import io.github.membertracker.domain.repository.MessageDeliveryRepository;
 import io.github.membertracker.infrastructure.service.EmailService;
 import io.github.membertracker.utils.MessageTemplates;
 import org.slf4j.Logger;
@@ -21,14 +22,17 @@ public class SendCommunicationToAllMembersUseCase {
     
     private final CommunicationRepository communicationRepository;
     private final MemberRepository memberRepository;
+    private final MessageDeliveryRepository messageDeliveryRepository;
     private final EmailService emailService;
     private final ExecutorService executorService;
 
     public SendCommunicationToAllMembersUseCase(CommunicationRepository communicationRepository,
                                                MemberRepository memberRepository,
+                                               MessageDeliveryRepository messageDeliveryRepository,
                                                EmailService emailService) {
         this.communicationRepository = communicationRepository;
         this.memberRepository = memberRepository;
+        this.messageDeliveryRepository = messageDeliveryRepository;
         this.emailService = emailService;
         this.executorService = Executors.newCachedThreadPool(); // Java 17 compatible
     }
@@ -121,9 +125,13 @@ public class SendCommunicationToAllMembersUseCase {
                 if (notes != null) {
                     delivery.setResponseNotes(notes);
                 }
+                // One row per recipient; a failed save must not stop the loop
+                try {
+                    messageDeliveryRepository.save(delivery);
+                } catch (Exception e) {
+                    logger.error("Could not save delivery status {} for {}: {}",
+                        status, member.getEmail(), e.getMessage(), e);
+                }
             });
-        
-        // Save updated delivery status
-        communicationRepository.save(communication);
     }
 }
