@@ -35,9 +35,6 @@
           </RuledRow>
         </RuledList>
         <EmptyNote v-else-if="activeCount > 0">No overdue members. Everyone is paid up for this month.</EmptyNote>
-        <p v-if="inactiveBehindCount" class="tw:mt-3 tw:mb-0 tw:text-sm tw:text-muted">
-          {{ inactiveBehindCount }} inactive {{ inactiveBehindCount === 1 ? 'member is' : 'members are' }} not shown.
-        </p>
       </template>
     </section>
 
@@ -45,7 +42,7 @@
     <dl class="tw:mt-6 tw:mb-10 tw:flex tw:border-y tw:border-rule tw:py-4">
       <div class="tw:flex-1 tw:px-6 tw:first:pl-0 tw:not-first:border-l tw:not-first:border-rule tw:max-sm:px-3 tw:max-sm:first:pl-0">
         <dt class="tw:text-base tw:font-medium tw:text-muted">This month's payments</dt>
-        <dd :class="[FIGURE, 'tw:m-0 tw:text-2xl tw:leading-[1.3]']">{{ formatAmount(stats.monthlyRevenue) }}</dd>
+        <dd :class="[FIGURE, 'tw:m-0 tw:text-2xl tw:leading-[1.3]']">{{ formatMoney(stats.monthlyRevenue) }}</dd>
       </div>
       <div class="tw:flex-1 tw:px-6 tw:first:pl-0 tw:not-first:border-l tw:not-first:border-rule tw:max-sm:px-3 tw:max-sm:first:pl-0">
         <dt class="tw:text-base tw:font-medium tw:text-muted">Active members</dt>
@@ -60,7 +57,7 @@
           <RuledRow v-for="payment in recentPayments" :key="payment.id">
             <span class="tw:shrink-0 tw:grow-0 tw:basis-22 tw:text-base tw:text-muted tw:max-sm:basis-full">{{ formatDate(payment.paymentDate) }}</span>
             <span class="tw:min-w-0 tw:flex-auto tw:[overflow-wrap:anywhere]">{{ payment.member?.name || 'Unknown' }}</span>
-            <span class="tw:text-right tw:font-medium">{{ formatAmount(payment.amount) }}</span>
+            <span class="tw:text-right tw:font-medium">{{ formatMoney(payment.amount) }}</span>
           </RuledRow>
         </RuledList>
         <EmptyNote v-else-if="loaded">No payments recorded yet. Record the first one under Payments.</EmptyNote>
@@ -94,12 +91,11 @@ import TextButton from '@/components/TextButton.vue'
 import { useAuthStore } from '../stores/authStore'
 import { useAppStore } from '../stores/appStore'
 import { buildReminderRequest } from '@/utils/communicationPayload'
+import { formatMoney } from '@/utils'
 import { monthsBehind } from '@/utils/dashboardMeter'
 
 // Big figures: Alegreya, tabular and lining so numbers line up
 const FIGURE = 'tw:font-display tw:font-bold tw:tabular-nums tw:lining-nums'
-
-const currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
 
 export default {
   name: 'DashboardView',
@@ -109,6 +105,7 @@ export default {
       authStore: useAuthStore(),
       appStore: useAppStore(),
       monthsBehind,
+      formatMoney,
       FIGURE
     }
   },
@@ -137,9 +134,6 @@ export default {
       return this.overdueMembers
         .filter(member => member.active)
         .sort((a, b) => b.consecutiveMonthsMissed - a.consecutiveMonthsMissed)
-    },
-    inactiveBehindCount() {
-      return this.overdueMembers.filter(member => !member.active).length
     },
     paidCount() {
       return Math.max(0, this.activeCount - this.behindMembers.length)
@@ -177,9 +171,6 @@ export default {
     },
     formatDate(date) {
       return new Date(date).toLocaleDateString()
-    },
-    formatAmount(amount) {
-      return currency.format(Number(amount) || 0)
     },
     async sendReminder(member) {
       this.remindingIds.push(member.id)

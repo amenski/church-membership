@@ -20,12 +20,13 @@ describe('buildCommunicationRequest', () => {
 })
 
 describe('buildReminderRequest', () => {
-  it('personalises the reminder and has no extra keys', () => {
+  it('personalises the reminder and stores it as a REMINDER', () => {
     const request = buildReminderRequest({ name: 'Abel' })
     expect(request.title).toBe('Payment reminder')
     expect(request.messageContent).toContain('Abel')
     expect(request.title.length).toBeGreaterThan(0)
     expect(request.messageContent.length).toBeGreaterThan(0)
-    expect(Object.keys(request)).toEqual(['title', 'messageContent'])
+    expect(request.type).toBe('REMINDER')
+    expect(Object.keys(request)).toEqual(['title', 'messageContent', 'type'])
   })
 })

@@ -6,10 +6,11 @@ export function buildCommunicationRequest(form) {
   }
 }
 
-// Body of the dashboard "Send Reminder" action.
+// Body of the Overview "Send reminder" action: stored as a REMINDER, not an announcement.
 export function buildReminderRequest(member) {
   return {
     title: 'Payment reminder',
-    messageContent: `Dear ${member.name}, this is a reminder that your membership payment is overdue.`
+    messageContent: `Dear ${member.name}, this is a reminder that your membership payment is overdue.`,
+    type: 'REMINDER'
   }
 }
