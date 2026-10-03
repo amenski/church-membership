@@ -8,7 +8,8 @@ export const PAYMENT_METHODS = [
   { value: 'CHECK', label: 'Check' }
 ]
 
-// Body of POST /api/payments (RecordPaymentRequest). period is "YYYY-MM".
+// Body of POST /api/payments (RecordPaymentRequest). period is "YYYY-MM", paymentDate "YYYY-MM-DD"
+// (optional: the server uses today when it is missing).
 export function buildPaymentRequest(form) {
   const request = {
     memberId: Number(form.memberId),
@@ -16,6 +17,7 @@ export function buildPaymentRequest(form) {
     paymentMethod: form.paymentMethod,
     period: form.period
   }
+  if (form.paymentDate) request.paymentDate = form.paymentDate
   if (form.notes) request.notes = form.notes
   return request
 }

@@ -84,6 +84,15 @@ export const formatCurrency = (amount, currency = 'USD') => {
   }).format(amount)
 }
 
+const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
+
+/**
+ * Money as shown on the Overview and Payments: "$1,520.00". Missing or non-numeric is $0.00.
+ * @param {number|string} amount
+ * @returns {string}
+ */
+export const formatMoney = (amount) => money.format(Number(amount) || 0)
+
 /**
  * Validate email format
  * @param {string} email - The email to validate

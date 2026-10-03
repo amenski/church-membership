@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { formatDate, localISODate, debounce, formatCurrency, isValidEmail, deepClone, downloadBlob } from '@/utils/index'
+import { formatDate, localISODate, debounce, formatCurrency, formatMoney, isValidEmail, deepClone, downloadBlob } from '@/utils/index'
 
 describe('formatDate', () => {
   it('uses the default format', () => {
@@ -97,6 +97,18 @@ describe('formatCurrency', () => {
   })
   it('supports another currency', () => {
     expect(formatCurrency(10, 'EUR')).toBe('€10.00')
+  })
+})
+
+describe('formatMoney', () => {
+  it('formats USD with grouping and two decimals', () => {
+    expect(formatMoney(1520)).toBe('$1,520.00')
+    expect(formatMoney('49.027')).toBe('$49.03')
+  })
+  it('treats missing or non-numeric as zero', () => {
+    expect(formatMoney(null)).toBe('$0.00')
+    expect(formatMoney(undefined)).toBe('$0.00')
+    expect(formatMoney('abc')).toBe('$0.00')
   })
 })
 

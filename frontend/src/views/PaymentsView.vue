@@ -1,325 +1,390 @@
 <template>
-  <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h2>Payment Management</h2>
-      <button class="btn btn-success" @click="exportPayments">
-        <i class="bi bi-file-earmark-spreadsheet"></i> Export CSV
-      </button>
+  <div>
+    <PageHead title="Payments" lead="Record what members paid and see the history.">
+      <template v-if="authStore.isStaff" #actions>
+        <BaseButton variant="secondary" @click="exportPayments">
+          <i class="bi bi-download tw:mr-2" aria-hidden="true"></i>Export CSV
+        </BaseButton>
+        <BaseButton @click="openRecord">
+          <i class="bi bi-plus-lg tw:mr-2" aria-hidden="true"></i>Record payment
+        </BaseButton>
+      </template>
+    </PageHead>
+
+    <AlertBanner v-if="loadError">
+      <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3">
+        <span>The payments did not load. Check your connection and try again.</span>
+        <BaseButton variant="secondary" size="sm" @click="loadData">Try again</BaseButton>
+      </div>
+    </AlertBanner>
+
+    <p v-if="!loaded" class="tw:m-0 tw:py-4 tw:text-(length:--text-body) tw:text-muted" role="status">Loading payments...</p>
+
+    <!-- Quiet figures: from the loaded payments, no coloured tiles -->
+    <dl v-if="payments.length" class="tw:mt-0 tw:mb-8 tw:flex tw:border-y tw:border-rule tw:py-4 tw:max-sm:flex-col tw:max-sm:gap-2">
+      <div
+        v-for="figure in figures"
+        :key="figure.label"
+        class="tw:flex-1 tw:px-6 tw:first:pl-0 tw:not-first:border-l tw:not-first:border-rule tw:max-sm:flex tw:max-sm:items-baseline tw:max-sm:justify-between tw:max-sm:px-0 tw:max-sm:not-first:border-l-0"
+      >
+        <dt class="tw:text-base tw:font-medium tw:text-muted">{{ figure.label }}</dt>
+        <dd :class="[FIGURE, 'tw:m-0 tw:text-2xl tw:leading-[1.3] tw:max-sm:text-xl']">{{ figure.value }}</dd>
+      </div>
+    </dl>
+
+    <!-- Filters -->
+    <form v-if="payments.length" class="tw:mb-6 tw:grid tw:grid-cols-2 tw:gap-3 tw:md:flex tw:md:flex-wrap tw:md:items-end" role="search" aria-label="Filter payments" @submit.prevent>
+      <div class="tw:col-span-2 tw:md:col-span-1 tw:md:min-w-60 tw:md:flex-1">
+        <label for="filter-search" :class="LABEL">Search</label>
+        <input id="filter-search" v-model="filters.search" type="search" placeholder="Search member name" autocomplete="off" :class="CONTROL">
+      </div>
+      <div class="tw:col-span-2 tw:md:col-span-1 tw:md:w-48">
+        <label for="filter-method" :class="LABEL">Method</label>
+        <select id="filter-method" v-model="filters.method" :class="CONTROL">
+          <option value="ALL">All methods</option>
+          <option v-for="method in PAYMENT_METHODS" :key="method.value" :value="method.value">{{ method.label }}</option>
+        </select>
+      </div>
+      <TextButton v-if="hasActiveFilters && filteredPayments.length" class="tw:col-span-2 tw:text-left tw:md:col-span-1 tw:md:py-1.5" @click="clearFilters">Clear filters</TextButton>
+    </form>
+
+    <!-- Empty states -->
+    <div v-if="loaded && !loadError && !payments.length">
+      <EmptyNote>No payments yet. Record the first one.</EmptyNote>
+      <BaseButton v-if="authStore.isStaff" class="tw:mt-2" @click="openRecord">Record payment</BaseButton>
+    </div>
+    <div v-else-if="payments.length && !filteredPayments.length">
+      <EmptyNote>No payments match these filters.</EmptyNote>
+      <BaseButton variant="secondary" class="tw:mt-2" @click="clearFilters">Clear filters</BaseButton>
     </div>
 
-    <!-- Payment Form -->
-    <div v-if="authStore.isStaff" class="card mb-4">
-      <div class="card-body">
-        <h5 class="card-title">Record New Payment</h5>
-        <form @submit.prevent="submitPayment">
-          <div class="mb-3">
-            <label class="form-label">Member</label>
-            <select v-model="newPayment.memberId" class="form-select" required>
-              <option v-for="member in members" :key="member.id" :value="member.id">
-                {{ member.name }}
-              </option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Amount</label>
-            <input v-model="newPayment.amount" type="number" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Payment month</label>
-            <input v-model="newPayment.period" type="month" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Payment Method</label>
-            <select v-model="newPayment.paymentMethod" class="form-select" required>
-              <option v-for="method in paymentMethods" :key="method.value" :value="method.value">
-                {{ method.label }}
-              </option>
-            </select>
-          </div>
-          <button type="submit" class="btn btn-primary">Record Payment</button>
-        </form>
-      </div>
-    </div>
+    <template v-if="filteredPayments.length">
+      <p class="tw:mt-0 tw:mb-2 tw:text-sm tw:text-muted" aria-live="polite">
+        {{ hasActiveFilters ? `${filteredPayments.length} of ${payments.length} payments` : `${payments.length} ${payments.length === 1 ? 'payment' : 'payments'}` }}
+      </p>
 
-    <!-- Payment Analytics -->
-    <div class="row mb-4">
-      <div class="col-md-4">
-        <div class="card bg-primary text-white">
-          <div class="card-body">
-            <h5 class="card-title">Total Revenue</h5>
-            <h2>${{ analytics.totalRevenue }}</h2>
+      <!-- md and up: ruled table -->
+      <table class="tw:hidden tw:w-full tw:border-collapse tw:text-left tw:text-(length:--text-body) tw:tabular-nums tw:md:table">
+        <caption class="tw:sr-only">Payment history, newest first</caption>
+        <thead>
+          <tr class="tw:border-b tw:border-rule">
+            <th scope="col" :class="TH">Paid on</th>
+            <th scope="col" :class="TH">Member</th>
+            <th scope="col" :class="TH">Month covered</th>
+            <th scope="col" :class="TH">Method</th>
+            <th scope="col" :class="[TH, 'tw:text-right']">Amount</th>
+            <th scope="col" :class="TH">Receipt</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="payment in filteredPayments" :key="payment.id" class="tw:h-(--row-h) tw:border-b tw:border-rule">
+            <td :class="[TD, 'tw:whitespace-nowrap']">{{ formatDate(payment.paymentDate, 'MMM d, yyyy') }}</td>
+            <td :class="[TD, 'tw:max-w-0 tw:w-[30%] tw:font-medium tw:[overflow-wrap:anywhere]']">{{ payment.member?.name || 'Unknown' }}</td>
+            <td :class="[TD, 'tw:whitespace-nowrap']">{{ periodLabel(payment.period) }}</td>
+            <td :class="[TD, 'tw:whitespace-nowrap']">{{ methodLabel(payment.paymentMethod) }}</td>
+            <td :class="[TD, 'tw:text-right tw:whitespace-nowrap']">{{ formatMoney(payment.amount) }}</td>
+            <td :class="TD">
+              <TextButton class="tw:py-1" @click="openReceipt(payment)">
+                {{ receiptNumber(payment) }}<span class="tw:sr-only">, receipt for {{ payment.member?.name || 'Unknown' }}</span>
+              </TextButton>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Below md: the same rows, stacked -->
+      <ul class="tw:m-0 tw:list-none tw:border-t tw:border-rule tw:p-0 tw:md:hidden">
+        <li v-for="payment in filteredPayments" :key="payment.id" class="tw:border-b tw:border-rule tw:py-3">
+          <div class="tw:flex tw:items-baseline tw:justify-between tw:gap-3">
+            <span class="tw:min-w-0 tw:font-medium tw:[overflow-wrap:anywhere]">{{ payment.member?.name || 'Unknown' }}</span>
+            <span class="tw:shrink-0 tw:font-medium tw:tabular-nums">{{ formatMoney(payment.amount) }}</span>
           </div>
+          <div class="tw:text-sm tw:text-muted">{{ periodLabel(payment.period) }} &middot; {{ methodLabel(payment.paymentMethod) }}</div>
+          <div class="tw:flex tw:items-center tw:justify-between tw:gap-3 tw:text-sm tw:text-muted tw:tabular-nums">
+            <span>Paid on {{ formatDate(payment.paymentDate, 'MMM d, yyyy') }}</span>
+            <TextButton class="tw:text-base" @click="openReceipt(payment)">
+              {{ receiptNumber(payment) }}<span class="tw:sr-only">, receipt for {{ payment.member?.name || 'Unknown' }}</span>
+            </TextButton>
+          </div>
+        </li>
+      </ul>
+    </template>
+
+    <!-- Record payment (STAFF and above) -->
+    <BaseModal v-if="authStore.isStaff" v-model="recordOpen" title="Record payment" size="md">
+      <AlertBanner v-if="formError">{{ formError }}</AlertBanner>
+      <EmptyNote v-if="!activeMembers.length">There are no active members to record a payment for. Add or reactivate a member first.</EmptyNote>
+      <form v-else id="payment-form" class="tw:flex tw:flex-col tw:gap-4" novalidate @submit.prevent="recordPayment">
+        <BaseSelect id="payment-member" v-model="form.memberId" label="Member" :error="formErrors.memberId">
+          <option value="" disabled>Choose a member</option>
+          <option v-for="member in activeMembers" :key="member.id" :value="String(member.id)">{{ member.name }}</option>
+        </BaseSelect>
+        <div class="tw:grid tw:grid-cols-1 tw:gap-4 tw:sm:grid-cols-2">
+          <BaseInput id="payment-period" v-model="form.period" label="Month covered" type="month" :max="currentPeriod" :error="formErrors.period" />
+          <BaseInput id="payment-date" v-model="form.paymentDate" label="Paid on" type="date" :max="today" hint="Change this when you enter an older payment." :error="formErrors.paymentDate" />
         </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card bg-success text-white">
-          <div class="card-body">
-            <h5 class="card-title">This Month</h5>
-            <h2>${{ analytics.monthlyRevenue }}</h2>
-          </div>
+        <div class="tw:grid tw:grid-cols-1 tw:gap-4 tw:sm:grid-cols-2">
+          <BaseInput id="payment-amount" v-model="form.amount" label="Amount" type="number" min="0.01" step="0.01" inputmode="decimal" :error="formErrors.amount" />
+          <BaseSelect id="payment-method" v-model="form.paymentMethod" label="Payment method" :error="formErrors.paymentMethod">
+            <option v-for="method in PAYMENT_METHODS" :key="method.value" :value="method.value">{{ method.label }}</option>
+          </BaseSelect>
         </div>
+        <BaseTextarea id="payment-notes" v-model="form.notes" label="Notes (optional)" :max="NOTES_MAX" :rows="2" :error="formErrors.notes" />
+      </form>
+      <template #footer>
+        <BaseButton variant="secondary" :disabled="saving" @click="recordOpen = false">Cancel</BaseButton>
+        <BaseButton type="submit" form="payment-form" :disabled="saving || !activeMembers.length" :aria-busy="saving ? 'true' : undefined">
+          {{ saving ? 'Recording...' : 'Record payment' }}
+        </BaseButton>
+      </template>
+    </BaseModal>
+
+    <!-- Receipt -->
+    <BaseModal v-model="receiptOpen" :title="selectedPayment ? `Receipt ${receiptNumber(selectedPayment)}` : 'Receipt'" size="sm">
+      <!-- A plain element for html2pdf to capture: token hex colours only, no tinted or blended colours -->
+      <div v-if="selectedPayment" ref="receiptContent" class="tw:bg-paper tw:p-2 tw:text-ink">
+        <p class="tw:m-0 tw:mb-3 tw:font-display tw:text-lg tw:font-bold">Felege Selam</p>
+        <dl class="tw:m-0 tw:grid tw:grid-cols-[auto_1fr] tw:gap-x-6 tw:gap-y-2 tw:text-base">
+          <dt class="tw:font-normal tw:text-muted">Receipt</dt>
+          <dd class="tw:m-0 tw:font-medium">{{ receiptNumber(selectedPayment) }}</dd>
+          <dt class="tw:font-normal tw:text-muted">Member</dt>
+          <dd class="tw:m-0 tw:font-medium tw:[overflow-wrap:anywhere]">{{ selectedPayment.member?.name || 'Unknown' }}</dd>
+          <dt class="tw:font-normal tw:text-muted">Month covered</dt>
+          <dd class="tw:m-0">{{ periodLabel(selectedPayment.period) }}</dd>
+          <dt class="tw:font-normal tw:text-muted">Paid on</dt>
+          <dd class="tw:m-0">{{ formatDate(selectedPayment.paymentDate, 'MMM d, yyyy') }}</dd>
+          <dt class="tw:font-normal tw:text-muted">Method</dt>
+          <dd class="tw:m-0">{{ methodLabel(selectedPayment.paymentMethod) }}</dd>
+          <template v-if="selectedPayment.notes">
+            <dt class="tw:font-normal tw:text-muted">Notes</dt>
+            <dd class="tw:m-0 tw:[overflow-wrap:anywhere]">{{ selectedPayment.notes }}</dd>
+          </template>
+        </dl>
+        <p class="tw:mt-4 tw:mb-0 tw:border-t tw:border-rule tw:pt-3 tw:text-muted">Amount</p>
+        <p :class="[FIGURE, 'tw:m-0 tw:text-2xl']">{{ formatMoney(selectedPayment.amount) }}</p>
       </div>
-      <div class="col-md-4">
-        <div class="card bg-info text-white">
-          <div class="card-body">
-            <h5 class="card-title">Average Payment</h5>
-            <h2>${{ analytics.averagePayment }}</h2>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Payments List -->
-    <div class="card">
-      <div class="card-body">
-        <h5 class="card-title">Recent Payments</h5>
-        <div class="table-responsive">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Member</th>
-                <th>Amount</th>
-                <th>Method</th>
-                <th>Receipt</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="payment in payments" :key="payment.id">
-                <td>{{ formatDate(payment.paymentDate) }}</td>
-                <td>{{ payment.member?.name || 'Unknown' }}</td>
-                <td>${{ payment.amount }}</td>
-                <td>{{ payment.paymentMethod }}</td>
-                <td>{{ receiptNumber(payment) }}</td>
-                <td>
-                  <button class="btn btn-sm btn-primary" @click="generateReceipt(payment)">
-                    <i class="bi bi-file-earmark-pdf"></i> Receipt
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Receipt Modal -->
-    <div ref="receiptModal" class="modal fade" tabindex="-1">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Payment Receipt</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div ref="receiptContent" class="modal-body">
-            <div v-if="selectedPayment" class="receipt-container">
-              <div class="text-center mb-4">
-                <h3>Member Management</h3>
-                <p>Payment Receipt</p>
-              </div>
-
-              <div class="row mb-3">
-                <div class="col-6">
-                  <strong>Receipt Number:</strong><br>
-                  {{ receiptNumber(selectedPayment) }}
-                </div>
-                <div class="col-6 text-end">
-                  <strong>Date:</strong><br>
-                  {{ formatDate(selectedPayment.paymentDate) }}
-                </div>
-              </div>
-
-              <div class="row mb-3">
-                <div class="col-12">
-                  <strong>Received From:</strong><br>
-                  {{ selectedPayment.member?.name || 'Unknown' }}
-                </div>
-              </div>
-
-              <div class="row mb-3">
-                <div class="col-6">
-                  <strong>Amount:</strong><br>
-                  ${{ selectedPayment.amount }}
-                </div>
-                <div class="col-6">
-                  <strong>Payment Method:</strong><br>
-                  {{ selectedPayment.paymentMethod }}
-                </div>
-              </div>
-
-              <div class="row mt-5">
-                <div class="col-6">
-                  <div class="border-top">
-                    <p class="text-center mt-2">Received By</p>
-                  </div>
-                </div>
-                <div class="col-6">
-                  <div class="border-top">
-                    <p class="text-center mt-2">Member Signature</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            <button type="button" class="btn btn-primary" @click="downloadReceipt">
-              <i class="bi bi-download"></i> Download PDF
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+      <template #footer>
+        <BaseButton variant="secondary" @click="receiptOpen = false">Close</BaseButton>
+        <BaseButton :disabled="downloading" :aria-busy="downloading ? 'true' : undefined" @click="downloadReceipt">
+          <i class="bi bi-download tw:mr-2" aria-hidden="true"></i>{{ downloading ? 'Preparing...' : 'Download PDF' }}
+        </BaseButton>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
 <script>
 import api from '@/services/api'
-import * as bootstrap from 'bootstrap'
 import { useAppStore } from '../stores/appStore'
 import { useAuthStore } from '../stores/authStore'
-import { downloadBlob } from '@/utils'
+import { downloadBlob, formatDate, formatMoney, localISODate } from '@/utils'
 import { buildPaymentRequest, PAYMENT_METHODS } from '@/utils/paymentPayload'
+import { filterPayments, methodLabel, paymentsSummary, periodLabel, receiptNumber, sortPayments } from '@/utils/paymentHistory'
+import AlertBanner from '@/components/AlertBanner.vue'
+import BaseButton from '@/components/BaseButton.vue'
+import BaseInput from '@/components/BaseInput.vue'
+import BaseModal from '@/components/BaseModal.vue'
+import BaseSelect from '@/components/BaseSelect.vue'
+import BaseTextarea from '@/components/BaseTextarea.vue'
+import EmptyNote from '@/components/EmptyNote.vue'
+import PageHead from '@/components/PageHead.vue'
+import TextButton from '@/components/TextButton.vue'
 
-const currentMonth = () => {
-  const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-}
-const emptyPayment = () => ({
-  memberId: null,
-  amount: null,
+const LABEL = 'tw:mb-1 tw:block tw:text-(length:--text-label) tw:leading-(--lh-label) tw:font-medium tw:text-muted'
+const CONTROL = 'tw:block tw:h-(--control-h) tw:w-full tw:rounded-md tw:border tw:border-field tw:bg-paper tw:px-3 tw:text-(length:--text-body) tw:text-ink tw:placeholder:text-muted tw:placeholder:opacity-80 tw:focus:border-teal tw:focus:outline-2 tw:focus:outline-offset-1 tw:focus:outline-teal'
+const TH = 'tw:px-3 tw:py-2 tw:text-[0.9375rem] tw:font-medium tw:text-muted tw:first:pl-0 tw:last:pr-0'
+const TD = 'tw:px-3 tw:py-2 tw:align-middle tw:first:pl-0 tw:last:pr-0'
+// Big figures: Alegreya, tabular and lining so numbers line up
+const FIGURE = 'tw:font-display tw:font-bold tw:tabular-nums tw:lining-nums'
+
+const NOTES_MAX = 500
+const EMPTY_ERRORS = { memberId: '', period: '', paymentDate: '', amount: '', paymentMethod: '', notes: '' }
+const EMPTY_FILTERS = { search: '', method: 'ALL' }
+
+// Month and date default to now each time the dialog opens
+const emptyForm = () => ({
+  memberId: '',
+  period: localISODate().slice(0, 7),
+  paymentDate: localISODate(),
+  amount: '',
   paymentMethod: 'CASH',
-  period: currentMonth()
+  notes: ''
 })
 
 export default {
   name: 'PaymentsView',
+  components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, BaseTextarea, EmptyNote, PageHead, TextButton },
   setup() {
     return {
       appStore: useAppStore(),
-      authStore: useAuthStore()
+      authStore: useAuthStore(),
+      formatDate,
+      formatMoney,
+      methodLabel,
+      periodLabel,
+      receiptNumber,
+      LABEL,
+      CONTROL,
+      TH,
+      TD,
+      FIGURE,
+      NOTES_MAX,
+      PAYMENT_METHODS
     }
   },
   data() {
     return {
       members: [],
       payments: [],
-      analytics: {
-        totalRevenue: 0,
-        monthlyRevenue: 0,
-        averagePayment: 0
-      },
-      paymentMethods: PAYMENT_METHODS,
-      newPayment: emptyPayment(),
-      selectedPayment: null
+      loaded: false,
+      loadError: false,
+      filters: { ...EMPTY_FILTERS },
+      recordOpen: false,
+      form: emptyForm(),
+      formError: '',
+      formErrors: { ...EMPTY_ERRORS },
+      saving: false,
+      today: localISODate(),
+      selectedPayment: null,
+      receiptOpen: false,
+      downloading: false
+    }
+  },
+  computed: {
+    currentPeriod() {
+      return this.today.slice(0, 7)
+    },
+    activeMembers() {
+      return this.members.filter(member => member.active).sort((a, b) => a.name.localeCompare(b.name))
+    },
+    sortedPayments() {
+      return sortPayments(this.payments)
+    },
+    filteredPayments() {
+      return filterPayments(this.sortedPayments, this.filters)
+    },
+    hasActiveFilters() {
+      return !!this.filters.search.trim() || this.filters.method !== 'ALL'
+    },
+    figures() {
+      const summary = paymentsSummary(this.payments, this.currentPeriod)
+      return [
+        { label: 'This month', value: formatMoney(summary.thisMonth) },
+        { label: 'All time', value: formatMoney(summary.allTime) },
+        { label: 'Average payment', value: formatMoney(summary.average) }
+      ]
     }
   },
   async created() {
     await this.loadData()
   },
   methods: {
+    // Members are only needed to record a payment (STAFF and above); the history carries each member's name
     async loadData() {
       try {
-        // Load members and payments
         const [members, payments] = await Promise.all([
-          api.getMembers(),
+          this.authStore.isStaff ? api.getMembers() : [],
           api.getPayments()
         ])
-
-        // Ensure data is always an array
         this.members = Array.isArray(members) ? members : []
         this.payments = Array.isArray(payments) ? payments : []
-
-        // Calculate analytics from payment data
-        this.calculateAnalytics()
+        this.loadError = false
       } catch (error) {
-        console.error('Error loading data:', error)
+        console.error('Error loading payments:', error)
         this.members = []
         this.payments = []
-        this.notifyError('Could not load payments', error, 'Could not load payments')
+        this.loadError = true
+      } finally {
+        this.loaded = true
       }
     },
-    calculateAnalytics() {
-      if (!this.payments || this.payments.length === 0) {
-        this.analytics = {
-          totalRevenue: 0,
-          monthlyRevenue: 0,
-          averagePayment: 0
-        }
-        return
+    clearFilters() {
+      this.filters = { ...EMPTY_FILTERS }
+    },
+    openRecord() {
+      this.form = emptyForm()
+      this.today = localISODate()
+      this.formError = ''
+      this.formErrors = { ...EMPTY_ERRORS }
+      this.recordOpen = true
+    },
+    validateForm() {
+      const errors = { ...EMPTY_ERRORS }
+      const f = this.form
+      if (!f.memberId) errors.memberId = 'Choose a member.'
+      if (!f.period) errors.period = 'Choose the month this payment covers.'
+      else if (f.period > this.currentPeriod) errors.period = 'Choose this month or an earlier one.'
+      if (!f.paymentDate) errors.paymentDate = 'Choose the day the payment was made.'
+      else if (f.paymentDate > this.today) errors.paymentDate = 'The payment date cannot be in the future.'
+      if (!(Number(f.amount) >= 0.01)) errors.amount = 'Enter an amount of at least 0.01.'
+      if (f.notes.length > NOTES_MAX) errors.notes = `Notes can be up to ${NOTES_MAX} characters.`
+      this.formErrors = errors
+      return !Object.values(errors).some(Boolean)
+    },
+    // Each server field error goes under its field; a plain 400 (duplicate month, inactive member,
+    // period too far back) goes in the banner at the top of the dialog
+    showSaveError(error) {
+      const fieldErrors = Array.isArray(error.fieldErrors) ? error.fieldErrors : []
+      const rest = []
+      for (const { field, message } of fieldErrors) {
+        if (field in EMPTY_ERRORS && !this.formErrors[field]) this.formErrors[field] = message
+        else rest.push(message)
       }
-
-      const now = new Date()
-      const currentMonth = now.getMonth()
-      const currentYear = now.getFullYear()
-
-      // Calculate total revenue
-      const totalRevenue = this.payments.reduce((sum, p) => sum + (p.amount || 0), 0)
-
-      // Calculate monthly revenue
-      const monthlyRevenue = this.payments
-        .filter(p => {
-          const paymentDate = new Date(p.paymentDate)
-          return paymentDate.getMonth() === currentMonth &&
-                 paymentDate.getFullYear() === currentYear
-        })
-        .reduce((sum, p) => sum + (p.amount || 0), 0)
-
-      // Calculate average payment
-      const averagePayment = this.payments.length > 0
-        ? totalRevenue / this.payments.length
-        : 0
-
-      this.analytics = {
-        totalRevenue: totalRevenue.toFixed(2),
-        monthlyRevenue: monthlyRevenue.toFixed(2),
-        averagePayment: averagePayment.toFixed(2)
+      if (!fieldErrors.length) rest.push(error.message || 'The payment was not recorded. Try again.')
+      if (rest.length) {
+        this.formError = rest.join(' ')
+        this.notifyFailure('Could not record payment', error)
       }
     },
-    async submitPayment() {
+    async recordPayment() {
+      this.formError = ''
+      if (!this.validateForm()) return
+      this.saving = true
       try {
-        const payment = await api.createPayment(buildPaymentRequest(this.newPayment))
+        const request = buildPaymentRequest(this.form)
+        const member = this.members.find(m => m.id === request.memberId)
+        await api.createPayment(request)
+        this.recordOpen = false
+        this.form = emptyForm()
         await this.loadData()
-        this.newPayment = emptyPayment()
-        // Generate receipt for the newly created payment
-        if (payment) {
-          this.generateReceipt(payment)
-        }
+        this.notify('success', 'Payment recorded', `${member?.name || 'Member'}, ${periodLabel(request.period)}: ${formatMoney(request.amount)}`)
       } catch (error) {
-        console.error('Error creating payment:', error)
-        this.notifyError('Payment failed', error, 'Could not record the payment')
+        console.error('Error recording payment:', error)
+        this.showSaveError(error)
+      } finally {
+        this.saving = false
       }
     },
-    formatDate(date) {
-      return new Date(date).toLocaleDateString()
-    },
-    receiptNumber(payment) {
-      return `R-${String(payment.id).padStart(6, '0')}`
-    },
-    notifyError(title, error, fallback) {
-      this.appStore.addNotification({
-        type: 'error',
-        title,
-        message: error.message || fallback,
-        isToast: true
-      })
-    },
-    generateReceipt(payment) {
+    openReceipt(payment) {
       this.selectedPayment = payment
-      new bootstrap.Modal(this.$refs.receiptModal).show()
+      this.receiptOpen = true
     },
     async downloadReceipt() {
-      const element = this.$refs.receiptContent
-      const options = {
-        margin: 1,
-        filename: `receipt-${this.receiptNumber(this.selectedPayment)}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      this.downloading = true
+      try {
+        const options = {
+          margin: 1,
+          filename: `receipt-${receiptNumber(this.selectedPayment)}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2 },
+          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        }
+        const { default: html2pdf } = await import('html2pdf.js')
+        await html2pdf().set(options).from(this.$refs.receiptContent).save()
+      } catch (error) {
+        console.error('Error creating the receipt PDF:', error)
+        this.notify('error', 'Could not create the PDF', 'Try again, or close this window and open the receipt again.')
+      } finally {
+        this.downloading = false
       }
-      const { default: html2pdf } = await import('html2pdf.js')
-      await html2pdf().set(options).from(element).save()
+    },
+    notify(type, title, message) {
+      this.appStore.addNotification({ type, title, message, isToast: true })
+    },
+    // The shared API handler already shows an "Access Denied" toast for 403
+    notifyFailure(title, error) {
+      if (error.response?.status === 403) return
+      this.notify('error', title, error.message || 'Request failed')
     },
     async exportPayments() {
       try {
@@ -339,10 +404,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-.receipt-container {
-  padding: 20px;
-  background: white;
-}
-</style>

@@ -94,6 +94,8 @@ Shared patterns are small Vue components in `frontend/src/components/`, built fr
 | `TextButton` | plain teal text button for row actions ("Send reminder") |
 | `BaseButton` (`variant` primary, secondary, danger; `size` sm, md, lg; `to` for a link) | the button; disabled is 65% opacity with the real `disabled` attribute |
 | `BaseInput` (`id`, `label`, `v-model`, `error`, `hint`) | label, field, optional quiet hint and error text, wired with `aria-invalid` and `aria-describedby` (hint and error ids) |
+| `BaseSelect` (`id`, `label`, `v-model`, `error`, `hint`; options in the slot) | the same look as `BaseInput`, for a select inside a dialog |
+| `BaseTextarea` (`id`, `label`, `v-model`, `rows`, `max`, `error`, `hint`) | the same look, with a "12 of 500" counter; it reports an overrun, it does not stop typing |
 | `ActionMenu` (`label`, `items` `[{ key, label, danger?, disabled? }]`, emits `select(key)`) | the row "More" menu: kebab trigger and a small paper popup (see ActionMenu rules) |
 | `AlertBanner` (`tone` danger, success, warning, info) | tinted alert with a 1px line, `role="alert"` |
 | `BrandMark`, `RailLink` | the wordmark link and a rail link (`aria-current="page"` on the active one) |
@@ -110,7 +112,7 @@ Shared patterns are small Vue components in `frontend/src/components/`, built fr
 - The popup is teleported to `body` with fixed positioning (right edge aligned to the trigger, flipped above when there is no room below), so a menu in the last row is never clipped. It closes on scroll and resize rather than chasing the trigger. Items are 44px tall, so it works by thumb.
 - Do not put more than five items in it. If a menu needs more, the screen needs a detail view.
 
-Still Bootstrap until Payments and Messages migrate: `.btn-warning` (ochre text on an ochre tint), `.badge.bg-*` (quiet tinted text, replaced by `StatusLabel`), tables, cards, forms and modals on Payments and Messages (Members and Profile are done).
+Still Bootstrap until Messages migrates: `.btn-warning` (ochre text on an ochre tint), `.badge.bg-*` (quiet tinted text, replaced by `StatusLabel`), tables, cards, forms and modals on Messages (Members, Profile and Payments are done).
 
 ## Accessibility rules
 
@@ -153,8 +155,9 @@ Tried and removed, so nobody puts them back:
 - [x] Members: status dot plus word in a Status column; one "More" menu per row instead of
       three coloured icon buttons; ruled table (`--row-h` rows); filters as one quiet
       row; Add member and Export as one primary and one secondary button. Done (T2).
-- [ ] Payments: the three stat cards become a quiet two-or-three-figure row like the Overview;
-      table with tabular amounts, right-aligned; Record payment as the one primary button.
+- [x] Payments: the three stat cards become a quiet three-figure row like the Overview;
+      ruled table (stacked list below `md`) with tabular amounts, right-aligned; "Record payment" as the
+      one primary button, in a `BaseModal` that can back-date a payment; a receipt dialog with PDF. Done (T3).
 - [ ] Messages (route `/communications`, nav label "Messages"): compose in a paper card;
       delivery results as a ruled list with `StatusLabel`; page title still says Communications, align it.
 - [x] Profile: forms in paper cards, one per concern (details, password); plain labels. Done (T2): the password change is a `BaseModal`.
