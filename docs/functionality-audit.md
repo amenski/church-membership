@@ -105,6 +105,7 @@ The raw domain message ("User with email '…' not found" vs "Invalid password p
 **C7. Deleting a payment reports success and deletes nothing**
 The handler checks that the payment exists and returns 200 without deleting it.
 `PaymentController.java:80`
+> **Status (3 Oct 2026):** resolved by removing the endpoint (payments are financial records). A void-with-audit-trail feature is future work.
 
 **C8. Member edit accepts system-managed fields**
 PUT binds the whole domain object, so a client can set `active`, `consecutiveMonthsMissed` and `lastPaymentDate` directly.
@@ -159,7 +160,7 @@ Each takes under a day. Do them in this order.
 | Fix the refresh cookie path to `/api/auth`, add a `typ` claim and check it in the filter and the refresh endpoint | 1 h | C5 |
 | Return one generic "Invalid email or password" message | 10 min | C6 |
 | Enable scheduling, run the counter on the 1st of the month, send reminders monthly, fill in the member name | 1.5 h | C3, C4 |
-| Add a member request DTO, archive members instead of deleting them, make payment delete real or remove it | 3 h | C7, C8, C9 |
+| Add a member request DTO, archive members instead of deleting them, make payment delete real or remove it *(payment delete removed)* | 3 h | C7, C8, C9 |
 | Restrict member export to Staff, and set `requiresRole` on frontend routes | 30 min | Over-permitted Volunteer role |
 
 Total: about 1.5 working days, including a MockMvc test per role per endpoint group so C1 cannot come back.

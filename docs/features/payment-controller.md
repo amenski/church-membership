@@ -7,12 +7,11 @@ Membership-dues API: list, look up, record and export payments. Roles per endpoi
 ## Endpoints
 | Method | Path | Auth | Request | Response |
 |--------|------|------|---------|----------|
-| GET | `/api/payments` | VOLUNTEER+ (`PaymentController.java:57`) | none | `List<Payment>` |
-| GET | `/api/payments/{id}` | VOLUNTEER+ (`PaymentController.java:64`) | path `id` > 0 | `Payment`, or 404 with empty body |
-| GET | `/api/payments/member/{memberId}` | VOLUNTEER+ (`PaymentController.java:73`) | path `memberId` > 0 | `List<Payment>`, or 404 with empty body if the member does not exist |
-| POST | `/api/payments` | STAFF+ (`PaymentController.java:82`) | `RecordPaymentRequest` JSON, `@Valid` | 200 + saved `Payment` |
-| DELETE | `/api/payments/{id}` | ADMIN (`PaymentController.java:91`) | path `id` > 0 | 200 empty, or 404 empty (see Gotchas) |
-| GET | `/api/payments/export` | VOLUNTEER+ (`PaymentController.java:103`) | none | `text/csv` attachment `payments.csv` |
+| GET | `/api/payments` | VOLUNTEER+ (`PaymentController.java:56`) | none | `List<Payment>` |
+| GET | `/api/payments/{id}` | VOLUNTEER+ (`PaymentController.java:63`) | path `id` > 0 | `Payment`, or 404 with empty body |
+| GET | `/api/payments/member/{memberId}` | VOLUNTEER+ (`PaymentController.java:72`) | path `memberId` > 0 | `List<Payment>`, or 404 with empty body if the member does not exist |
+| POST | `/api/payments` | STAFF+ (`PaymentController.java:81`) | `RecordPaymentRequest` JSON, `@Valid` | 200 + saved `Payment` |
+| GET | `/api/payments/export` | VOLUNTEER+ (`PaymentController.java:90`) | none | `text/csv` attachment `payments.csv` |
 
 Roles and hierarchy: [../authentication.md](../authentication.md).
 
@@ -27,14 +26,14 @@ Roles and hierarchy: [../authentication.md](../authentication.md).
 Example: `{"memberId": 1, "amount": 50.0, "paymentMethod": "CASH", "period": "2026-10"}`, shared with the frontend test as `src/test/resources/contracts/record-payment-request.json` (`PaymentContractTest`). `paymentDate` is not accepted; it is set to today.
 
 ### CSV columns
-`id,memberId,memberName,amount,paymentDate,period,method` (`PaymentController.java:114`). Member name goes through `CsvUtils.escapeCsv` (`PaymentController.java:121`), which prefixes formula-looking text with `'` and quotes fields containing `,` `"` or newlines (`src/main/java/io/github/membertracker/utils/CsvUtils.java:26-39`). Whole list is read first, then streamed; `notes` is not exported.
+`id,memberId,memberName,amount,paymentDate,period,method` (`PaymentController.java:101`). Member name goes through `CsvUtils.escapeCsv` (`PaymentController.java:108`), which prefixes formula-looking text with `'` and quotes fields containing `,` `"` or newlines (`src/main/java/io/github/membertracker/utils/CsvUtils.java:26-39`). Whole list is read first, then streamed; `notes` is not exported.
 
 ## Collaborators
 | Dependency | Used by | Ref |
 |------------|---------|-----|
 | `GetAllPaymentsUseCase` | list, export | `src/main/java/io/github/membertracker/usecase/GetAllPaymentsUseCase.java:21` (`findAll`) |
-| `GetPaymentByIdUseCase` | get by id, delete | `src/main/java/io/github/membertracker/usecase/GetPaymentByIdUseCase.java:22` |
-| `GetMemberByIdUseCase` | member payments (existence check) | `PaymentController.java:76` |
+| `GetPaymentByIdUseCase` | get by id | `src/main/java/io/github/membertracker/usecase/GetPaymentByIdUseCase.java:22` |
+| `GetMemberByIdUseCase` | member payments (existence check) | `PaymentController.java:75` |
 | `GetPaymentsByMemberUseCase` | member payments | `src/main/java/io/github/membertracker/usecase/GetPaymentsByMemberUseCase.java:23` |
 | `RecordPaymentUseCase` | POST | `src/main/java/io/github/membertracker/usecase/RecordPaymentUseCase.java:22` |
 | `RecordPaymentRequest` | POST body | see Request body |
@@ -67,13 +66,13 @@ All RFC 7807 ([../architecture.md](../architecture.md)); handler `src/main/java/
 | 400 | `DomainException`, `GlobalExceptionHandler.java:67` | amount, period (future / over 3 months old) or duplicate-period rule; `code` property: `PAYMENT_001`, `PAYMENT_002`, `PAYMENT_007`, `MEMBER_004`, `MEMBER_006` for an unknown `memberId` (`src/main/java/io/github/membertracker/domain/exception/PaymentDomainException.java:12-18`, `src/main/java/io/github/membertracker/domain/exception/MemberDomainException.java:13`, `:15`) |
 | 403 | `AccessDeniedException`, `GlobalExceptionHandler.java:86` | role too low |
 | 401 | `GlobalExceptionHandler.java:93` | not authenticated |
-| 404 | `ResponseEntity.notFound()` in controller (`PaymentController.java:69`, `:78`, `:98`) | unknown payment or member; empty body, not a ProblemDetail |
-| 500 | `GlobalExceptionHandler.java:101` | anything else, including a failure mid-CSV-stream (`PaymentController.java:130`) |
+| 404 | `ResponseEntity.notFound()` in controller (`PaymentController.java:68`, `:77`) | unknown payment or member; empty body, not a ProblemDetail |
+| 500 | `GlobalExceptionHandler.java:101` | anything else, including a failure mid-CSV-stream (`PaymentController.java:117`) |
 
 ## Side effects
 - POST updates the member row (`lastPaymentDate`, maybe `consecutiveMonthsMissed`) before saving the payment, in two `save` calls (`RecordPaymentUseCase.java:42-43`).
 - No emails sent.
 
 ## Gotchas
-- DELETE deletes nothing: it checks the payment exists and returns 200 (`PaymentController.java:94-96`). Source comment admits it (`PaymentController.java:95`) (audit C7).
+- Payments cannot be deleted or voided yet; a void feature would need an audit trail.
 - `ProcessMemberPaymentUseCase` is dead code from the API's point of view (see Collaborators).

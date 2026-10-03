@@ -116,7 +116,6 @@ class RoleAuthorizationTest {
             new Endpoint(HttpMethod.GET, "/api/payments/member/1", null, "VOLUNTEER"),
             new Endpoint(HttpMethod.GET, "/api/payments/export", null, "VOLUNTEER"),
             new Endpoint(HttpMethod.POST, "/api/payments", PAYMENT_JSON, "STAFF"),
-            new Endpoint(HttpMethod.DELETE, "/api/payments/1", null, "ADMIN"),
 
             new Endpoint(HttpMethod.GET, "/api/communications", null, "VOLUNTEER"),
             new Endpoint(HttpMethod.GET, "/api/communications/1", null, "VOLUNTEER"),
