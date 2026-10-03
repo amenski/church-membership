@@ -2,6 +2,7 @@ package io.github.membertracker.infrastructure;
 
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.infrastructure.dto.ExportMembersRequest;
+import io.github.membertracker.infrastructure.dto.MemberRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.github.membertracker.usecase.*;
@@ -43,6 +44,7 @@ public class MemberController {
     private final GetActiveMembersUseCase getActiveMembersUseCase;
     private final GetInactiveMembersUseCase getInactiveMembersUseCase;
     private final SaveMemberUseCase saveMemberUseCase;
+    private final UpdateMemberUseCase updateMemberUseCase;
     private final DeleteMemberUseCase deleteMemberUseCase;
     private final GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase;
 
@@ -52,6 +54,7 @@ public class MemberController {
                            GetActiveMembersUseCase getActiveMembersUseCase,
                            GetInactiveMembersUseCase getInactiveMembersUseCase,
                            SaveMemberUseCase saveMemberUseCase,
+                           UpdateMemberUseCase updateMemberUseCase,
                            DeleteMemberUseCase deleteMemberUseCase,
                            GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase) {
         this.getAllMembersUseCase = getAllMembersUseCase;
@@ -59,6 +62,7 @@ public class MemberController {
         this.getActiveMembersUseCase = getActiveMembersUseCase;
         this.getInactiveMembersUseCase = getInactiveMembersUseCase;
         this.saveMemberUseCase = saveMemberUseCase;
+        this.updateMemberUseCase = updateMemberUseCase;
         this.deleteMemberUseCase = deleteMemberUseCase;
         this.getMembersWithMissedPaymentsUseCase = getMembersWithMissedPaymentsUseCase;
     }
@@ -96,19 +100,17 @@ public class MemberController {
     @PostMapping
     @PreAuthorize("hasRole('STAFF')")
     @Operation(summary = "Create a member (STAFF+)")
-    public Member createMember(@Valid @RequestBody Member member) {
-        return saveMemberUseCase.invoke(member);
+    public Member createMember(@Valid @RequestBody MemberRequest request) {
+        return saveMemberUseCase.invoke(request.getName(), request.getEmail(), request.getPhone(), request.getJoinDate());
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('STAFF')")
     @Operation(summary = "Update a member (STAFF+)")
-    public ResponseEntity<Member> updateMember(@PathVariable @Positive Long id, @Valid @RequestBody Member member) {
-        return getMemberByIdUseCase.invoke(id)
-                .map(existingMember -> {
-                    member.setId(id);
-                    return ResponseEntity.ok(saveMemberUseCase.invoke(member));
-                })
+    public ResponseEntity<Member> updateMember(@PathVariable @Positive Long id, @Valid @RequestBody MemberRequest request) {
+        return updateMemberUseCase.invoke(id, request.getName(), request.getEmail(), request.getPhone(),
+                        request.getJoinDate(), request.getActive())
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 

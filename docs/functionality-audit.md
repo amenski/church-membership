@@ -116,6 +116,7 @@ The handler checks that the payment exists and returns 200 without deleting it.
 **C8. Member edit accepts system-managed fields**
 PUT binds the whole domain object, so a client can set `active`, `consecutiveMonthsMissed` and `lastPaymentDate` directly.
 `MemberController.java:92`
+> **Status (3 Oct 2026):** fixed: `MemberRequest` DTO; PUT loads the stored member and never takes counters or last payment date from the client.
 
 **C9. Deleting a member erases financial records**
 Hard delete with `ON DELETE CASCADE` removes all payments and delivery history. Giving records usually have a legal retention period.

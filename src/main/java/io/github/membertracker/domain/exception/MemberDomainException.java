@@ -13,6 +13,7 @@ public class MemberDomainException extends DomainException {
     public static final String DUPLICATE_PAYMENT_FOR_PERIOD = "MEMBER_004";
     public static final String PAYMENT_AMOUNT_INVALID = "MEMBER_005";
     public static final String MEMBER_NOT_FOUND = "MEMBER_006";
+    public static final String EMAIL_ALREADY_EXISTS = "MEMBER_007";
 
     public MemberDomainException(String message, String errorCode) {
         super(message, errorCode, "Member");
@@ -55,6 +56,13 @@ public class MemberDomainException extends DomainException {
         return new MemberDomainException(
             String.format("Payment amount %s for member '%s' is invalid", amount, memberName),
             PAYMENT_AMOUNT_INVALID
+        );
+    }
+
+    public static MemberDomainException emailAlreadyExists(String email) {
+        return new MemberDomainException(
+            "A member with this email already exists",
+            EMAIL_ALREADY_EXISTS
         );
     }
 

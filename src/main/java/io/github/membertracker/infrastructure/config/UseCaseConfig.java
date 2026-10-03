@@ -31,6 +31,7 @@ import io.github.membertracker.usecase.ProcessMemberPaymentUseCase;
 import io.github.membertracker.usecase.RecordPaymentUseCase;
 import io.github.membertracker.usecase.RegisterUserUseCase;
 import io.github.membertracker.usecase.SaveMemberUseCase;
+import io.github.membertracker.usecase.UpdateMemberUseCase;
 import io.github.membertracker.usecase.SendCommunicationToAllMembersUseCase;
 import io.github.membertracker.usecase.SendCommunicationToMembersUseCase;
 import io.github.membertracker.usecase.SendPaymentRemindersUseCase;
@@ -98,6 +99,11 @@ public class UseCaseConfig {
     @Bean
     public SaveMemberUseCase saveMemberUseCase(MemberRepository memberRepository) {
         return new SaveMemberUseCase(memberRepository);
+    }
+
+    @Bean
+    public UpdateMemberUseCase updateMemberUseCase(MemberRepository memberRepository) {
+        return new UpdateMemberUseCase(memberRepository);
     }
 
     @Bean

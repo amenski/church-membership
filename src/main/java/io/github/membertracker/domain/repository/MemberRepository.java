@@ -17,6 +17,10 @@ public interface MemberRepository {
     
     List<Member> findByConsecutiveMonthsMissedGreaterThanEqual(int months);
     
+    boolean existsByEmailIgnoreCase(String email);
+
+    Optional<Member> findByEmailIgnoreCase(String email);
+
     Member save(Member member);
     
     void deleteById(Long id);

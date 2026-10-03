@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface MemberJpaRepository extends JpaRepository<MemberEntity, Long> {
     List<MemberEntity> findByActive(boolean active);
@@ -14,4 +15,8 @@ public interface MemberJpaRepository extends JpaRepository<MemberEntity, Long> {
     List<MemberEntity> findMembersWithLastPaymentBefore(LocalDate date);
 
     List<MemberEntity> findByConsecutiveMonthsMissedGreaterThanEqual(int months);
+
+    boolean existsByEmailIgnoreCase(String email);
+
+    Optional<MemberEntity> findByEmailIgnoreCase(String email);
 }

@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
@@ -129,6 +130,17 @@ class GlobalExceptionHandlerTest {
                 .andExpect(content().string(not(containsString("secret-internal-detail"))));
     }
 
+    @Test
+    void dataIntegrityViolationReturns409WithGenericDetail() throws Exception {
+        mockMvc.perform(get("/test/integrity"))
+                .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith(PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.detail").value("The request conflicts with existing data"))
+                .andExpect(jsonPath("$.path").value("/test/integrity"))
+                .andExpect(content().string(not(containsString("uk_member_email"))));
+    }
+
     record ValidatedBody(@Size(min = 8, message = "must be at least 8 characters") String password) {
     }
 
@@ -169,6 +181,11 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/test/param/{id}")
         String param(@PathVariable @Positive Long id) {
             return "ok";
+        }
+
+        @GetMapping("/test/integrity")
+        String integrity() {
+            throw new DataIntegrityViolationException("Duplicate entry for key 'uk_member_email'");
         }
 
         @GetMapping("/test/boom")

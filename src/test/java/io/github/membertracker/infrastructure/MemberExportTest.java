@@ -56,6 +56,7 @@ class MemberExportTest {
     @MockitoBean private GetActiveMembersUseCase getActiveMembersUseCase;
     @MockitoBean private GetInactiveMembersUseCase getInactiveMembersUseCase;
     @MockitoBean private SaveMemberUseCase saveMemberUseCase;
+    @MockitoBean private UpdateMemberUseCase updateMemberUseCase;
     @MockitoBean private DeleteMemberUseCase deleteMemberUseCase;
     @MockitoBean private GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase;
 

@@ -1,5 +1,6 @@
 package io.github.membertracker.usecase;
 
+import io.github.membertracker.domain.exception.MemberDomainException;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.repository.MemberRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -9,8 +10,10 @@ import org.mockito.ArgumentCaptor;
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -33,39 +36,39 @@ class SaveMemberUseCaseTest {
     }
 
     @Test
-    void newMemberWithoutJoinDateGetsTodayAndIsActivated() {
-        Member m = new Member();
-        m.setName("Dan");
-        m.setActive(false);
+    void newMemberWithoutJoinDateGetsTodayAndIsActiveWithZeroCounters() {
+        Member result = useCase.invoke("Dan", "dan@example.com", null, null);
 
-        Member result = useCase.invoke(m);
-
-        assertThat(result).isSameAs(m);
-        assertThat(saved().getJoinDate()).isEqualTo(LocalDate.now());
-        assertThat(saved().isActive()).isTrue();
+        Member s = saved();
+        assertThat(result).isSameAs(s);
+        assertThat(s.getName()).isEqualTo("Dan");
+        assertThat(s.getEmail()).isEqualTo("dan@example.com");
+        assertThat(s.getPhone()).isNull();
+        assertThat(s.getJoinDate()).isEqualTo(LocalDate.now());
+        assertThat(s.isActive()).isTrue();
+        assertThat(s.getConsecutiveMonthsMissed()).isZero();
+        assertThat(s.getLastPaymentDate()).isNull();
+        assertThat(s.getLastMissedCountMonth()).isNull();
     }
 
     @Test
     void newMemberKeepsExplicitJoinDate() {
-        Member m = new Member();
         LocalDate earlier = LocalDate.now().minusMonths(2);
-        m.setJoinDate(earlier);
 
-        useCase.invoke(m);
+        useCase.invoke("Dan", "dan@example.com", "+390612345678", earlier);
 
         assertThat(saved().getJoinDate()).isEqualTo(earlier);
+        assertThat(saved().getPhone()).isEqualTo("+390612345678");
     }
 
     @Test
-    void existingMemberIsSavedUnchangedEvenWhenInactiveWithoutJoinDate() {
-        Member m = new Member();
-        m.setId(7L);
-        m.setActive(false);
+    void duplicateEmailIsRejectedAndNothingIsSaved() {
+        when(memberRepository.existsByEmailIgnoreCase("DAN@Example.com")).thenReturn(true);
 
-        useCase.invoke(m);
+        assertThatThrownBy(() -> useCase.invoke("Dan", "DAN@Example.com", null, null))
+            .isInstanceOf(MemberDomainException.class)
+            .hasMessage("A member with this email already exists");
 
-        Member s = saved();
-        assertThat(s.isActive()).isFalse();
-        assertThat(s.getJoinDate()).isNull();
+        verify(memberRepository, never()).save(any());
     }
 }

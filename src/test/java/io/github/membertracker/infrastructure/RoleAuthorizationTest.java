@@ -61,7 +61,7 @@ class RoleAuthorizationTest {
     private static final List<String> ROLES = List.of("MEMBER", "VOLUNTEER", "STAFF", "ADMIN");
 
     private static final String MEMBER_JSON =
-        "{\"name\":\"Abel\",\"email\":\"abel@example.com\",\"phone\":\"+390612345678\",\"joinDate\":\"2025-01-01\"}";
+        "{\"name\":\"Abel\",\"email\":\"abel@example.com\",\"phone\":\"+390612345678\",\"joinDate\":\"2025-01-01\",\"active\":true}";
     private static final String EXPORT_JSON = "{\"ids\":[1]}";
     private static final String PAYMENT_JSON =
         "{\"memberId\":1,\"amount\":50,\"paymentMethod\":\"CASH\"}";
@@ -77,6 +77,7 @@ class RoleAuthorizationTest {
     @MockitoBean private GetActiveMembersUseCase getActiveMembersUseCase;
     @MockitoBean private GetInactiveMembersUseCase getInactiveMembersUseCase;
     @MockitoBean private SaveMemberUseCase saveMemberUseCase;
+    @MockitoBean private UpdateMemberUseCase updateMemberUseCase;
     @MockitoBean private DeleteMemberUseCase deleteMemberUseCase;
     @MockitoBean private GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase;
     @MockitoBean private GetAllPaymentsUseCase getAllPaymentsUseCase;
