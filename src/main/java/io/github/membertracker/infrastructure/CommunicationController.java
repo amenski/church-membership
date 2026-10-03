@@ -1,7 +1,10 @@
 package io.github.membertracker.infrastructure;
 
 
+import io.github.membertracker.domain.enumeration.CommunicationType;
+import io.github.membertracker.domain.exception.MemberDomainException;
 import io.github.membertracker.domain.model.Communication;
+import io.github.membertracker.infrastructure.dto.SendCommunicationRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.github.membertracker.domain.model.Member;
@@ -32,6 +35,7 @@ public class CommunicationController {
 
     private final GetAllCommunicationsUseCase getAllCommunicationsUseCase;
     private final GetCommunicationByIdUseCase getCommunicationByIdUseCase;
+    private final GetMemberByIdUseCase getMemberByIdUseCase;
     private final CreateCommunicationUseCase createCommunicationUseCase;
     private final SendCommunicationToAllMembersUseCase sendCommunicationToAllMembersUseCase;
     private final SendCommunicationToMembersUseCase sendCommunicationToMembersUseCase;
@@ -42,6 +46,7 @@ public class CommunicationController {
     @Autowired
     public CommunicationController(GetAllCommunicationsUseCase getAllCommunicationsUseCase,
                                    GetCommunicationByIdUseCase getCommunicationByIdUseCase,
+                                   GetMemberByIdUseCase getMemberByIdUseCase,
                                    CreateCommunicationUseCase createCommunicationUseCase,
                                    SendCommunicationToAllMembersUseCase sendCommunicationToAllMembersUseCase,
                                    SendCommunicationToMembersUseCase sendCommunicationToMembersUseCase,
@@ -50,6 +55,7 @@ public class CommunicationController {
                                    RetryDeliveryUseCase retryDeliveryUseCase) {
         this.getAllCommunicationsUseCase = getAllCommunicationsUseCase;
         this.getCommunicationByIdUseCase = getCommunicationByIdUseCase;
+        this.getMemberByIdUseCase = getMemberByIdUseCase;
         this.createCommunicationUseCase = createCommunicationUseCase;
         this.sendCommunicationToAllMembersUseCase = sendCommunicationToAllMembersUseCase;
         this.sendCommunicationToMembersUseCase = sendCommunicationToMembersUseCase;
@@ -77,15 +83,15 @@ public class CommunicationController {
     @PostMapping
     @PreAuthorize("hasRole('STAFF')")
     @Operation(summary = "Create a communication without sending it (STAFF+)")
-    public ResponseEntity<Communication> createCommunication(@Valid @RequestBody Communication communication) {
-        return ResponseEntity.ok(createCommunicationUseCase.invoke(communication));
+    public ResponseEntity<Communication> createCommunication(@Valid @RequestBody SendCommunicationRequest request) {
+        return ResponseEntity.ok(createCommunicationUseCase.invoke(toCommunication(request)));
     }
 
     @PostMapping("/send-to-all")
     @PreAuthorize("hasRole('STAFF')")
     @Operation(summary = "Send a communication to all members (STAFF+)")
-    public ResponseEntity<Communication> sendToAllMembers(@Valid @RequestBody Communication communication) {
-        return ResponseEntity.ok(sendCommunicationToAllMembersUseCase.invoke(communication));
+    public ResponseEntity<Communication> sendToAllMembers(@Valid @RequestBody SendCommunicationRequest request) {
+        return ResponseEntity.ok(sendCommunicationToAllMembersUseCase.invoke(toCommunication(request)));
     }
 
     @PostMapping("/send-to-overdue/{months}")
@@ -93,16 +99,43 @@ public class CommunicationController {
     @Operation(summary = "Send a communication by email to members overdue by the given months (STAFF+)")
     public ResponseEntity<Communication> sendToOverdueMembers(
             @PathVariable @Min(1) int months,
-            @Valid @RequestBody Communication communication
+            @Valid @RequestBody SendCommunicationRequest request
     ) {
         List<Member> overdueMembers = getMembersWithMissedPaymentsUseCase.invoke(months);
         return ResponseEntity.ok(
                 sendCommunicationToMembersUseCase.invoke(
-                        communication,
+                        toCommunication(request),
                         overdueMembers,
                         MessageDelivery.DeliveryChannel.EMAIL
                 )
         );
+    }
+
+    @PostMapping("/send-to-member/{memberId}")
+    @PreAuthorize("hasRole('STAFF')")
+    @Operation(summary = "Send a communication by email to one member (STAFF+)")
+    public ResponseEntity<Communication> sendToMember(
+            @PathVariable @Positive Long memberId,
+            @Valid @RequestBody SendCommunicationRequest request
+    ) {
+        Member member = getMemberByIdUseCase.invoke(memberId)
+                .orElseThrow(() -> MemberDomainException.memberNotFound(memberId));
+        return ResponseEntity.ok(
+                sendCommunicationToMembersUseCase.invoke(
+                        toCommunication(request),
+                        List.of(member),
+                        MessageDelivery.DeliveryChannel.EMAIL
+                )
+        );
+    }
+
+    /** Builds a fresh Communication from the request; nothing else comes from the client. */
+    private Communication toCommunication(SendCommunicationRequest request) {
+        Communication communication = new Communication();
+        communication.setTitle(request.getTitle());
+        communication.setMessageContent(request.getMessageContent());
+        communication.setType(request.getType() != null ? request.getType() : CommunicationType.ANNOUNCEMENT);
+        return communication;
     }
 
     @GetMapping("/{id}/deliveries")

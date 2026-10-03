@@ -3,7 +3,7 @@
     <h2>Communication Management</h2>
     
     <!-- Communication Form -->
-    <div class="card mb-4">
+    <div v-if="authStore.isStaff" class="card mb-4">
       <div class="card-body">
         <h5 class="card-title">Send New Message</h5>
         <form @submit.prevent="sendMessage">
@@ -40,7 +40,10 @@
             <textarea v-model="newMessage.message" class="form-control" rows="4" required></textarea>
           </div>
           
-          <button type="submit" class="btn btn-primary">Send Message</button>
+          <button type="submit" class="btn btn-primary" :disabled="sending">
+            <span v-if="sending" class="spinner-border spinner-border-sm me-1" role="status"></span>
+            Send Message
+          </button>
         </form>
       </div>
     </div>
@@ -66,8 +69,8 @@
                 <td>{{ comm.title }}</td>
                 <td>{{ getRecipientInfo(comm) }}</td>
                 <td>
-                  <button 
-                    v-if="comm.sentToAllMembers"
+                  <button
+                    v-if="comm.sentDate"
                     class="btn btn-sm"
                     :class="getDeliveryStatusClass(comm)"
                     @click="showDeliveryDetails(comm)"
@@ -77,8 +80,8 @@
                   <span v-else class="text-muted">-</span>
                 </td>
                 <td>
-                  <button 
-                    v-if="comm.sentToAllMembers"
+                  <button
+                    v-if="comm.sentDate"
                     class="btn btn-sm btn-info"
                     @click="showDeliveryDetails(comm)"
                   >
@@ -193,6 +196,7 @@ import api from '@/services/api'
 import * as bootstrap from 'bootstrap'
 import { useAuthStore } from '../stores/authStore'
 import { useAppStore } from '../stores/appStore'
+import { buildCommunicationRequest } from '@/utils/communicationPayload'
 
 export default {
   name: 'CommunicationsView',
@@ -204,6 +208,7 @@ export default {
   },
   data() {
     return {
+      sending: false,
       retryingIds: [],
       members: [],
       communications: [],
@@ -239,15 +244,38 @@ export default {
         console.error('Error loading data:', error)
       }
     },
+    countRecipients() {
+      if (this.newMessage.recipientType === 'ALL') {
+        return this.members.filter(m => m.active).length
+      }
+      const months = Number(this.newMessage.monthsOverdue)
+      return this.members.filter(m => m.consecutiveMonthsMissed >= months).length
+    },
     async sendMessage() {
-      try {
-        if (this.newMessage.recipientType === 'ALL') {
-          await api.sendToAllMembers(this.newMessage)
-        } else if (this.newMessage.recipientType === 'OVERDUE') {
-          await api.sendToOverdueMembers(this.newMessage.monthsOverdue, this.newMessage)
-        } else {
-          await api.createCommunication(this.newMessage)
+      const payload = buildCommunicationRequest(this.newMessage)
+      const type = this.newMessage.recipientType
+
+      if (type === 'ALL' || type === 'OVERDUE') {
+        if (!window.confirm(`Send to ${this.countRecipients()} members?`)) {
+          return
         }
+      }
+
+      this.sending = true
+      try {
+        if (type === 'ALL') {
+          await api.sendToAllMembers(payload)
+        } else if (type === 'OVERDUE') {
+          await api.sendToOverdueMembers(this.newMessage.monthsOverdue, payload)
+        } else {
+          await api.sendToMember(this.newMessage.memberId, payload)
+        }
+        this.appStore.addNotification({
+          type: 'success',
+          title: 'Success',
+          message: 'Sending started',
+          isToast: true
+        })
         await this.loadData()
         this.newMessage = {
           recipientType: 'ALL',
@@ -257,7 +285,14 @@ export default {
           message: ''
         }
       } catch (error) {
-        console.error('Error sending message:', error)
+        this.appStore.addNotification({
+          type: 'error',
+          title: 'Error',
+          message: error.message || 'Failed to send message',
+          isToast: true
+        })
+      } finally {
+        this.sending = false
       }
     },
     async showDeliveryDetails(communication) {

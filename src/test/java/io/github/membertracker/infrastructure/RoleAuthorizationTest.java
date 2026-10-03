@@ -123,6 +123,7 @@ class RoleAuthorizationTest {
             new Endpoint(HttpMethod.POST, "/api/communications", COMMUNICATION_JSON, "STAFF"),
             new Endpoint(HttpMethod.POST, "/api/communications/send-to-all", COMMUNICATION_JSON, "STAFF"),
             new Endpoint(HttpMethod.POST, "/api/communications/send-to-overdue/1", COMMUNICATION_JSON, "STAFF"),
+            new Endpoint(HttpMethod.POST, "/api/communications/send-to-member/1", COMMUNICATION_JSON, "STAFF"),
             new Endpoint(HttpMethod.POST, "/api/communications/1/deliveries/1/retry", null, "STAFF"),
 
             new Endpoint(HttpMethod.GET, "/api/dashboard/stats", null, "VOLUNTEER"),

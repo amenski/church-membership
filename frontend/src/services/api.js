@@ -424,6 +424,10 @@ const apiService = {
     return this.post(`/communications/send-to-overdue/${months}`, communication)
   },
 
+  async sendToMember(memberId, communication) {
+    return this.post(`/communications/send-to-member/${memberId}`, communication)
+  },
+
   // Authentication API
   async login(credentials) {
     const response = await api.post('/auth/login', credentials)
