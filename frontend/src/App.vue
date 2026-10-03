@@ -1,73 +1,77 @@
 <template>
-  <div id="app" :class="themeClass">
-    <!-- Signed in: slim top bar below lg, left rail from lg up -->
+  <div id="app" :class="[themeClass, 'tw:min-h-screen']" :data-density="density">
+    <!-- Signed in: slim top bar below lg, left rail from lg up (a drawer below lg) -->
     <template v-if="isAuthenticated">
-      <header class="topbar d-lg-none">
-        <router-link :to="homePath" class="topbar__brand" aria-label="Felege Selam home">
-          <span class="wordmark__geez">ፈለገ ሰላም</span>
-          <span class="wordmark__latin">Felege Selam</span>
-        </router-link>
-        <button
-          class="btn btn-secondary topbar__menu"
-          type="button"
-          data-bs-toggle="offcanvas"
-          data-bs-target="#appRail"
+      <header class="tw:sticky tw:top-0 tw:z-[1020] tw:flex tw:items-center tw:justify-between tw:border-b tw:border-rule tw:bg-paper tw:px-4 tw:py-2 tw:lg:hidden">
+        <BrandMark :to="homePath" inline />
+        <BaseButton
+          ref="menuButton"
+          variant="secondary"
           aria-controls="appRail"
+          :aria-expanded="railOpen ? 'true' : 'false'"
           aria-label="Open menu"
+          @click="openRail"
         >
-          <i class="bi bi-list" aria-hidden="true"></i>
+          <i class="bi bi-list tw:text-[1.25rem] tw:leading-none" aria-hidden="true"></i>
           Menu
-        </button>
+        </BaseButton>
       </header>
 
-      <div class="rail-frame">
-        <aside id="appRail" ref="rail" class="rail offcanvas-lg offcanvas-start" tabindex="-1" aria-label="Main navigation">
-          <WovenBand :height="8" />
-          <div class="rail__header">
-            <router-link :to="homePath" class="wordmark" aria-label="Felege Selam home">
-              <span class="wordmark__geez">ፈለገ ሰላም</span>
-              <span class="wordmark__latin">Felege Selam</span>
-            </router-link>
-            <button
-              type="button"
-              class="btn-close d-lg-none"
-              data-bs-dismiss="offcanvas"
-              data-bs-target="#appRail"
-              aria-label="Close menu"
-            ></button>
-          </div>
+      <Transition
+        enter-active-class="tw:motion-safe:transition-opacity tw:motion-safe:duration-200"
+        enter-from-class="tw:opacity-0"
+        leave-active-class="tw:motion-safe:transition-opacity tw:motion-safe:duration-200"
+        leave-to-class="tw:opacity-0"
+      >
+        <div v-if="railOpen" class="tw:fixed tw:inset-0 tw:z-[1040] tw:bg-ink/40 tw:lg:hidden" aria-hidden="true" @click="closeRail"></div>
+      </Transition>
 
-          <nav class="rail__nav" aria-label="Sections">
-            <router-link v-if="authStore.hasRole('VOLUNTEER')" to="/dashboard" class="rail__link" active-class="active">
-              <i class="bi bi-house-door" aria-hidden="true"></i>Overview
-            </router-link>
-            <router-link v-if="authStore.hasRole('VOLUNTEER')" to="/members" class="rail__link" active-class="active">
-              <i class="bi bi-people" aria-hidden="true"></i>Members
-            </router-link>
-            <router-link v-if="authStore.hasRole('VOLUNTEER')" to="/payments" class="rail__link" active-class="active">
-              <i class="bi bi-cash-coin" aria-hidden="true"></i>Payments
-            </router-link>
-            <router-link v-if="authStore.hasRole('VOLUNTEER')" to="/communications" class="rail__link" active-class="active">
-              <i class="bi bi-chat-left-text" aria-hidden="true"></i>Messages
-            </router-link>
-            <router-link to="/profile" class="rail__link" active-class="active">
-              <i class="bi bi-person" aria-hidden="true"></i>Profile
-            </router-link>
-          </nav>
+      <aside
+        id="appRail"
+        ref="rail"
+        aria-label="Main navigation"
+        :inert="!isWide && !railOpen"
+        :class="[
+          'tw:fixed tw:inset-y-0 tw:left-0 tw:z-[1045] tw:flex tw:w-[280px] tw:flex-col tw:overflow-y-auto tw:border-r tw:border-rule tw:bg-paper tw:lg:w-[248px] tw:lg:translate-x-0',
+          'tw:motion-safe:transition-transform tw:motion-safe:duration-200',
+          railOpen ? 'tw:translate-x-0' : 'tw:max-lg:-translate-x-full'
+        ]"
+      >
+        <WovenBand :height="8" />
+        <div class="tw:flex tw:items-start tw:justify-between tw:px-6 tw:pt-6 tw:pb-4">
+          <BrandMark :to="homePath" />
+          <button
+            type="button"
+            class="tw:-mt-1 tw:-mr-2 tw:flex tw:size-9 tw:shrink-0 tw:cursor-pointer tw:items-center tw:justify-center tw:rounded-md tw:border-0 tw:bg-transparent tw:text-muted tw:hover:text-ink tw:lg:hidden"
+            aria-label="Close menu"
+            @click="closeRail"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <path d="M3 3l10 10M13 3L3 13" />
+            </svg>
+          </button>
+        </div>
 
-          <div class="rail__user">
-            <div class="rail__user-name">{{ displayName }}</div>
-            <div v-if="displayName !== currentUser?.email && currentUser?.email" class="rail__user-email">{{ currentUser.email }}</div>
-            <button type="button" class="btn btn-secondary btn-sm mt-3" @click="handleLogout">
-              <i class="bi bi-box-arrow-right" aria-hidden="true"></i>Sign out
-            </button>
-          </div>
-        </aside>
-      </div>
+        <nav class="tw:flex tw:flex-1 tw:flex-col tw:gap-[2px] tw:py-2" aria-label="Sections">
+          <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/dashboard" icon="bi-house-door">Overview</RailLink>
+          <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/members" icon="bi-people">Members</RailLink>
+          <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/payments" icon="bi-cash-coin">Payments</RailLink>
+          <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/communications" icon="bi-chat-left-text">Messages</RailLink>
+          <RailLink to="/profile" icon="bi-person">Profile</RailLink>
+        </nav>
+
+        <div class="tw:border-t tw:border-rule tw:px-6 tw:pt-4 tw:pb-6">
+          <div class="tw:text-base tw:font-bold tw:[overflow-wrap:anywhere]">{{ displayName }}</div>
+          <div v-if="displayName !== currentUser?.email && currentUser?.email" class="tw:text-sm tw:text-muted tw:[overflow-wrap:anywhere]">{{ currentUser.email }}</div>
+          <BaseButton variant="secondary" size="sm" class="tw:mt-3" @click="handleLogout">
+            <i class="bi bi-box-arrow-right" aria-hidden="true"></i>Sign out
+          </BaseButton>
+        </div>
+      </aside>
     </template>
 
-    <!-- Main Content -->
-    <main :class="isAuthenticated ? 'shell-main' : ''">
+    <!-- Main Content: content centred at 1100px, beside the rail from lg up -->
+    <main :class="isAuthenticated ? 'tw:lg:ml-[248px] tw:[&>*]:mx-auto tw:[&>*]:max-w-[1100px] tw:[&>*]:p-10 tw:max-sm:[&>*]:px-4 tw:max-sm:[&>*]:py-6' : ''">
       <router-view/>
     </main>
 
@@ -76,11 +80,13 @@
 </template>
 
 <script setup>
-import { computed, onMounted, watch, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, watch, ref } from 'vue'
 import WovenBand from '@/components/WovenBand.vue'
+import BaseButton from '@/components/BaseButton.vue'
+import BrandMark from '@/components/BrandMark.vue'
+import RailLink from '@/components/RailLink.vue'
 import ToastHost from '@/components/ToastHost.vue'
 import { useI18n } from 'vue-i18n'
-import { Offcanvas } from 'bootstrap'
 import { useAppStore } from '@/stores/appStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useRouter, useRoute } from 'vue-router'
@@ -91,6 +97,8 @@ const authStore = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 const rail = ref(null)
+const menuButton = ref(null)
+const railOpen = ref(false)
 
 const themeClass = computed(() => {
   const theme = appStore.currentTheme
@@ -110,9 +118,48 @@ const displayName = computed(() => {
 })
 const homePath = computed(() => (authStore.hasRole('VOLUNTEER') ? '/dashboard' : '/profile'))
 
-// Close the mobile menu after the user picks a page
-watch(() => route.fullPath, () => {
-  if (rail.value) Offcanvas.getInstance(rail.value)?.hide()
+// Staff get the dense screens; guests and members get the comfortable ones (docs/design.md)
+const density = computed(() => (isAuthenticated.value && authStore.hasRole('VOLUNTEER') ? 'dense' : 'comfortable'))
+
+// The rail is a drawer below lg: focus goes to its first link, then back to the menu button
+// (a closed drawer is inert: off screen, out of the tab order and the accessibility tree)
+const wideScreen = window.matchMedia('(min-width: 62rem)')
+const isWide = ref(wideScreen.matches)
+
+const openRail = async () => {
+  railOpen.value = true
+  await nextTick()
+  rail.value?.querySelector('nav a')?.focus()
+}
+
+const closeRail = () => {
+  if (!railOpen.value) return
+  railOpen.value = false
+  menuButton.value?.$el.focus()
+}
+
+const onKeydown = (event) => {
+  if (event.key === 'Escape') closeRail()
+}
+
+watch(railOpen, (open) => {
+  document.body.style.overflow = open ? 'hidden' : ''
+  if (open) document.addEventListener('keydown', onKeydown)
+  else document.removeEventListener('keydown', onKeydown)
+})
+
+// Close the drawer after the user picks a page
+watch(() => route.fullPath, closeRail)
+
+const onWideScreen = (event) => {
+  isWide.value = event.matches
+  if (event.matches) closeRail()
+}
+wideScreen.addEventListener('change', onWideScreen)
+onBeforeUnmount(() => {
+  wideScreen.removeEventListener('change', onWideScreen)
+  document.removeEventListener('keydown', onKeydown)
+  document.body.style.overflow = ''
 })
 
 const handleLogout = async () => {
@@ -139,132 +186,3 @@ onMounted(() => {
   authStore.initialize()
 })
 </script>
-
-<style>
-#app {
-  min-height: 100vh;
-}
-
-/* ---------- Wordmark ---------- */
-.wordmark,
-.topbar__brand {
-  display: flex;
-  flex-direction: column;
-  text-decoration: none;
-  color: var(--felege-ink);
-}
-.wordmark__geez {
-  font-family: var(--felege-font-geez);
-  font-weight: 700;
-  font-size: 1.375rem;
-  line-height: 1.3;
-  color: var(--felege-teal);
-}
-.wordmark__latin {
-  font-family: var(--felege-font-display);
-  font-weight: 700;
-  font-size: 1.125rem;
-  line-height: 1.2;
-  color: var(--felege-ink);
-}
-
-/* ---------- Top bar (below lg) ---------- */
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 1020;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-2) var(--space-4);
-  background: var(--felege-paper);
-  border-bottom: 1px solid var(--felege-rule);
-}
-.topbar__brand { flex-direction: row; align-items: baseline; gap: var(--space-3); }
-.topbar__brand .wordmark__geez { font-size: 1.125rem; }
-.topbar__menu i { font-size: 1.25rem; line-height: 1; }
-
-/* ---------- Rail ---------- */
-.rail {
-  --bs-offcanvas-width: 280px;
-  --bs-offcanvas-bg: var(--felege-paper);
-  --bs-offcanvas-border-color: var(--felege-rule);
-  display: flex;
-  flex-direction: column;
-  background: var(--felege-paper);
-}
-.rail__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  padding: var(--space-5) var(--space-5) var(--space-4);
-}
-.rail__nav {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: var(--space-2) 0;
-  flex: 1 1 auto;
-}
-.rail__link {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: 10px var(--space-5);
-  font-size: 1.125rem;
-  font-weight: 500;
-  color: var(--felege-ink);
-  text-decoration: none;
-  transition: color 0.12s;
-}
-.rail__link i { font-size: 1.125rem; color: var(--felege-muted); transition: color 0.12s; }
-.rail__link:hover,
-.rail__link:hover i { color: var(--felege-teal); }
-.rail__link.active,
-.rail__link.active i { color: var(--felege-teal); }
-.rail__link.active { font-weight: 700; }
-.rail__link.active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 6px;
-  bottom: 6px;
-  width: 3px;
-  background: var(--felege-teal);
-}
-.rail__user {
-  padding: var(--space-4) var(--space-5) var(--space-5);
-  border-top: 1px solid var(--felege-rule);
-}
-.rail__user-name { font-size: 1rem; font-weight: 700; overflow-wrap: anywhere; }
-.rail__user-email { font-size: 0.875rem; color: var(--felege-muted); overflow-wrap: anywhere; }
-
-@media (min-width: 992px) {
-  .rail-frame {
-    position: fixed;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    width: 248px;
-    display: flex;
-    flex-direction: column;
-    border-right: 1px solid var(--felege-rule);
-    background: var(--felege-paper);
-    overflow-y: auto;
-  }
-  .rail { min-height: 100%; }
-  .shell-main { margin-left: 248px; }
-}
-
-/* ---------- Content area ---------- */
-.shell-main > * {
-  max-width: 1100px;
-  margin-left: auto;
-  margin-right: auto;
-  padding: var(--space-6);
-}
-@media (max-width: 575.98px) {
-  .shell-main > * { padding: var(--space-5) var(--space-4); }
-}
-</style>

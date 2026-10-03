@@ -1,6 +1,6 @@
 <template>
   <svg
-    class="woven-band"
+    class="tw:block"
     width="100%"
     :height="height"
     aria-hidden="true"
@@ -36,9 +36,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-.woven-band {
-  display: block;
-}
-</style>

@@ -42,6 +42,13 @@
   --color-fern-tint: #E2EFE4;
   --color-clay: #A8412F;
   --color-clay-tint: #F7E6E2;
+  --color-clay-hover: #8A3324;
+
+  /* Alert outlines (decorative, like rule) */
+  --color-teal-line: #B8D5D4;
+  --color-fern-line: #BFD8C4;
+  --color-ochre-line: #E4CC93;
+  --color-clay-line: #E7C4BC;
 
   --font-*: initial;
   --font-display: "Alegreya", Georgia, "Times New Roman", serif;

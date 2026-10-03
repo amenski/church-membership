@@ -1,73 +1,63 @@
 <template>
-  <main class="auth">
-    <router-link to="/" class="auth__brand" aria-label="Felege Selam home">
-      <span class="auth__geez">ፈለገ ሰላም</span>
-      <span class="auth__latin">Felege Selam</span>
+  <div data-density="comfortable" class="tw:flex tw:min-h-screen tw:flex-col tw:items-center tw:justify-center tw:gap-6 tw:bg-mist tw:px-4 tw:py-6">
+    <router-link to="/" class="tw:flex tw:flex-col tw:items-center tw:no-underline" aria-label="Felege Selam home">
+      <span class="tw:font-ethiopic tw:text-2xl tw:leading-[1.3] tw:font-bold tw:text-teal">ፈለገ ሰላም</span>
+      <span class="tw:font-display tw:text-lg tw:font-bold tw:text-ink">Felege Selam</span>
     </router-link>
 
-    <div class="auth__card">
+    <div class="tw:w-full tw:max-w-[400px] tw:overflow-hidden tw:rounded-md tw:border tw:border-rule tw:bg-paper">
       <WovenBand :height="8" />
-      <div class="auth__body">
-        <h1 class="auth__title">Sign in</h1>
+      <div class="tw:p-6">
+        <h1 class="tw:mt-0 tw:mb-6 tw:font-display tw:text-2xl tw:leading-[1.2] tw:font-bold tw:text-ink">Sign in</h1>
 
-        <form class="auth__form" @submit.prevent="handleLogin">
+        <form @submit.prevent="handleLogin">
           <!-- Error Alert -->
-          <div v-if="authError" class="alert alert-danger" role="alert">
-            {{ authError }}
-          </div>
+          <AlertBanner v-if="authError">{{ authError }}</AlertBanner>
 
           <!-- Email Field -->
-          <div class="mb-3">
-            <label for="email" class="form-label">Email</label>
-            <input
+          <div class="tw:mb-4">
+            <BaseInput
               id="email"
               v-model="form.email"
+              label="Email"
               type="email"
-              class="form-control"
-              :class="{ 'is-invalid': errors.email }"
+              :error="errors.email"
               autocomplete="username"
               :disabled="isAuthLoading"
               @blur="validateField('email')"
             />
-            <div v-if="errors.email" class="invalid-feedback">
-              {{ errors.email }}
-            </div>
           </div>
 
           <!-- Password Field -->
-          <div class="mb-4">
-            <label for="password" class="form-label">Password</label>
-            <input
+          <div class="tw:mb-6">
+            <BaseInput
               id="password"
               v-model="form.password"
+              label="Password"
               type="password"
-              class="form-control"
-              :class="{ 'is-invalid': errors.password }"
+              :error="errors.password"
               autocomplete="current-password"
               :disabled="isAuthLoading"
               @blur="validateField('password')"
             />
-            <div v-if="errors.password" class="invalid-feedback">
-              {{ errors.password }}
-            </div>
           </div>
 
           <!-- Submit Button -->
-          <button
-            type="submit"
-            class="btn btn-primary w-100 justify-content-center"
-            :disabled="isAuthLoading || !isFormValid"
-          >
-            <span v-if="isAuthLoading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+          <BaseButton type="submit" class="tw:w-full" :disabled="isAuthLoading || !isFormValid">
+            <span
+              v-if="isAuthLoading"
+              class="tw:mr-2 tw:inline-block tw:size-4 tw:rounded-full tw:border-2 tw:border-current tw:border-r-transparent tw:align-[-0.125em] tw:motion-safe:animate-spin"
+              aria-hidden="true"
+            ></span>
             {{ isAuthLoading ? 'Signing in...' : 'Sign in' }}
-          </button>
+          </BaseButton>
         </form>
       </div>
     </div>
 
     <!-- Registration is disabled: accounts are created by the church office -->
-    <p class="auth__note">Accounts are set up by the church office.</p>
-  </main>
+    <p class="tw:m-0 tw:text-center tw:text-sm tw:text-muted">Accounts are set up by the church office.</p>
+  </div>
 </template>
 
 <script setup>
@@ -75,6 +65,9 @@ import { computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
 import { useAppStore } from '../stores/appStore'
+import AlertBanner from '@/components/AlertBanner.vue'
+import BaseButton from '@/components/BaseButton.vue'
+import BaseInput from '@/components/BaseInput.vue'
 import WovenBand from '@/components/WovenBand.vue'
 
 const router = useRouter()
@@ -212,51 +205,3 @@ const clearErrorOnInput = () => {
   }
 }
 </script>
-
-<style scoped>
-.auth {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-5);
-  padding: var(--space-5) var(--space-4);
-  background: var(--felege-mist);
-}
-.auth__brand {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-decoration: none;
-}
-.auth__geez {
-  font-family: var(--felege-font-geez);
-  font-weight: 700;
-  font-size: 1.75rem;
-  line-height: 1.3;
-  color: var(--felege-teal);
-}
-.auth__latin {
-  font-family: var(--felege-font-display);
-  font-weight: 700;
-  font-size: 1.125rem;
-  color: var(--felege-ink);
-}
-.auth__card {
-  width: 100%;
-  max-width: 400px;
-  overflow: hidden;
-  background: var(--felege-paper);
-  border: 1px solid var(--felege-rule);
-  border-radius: var(--felege-radius);
-}
-.auth__body { padding: var(--space-5); }
-.auth__title { font-size: 1.75rem; margin-bottom: var(--space-5); }
-.auth__note {
-  margin: 0;
-  font-size: 0.875rem;
-  color: var(--felege-muted);
-  text-align: center;
-}
-</style>

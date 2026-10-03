@@ -5,7 +5,7 @@ app has one job: show who needs a call, record payments, reach members kindly.
 Users are the treasurer and volunteers who open it weekly after services (dense,
 repeat use), and members who only see their own profile.
 
-Code: `frontend/src/assets/styles/theme.css` (tokens and Bootstrap overrides),
+Code: `frontend/src/assets/styles/tailwind.css` (Tailwind tokens, see Styling system), `frontend/src/assets/styles/theme.css` (legacy Bootstrap overrides, removed in T4),
 `frontend/src/components/WovenBand.vue`, `frontend/src/components/DuesMeter.vue`,
 `frontend/src/utils/dashboardMeter.js`.
 
@@ -30,6 +30,8 @@ computed by a script (`/private/tmp/claude-502/design/contrast.mjs`, not in the 
 | `--felege-fern` | `#3F7A4B` | paid fill, success buttons | 5.13 on paper |
 | `--felege-fern-text` | `#2F5E39` | "paid" text | 7.55 on paper, 6.36 on fern tint |
 | `--felege-clay` | `#A8412F` | danger, inactive | 6.07 on paper, 5.52 on mist, 5.02 on clay tint |
+| `clay-hover` (Tailwind only, theme.css writes it inline) | `#8A3324` | danger button hover and pressed | white on it 8.14 |
+| alert lines | teal `#B8D5D4`, fern `#BFD8C4`, ochre `#E4CC93`, clay `#E7C4BC` (Tailwind `teal-line` etc.) | 1px outline of an alert, decorative | n/a |
 | tints | teal `#E3EFEE`, ochre `#F7ECD4`, fern `#E2EFE4`, clay `#F7E6E2` | badge and alert backgrounds | text on each tint is at least 5.0 |
 
 No hex from the plan needed changing: every text pair is at least 4.5:1.
@@ -78,21 +80,27 @@ owes. It is a picture of "who is left to call".
   (clip-path, 700 ms ease-out). Disabled under `prefers-reduced-motion`.
 - Zero active members: no meter, an empty state instead.
 
-## Component classes
+## Components
 
-| Class | Meaning |
+Shared patterns are small Vue components in `frontend/src/components/`, built from Tailwind utilities (no custom classes).
+
+| Component | Meaning |
 |---|---|
-| `.status`, `.status--paid`, `.status--behind`, `.status--inactive` | small dot plus the word, in fern-text, ochre-text, clay. Not a pill chip |
-| `.figure-display` | Alegreya 700, tabular lining figures |
-| `.page-head`, `.page-title`, `.page-lead` | page title (Alegreya 28/700) with a one-line plain description beneath |
-| `.section-title` | Alegreya 22/700 heading for a list or block |
-| `.ruled-list`, `.ruled-list__row`, `__main`, `__date`, `__amount` | rows on 1px rules, 56px tall, no boxes |
-| `.empty-note` | muted plain sentence that invites the next action |
-| `.text-action` | plain teal text button for row actions ("Send reminder") |
-| `.rail`, `.rail__link`, `.rail__user`, `.topbar` | app shell in `App.vue`: 248px left rail from lg, slim top bar plus offcanvas below |
-| `.toast-note`, `--success`, `--error`, `--warning` | paper toast with a 4px colour edge |
-| `.btn-warning` | ochre text on an ochre tint (secondary), not white on orange |
-| `.badge.bg-*` | quiet tinted text, kept only until phase B replaces badges with `.status` |
+| `StatusLabel` (`tone` paid, behind, inactive) | small dot plus the word, in fern-text, ochre-text, clay. Not a pill chip |
+| `PageHead` (`title`, `lead`) | page title (Alegreya 28/700) with a one-line plain description beneath |
+| `SectionTitle` | Alegreya 22/700 heading for a list or block |
+| `RuledList`, `RuledRow` | rows on 1px rules, 56px tall, no boxes |
+| `EmptyNote` | muted plain sentence that invites the next action |
+| `TextButton` | plain teal text button for row actions ("Send reminder") |
+| `BaseButton` (`variant` primary, secondary, danger; `size` sm, md, lg; `to` for a link) | the button; disabled is 65% opacity with the real `disabled` attribute |
+| `BaseInput` (`id`, `label`, `v-model`, `error`) | label, field and its error text, wired with `aria-invalid` and `aria-describedby` |
+| `AlertBanner` (`tone` danger, success, warning, info) | tinted alert with a 1px line, `role="alert"` |
+| `BrandMark`, `RailLink` | the wordmark link and a rail link (`aria-current="page"` on the active one) |
+| `ToastHost` | renders `appStore.notifications`: paper card, 4px edge in fern, clay, ochre or teal; bottom right from sm, full width below; timers pause on hover and focus; errors are `role="alert"`, the rest `role="status"` |
+| `BaseModal` (`v-model`, `title`, `size`, slots `default` and `footer`) | dialog: teleported to body, focus moves in and returns, Tab trapped, Escape and a click on the backdrop close it, page scroll locked |
+| `WovenBand`, `DuesMeter` | the signature (see above) |
+
+Still Bootstrap until T2 and T3: `.btn-warning` (ochre text on an ochre tint), `.badge.bg-*` (quiet tinted text, replaced by `StatusLabel`), tables, cards, forms and modals on Members, Payments, Messages and Profile.
 
 ## Accessibility rules
 
@@ -100,7 +108,7 @@ owes. It is a picture of "who is left to call".
 - `:focus-visible { outline: 2px solid var(--felege-teal); outline-offset: 2px }` on everything.
 - `prefers-reduced-motion`: transitions shortened, meter sweep off.
 - Colour is never the only signal: status is a dot plus a word; the meter has a text sentence.
-- Responsive to 360px; the rail becomes an offcanvas menu below `lg`.
+- Responsive to 360px; the rail becomes a drawer below `lg` (a Vue-state drawer: overlay, Escape and overlay click close it, focus moves to its first link and back to the menu button, `aria-expanded` and `aria-controls` on the button, closes on navigation).
 
 ## Copy rules
 
@@ -135,7 +143,7 @@ Tried and removed, so nobody puts them back:
 - [ ] Payments: the three stat cards become a quiet two-or-three-figure row like the Overview;
       table with tabular amounts, right-aligned; Record payment as the one primary button.
 - [ ] Messages (route `/communications`, nav label "Messages"): compose in a paper card;
-      delivery results as a ruled list with `.status`; page title still says Communications, align it.
+      delivery results as a ruled list with `StatusLabel`; page title still says Communications, align it.
 - [ ] Profile: forms in paper cards, one per concern (details, password); plain labels.
 - [ ] Dialogs: titles in Alegreya 22, footers with one primary action, destructive actions in clay.
 - [ ] Empty states: every list gets a plain sentence that invites the next action.
