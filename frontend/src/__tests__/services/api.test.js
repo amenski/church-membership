@@ -80,12 +80,52 @@ describe('api response interceptor', () => {
     expect(useAuthStore().isAuthenticated).toBe(false)
   })
 
-  it('401 with failed refresh while not signed in shows no notification', async () => {
-    respondWith({ '/users/me': 401, '/auth/refresh': 401 })
+  // jsdom's window.location cannot be redefined, so swap it for a recording stub
+  function stubLocation(pathname) {
+    const original = window.location
+    // This test environment has no usable Web Storage, which the refresh-failure path clears
+    const storage = { removeItem: () => {} }
+    vi.stubGlobal('localStorage', storage)
+    vi.stubGlobal('sessionStorage', storage)
+    const stub = { pathname, href: pathname }
+    Object.defineProperty(window, 'location', { configurable: true, value: stub })
+    return {
+      stub,
+      restore: () => {
+        Object.defineProperty(window, 'location', { configurable: true, value: original })
+        vi.unstubAllGlobals()
+      }
+    }
+  }
 
-    await expect(axiosInstance.get('/users/me')).rejects.toBeDefined()
+  it('401 with failed refresh while not signed in shows no notification and does not redirect', async () => {
+    const { stub, restore } = stubLocation('/')
+    try {
+      respondWith({ '/users/me': 401, '/auth/refresh': 401 })
 
-    expect(addNotification).not.toHaveBeenCalled()
+      await expect(axiosInstance.get('/users/me')).rejects.toBeDefined()
+
+      expect(addNotification).not.toHaveBeenCalled()
+      expect(stub.href).toBe('/')
+    } finally {
+      restore()
+    }
+  })
+
+  it('401 with failed refresh while signed in redirects to the expired-session page', async () => {
+    const { stub, restore } = stubLocation('/dashboard')
+    try {
+      signIn()
+      respondWith({ '/members': 401, '/auth/refresh': 401 })
+
+      await expect(axiosInstance.get('/members')).rejects.toBeDefined()
+
+      expect(addNotification).toHaveBeenCalledTimes(1)
+      expect(addNotification).toHaveBeenCalledWith(expect.objectContaining({ title: 'Session Expired' }))
+      expect(stub.href).toBe('/login?session=expired')
+    } finally {
+      restore()
+    }
   })
 
   it('401 that persists after a successful refresh shows one Unauthorized', async () => {

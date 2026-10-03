@@ -108,7 +108,7 @@ This document tracks missing features, improvements, and technical debt in the M
   - [x] Standardize error response format (ProblemDetail)
   - [ ] Localized error messages: deferred until a second UI locale exists
   - [ ] Structured (JSON) logging: deferred to the Monitoring & Logging item (infrastructure)
-  - [x] Frontend notifications for session expiry, 401 and 403 (c2a58d1)
+  - [x] Frontend notifications for session expiry, 401 and 403 (1c13996), logged-out visitors are no longer redirected to the expired-session page
   - **Location**: `GlobalExceptionHandler`, logging configuration
 
 ---

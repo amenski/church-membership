@@ -161,8 +161,9 @@ api.interceptors.response.use(
         sessionStorage.removeItem('user')
         sessionStorage.removeItem('auth_timestamp')
 
-        // Redirect to login only if not already there
-        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        // Hard-redirect only a user who had a session to expire; for a
+        // logged-out visitor the router guard decides where to go
+        if (wasAuthenticated && typeof window !== 'undefined' && window.location.pathname !== '/login') {
           window.location.href = '/login?session=expired'
         }
         return Promise.reject(refreshError)
