@@ -43,6 +43,9 @@ This document tracks missing features, improvements, and technical debt in the M
 
 ### Testing
 - [ ] **Comprehensive Test Coverage**
+  - [x] Domain unit tests *(daf0019)*
+  - [x] Use case unit tests *(97a9e04)*
+  - [ ] Frontend tests (Vitest)
   - Unit tests for all use cases (minimum 80% coverage)
   - Integration tests for all API endpoints
   - Frontend component tests (Vue.js)
@@ -58,6 +61,16 @@ This document tracks missing features, improvements, and technical debt in the M
 ---
 
 ## 🔴 High Priority (Should be done soon)
+
+### Bugs found by tests (October 2026)
+- [x] Password change always failed (bcrypt hash checked against the strength rule) *(f26514e)*
+- [x] Reactivation on payment was never saved *(fe2eac5)*
+- [x] Duplicate payment for the same member and month accepted *(fe2eac5)*
+- [x] "Send to all" included inactive members *(1e0eb4a)*
+- [x] Reminder skipped exactly 7 days before the due date *(6b31097)*
+- [x] Minimum-amount message said 10.0 while 0.01 was accepted *(fe2eac5)*
+- [ ] Audit C2–C4 are pinned by @Disabled tests in `RecordPaymentUseCaseTest`, `UpdateMissingPaymentCountersUseCaseTest` and `SendPaymentRemindersUseCaseTest` (see functionality-audit.md)
+- [ ] Open questions: `RecordPaymentUseCase` accepts payments for inactive members; `UpdateMissingPaymentCountersUseCase` counts inactive members and members who joined this month
 
 ### Core Features
 - [ ] **Frontend Delivery Status Display**

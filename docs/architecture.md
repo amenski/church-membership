@@ -109,4 +109,7 @@ frontend/src/
 | 2026-02 | Cached thread pool for email sending, not virtual threads | Keeps the project on Java 17 | In use. The audit flags it as unbounded and not durable |
 | 2026-02 | Self-registration disabled | Only church staff should have accounts | In use. There is no admin user management yet |
 | 2026-10 | HTTPS via Caddy reverse proxy, not Spring SSL | Automatic certificate renewal; app config stays simple | In use. See [development.md](development.md#https-caddy-reverse-proxy) |
+| 2026-10 | "Send to all" means active members only | Inactive includes lapsed, transferred and deceased members | In use |
+| 2026-10 | Any payment amount above 0 is valid; no fixed minimum | Dues vary by family and gifts can be small | In use |
+| 2026-10 | Payment reminders start 7 days before the due date (inclusive) | Matches REMINDER_DAYS_BEFORE_DUE | In use |
 | 2026-10 | Roles ADMIN > STAFF > VOLUNTEER > MEMBER with `RoleHierarchy` | Replaces ADMIN/MANAGER/USER and the planned TREASURER/VIEWER | Done (3cf5d84; frontend routes in this change) |
