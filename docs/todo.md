@@ -141,6 +141,7 @@ This document tracks missing features, improvements, and technical debt in the M
   - **Location**: Entity definitions, repository methods
 
 - [ ] **Frontend Performance**
+  - [x] html2pdf.js loaded on demand (PaymentsView chunk 990.63 kB → 8.14 kB)
   - Implement lazy loading for large datasets
   - Optimize bundle size (tree shaking)
   - Add frontend caching strategies

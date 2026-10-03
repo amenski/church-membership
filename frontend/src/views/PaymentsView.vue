@@ -172,7 +172,6 @@
 
 <script>
 import api from '@/services/api'
-import html2pdf from 'html2pdf.js'
 import * as bootstrap from 'bootstrap'
 import { useAppStore } from '../stores/appStore'
 import { downloadBlob } from '@/utils'
@@ -299,6 +298,7 @@ export default {
         html2canvas: { scale: 2 },
         jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
       }
+      const { default: html2pdf } = await import('html2pdf.js')
       await html2pdf().set(options).from(element).save()
     },
     async exportPayments() {
