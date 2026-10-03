@@ -1,7 +1,7 @@
 # MemberTracker Project - Todo List
 
-*Last updated: February 17, 2026*  
-*Generated from project review and implementation roadmap*
+*Last updated: October 3, 2026*  
+*Critical defects found in the October 2026 audit (C1–C10) are listed in [functionality-audit.md](functionality-audit.md#3-critical-gaps); fix those first.*
 
 ## 📋 Overview
 
@@ -20,8 +20,8 @@ This document tracks missing features, improvements, and technical debt in the M
 - [x] Fixed type mismatch in `MessageDeliveryDbRepository` (changed `MemberDbRepository` → `MemberJpaRepository`)
 
 ### Documentation
-- [x] Added `validation-plan.md` with validation strategy
-- [x] Updated `PROJECT_STATUS_AND_ROADMAP.md` with current status
+- [x] Validation strategy documented (now in `architecture.md`)
+- [x] Docs consolidated (October 2026): `doc/` and the frontend auth docs merged into `docs/` (see `README.md` for the index)
 
 ---
 
@@ -29,10 +29,11 @@ This document tracks missing features, improvements, and technical debt in the M
 
 ### Security
 - [ ] **Role-Based Authorization Enhancement**
-  - Add `@PreAuthorize` annotations to all controller methods
-  - Implement fine-grained permission control (ADMIN, TREASURER, VIEWER)
-  - Add permission checks in frontend routes
+  - Add `@PreAuthorize` annotations to all controller methods *(done in working tree, Oct 2026; tests not yet run)*
+  - Implement fine-grained permission control (ADMIN > STAFF > VOLUNTEER > MEMBER, via `RoleHierarchy`) *(done in working tree)*
+  - Add permission checks in frontend routes (`requiresRole` meta; no route sets it yet)
   - **Location**: All controller classes, frontend route guards
+  - **Tracking**: `role-auth-checkpoints.md`
 
 - [ ] **HTTPS Configuration**
   - Generate/obtain SSL certificates
@@ -60,14 +61,14 @@ This document tracks missing features, improvements, and technical debt in the M
 
 ### Core Features
 - [ ] **Frontend Delivery Status Display**
-  - Add delivery status column in communications table
-  - Implement status summary cards
-  - Add retry functionality for failed deliveries
+  - [x] Add delivery status column in communications table (delivery dialog in `CommunicationsView.vue`)
+  - [x] Implement status summary cards (sent / failed / pending)
+  - [ ] Add retry functionality for failed deliveries
   - **Location**: `frontend/src/views/CommunicationsView.vue`
 
 - [ ] **Email Retry Logic Enhancement**
-  - Implement exponential backoff retry strategy
-  - Add retry configuration to `MailProperties`
+  - [x] Implement exponential backoff retry strategy (send-to-all only; `SendCommunicationToMembersUseCase` still sends without retry)
+  - [x] Add retry configuration to `MailProperties` (`app.mail.retry.*`)
   - Track retry attempts in `MessageDelivery`
   - **Location**: `EmailService`, `MailProperties`, retry use case
 
@@ -78,6 +79,11 @@ This document tracks missing features, improvements, and technical debt in the M
   - **Location**: `MemberController`, `PaymentController`, frontend views
 
 ### Code Quality
+- [ ] **Finish the Communication domain model**
+  - Add behaviour to `Communication` (e.g. `markAsSent()`, `isSent()`); it only has getters/setters
+  - Move `CommunicationType` from an inner enum to `domain/enumeration`
+  - **Location**: `domain/model/Communication.java`
+
 - [ ] **API Documentation**
   - Add OpenAPI/Swagger documentation
   - Document all endpoints with request/response examples
@@ -200,8 +206,9 @@ This document tracks missing features, improvements, and technical debt in the M
 
 ### Low Impact
 1. **Code quality tools missing** (SonarQube, pre-commit hooks)
-2. **No advanced monitoring** - reactive issue detection
-3. **Limited mobile responsiveness** - mobile user experience
+2. **Broken frontend Gradle tasks** - `:frontend:vueRunDev` and `:frontend:vueLint` call `npm run serve` / `npm run lint`, which don't exist in `package.json`
+3. **No advanced monitoring** - reactive issue detection
+4. **Limited mobile responsiveness** - mobile user experience
 
 ---
 
@@ -224,4 +231,4 @@ This document tracks missing features, improvements, and technical debt in the M
 
 ---
 
-*This document is maintained as part of the project documentation. For detailed implementation plans, see `IMPLEMENTATION_ROADMAP.md` and `PROJECT_STATUS_AND_ROADMAP.md`.*
+*This document is the live backlog. For the phased roadmap and critical defects, see [functionality-audit.md](functionality-audit.md); for the doc index, see the root [README.md](../README.md).*
