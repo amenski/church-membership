@@ -73,11 +73,13 @@ class UserTest {
     }
 
     @Test
-    void changePassword_weak_throwsAndLeavesPasswordUnchanged() {
+    void changePassword_storesEncodedValueWithoutStrengthCheck() {
         User u = user();
-        assertThatThrownBy(() -> u.changePassword("weak"))
-            .isInstanceOf(UserDomainException.class);
-        assertThat(u.getPassword()).isEqualTo("irrelevant");
+        String bcryptHash = "$2a$10$7EqJtq98hPqEX7fNZaFWoOhi5BUwYhXKZl1u2bQ3vGZ0H8s6y9Ety";
+
+        u.changePassword(bcryptHash);
+
+        assertThat(u.getPassword()).isEqualTo(bcryptHash);
     }
 
     // failed logins

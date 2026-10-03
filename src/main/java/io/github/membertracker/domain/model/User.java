@@ -196,12 +196,13 @@ public class User implements UserDetails {
     }
 
     /**
-     * Changes the user's password after validating strength.
+     * Changes the user's password to an already-encoded value.
+     * Callers must validate the plain password with {@link #validatePasswordStrength}
+     * before encoding it; the encoded value is not checked here.
      * Updates the last password change timestamp.
      */
-    public void changePassword(String newPassword) {
-        validatePasswordStrength(newPassword);
-        this.password = newPassword;
+    public void changePassword(String encodedPassword) {
+        this.password = encodedPassword;
         this.lastPasswordChange = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
         this.failedLoginAttempts = 0; // Reset failed attempts on password change

@@ -6,7 +6,6 @@ import io.github.membertracker.domain.model.User;
 import io.github.membertracker.domain.repository.UserRepository;
 import io.github.membertracker.domain.valueobject.Email;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -43,7 +42,6 @@ class ChangePasswordUseCaseTest {
     }
 
     @Test
-    @Disabled("BUG: User.changePassword re-validates the already-encoded hash against the plain-password strength regex, so a real bcrypt hash (contains '.' and '/') always throws WEAK_PASSWORD")
     void storesTheEncodedNewPasswordNotThePlainOne() {
         user.setFailedLoginAttempts(2);
 
