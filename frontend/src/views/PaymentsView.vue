@@ -174,9 +174,16 @@
 import api from '@/services/api'
 import html2pdf from 'html2pdf.js'
 import * as bootstrap from 'bootstrap'
+import { useAppStore } from '../stores/appStore'
+import { downloadBlob } from '@/utils'
 
 export default {
   name: 'PaymentsView',
+  setup() {
+    return {
+      appStore: useAppStore()
+    }
+  },
   data() {
     return {
       members: [],
@@ -297,19 +304,16 @@ export default {
     async exportPayments() {
       try {
         const response = await api.exportPayments()
-        // Create a blob and download it
         // api.request() already returns response.data (the blob)
-        const blob = new Blob([response], { type: 'text/csv' })
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `payments_${new Date().toISOString().split('T')[0]}.csv`
-        document.body.appendChild(a)
-        a.click()
-        window.URL.revokeObjectURL(url)
-        document.body.removeChild(a)
+        downloadBlob(response, `payments_${new Date().toISOString().split('T')[0]}.csv`)
       } catch (error) {
         console.error('Error exporting payments:', error)
+        this.appStore.addNotification({
+          type: 'error',
+          title: 'Export failed',
+          message: error.message || 'Could not export CSV',
+          isToast: true
+        })
       }
     }
   }

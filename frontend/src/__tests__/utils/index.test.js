@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { formatDate, debounce, formatCurrency, isValidEmail, deepClone } from '@/utils/index'
+import { formatDate, debounce, formatCurrency, isValidEmail, deepClone, downloadBlob } from '@/utils/index'
 
 describe('formatDate', () => {
   it('uses the default format', () => {
@@ -84,5 +84,32 @@ describe('deepClone', () => {
     expect(copy).toEqual(src)
     copy.nested.b.push(3)
     expect(src.nested.b).toEqual([1, 2])
+  })
+})
+
+describe('downloadBlob', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  it('creates an anchor with the filename, clicks it and revokes the URL', () => {
+    window.URL.createObjectURL = vi.fn(() => 'blob:fake')
+    window.URL.revokeObjectURL = vi.fn()
+    let anchor
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(function () {
+        anchor = this
+      })
+
+    downloadBlob('a,b', 'test.csv')
+
+    expect(click).toHaveBeenCalledTimes(1)
+    expect(anchor.download).toBe('test.csv')
+    expect(anchor.href).toBe('blob:fake')
+    expect(window.URL.revokeObjectURL).toHaveBeenCalledWith('blob:fake')
+    expect(document.body.contains(anchor)).toBe(false)
+    expect(window.URL.createObjectURL.mock.calls[0][0].type).toBe('text/csv')
   })
 })

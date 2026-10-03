@@ -85,10 +85,11 @@ This document tracks missing features, improvements, and technical debt in the M
   - Track retry attempts in `MessageDelivery`
   - **Location**: `EmailService`, `MailProperties`, retry use case
 
-- [ ] **CSV Export Improvements**
-  - Fix frontend blob handling (response.data vs response)
-  - Add proper error handling for export failures
-  - Implement streaming for large datasets
+- [x] **CSV Export Improvements**
+  - Frontend blob handling unified in `downloadBlob`
+  - Error notification added for failed exports
+  - CSV formula-injection guard added (new, security)
+  - Streaming for large datasets: deferred. Exports load all rows in memory, which is fine for a congregation under ~1,000 people (see functionality-audit.md assumptions).
   - **Location**: `MemberController`, `PaymentController`, frontend views
 
 ### Code Quality

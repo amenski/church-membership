@@ -82,3 +82,21 @@ export const isValidEmail = (email) => {
 export const deepClone = (obj) => {
   return JSON.parse(JSON.stringify(obj))
 }
+
+/**
+ * Trigger a browser download for in-memory data
+ * @param {BlobPart} data - The file contents
+ * @param {string} filename - The suggested file name
+ * @param {string} type - The MIME type
+ */
+export const downloadBlob = (data, filename, type = 'text/csv') => {
+  const blob = new Blob([data], { type })
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  window.URL.revokeObjectURL(url)
+}
