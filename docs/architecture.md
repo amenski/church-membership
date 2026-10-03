@@ -70,7 +70,7 @@ public Payment invoke(Payment payment) {
 
 - **Domain models and policies:** plain unit tests, no Spring.
 - **Use cases:** integration tests covering the whole workflow.
-- **Controllers:** MockMvc tests for every role against every endpoint group (`RoleAuthorizationTest`, uncommitted).
+- **Controllers:** MockMvc tests for every role against every endpoint group (`RoleAuthorizationTest`, 125 cases).
 
 Current coverage: `RoleAuthorizationTest` and `ApplicationTests`. `ApplicationTests` is disabled.
 
@@ -108,4 +108,4 @@ frontend/src/
 | 2026-02 | Money as `Double`, not `BigDecimal` | Simpler arithmetic and JSON | **Under review:** the [functionality audit](functionality-audit.md) recommends going back to `BigDecimal` before adding funds and receipts |
 | 2026-02 | Cached thread pool for email sending, not virtual threads | Keeps the project on Java 17 | In use. The audit flags it as unbounded and not durable |
 | 2026-02 | Self-registration disabled | Only church staff should have accounts | In use. There is no admin user management yet |
-| 2026-10 | Roles ADMIN > STAFF > VOLUNTEER > MEMBER with `RoleHierarchy` | Replaces ADMIN/MANAGER/USER and the planned TREASURER/VIEWER | In the working tree, not committed |
+| 2026-10 | Roles ADMIN > STAFF > VOLUNTEER > MEMBER with `RoleHierarchy` | Replaces ADMIN/MANAGER/USER and the planned TREASURER/VIEWER | Done (3cf5d84; frontend routes in this change) |

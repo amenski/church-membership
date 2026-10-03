@@ -21,65 +21,45 @@
 
 ### Phase 2: Controllers (C4-C7)
 
-- [ ] **C4: Add @PreAuthorize to PaymentController**
+- [x] **C4: Add @PreAuthorize to PaymentController**
   - Location: `src/main/java/io/github/membertracker/infrastructure/PaymentController.java`
-  - GET: VIEWER+, POST: TREASURER+, DELETE: ADMIN only
-  - Commit: ___
+  - GET: VOLUNTEER+, POST: STAFF+, DELETE: ADMIN
+  - Commit: 3cf5d84 ✅
 
-- [ ] **C5: Add @PreAuthorize to CommunicationController**
+- [x] **C5: Add @PreAuthorize to CommunicationController**
   - Location: `src/main/java/io/github/membertracker/infrastructure/CommunicationController.java`
-  - GET: VIEWER+, POST: ADMIN only
-  - Commit: ___
+  - GET: VOLUNTEER+, POST: STAFF+
+  - Commit: 3cf5d84 ✅
 
-- [ ] **C6: Add @PreAuthorize to DashboardController**
+- [x] **C6: Add @PreAuthorize to DashboardController**
   - Location: `src/main/java/io/github/membertracker/infrastructure/DashboardController.java`
-  - All endpoints: VIEWER+
-  - Commit: ___
+  - All endpoints: VOLUNTEER+
+  - Commit: 3cf5d84 ✅
 
-- [ ] **C7: Add @PreAuthorize to UserController**
+- [x] **C7: Add @PreAuthorize to UserController**
   - Location: `src/main/java/io/github/membertracker/infrastructure/UserController.java`
   - Authenticated users only
-  - Commit: ___
+  - No change needed: /api/users/me* requires authentication via the security filter chain ✅
 
 ### Phase 3: Frontend (C8-C9)
 
-- [ ] **C8: Add role metadata to frontend routes**
+- [x] **C8: Add role metadata to frontend routes**
   - Location: `frontend/src/router/index.js`
   - Add requiresRole meta to routes
-  - Commit: ___
+  - Commit: feat(auth): role-aware frontend routes ✅
 
-- [ ] **C9: Add role helpers to authStore**
+- [x] **C9: Add role helpers to authStore**
   - Location: `frontend/src/stores/authStore.js`
-  - Add isTreasurer, isViewer computed properties
-  - Commit: ___
+  - Add hasRole, isStaff, isVolunteer, homePath
+  - Commit: feat(auth): role-aware frontend routes ✅
 
 ### Phase 4: Finalization (C10)
 
-- [ ] **C10: Update todo.md progress**
+- [x] **C10: Update todo.md progress**
   - Location: `docs/todo.md`
   - Mark Role-Based Authorization as completed
-  - Commit: ___
+  - Commit: feat(auth): role-aware frontend routes ✅
 
 ---
 
-## Permission Mapping
-
-| Endpoint | Required Role |
-|----------|---------------|
-| GET /api/members | VIEWER+ |
-| POST/PUT/DELETE /api/members | ADMIN only |
-| GET /api/payments | VIEWER+ |
-| POST /api/payments | TREASURER+ |
-| DELETE /api/payments | ADMIN only |
-| GET /api/communications | VIEWER+ |
-| POST /api/communications | ADMIN only |
-| GET /api/dashboard/* | VIEWER+ |
-| GET /api/users/me | USER (own data) |
-| PUT /api/users/me/* | USER (own data) |
-
-## Role Hierarchy
-- ADMIN: 4 (full access)
-- TREASURER: 2 (payments)
-- MANAGER: 3 (members, communications)
-- VIEWER: 1 (read-only)
-- USER: 1 (default)
+Current permissions and hierarchy: see [authentication.md](authentication.md#roles-and-permissions).

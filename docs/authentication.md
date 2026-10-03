@@ -79,8 +79,6 @@ If the frontend and API ever run on different sites, use `SameSite=None; Secure`
 
 ## Roles and permissions
 
-> The role hierarchy and the `hasRole` values below are in the working tree, **not committed yet**. Progress is tracked in [role-auth-checkpoints.md](role-auth-checkpoints.md).
-
 Four roles, from `UserRole`. Each role includes everything below it (`RoleHierarchy` bean in `SecurityConfig`):
 
 **ADMIN** > **STAFF** > **VOLUNTEER** > **MEMBER**
@@ -103,9 +101,9 @@ Files: `frontend/src/stores/authStore.js`, `frontend/src/services/api.js`, `fron
 
 | Kind | Names |
 |------|-------|
-| Actions | `login({ email, password })`, `logout()`, `checkAuth()`, `refreshToken()`, `forceLogout()`, `updateActivity()`, `setSessionTimeout(ms)`, `initialize()` |
+| Actions | `hasRole(minRole)`, `login({ email, password })`, `logout()`, `checkAuth()`, `refreshToken()`, `forceLogout()`, `updateActivity()`, `setSessionTimeout(ms)`, `initialize()` |
 | State | `user`, `isAuthenticated`, `isLoading`, `error`, `authChecked`, `lastActivity`, `sessionTimeout` |
-| Getters | `currentUser`, `isLoggedIn`, `userRole`, `isAdmin`, `sessionExpired`, `timeUntilExpiry`, `authError` |
+| Getters | `currentUser`, `isLoggedIn`, `userRole`, `isAdmin`, `isStaff`, `isVolunteer`, `homePath`, `sessionExpired`, `timeUntilExpiry`, `authError` |
 
 Use the store's actions; don't change auth state directly.
 
@@ -133,10 +131,10 @@ await authStore.logout()
 | Route meta | Effect |
 |------------|--------|
 | `requiresAuth: true` | Signed-out users go to `/login?redirect=<path>` |
-| `requiresGuest: true` | Signed-in users go to `/dashboard` (used by `/` and `/login`) |
-| `requiresRole: ['STAFF', 'ADMIN']` | Users without the role go to `/?error=access_denied` |
+| `requiresGuest: true` | Signed-in users go to their home page (used by `/` and `/login`) |
+| `requiresRole: 'VOLUNTEER'` | Minimum role, using the same hierarchy as the backend. Users without it go to their home page (`/dashboard`, or `/profile` for MEMBER) with `?error=access_denied` |
 
-No route sets `requiresRole` yet, so users can open screens that will return 403.
+Dashboard, members, payments and communications require VOLUNTEER; `/profile` is open to every signed-in user.
 
 ## Manual test
 

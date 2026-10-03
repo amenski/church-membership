@@ -77,7 +77,7 @@ Each of these was confirmed by reading the source on this branch. None was confi
 **C1. Every operational screen returns 403**
 The role rename left `hasRole('USER')` on 16 endpoints (6 in Payment, 6 in Communication, 4 in Dashboard). There is no `RoleHierarchy` bean, so Admin and Staff fail `hasRole('VOLUNTEER')` on member reads. Seed data and the `users.role` column default still write `USER`, which `UserRole.fromCode` rejects.
 `PaymentController.java:53` · `SecurityConfig.java` · `001.schema-creation.sql` · `002.sample-data.sql:12`
-> **Status (3 Oct 2026):** fix is in the working tree, not committed: role hierarchy, mapped `@PreAuthorize` roles, migration `004.migrate-user-role-to-member.sql`, and `RoleAuthorizationTest`. The tests have not been run yet because the disk was full.
+> **Status (3 Oct 2026):** fixed in `3cf5d84` (role hierarchy, mapped roles, migration 004, `RoleAuthorizationTest` — 125 passing). Frontend routes now set `requiresRole`.
 
 **C2. Recording a payment overwrites the member**
 The payment request body carries a full `member` object, and the use case saves that object as the member. A client can rename, reactivate or blank a member while recording a gift.
@@ -153,7 +153,7 @@ Each takes under a day. Do them in this order.
 
 | Fix | Effort | Unblocks |
 |-----|-------:|----------|
-| Add `RoleHierarchy` (Admin > Staff > Volunteer > Member), replace the 16 `hasRole('USER')`, add a Liquibase changeset fixing the seed data and column default | 1 h | C1: Admin and Staff can work again *(done in working tree, tests pending)* |
+| Add `RoleHierarchy` (Admin > Staff > Volunteer > Member), replace the 16 `hasRole('USER')`, add a Liquibase changeset fixing the seed data and column default | 1 h | C1: Admin and Staff can work again *(done: 3cf5d84)* |
 | Load the member by id inside `RecordPaymentUseCase` and accept only `memberId` | 30 min | C2 |
 | Fix the refresh cookie path to `/api/auth`, add a `typ` claim and check it in the filter and the refresh endpoint | 1 h | C5 |
 | Return one generic "Invalid email or password" message | 10 min | C6 |

@@ -12,24 +12,30 @@ const routes = [
     path: '/dashboard',
     name: 'dashboard',
     component: () => import('../views/Dashboard.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER' }
   },
   {
     path: '/members',
     name: 'members',
     component: () => import('../views/MembersView.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER' }
   },
   {
     path: '/payments',
     name: 'payments',
     component: () => import('../views/PaymentsView.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER' }
   },
   {
     path: '/communications',
     name: 'communications',
     component: () => import('../views/CommunicationsView.vue'),
+    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER' }
+  },
+  {
+    path: '/profile',
+    name: 'profile',
+    component: () => import('../views/ProfileView.vue'),
     meta: { requiresAuth: true }
   },
   {
@@ -82,27 +88,20 @@ router.beforeEach(async (to, from, next) => {
 
   // Check route requires guest (non-authenticated)
   if (to.meta.requiresGuest && isAuthenticated) {
-    // If visiting landing or login page, redirect to dashboard
+    // If visiting landing or login page, redirect to the user's home page
     if (to.path === '/' || to.path === '/login') {
-      next('/dashboard')
+      next(authStore.homePath)
       return
     }
-    const redirectPath = to.query.redirect || '/dashboard'
+    const redirectPath = to.query.redirect || authStore.homePath
     next(redirectPath)
     return
   }
 
-  // Check role-based access
-  if (to.meta.requiresRole && isAuthenticated) {
-    const userRole = authStore.userRole
-    const requiredRoles = Array.isArray(to.meta.requiresRole)
-      ? to.meta.requiresRole
-      : [to.meta.requiresRole]
-
-    if (!requiredRoles.includes(userRole)) {
-      next('/?error=access_denied')
-      return
-    }
+  // Check role-based access (requiresRole is a minimum role)
+  if (to.meta.requiresRole && isAuthenticated && !authStore.hasRole(to.meta.requiresRole)) {
+    next(`${authStore.homePath}?error=access_denied`)
+    return
   }
 
   next()

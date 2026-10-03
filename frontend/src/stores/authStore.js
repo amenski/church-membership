@@ -18,6 +18,17 @@ export const useAuthStore = defineStore('auth', () => {
   const sessionTimeout = ref(60 * 60 * 1000) // 1 hour in milliseconds
   const refreshInterval = ref(null)
 
+  const ROLE_RANK = { MEMBER: 1, VOLUNTEER: 2, STAFF: 3, ADMIN: 4 }
+
+  // True when the signed-in user's role is minRole or higher
+  function hasRole(minRole) {
+    if (!isAuthenticated.value) return false
+    const userRank = ROLE_RANK[user.value?.role]
+    const requiredRank = ROLE_RANK[minRole]
+    if (!userRank || !requiredRank) return false
+    return userRank >= requiredRank
+  }
+
   // Getters
   const currentUser = computed(() => user.value)
   const isLoggedIn = computed(() => isAuthenticated.value)
@@ -27,7 +38,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   const userRole = computed(() => user.value?.role || null)
   const isAdmin = computed(() => user.value?.role === 'ADMIN')
-  const isUser = computed(() => user.value?.role === 'USER')
+  const isStaff = computed(() => hasRole('STAFF'))
+  const isVolunteer = computed(() => hasRole('VOLUNTEER'))
+  const homePath = computed(() => (hasRole('VOLUNTEER') ? '/dashboard' : '/profile'))
   const sessionExpired = computed(() => {
     if (!lastActivity.value || !isAuthenticated.value) return false
     return Date.now() - lastActivity.value > sessionTimeout.value
@@ -296,11 +309,14 @@ export const useAuthStore = defineStore('auth', () => {
     hasAuthChecked,
     userRole,
     isAdmin,
-    isUser,
+    isStaff,
+    isVolunteer,
+    homePath,
     sessionExpired,
     timeUntilExpiry,
 
     // Actions
+    hasRole,
     login,
     register,
     logout,

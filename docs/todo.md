@@ -28,10 +28,10 @@ This document tracks missing features, improvements, and technical debt in the M
 ## 🚨 Critical Priority (Must be done before production)
 
 ### Security
-- [ ] **Role-Based Authorization Enhancement**
-  - Add `@PreAuthorize` annotations to all controller methods *(done in working tree, Oct 2026; tests not yet run)*
-  - Implement fine-grained permission control (ADMIN > STAFF > VOLUNTEER > MEMBER, via `RoleHierarchy`) *(done in working tree)*
-  - Add permission checks in frontend routes (`requiresRole` meta; no route sets it yet)
+- [x] **Role-Based Authorization Enhancement**
+  - Add `@PreAuthorize` annotations to all controller methods *(done: 3cf5d84)*
+  - Implement fine-grained permission control (ADMIN > STAFF > VOLUNTEER > MEMBER, via `RoleHierarchy`) *(done: 3cf5d84)*
+  - Add permission checks in frontend routes *(done: `requiresRole` on all staff routes; `/profile` for MEMBER)*
   - **Location**: All controller classes, frontend route guards
   - **Tracking**: `role-auth-checkpoints.md`
 

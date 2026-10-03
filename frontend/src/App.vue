@@ -9,17 +9,20 @@
         </button>
         <div id="navbarNav" class="collapse navbar-collapse">
           <ul class="navbar-nav me-auto">
-            <li class="nav-item">
+            <li v-if="authStore.hasRole('VOLUNTEER')" class="nav-item">
               <router-link to="/dashboard" class="nav-link" active-class="active">Dashboard</router-link>
             </li>
-            <li class="nav-item">
+            <li v-if="authStore.hasRole('VOLUNTEER')" class="nav-item">
               <router-link to="/members" class="nav-link" active-class="active">Members</router-link>
             </li>
-            <li class="nav-item">
+            <li v-if="authStore.hasRole('VOLUNTEER')" class="nav-item">
               <router-link to="/payments" class="nav-link" active-class="active">Payments</router-link>
             </li>
-            <li class="nav-item">
+            <li v-if="authStore.hasRole('VOLUNTEER')" class="nav-item">
               <router-link to="/communications" class="nav-link" active-class="active">Communications</router-link>
+            </li>
+            <li class="nav-item">
+              <router-link to="/profile" class="nav-link" active-class="active">Profile</router-link>
             </li>
           </ul>
 
