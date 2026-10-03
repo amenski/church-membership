@@ -41,7 +41,7 @@ Example with the default threshold 3, for a member who paid through September an
 3. The next monthly run only counts a month the member did not pay. See [payments.md](payments.md).
 
 ### Reactivating clears the counter
-1. Switching an inactive member to active (Members screen, status button or edit form) resets the counter to 0 (`Member.java:73-79`, `src/main/java/io/github/membertracker/usecase/UpdateMemberUseCase.java:37-43`). See [members.md](members.md#activate-or-deactivate).
+1. Switching an inactive member to active (Members screen, status button or edit form) resets the counter to 0 (`Member.java:73-79`, `src/main/java/io/github/membertracker/usecase/UpdateMemberUseCase.java:37-43`). See [members.md](members.md#deactivate-or-reactivate).
 2. Deactivating does not change the counter. Inactive members are not counted and not reminded by the jobs.
 
 ### What the admin sees
@@ -51,7 +51,7 @@ Example with the default threshold 3, for a member who paid through September an
 4. The jobs write to the application log only ("Starting payment reminder process", errors) (`PaymentReminderScheduler.java:36-41`, `:51-61`).
 
 ### Manual alternatives
-1. Send to overdue: on Communications, choose Overdue Members and a number of months; it emails the active members whose counter is at or above that number (nobody matching is a 400 and nothing is stored) ([communications.md](communications.md#send-to-members-overdue-by-n-months-staff)).
+1. Send to overdue: on Communications, choose Overdue Members and a number of months; it emails the active members whose counter is at or above that number (nobody matching is a 400 and nothing is stored) ([communications.md](communications.md#send-to-members-behind-by-n-months-staff)).
 2. Send Reminder: on the Dashboard, one click emails one overdue member a fixed text ([dashboard.md](dashboard.md#send-a-reminder-to-one-overdue-member-staff)).
 3. Neither changes any counter, and neither is limited by the threshold.
 

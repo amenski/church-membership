@@ -149,7 +149,9 @@ Tried and removed, so nobody puts them back:
 - The warning-triangle icon in the sign-in error alert: the red tint and the words already say it; the icon carried nothing.
 - Old coloured Profile button and input rules (scoped green `#4CAF50` in `ProfileView.vue`): removed so Profile uses the theme; its layout is now the two paper cards (done in T2).
 - Tried and kept off: a woven band on the landing page. The wordmark alone is calmer, and the band stays a signature at three places only (rail, sign-in card, meter).
-- The overdue list is sorted longest-overdue first (the API order is arbitrary) and shows active members only, with a count note for inactive ones.
+- The overdue list is sorted longest-overdue first and shows active members only. The "N inactive members are not shown" note was removed once the endpoint itself became active-only.
+- `window.confirm` before sending a message: replaced by `ConfirmDialog`, which names the number of recipients and puts focus on Cancel.
+- The Payments "this month" figure by payment date: it is by the month covered (the `period`), like the Overview, so a back-dated payment never inflates it and the two screens agree.
 
 ## Phase B checklist (remaining screens)
 
@@ -163,9 +165,11 @@ Tried and removed, so nobody puts them back:
       with a confirm dialog before sending; history as a ruled list with counts as words in `StatusLabel`
       tones; a deliveries dialog with a per-row Retry. Done (T3).
 - [x] Profile: forms in paper cards, one per concern (details, password); plain labels. Done (T2): the password change is a `BaseModal`.
-- [ ] Dialogs: titles in Alegreya 22, footers with one primary action, destructive actions in clay. Done on Members; Payments and Messages next.
-- [ ] Empty states: every list gets a plain sentence that invites the next action.
-- [ ] Register view: unreachable (registration is disabled); delete or keep restyled, decide.
+- [x] Dialogs: titles in Alegreya 22, footers with one primary action, destructive actions in clay. Done on Members, Profile, Payments and Messages (`BaseModal`, `ConfirmDialog`).
+- [x] Empty states: every list gets a plain sentence that invites the next action. Done on the Overview, Members, Payments and Messages.
+- [ ] Register view: unreachable (registration is disabled); delete or keep restyled, decide (see T4 below).
+
+**Phase B is complete: Members, Profile, Payments and Messages are done (T2 and T3).** What is left is T4, the removal of Bootstrap.
 
 ## Styling system
 
@@ -174,8 +178,8 @@ Tailwind CSS v4, CSS-first (`@tailwindcss/vite` in `vite.config.js`, no `tailwin
 - **Tokens live in `frontend/src/assets/styles/tailwind.css`, inside `@theme static`.** Colours (`mist paper ink muted rule field teal teal-hover teal-tint ochre ochre-edge ochre-text ochre-tint fern fern-text fern-tint clay clay-tint`), fonts (`font-display`, `font-sans`, `font-ethiopic`), the type scale (`text-sm` 14, `base` 16, `lg` 18, `xl` 22, `2xl` 28, `3xl` 40), `rounded-md` (6px), `shadow-modal`, Bootstrap's breakpoints and the `animate-weave` meter sweep. Each family starts with `--x-*: initial`, so Tailwind's default palette and scale do not exist: only token colours can be used, by accident or otherwise. The hex values are the ones in the table above; `theme.css` keeps its own copies until T4.
 - **No `@apply`, no `<style scoped>`** except where Tailwind cannot say it. Shared patterns are small Vue components (or a JS constant in the component), never a custom CSS class. Use the animation as `motion-safe:animate-weave`.
 - **Every Tailwind class has the prefix `tw:`** (`tw:flex tw:gap-3 tw:md:flex tw:motion-safe:animate-weave`; the prefix comes before any variant). Reason: Bootstrap's own utility classes (`p-3`, `gap-3`, `border`, `m-0`, `text-end`) are `!important` and share names with Tailwind's but not values, and no cascade order can serve both the migrated and the unmigrated screens. Theme variables carry it too (`var(--tw-color-teal)`), which is why the theme is `@theme static` (all tokens are always emitted). The density variables are not Tailwind's and have no prefix (`tw:h-(--control-h)`). T4 removes the prefix with a mechanical search and replace of `tw:`.
-- **Bootstrap stays until T4.** Payments and Messages still use Bootstrap classes, tables and modals; they migrate next. Until then Bootstrap's CSS and `theme.css` are imported by `tailwind.css` into one `legacy` cascade layer (one layer, so their `!important` rules keep fighting in file order), below Tailwind's `utilities` layer. This is needed because unlayered CSS beats every layer: a Bootstrap `h1` or `a` rule would otherwise beat a utility on a migrated screen. Tailwind runs WITHOUT its global reset (`preflight`) so the unmigrated screens do not change; T4 adds it, and drops the `legacy` layer.
-- **Migration order:** T1 Tailwind foundation, toast and dialog components, shell, Overview, landing, sign-in. T2 Members and Profile (done), then Payments. T3 Messages. T4 remove Bootstrap (CSS, JS, `theme.css`, the `legacy` layer) and add preflight.
+- **Bootstrap stays until T4.** No routed screen uses a Bootstrap class or its JavaScript any more (only the unrouted `RegisterView.vue` does); the CSS stays only because T4 has not removed it yet. Bootstrap's CSS and `theme.css` are imported by `tailwind.css` into one `legacy` cascade layer (one layer, so their `!important` rules keep fighting in file order), below Tailwind's `utilities` layer. This is needed because unlayered CSS beats every layer: a Bootstrap `h1` or `a` rule would otherwise beat a utility on a migrated screen. Tailwind runs WITHOUT its global reset (`preflight`) so the legacy layer keeps the page as it was; T4 adds it, and drops the `legacy` layer.
+- **Migration order:** T1 Tailwind foundation, toast and dialog components, shell, Overview, landing, sign-in (done). T2 Members and Profile (done). T3 Payments, Messages, the Overview leftovers (done). T4 remove Bootstrap (CSS, JS, `theme.css`, the `legacy` layer) and add preflight (next).
 
 ## Density
 
@@ -196,13 +200,35 @@ Two densities share one palette and one type family. They are plain CSS custom p
 - `App.vue` sets `data-density` on the shell root: `comfortable` when signed out or when the role is MEMBER, otherwise `dense`. `LandingView` and `LoginView` render outside the rail shell and set `data-density="comfortable"` on their own root.
 - Inputs never go below 16px text (iOS zooms the page on smaller). The primary action on a comfortable screen is 48px and full width on mobile.
 - Status, as before, is a dot plus a word, never plain coloured text. Every list has an empty state that names the next step. A switch's whole row is the click target (wrap it in a label). Disabled means a light fill, muted text and the real `disabled` attribute.
-- T1 defines and plumbs the tokens only. The Overview keeps its own sizes (it must look exactly as before); T2 and T3 consume the tokens.
+- T1 defined and plumbed the tokens. The Overview keeps its own sizes (it must look exactly as before); Members, Payments and Messages consume them (`tw:h-(--control-h)` for the filter controls, `tw:min-h-(--row-h)` for table rows, `tw:text-(length:--text-body)`). Dialogs are teleported to `body`, outside `data-density`, so their controls keep fixed sizes (`BaseInput`, `BaseSelect`, `BaseTextarea`).
 
-## Tailwind migration (next)
+## Dialog rules
 
-The frontend is moving to Tailwind CSS. What stays: the tokens (names and hex values), the
-self-hosted fonts, `WovenBand`, `DuesMeter`, the `dashboardMeter` helpers, the copy rules and the
-layout decisions (left rail, 1100px content area, hero sentence plus meter, ruled lists, status dot
-plus word). What goes: the Bootstrap class markup and the Bootstrap-variable overrides in
-`theme.css`, replaced by Tailwind v4 utilities with CSS-first `@theme` tokens in phases T1 to T4,
-done by other agents. Bootstrap's JS (modal, toast, offcanvas) needs replacements at the same time.
+- Every dialog is a `BaseModal`: Alegreya 22 title, the close button, one primary action in the footer, `Cancel` beside it. Never `window.confirm`, `alert` or Bootstrap's `Modal`.
+- **`ConfirmDialog` is for an action that cannot be taken back or that reaches other people** (sending email to members, deleting). Props: `v-model`, `title` (a question that names the amount: "Send to 8 members?"), `message` (what happens, and that it cannot be undone), `confirmLabel` (the same verb phrase as the question: "Send to 8 members"), `danger` (clay button, only for destroying data), `busy` (disables both buttons while the parent works). It emits `confirm`; the parent does the work and closes it with `v-model` when done. Focus lands on Cancel, so a stray Enter never confirms.
+- An action that is easy to undo does not get a dialog: it acts at once and toasts ("Member deactivated").
+- Forms in a dialog show field errors under their field and any other server message in an `AlertBanner` at the top; a failed save keeps the dialog open; success closes it, resets the form and toasts with the same name as the button ("Record payment" gives "Payment recorded").
+
+## T4 (remove Bootstrap)
+
+Phase B is finished, so what is left is mechanical. What still uses Bootstrap:
+
+| Where | What |
+|---|---|
+| `frontend/src/main.js` | `import 'bootstrap'` (the JavaScript, nothing calls it any more); `bootstrap-icons` stays: icons are `bi bi-*` |
+| `frontend/package.json` | the `bootstrap` dependency (keep `bootstrap-icons`); `@popperjs/core` was only Bootstrap's peer: check and drop it too |
+| `frontend/src/assets/styles/tailwind.css` | `@layer legacy`, `@import "bootstrap/dist/css/bootstrap.min.css" layer(legacy)` and `@import "./theme.css" layer(legacy)`; no preflight yet |
+| `frontend/src/assets/styles/theme.css` | the legacy overrides (about 417 lines). Port four things before deleting it: the `body` rule (Alegreya Sans, 18px, mist background, ink text, `-webkit-font-smoothing: antialiased`), the heading rule (Alegreya 700, line height 1.2, sizes 40/28/22/18), `a { text-underline-offset: 3px }` and `::selection` (teal on paper). Components already carry their own sizes and colours |
+| `frontend/src/views/RegisterView.vue` | unrouted (registration is disabled) and still all Bootstrap (`container`, `form-control`, `btn`, `alert`, `spinner-border`, scoped CSS). Decide: delete it (it has no route and nothing imports it) or rebuild it on `BaseInput` and `BaseButton` |
+| `frontend/src/App.vue` | `themeClass` returns the string `data-bs-theme="..."` and puts it in `class`, which does nothing; remove it and `appStore.currentTheme` if nothing else reads it |
+| `frontend/src/utils/index.js` | the `showToast` doc comment still says "Bootstrap toast" |
+| leftovers | `grep -rnE '(class|:class)=' src` for Bootstrap names (`btn`, `card`, `form-*`, `row`, `col-*`, `d-flex`, `me-*`, `badge`, `alert`, `modal`, `table`, `spinner-border`, `text-muted`) and for `data-bs-` |
+
+Plan to drop the `tw:` prefix and Bootstrap, in this order, one commit each, `npm test` and `npm run build` after every step:
+
+1. Delete `RegisterView.vue` (or rebuild it), `themeClass`, `import 'bootstrap'`, then `npm uninstall bootstrap`. Check no screen changed: the legacy layer is still there.
+2. Port the four base rules above into `@layer base` in `tailwind.css`, remove the `theme.css` import, delete `theme.css`, drop the Bootstrap CSS import and `@layer legacy`. Switch the header to `@layer theme, base, components, utilities;` and import the whole of Tailwind with preflight (`@import "tailwindcss";`) while the prefix is still on. Walk every screen at 1280 and 390: preflight resets margins, list styles, heading sizes and borders, so look for a lost margin or a border that fell back to `currentColor`.
+3. Drop the prefix: remove `prefix(tw)` from the imports; run a search and replace over `frontend/src` for the literal `tw:` in `.vue` and `.js` files (it only ever appears at the start of a class or after a space or quote: `tw:flex`, `tw:md:gap-3`, `tw:[overflow-wrap:anywhere]`, `tw:h-(--control-h)`; the prefix always comes before the variants, so deleting it leaves valid classes). Also change `var(--tw-color-teal)` in `tailwind.css` to `var(--color-teal)` (theme variables lose the prefix; this is the only `var(--tw-...)` in the source today). Update the one test that asserts a class name (`frontend/src/__tests__/components/ConfirmDialog.test.js`, `tw:bg-clay`). Search the docs for examples that show `tw:` (this file and the feature docs).
+4. Re-run the full walk (Overview, Members with the row menu and dialogs, Payments with the record and receipt dialogs and the PDF, Messages with the confirm and deliveries dialogs, Profile and its dialog, landing, sign-in) at 1280 and 390, plus the keyboard checks, and compare with the T3 screenshots.
+5. Update this file: remove the Bootstrap notes under "Styling system", the `tw:` rule, and this section.
+
