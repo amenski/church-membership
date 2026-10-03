@@ -55,12 +55,21 @@ This document tracks missing features, improvements, and technical debt in the M
 - [ ] **Test Infrastructure Setup**
   - Configure JaCoCo for code coverage reporting
   - Add test containers for database testing
+  - [x] Full-context smoke tests for the dev and default profiles on H2 (catches startup failures that @WebMvcTest slices cannot)
   - Set up CI/CD pipeline with test execution
   - **Location**: `build.gradle`, GitHub Actions workflow
 
 ---
 
 ## 🔴 High Priority (Should be done soon)
+
+### Remediation loop
+- [x] Phase 0: dev profile starts; full-context smoke tests
+- [ ] Phase 1a: C5 token type + refresh cookie path, C6 generic login error
+- [ ] Phase 1b: C3 scheduling monthly + idempotent counter (needs a DB migration: confirm first), C4 {{member_name}}
+- [ ] Phase 2: C8 MemberRequest DTO
+- [ ] Phase 3: secrets out of config, CSRF back on, activity log writes
+- [ ] Phase 4: Person/Membership split (needs a decision, not started)
 
 ### Bugs found by checking the docs against the code (October 2026)
 - [ ] **Overdue tracking (audit C3):** the missed-months counter is never raised, so overdue lists, send-to-overdue and reminders reach nobody; scheduling is not enabled (no `@EnableScheduling`); the counter job must run monthly and be idempotent; the scheduler should skip inactive members and use the reminder-window policy

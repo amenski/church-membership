@@ -41,15 +41,17 @@ Open **http://localhost:3000**. Vite proxies `/api/*` to the backend (`frontend/
 
 | Command | What it does |
 |---------|--------------|
-| `./gradlew test` | Backend tests |
+| `./gradlew test` | Backend tests, including full-context smoke tests on an in-memory H2 database (no MySQL needed) |
 | `cd frontend && npm run build` | Frontend production build into `frontend/dist` |
 | `cd frontend && npm run preview` | Serve the frontend build locally |
 
 ### API documentation
 
+Swagger works only with the `dev` profile.
+
 1. Start the backend with `SPRING_PROFILES_ACTIVE=dev ./gradlew bootRun`.
 2. In the same browser, sign in first with `POST /api/auth/login` so the `sid` cookie is set. Swagger's requests then carry the cookie.
-3. Open http://localhost:8080/swagger-ui.html.
+3. Open http://localhost:8080/swagger-ui.html (it redirects to the Swagger UI; the smoke test checks this).
 
 The raw spec is at `/v3/api-docs`. Swagger and the spec are off in every other profile on purpose (the paths return 404).
 
