@@ -1,6 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useAuthStore } from '@/stores/authStore'
+import apiService from '@/services/api'
+
+vi.mock('@/services/api', () => ({
+  default: {
+    logout: vi.fn().mockResolvedValue({}),
+    getCurrentUser: vi.fn()
+  }
+}))
 
 const ROLES = ['MEMBER', 'VOLUNTEER', 'STAFF', 'ADMIN']
 
@@ -86,7 +94,7 @@ describe('authStore', () => {
     })
   })
 
-  describe('sessionExpired', () => {
+  describe('isSessionExpired', () => {
     beforeEach(() => {
       vi.useFakeTimers()
       vi.setSystemTime(new Date('2026-01-01T12:00:00Z'))
@@ -99,40 +107,63 @@ describe('authStore', () => {
       loginAs(store, 'MEMBER')
       store.sessionTimeout = 60_000
       store.lastActivity = Date.now() - 59_000
-      expect(store.sessionExpired).toBe(false)
+      expect(store.isSessionExpired()).toBe(false)
     })
 
     it('is false exactly at the timeout boundary', () => {
       loginAs(store, 'MEMBER')
       store.sessionTimeout = 60_000
       store.lastActivity = Date.now() - 60_000
-      expect(store.sessionExpired).toBe(false)
+      expect(store.isSessionExpired()).toBe(false)
     })
 
     it('is true once the timeout has passed', () => {
       loginAs(store, 'MEMBER')
       store.sessionTimeout = 60_000
       store.lastActivity = Date.now() - 60_001
-      expect(store.sessionExpired).toBe(true)
+      expect(store.isSessionExpired()).toBe(true)
     })
 
-    it('timeUntilExpiry counts down from the timeout', () => {
+    it('getTimeUntilExpiry counts down from the timeout', () => {
       loginAs(store, 'MEMBER')
       store.sessionTimeout = 60_000
       store.lastActivity = Date.now() - 20_000
-      expect(store.timeUntilExpiry).toBe(40_000)
+      expect(store.getTimeUntilExpiry()).toBe(40_000)
     })
 
     it('is false when logged out even with stale activity', () => {
       store.sessionTimeout = 60_000
       store.lastActivity = Date.now() - 999_999
-      expect(store.sessionExpired).toBe(false)
+      expect(store.isSessionExpired()).toBe(false)
     })
 
     it('is false when there is no recorded activity', () => {
       loginAs(store, 'MEMBER')
       store.lastActivity = null
-      expect(store.sessionExpired).toBe(false)
+      expect(store.isSessionExpired()).toBe(false)
+    })
+  })
+
+  describe('idle logout', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-01-01T12:00:00Z'))
+    })
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('logs out an idle user once the timeout has passed (monitor tick)', async () => {
+      apiService.getCurrentUser.mockResolvedValue({ role: 'MEMBER' })
+      store.setSessionTimeout(60_000)
+      await store.checkAuth() // logs in and starts session monitoring
+      expect(store.isAuthenticated).toBe(true)
+
+      // No activity: just let the clock run past timeout + one 30 s monitor tick
+      await vi.advanceTimersByTimeAsync(60_000 + 30_000)
+
+      expect(apiService.logout).toHaveBeenCalled()
+      expect(store.isAuthenticated).toBe(false)
     })
   })
 })

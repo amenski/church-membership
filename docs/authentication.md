@@ -101,9 +101,9 @@ Files: `frontend/src/stores/authStore.js`, `frontend/src/services/api.js`, `fron
 
 | Kind | Names |
 |------|-------|
-| Actions | `hasRole(minRole)`, `login({ email, password })`, `logout()`, `checkAuth()`, `refreshToken()`, `forceLogout()`, `updateActivity()`, `setSessionTimeout(ms)`, `initialize()` |
+| Actions | `hasRole(minRole)`, `isSessionExpired()`, `getTimeUntilExpiry()`, `login({ email, password })`, `logout()`, `checkAuth()`, `refreshToken()`, `forceLogout()`, `updateActivity()`, `setSessionTimeout(ms)`, `initialize()` |
 | State | `user`, `isAuthenticated`, `isLoading`, `error`, `authChecked`, `lastActivity`, `sessionTimeout` |
-| Getters | `currentUser`, `isLoggedIn`, `userRole`, `isAdmin`, `isStaff`, `isVolunteer`, `homePath`, `sessionExpired`, `timeUntilExpiry`, `authError` |
+| Getters | `currentUser`, `isLoggedIn`, `userRole`, `isAdmin`, `isStaff`, `isVolunteer`, `homePath`, `authError` |
 
 Use the store's actions; don't change auth state directly.
 

@@ -41,14 +41,16 @@ export const useAuthStore = defineStore('auth', () => {
   const isStaff = computed(() => hasRole('STAFF'))
   const isVolunteer = computed(() => hasRole('VOLUNTEER'))
   const homePath = computed(() => (hasRole('VOLUNTEER') ? '/dashboard' : '/profile'))
-  const sessionExpired = computed(() => {
+
+  // Plain functions, not computeds: they read the clock on every call
+  function isSessionExpired() {
     if (!lastActivity.value || !isAuthenticated.value) return false
     return Date.now() - lastActivity.value > sessionTimeout.value
-  })
-  const timeUntilExpiry = computed(() => {
+  }
+  function getTimeUntilExpiry() {
     if (!lastActivity.value || !isAuthenticated.value) return 0
     return Math.max(0, sessionTimeout.value - (Date.now() - lastActivity.value))
-  })
+  }
 
   // Helper functions for validation
   function isValidEmail(email) {
@@ -247,7 +249,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     // Check session every 30 seconds
     refreshInterval.value = setInterval(() => {
-      if (sessionExpired.value) {
+      if (isSessionExpired()) {
         if (import.meta.env.DEV) {
           console.warn('Session expired due to inactivity')
         }
@@ -312,11 +314,11 @@ export const useAuthStore = defineStore('auth', () => {
     isStaff,
     isVolunteer,
     homePath,
-    sessionExpired,
-    timeUntilExpiry,
 
     // Actions
     hasRole,
+    isSessionExpired,
+    getTimeUntilExpiry,
     login,
     register,
     logout,

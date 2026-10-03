@@ -71,7 +71,7 @@ router.beforeEach(async (to, from, next) => {
   const isAuthenticated = authStore.isLoggedIn
 
   // Check if session expired
-  if (isAuthenticated && authStore.sessionExpired) {
+  if (isAuthenticated && authStore.isSessionExpired()) {
     await authStore.logout()
     next('/login?session=expired')
     return
