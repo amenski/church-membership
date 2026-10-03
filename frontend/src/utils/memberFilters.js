@@ -17,9 +17,12 @@ export function filterMembers(members, filters = {}) {
       (status === 'ACTIVE' && member.active) ||
       (status === 'INACTIVE' && !member.active)
 
+    // Behind and paid up only mean something for ACTIVE members: the server stops counting
+    // months for an inactive one, so its stored number is stale. It matches "All" only.
     const matchesPayment = paymentStatus === 'ALL' ||
-      (paymentStatus === 'OVERDUE' && member.consecutiveMonthsMissed > 0) ||
-      (paymentStatus === 'CURRENT' && member.consecutiveMonthsMissed === 0)
+      (member.active &&
+        ((paymentStatus === 'OVERDUE' && member.consecutiveMonthsMissed > 0) ||
+         (paymentStatus === 'CURRENT' && member.consecutiveMonthsMissed === 0)))
 
     let matchesJoinDate = true
     if (joinedFrom || joinedTo) {
@@ -36,6 +39,8 @@ export function filterMembers(members, filters = {}) {
 export function sortMembers(members, key, direction = 'asc') {
   const sign = direction === 'desc' ? -1 : 1
   const valueOf = (member) => {
+    // an inactive member has no dues figure, so it sorts last either way
+    if (key === 'consecutiveMonthsMissed' && member.active === false) return null
     const value = member[key]
     if (value === null || value === undefined || value === '') return null
     return key === 'name' ? String(value) : value

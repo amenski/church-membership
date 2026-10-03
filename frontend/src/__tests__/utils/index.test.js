@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { formatDate, debounce, formatCurrency, isValidEmail, deepClone, downloadBlob } from '@/utils/index'
+import { formatDate, localISODate, debounce, formatCurrency, isValidEmail, deepClone, downloadBlob } from '@/utils/index'
 
 describe('formatDate', () => {
   it('uses the default format', () => {
@@ -13,6 +13,38 @@ describe('formatDate', () => {
   })
   it.each([null, undefined, ''])('returns empty string for %p', (v) => {
     expect(formatDate(v)).toBe('')
+  })
+
+  // A date-only string must render as that calendar day in every time zone. The zone is the
+  // test machine's, so assert against local components: UTC parsing would show 30 September
+  // wherever the offset is negative.
+  describe('date-only strings', () => {
+    it('renders 2026-10-01 as 1 October', () => {
+      expect(formatDate('2026-10-01', 'd MMMM yyyy')).toBe('1 October 2026')
+    })
+    it('builds a local date, so the local components match the input', () => {
+      const parsed = new Date(2026, 9, 1)
+      expect(formatDate('2026-10-01', 'yyyy-MM-dd HH:mm')).toBe('2026-10-01 00:00')
+      expect(formatDate('2026-10-01', 'yyyy-MM-dd')).toBe(
+        `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`
+      )
+    })
+    it('handles month and year edges', () => {
+      expect(formatDate('2026-01-01', 'yyyy-MM-dd')).toBe('2026-01-01')
+      expect(formatDate('2025-12-31', 'yyyy-MM-dd')).toBe('2025-12-31')
+      expect(formatDate('2024-02-29', 'dd/MM/yyyy')).toBe('29/02/2024')
+    })
+    it('still parses a timestamp as an instant', () => {
+      const instant = '2026-10-01T12:30:00Z'
+      expect(formatDate(instant, 'yyyy-MM-dd HH:mm')).toBe(formatDate(new Date(instant), 'yyyy-MM-dd HH:mm'))
+    })
+  })
+})
+
+describe('localISODate', () => {
+  it('uses the local calendar day, zero padded', () => {
+    expect(localISODate(new Date(2026, 0, 5, 23, 59))).toBe('2026-01-05')
+    expect(localISODate(new Date(2026, 11, 31, 0, 1))).toBe('2026-12-31')
   })
 })
 

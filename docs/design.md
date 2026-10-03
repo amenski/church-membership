@@ -87,20 +87,30 @@ Shared patterns are small Vue components in `frontend/src/components/`, built fr
 | Component | Meaning |
 |---|---|
 | `StatusLabel` (`tone` paid, behind, inactive) | small dot plus the word, in fern-text, ochre-text, clay. Not a pill chip |
-| `PageHead` (`title`, `lead`) | page title (Alegreya 28/700) with a one-line plain description beneath |
+| `PageHead` (`title`, `lead`, slot `actions`) | page title (Alegreya 28/700) with a one-line plain description beneath; the `actions` slot holds the screen's buttons at the right (wrapping under the title on a phone) |
 | `SectionTitle` | Alegreya 22/700 heading for a list or block |
 | `RuledList`, `RuledRow` | rows on 1px rules, 56px tall, no boxes |
 | `EmptyNote` | muted plain sentence that invites the next action |
 | `TextButton` | plain teal text button for row actions ("Send reminder") |
 | `BaseButton` (`variant` primary, secondary, danger; `size` sm, md, lg; `to` for a link) | the button; disabled is 65% opacity with the real `disabled` attribute |
-| `BaseInput` (`id`, `label`, `v-model`, `error`) | label, field and its error text, wired with `aria-invalid` and `aria-describedby` |
+| `BaseInput` (`id`, `label`, `v-model`, `error`, `hint`) | label, field, optional quiet hint and error text, wired with `aria-invalid` and `aria-describedby` (hint and error ids) |
+| `ActionMenu` (`label`, `items` `[{ key, label, danger?, disabled? }]`, emits `select(key)`) | the row "More" menu: kebab trigger and a small paper popup (see ActionMenu rules) |
 | `AlertBanner` (`tone` danger, success, warning, info) | tinted alert with a 1px line, `role="alert"` |
 | `BrandMark`, `RailLink` | the wordmark link and a rail link (`aria-current="page"` on the active one) |
 | `ToastHost` | renders `appStore.notifications`: paper card, 4px edge in fern, clay, ochre or teal; bottom right from sm, full width below; timers pause on hover and focus; errors are `role="alert"`, the rest `role="status"` |
 | `BaseModal` (`v-model`, `title`, `size`, slots `default` and `footer`) | dialog: teleported to body, focus moves in and returns, Tab trapped, Escape and a click on the backdrop close it, page scroll locked |
 | `WovenBand`, `DuesMeter` | the signature (see above) |
 
-Still Bootstrap until T2 and T3: `.btn-warning` (ochre text on an ochre tint), `.badge.bg-*` (quiet tinted text, replaced by `StatusLabel`), tables, cards, forms and modals on Members, Payments, Messages and Profile.
+## ActionMenu rules
+
+- One `ActionMenu` per row replaces a row of icon buttons. Put the common action first (Edit), the reversible state change next (Deactivate or Reactivate), the destructive one last, in clay, and only for the role that may use it (Delete is ADMIN only). A role with no allowed action sees no menu at all, not a disabled one.
+- The trigger's `label` names the row: "More actions for Sarah Brown". Items are verbs in sentence case and the same word as the toast ("Deactivate" gives "Member deactivated").
+- A state change that is easy to undo acts at once and toasts; an irreversible one opens a `BaseModal` that says what is lost, with the destructive button named after the action ("Delete member").
+- Keyboard: Enter, Space or ArrowDown on the trigger opens and focuses the first item (ArrowUp the last); ArrowUp and ArrowDown move and wrap, Home and End jump; Escape closes and returns focus to the trigger; Tab closes; a press outside closes. Disabled items are skipped.
+- The popup is teleported to `body` with fixed positioning (right edge aligned to the trigger, flipped above when there is no room below), so a menu in the last row is never clipped. It closes on scroll and resize rather than chasing the trigger. Items are 44px tall, so it works by thumb.
+- Do not put more than five items in it. If a menu needs more, the screen needs a detail view.
+
+Still Bootstrap until T3 (Payments and Messages): `.btn-warning` (ochre text on an ochre tint), `.badge.bg-*` (quiet tinted text, replaced by `StatusLabel`), tables, cards, forms and modals on Payments, Messages and Profile (Members is done).
 
 ## Accessibility rules
 
@@ -122,7 +132,9 @@ Tried and removed, so nobody puts them back:
 
 - Four gradient stat tiles (blue, green, orange, cyan): replaced by one sentence and the meter.
   Four equal tiles said "everything matters equally"; the page's job is "who needs a call".
-- Three coloured icon buttons on every row: not yet replaced on Members (phase B, one More menu).
+- Three coloured icon buttons on every Members row: replaced by one More menu (`ActionMenu`).
+- Showing "N months behind" for an inactive member: the server stops counting for them, so the figure is stale. Members shows an en dash, and the Dues filter and sort treat inactive members as having no dues.
+- Parsing `YYYY-MM-DD` with `new Date()`: it is midnight UTC, which renders as the previous day west of UTC. `formatDate` builds a local date for date-only strings.
 - Inter from Google Fonts and the icon CDN: the app now works offline and sends nothing to third parties.
 - A marketing landing page with a Features grid: replaced by a quiet welcome. Nobody lands
   here who does not already have an account.
@@ -137,15 +149,15 @@ Tried and removed, so nobody puts them back:
 
 ## Phase B checklist (remaining screens)
 
-- [ ] Members: status dot plus word in a Status column; one "More" menu per row instead of
-      three coloured icon buttons; ruled, airy table (52 to 56px rows); filters as one quiet
-      row; Add member and Export as one primary and one secondary button.
+- [x] Members: status dot plus word in a Status column; one "More" menu per row instead of
+      three coloured icon buttons; ruled table (`--row-h` rows); filters as one quiet
+      row; Add member and Export as one primary and one secondary button. Done (T2).
 - [ ] Payments: the three stat cards become a quiet two-or-three-figure row like the Overview;
       table with tabular amounts, right-aligned; Record payment as the one primary button.
 - [ ] Messages (route `/communications`, nav label "Messages"): compose in a paper card;
       delivery results as a ruled list with `StatusLabel`; page title still says Communications, align it.
 - [ ] Profile: forms in paper cards, one per concern (details, password); plain labels.
-- [ ] Dialogs: titles in Alegreya 22, footers with one primary action, destructive actions in clay.
+- [ ] Dialogs: titles in Alegreya 22, footers with one primary action, destructive actions in clay. Done on Members; Payments and Messages next.
 - [ ] Empty states: every list gets a plain sentence that invites the next action.
 - [ ] Register view: unreachable (registration is disabled); delete or keep restyled, decide.
 
@@ -157,7 +169,7 @@ Tailwind CSS v4, CSS-first (`@tailwindcss/vite` in `vite.config.js`, no `tailwin
 - **No `@apply`, no `<style scoped>`** except where Tailwind cannot say it. Shared patterns are small Vue components (or a JS constant in the component), never a custom CSS class. Use the animation as `motion-safe:animate-weave`.
 - **Every Tailwind class has the prefix `tw:`** (`tw:flex tw:gap-3 tw:md:flex tw:motion-safe:animate-weave`; the prefix comes before any variant). Reason: Bootstrap's own utility classes (`p-3`, `gap-3`, `border`, `m-0`, `text-end`) are `!important` and share names with Tailwind's but not values, and no cascade order can serve both the migrated and the unmigrated screens. Theme variables carry it too (`var(--tw-color-teal)`), which is why the theme is `@theme static` (all tokens are always emitted). The density variables are not Tailwind's and have no prefix (`tw:h-(--control-h)`). T4 removes the prefix with a mechanical search and replace of `tw:`.
 - **Bootstrap stays until T4.** Members, Payments, Messages and Profile still use Bootstrap classes, tables and modals; they migrate in T2 and T3. Until then Bootstrap's CSS and `theme.css` are imported by `tailwind.css` into one `legacy` cascade layer (one layer, so their `!important` rules keep fighting in file order), below Tailwind's `utilities` layer. This is needed because unlayered CSS beats every layer: a Bootstrap `h1` or `a` rule would otherwise beat a utility on a migrated screen. Tailwind runs WITHOUT its global reset (`preflight`) so the unmigrated screens do not change; T4 adds it, and drops the `legacy` layer.
-- **Migration order:** T1 Tailwind foundation, toast and dialog components, shell, Overview, landing, sign-in. T2 Members and Payments. T3 Messages and Profile. T4 remove Bootstrap (CSS, JS, `theme.css`, the `legacy` layer) and add preflight.
+- **Migration order:** T1 Tailwind foundation, toast and dialog components, shell, Overview, landing, sign-in. T2 Members (done), Profile and Payments. T3 Messages. T4 remove Bootstrap (CSS, JS, `theme.css`, the `legacy` layer) and add preflight.
 
 ## Density
 

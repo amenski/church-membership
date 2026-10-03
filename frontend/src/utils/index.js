@@ -1,15 +1,35 @@
 // Utility functions for the application
 import { format as dateFnsFormat } from 'date-fns'
 
+const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/
+
+/**
+ * A date-only string ("2026-10-01") is a calendar day, not an instant: new Date() would read it
+ * as midnight UTC, which is the previous evening in every zone west of UTC. Build it as local.
+ */
+const toDate = (date) => {
+  const match = typeof date === 'string' ? DATE_ONLY.exec(date) : null
+  return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : new Date(date)
+}
+
 /**
  * Format a date using date-fns
- * @param {string|Date} date - The date to format
+ * @param {string|Date} date - The date to format (a YYYY-MM-DD string is read as a local day)
  * @param {string} fmt - The format string (date-fns pattern)
  * @returns {string} Formatted date string
  */
 export const formatDate = (date, fmt = 'MMM dd, yyyy') => {
   if (!date) return ''
-  return dateFnsFormat(new Date(date), fmt)
+  return dateFnsFormat(toDate(date), fmt)
+}
+
+/**
+ * Today (or the given date) as a local YYYY-MM-DD string, for date inputs.
+ * toISOString() would give the UTC day, which is yesterday late in the evening west of UTC.
+ */
+export const localISODate = (date = new Date()) => {
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
 /**

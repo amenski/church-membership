@@ -8,7 +8,7 @@
       :value="modelValue"
       :disabled="disabled"
       :aria-invalid="error ? 'true' : undefined"
-      :aria-describedby="error ? `${id}-error` : undefined"
+      :aria-describedby="describedBy"
       :class="[
         'tw:block tw:w-full tw:rounded-md tw:border tw:bg-paper tw:px-3 tw:py-2 tw:text-lg tw:leading-normal tw:text-ink',
         'tw:placeholder:text-muted tw:placeholder:opacity-80',
@@ -18,6 +18,7 @@
       ]"
       @input="$emit('update:modelValue', $event.target.value)"
     />
+    <p v-if="hint" :id="`${id}-hint`" class="tw:mt-1 tw:mb-0 tw:text-[0.9375rem] tw:text-muted">{{ hint }}</p>
     <p v-if="error" :id="`${id}-error`" class="tw:mt-1 tw:mb-0 tw:text-[0.9375rem] tw:text-clay">{{ error }}</p>
   </div>
 </template>
@@ -32,8 +33,18 @@ export default {
     modelValue: { type: String, default: '' },
     type: { type: String, default: 'text' },
     error: { type: String, default: '' },
+    // quiet help under the field ("Optional. 10 digits or more.")
+    hint: { type: String, default: '' },
     disabled: { type: Boolean, default: false }
   },
-  emits: ['update:modelValue']
+  emits: ['update:modelValue'],
+  computed: {
+    describedBy() {
+      const ids = []
+      if (this.hint) ids.push(`${this.id}-hint`)
+      if (this.error) ids.push(`${this.id}-error`)
+      return ids.length ? ids.join(' ') : undefined
+    }
+  }
 }
 </script>

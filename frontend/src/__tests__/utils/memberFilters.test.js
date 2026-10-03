@@ -24,9 +24,17 @@ describe('filterMembers', () => {
     expect(run({ status: 'ACTIVE' })).toEqual([1, 3])
     expect(run({ status: 'INACTIVE' })).toEqual([2])
   })
-  it('filters by payment status', () => {
-    expect(run({ paymentStatus: 'OVERDUE' })).toEqual([2, 3])
+  it('filters by dues for active members only', () => {
+    expect(run({ paymentStatus: 'OVERDUE' })).toEqual([3])
     expect(run({ paymentStatus: 'CURRENT' })).toEqual([1])
+  })
+  it('never matches an inactive member with missed months to Behind', () => {
+    expect(run({ paymentStatus: 'OVERDUE' })).not.toContain(2)
+  })
+  it('never matches an inactive member to Paid up, even with zero months missed', () => {
+    const list = [{ id: 9, name: 'Dan', active: false, consecutiveMonthsMissed: 0 }]
+    expect(ids(filterMembers(list, { ...none, paymentStatus: 'CURRENT' }))).toEqual([])
+    expect(ids(filterMembers(list, none))).toEqual([9])
   })
   it('join date bounds are inclusive', () => {
     expect(run({ joinedFrom: '2023-01-10' })).toEqual([1, 2])
@@ -55,7 +63,12 @@ describe('sortMembers', () => {
   })
   it('sorts months missed', () => {
     expect(ids(sortMembers(members, 'consecutiveMonthsMissed', 'asc'))).toEqual([1, 3, 2])
-    expect(ids(sortMembers(members, 'consecutiveMonthsMissed', 'desc'))).toEqual([2, 3, 1])
+    expect(ids(sortMembers(members, 'consecutiveMonthsMissed', 'desc'))).toEqual([3, 1, 2])
+  })
+  it('puts inactive members last by dues in both directions', () => {
+    // member 2 is inactive with 3 months missed: that number is stale and must not rank
+    expect(ids(sortMembers(members, 'consecutiveMonthsMissed', 'asc')).at(-1)).toBe(2)
+    expect(ids(sortMembers(members, 'consecutiveMonthsMissed', 'desc')).at(-1)).toBe(2)
   })
   it('puts null months missed last', () => {
     const list = [{ id: 1, consecutiveMonthsMissed: null }, { id: 2, consecutiveMonthsMissed: 2 }]
