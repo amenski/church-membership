@@ -52,13 +52,15 @@ In `src/main/resources/application.properties`:
 auth.cookies.enabled=true
 auth.cookies.access-name=sid
 auth.cookies.refresh-name=sid_refresh
-auth.cookies.secure=${COOKIE_SECURE:false}      # set true in production
+auth.cookies.secure=${COOKIE_SECURE:true}       # true by default; the dev profile sets false for local http
 auth.cookies.same-site=${COOKIE_SAMESITE:Lax}   # Lax | Strict | None
 auth.cookies.domain=${COOKIE_DOMAIN:}           # e.g. .example.com for subdomains
 auth.access-ttl-seconds=${ACCESS_TTL:1800}
 auth.refresh-ttl-seconds=${REFRESH_TTL:2592000}
 auth.jwt-secret=${JWT_SECRET}                   # required, no default, at least 32 characters (the dev profile sets a local-only one)
 ```
+
+Cookies are `Secure` unless `COOKIE_SECURE=false`; the `dev` profile sets it to `false` so sign-in works over local http. The app also listens on `127.0.0.1` only by default (`server.address=${SERVER_ADDRESS:127.0.0.1}`), so it is reachable through the reverse proxy and not directly.
 
 CORS allows credentials, but the allowed origins are hard-coded in two places: `SecurityConfig.corsConfigurationSource()` (`localhost:3000`, `localhost:8080`) and `WebMvcConfig.addCorsMappings()` (`localhost:8080`, `8081`, `8082`). Both need changing for production.
 

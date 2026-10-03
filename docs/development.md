@@ -106,7 +106,7 @@ This builds the frontend (`:frontend:vueBuild`), copies it into the JAR's `/stat
 1. Install Caddy: <https://caddyserver.com/docs/install>
 2. Copy `deploy/Caddyfile` to `/etc/caddy/Caddyfile` and set your domain.
 3. Point DNS at the server and open ports 80 and 443.
-4. Run the app with `SERVER_ADDRESS=127.0.0.1 COOKIE_SECURE=true`.
+4. Run the app with the defaults: it listens on `127.0.0.1` (`SERVER_ADDRESS`) and sends Secure cookies (`COOKIE_SECURE=true`).
 5. Reload Caddy: `sudo systemctl reload caddy`
 
 Caddy renews certificates automatically, and `server.forward-headers-strategy=framework` makes Spring see the original https scheme and client IP.
@@ -130,7 +130,8 @@ The default profile has no secret defaults: it refuses to start if a required va
 | `DB_PASSWORD` | yes | Database password |
 | `JWT_SECRET` | yes | Token signing key, at least 32 characters. Startup fails with a clear message if it is shorter |
 | `DB_URL` | no | JDBC URL. Default `jdbc:mysql://localhost:3306/felege_selam?serverTimezone=UTC` |
-| `COOKIE_SECURE` | no | Set `true` behind HTTPS |
+| `COOKIE_SECURE` | no | Default `true`: auth cookies are sent only over HTTPS. The `dev` profile sets `false` (local http). Set `false` only for a plain-http test |
+| `SERVER_ADDRESS` | no | Address to listen on. Default `127.0.0.1` (loopback, behind Caddy). Set `0.0.0.0` inside a container |
 | `COOKIE_SAMESITE`, `COOKIE_DOMAIN`, `ACCESS_TTL`, `REFRESH_TTL` | no | See [authentication.md](authentication.md#configuration) |
 | Mail variables | no | See [email.md](email.md#configuration) |
 
@@ -146,7 +147,7 @@ After=mysql.service
 [Service]
 User=appuser
 WorkingDirectory=/opt/membertracker
-EnvironmentFile=/opt/membertracker/membertracker.env   # DB_USERNAME, DB_PASSWORD, JWT_SECRET, COOKIE_SECURE=true
+EnvironmentFile=/opt/membertracker/membertracker.env   # DB_USERNAME, DB_PASSWORD, JWT_SECRET
 ExecStart=/usr/bin/java -jar /opt/membertracker/membertracker.jar
 Restart=on-failure
 RestartSec=10
@@ -178,13 +179,13 @@ With MySQL, using `docker-compose.yml`:
 services:
   app:
     image: membertracker:latest
-    ports: ["8080:8080"]
+    ports: ["127.0.0.1:8080:8080"]
     environment:
       DB_URL: jdbc:mysql://db:3306/felege_selam?serverTimezone=UTC
       DB_USERNAME: root
       DB_PASSWORD: change-me
       JWT_SECRET: replace-with-at-least-32-random-characters
-      COOKIE_SECURE: "true"
+      SERVER_ADDRESS: 0.0.0.0   # inside the container; publish the port to loopback only if a proxy is on the host
     depends_on: [db]
     restart: unless-stopped
   db:
@@ -200,7 +201,7 @@ volumes:
 
 ### Production checklist
 
-- [ ] HTTPS via Caddy (see [HTTPS](#https-caddy-reverse-proxy)), app bound to 127.0.0.1, and `COOKIE_SECURE=true`
+- [ ] HTTPS via Caddy (see [HTTPS](#https-caddy-reverse-proxy)), app bound to 127.0.0.1 (`SERVER_ADDRESS`, the default) and `COOKIE_SECURE` left at its default `true`
 - [ ] `JWT_SECRET` set to a random value of at least 32 characters (the default profile has no default and will not start without it)
 - [ ] `DB_USERNAME` and `DB_PASSWORD` set from the environment (not `root/password`); the default JDBC URL has no `useSSL=false`
 - [ ] CORS origins changed in **both** `SecurityConfig` and `WebMvcConfig`. They are hard-coded to localhost.
