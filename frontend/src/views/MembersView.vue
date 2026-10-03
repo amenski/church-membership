@@ -178,7 +178,7 @@ import api from '@/services/api'
 import * as bootstrap from 'bootstrap'
 import { useAppStore } from '../stores/appStore'
 import { downloadBlob } from '@/utils'
-import { filterMembers, sortMembers } from '@/utils/memberFilters'
+import { filterMembers, sortMembers, exportIds } from '@/utils/memberFilters'
 
 export default {
   name: 'MembersView',
@@ -312,10 +312,21 @@ export default {
         : 'Current'
     },
     async exportMembers() {
+      if (this.filteredMembers.length === 0) {
+        this.appStore.addNotification({
+          type: 'warning',
+          title: 'Nothing to export',
+          message: 'No members match the current filters',
+          isToast: true
+        })
+        return
+      }
       try {
-        const response = await api.exportMembers()
+        const ids = exportIds(this.filteredMembers, this.members)
+        const response = await api.exportMembers(ids)
         // api.request() already returns response.data (the blob)
-        downloadBlob(response, `members_${new Date().toISOString().split('T')[0]}.csv`)
+        const prefix = this.hasActiveFilters ? 'members_filtered' : 'members'
+        downloadBlob(response, `${prefix}_${new Date().toISOString().split('T')[0]}.csv`)
       } catch (error) {
         console.error('Error exporting members:', error)
         this.appStore.addNotification({

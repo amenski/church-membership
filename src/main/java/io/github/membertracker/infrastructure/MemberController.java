@@ -1,6 +1,7 @@
 package io.github.membertracker.infrastructure;
 
 import io.github.membertracker.domain.model.Member;
+import io.github.membertracker.infrastructure.dto.ExportMembersRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.github.membertracker.usecase.*;
@@ -27,7 +28,9 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 import java.io.PrintWriter;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/members")
@@ -132,8 +135,21 @@ public class MemberController {
     @PreAuthorize("hasRole('VOLUNTEER')")
     @Operation(summary = "Export all members as CSV (VOLUNTEER+)")
     public ResponseEntity<StreamingResponseBody> exportMembers() {
-        List<Member> members = getAllMembersUseCase.invoke();
-        
+        return csvResponse(getAllMembersUseCase.invoke());
+    }
+
+    @PostMapping("/export")
+    @PreAuthorize("hasRole('VOLUNTEER')")
+    @Operation(summary = "Export selected members as CSV (VOLUNTEER+)")
+    public ResponseEntity<StreamingResponseBody> exportSelectedMembers(@Valid @RequestBody ExportMembersRequest request) {
+        Set<Long> ids = new HashSet<>(request.getIds());
+        List<Member> selected = getAllMembersUseCase.invoke().stream()
+                .filter(member -> ids.contains(member.getId()))
+                .toList();
+        return csvResponse(selected);
+    }
+
+    private ResponseEntity<StreamingResponseBody> csvResponse(List<Member> members) {
         DateTimeFormatter dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE;
         
         StreamingResponseBody stream = out -> {

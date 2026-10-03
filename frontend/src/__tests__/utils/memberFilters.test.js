@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { filterMembers, sortMembers } from '@/utils/memberFilters'
+import { filterMembers, sortMembers, exportIds } from '@/utils/memberFilters'
 
 const members = [
   { id: 1, name: 'Alice Smith', email: 'alice@example.com', phone: '(06) 12-34', active: true, joinDate: '2023-01-10', consecutiveMonthsMissed: 0 },
@@ -66,5 +66,12 @@ describe('sortMembers', () => {
     const sorted = sortMembers(members, 'name', 'desc')
     expect(sorted).not.toBe(members)
     expect(members).toEqual(copy)
+  })
+})
+
+describe('exportIds', () => {
+  it('returns no ids when nothing is filtered out', () => expect(exportIds(members, members)).toEqual([]))
+  it('returns the visible ids when the list is filtered', () => {
+    expect(exportIds([members[0], members[2]], members)).toEqual([1, 3])
   })
 })

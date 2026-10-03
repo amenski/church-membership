@@ -128,10 +128,11 @@ This document tracks missing features, improvements, and technical debt in the M
   - Add export to PDF/Excel functionality
   - **Location**: `DashboardController`, frontend dashboard components
 
-- [ ] **Member Search & Filtering**
-  - Advanced search with multiple criteria
-  - Save search filters as presets
-  - Export search results
+- [x] **Member Search & Filtering**
+  - [x] Multi-criteria search: name, email, phone, status, payment status, join-date range, sortable columns (client-side)
+  - [ ] Saved filter presets: deferred
+  - [x] Export search results (POST /api/members/export with the visible ids)
+  - [ ] Server-side search and pagination: deferred until a congregation above ~2,000 members or multiple campuses
   - **Location**: `MemberController`, frontend search component
 
 ### Performance

@@ -62,6 +62,7 @@ class RoleAuthorizationTest {
 
     private static final String MEMBER_JSON =
         "{\"name\":\"Abel\",\"email\":\"abel@example.com\",\"phone\":\"+390612345678\",\"joinDate\":\"2025-01-01\"}";
+    private static final String EXPORT_JSON = "{\"ids\":[1]}";
     private static final String PAYMENT_JSON =
         "{\"member\":{\"id\":1},\"period\":\"2026-09\",\"amount\":20.0,\"paymentMethod\":\"CASH\"}";
     private static final String COMMUNICATION_JSON =
@@ -105,6 +106,7 @@ class RoleAuthorizationTest {
             new Endpoint(HttpMethod.GET, "/api/members/inactive", null, "VOLUNTEER"),
             new Endpoint(HttpMethod.GET, "/api/members/overdue/1", null, "VOLUNTEER"),
             new Endpoint(HttpMethod.GET, "/api/members/export", null, "VOLUNTEER"),
+            new Endpoint(HttpMethod.POST, "/api/members/export", EXPORT_JSON, "VOLUNTEER"),
             new Endpoint(HttpMethod.POST, "/api/members", MEMBER_JSON, "STAFF"),
             new Endpoint(HttpMethod.PUT, "/api/members/1", MEMBER_JSON, "STAFF"),
             new Endpoint(HttpMethod.DELETE, "/api/members/1", null, "ADMIN"),

@@ -53,3 +53,10 @@ export function sortMembers(members, key, direction = 'asc') {
     return result * sign
   })
 }
+
+// Ids to send to the export endpoint: none (= export everything) when the
+// filter leaves the whole list on screen, otherwise the ids that are visible.
+export function exportIds(filtered, all) {
+  if (filtered.length === all.length) return []
+  return filtered.map(member => member.id)
+}

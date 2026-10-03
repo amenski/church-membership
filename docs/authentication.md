@@ -87,7 +87,7 @@ The old `USER` role was removed. Migration `004.migrate-user-role-to-member.sql`
 
 | Area | VOLUNTEER and above | STAFF and above | ADMIN only |
 |------|--------------------|-----------------|------------|
-| Members `/api/members` | List, get, active, inactive, overdue, export | Create, update | Delete |
+| Members `/api/members` | List, get, active, inactive, overdue, export, export selected | Create, update | Delete |
 | Payments `/api/payments` | List, get, by member, export | Record | Delete |
 | Communications `/api/communications` | List, get, deliveries | Create, send to all, send to overdue, retry failed delivery | |
 | Dashboard `/api/dashboard/*` | All | | |
