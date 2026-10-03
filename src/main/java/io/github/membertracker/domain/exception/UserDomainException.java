@@ -13,7 +13,6 @@ public class UserDomainException extends DomainException {
     public static final String WEAK_PASSWORD = "USER_004";
     public static final String USER_NOT_FOUND = "USER_005";
     public static final String USER_ALREADY_DISABLED = "USER_006";
-    public static final String USER_ALREADY_ENABLED = "USER_007";
     public static final String INVALID_USER_DATA = "USER_008";
     public static final String ACCOUNT_LOCKED = "USER_009";
     public static final String CREDENTIALS_EXPIRED = "USER_010";
@@ -74,13 +73,6 @@ public class UserDomainException extends DomainException {
         return new UserDomainException(
             String.format("User '%s' is already disabled", email),
             USER_ALREADY_DISABLED
-        );
-    }
-
-    public static UserDomainException userAlreadyEnabled(String email) {
-        return new UserDomainException(
-            String.format("User '%s' is already enabled", email),
-            USER_ALREADY_ENABLED
         );
     }
 

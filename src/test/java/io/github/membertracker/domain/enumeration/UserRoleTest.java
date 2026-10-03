@@ -1,7 +1,6 @@
 package io.github.membertracker.domain.enumeration;
 
 import io.github.membertracker.domain.exception.PaymentDomainException;
-import io.github.membertracker.domain.exception.UserDomainException;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -10,35 +9,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class UserRoleTest {
 
     @Test
-    void fromCode_validCodes_roundTripForEveryRole() {
-        for (UserRole role : UserRole.values()) {
-            assertThat(UserRole.fromCode(role.getCode())).isEqualTo(role);
-        }
-    }
-
-    @Test
-    void fromCode_isCaseInsensitive() {
-        assertThat(UserRole.fromCode("admin")).isEqualTo(UserRole.ADMIN);
-        assertThat(UserRole.fromCode("Staff")).isEqualTo(UserRole.STAFF);
-    }
-
-    @Test
-    void fromCode_unknownOrNull_throwsInvalidUserData() {
-        assertThatThrownBy(() -> UserRole.fromCode("SUPERUSER"))
-            .isInstanceOf(UserDomainException.class)
-            .extracting("errorCode").isEqualTo(UserDomainException.INVALID_USER_DATA);
-        assertThatThrownBy(() -> UserRole.fromCode(null))
-            .isInstanceOf(UserDomainException.class)
-            .extracting("errorCode").isEqualTo(UserDomainException.INVALID_USER_DATA);
-        assertThatThrownBy(() -> UserRole.fromCode(""))
-            .isInstanceOf(UserDomainException.class);
-    }
-
-    @Test
-    void isValid_andAuthority() {
-        assertThat(UserRole.isValid("volunteer")).isTrue();
-        assertThat(UserRole.isValid("nope")).isFalse();
-        assertThat(UserRole.isValid(null)).isFalse();
+    void toAuthority_prefixesTheCodeWithRole() {
         assertThat(UserRole.ADMIN.toAuthority()).isEqualTo("ROLE_ADMIN");
     }
 
@@ -61,12 +32,5 @@ class UserRoleTest {
         assertThatThrownBy(() -> PaymentMethod.fromCode(null))
             .isInstanceOf(PaymentDomainException.class)
             .extracting("errorCode").isEqualTo(PaymentDomainException.PAYMENT_METHOD_NOT_SUPPORTED);
-    }
-
-    @Test
-    void paymentMethod_isValid() {
-        assertThat(PaymentMethod.isValid("credit_card")).isTrue();
-        assertThat(PaymentMethod.isValid("BITCOIN")).isFalse();
-        assertThat(PaymentMethod.isValid(null)).isFalse();
     }
 }

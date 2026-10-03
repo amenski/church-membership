@@ -44,13 +44,13 @@ Example: `{"memberId": 1, "amount": 50.0, "paymentMethod": "CASH", "period": "20
 0. Load the member with `memberRepository.findById`, else `MemberDomainException.memberNotFound` (`RecordPaymentUseCase.java:24-25`); build the `Payment`, period defaulting to `YearMonth.now()` (`RecordPaymentUseCase.java:27-28`)
 1. `validateAmount` then `validatePeriod` (`RecordPaymentUseCase.java:30-31`)
 2. Reject if the member already has a payment for that period (`RecordPaymentUseCase.java:33`)
-3. Default `paymentDate` to today (`Payment.java:102-106`)
-4. `member.recordPayment` sets `lastPaymentDate`; resets `consecutiveMonthsMissed` only when the period is the current month (`src/main/java/io/github/membertracker/domain/model/Member.java:47-58`)
+3. Default `paymentDate` to today (`Payment.java:67-71`)
+4. `member.recordPayment` sets `lastPaymentDate`; resets `consecutiveMonthsMissed` only when the period is the current month (`src/main/java/io/github/membertracker/domain/model/Member.java:46-57`)
 5. Save member, then payment (`RecordPaymentUseCase.java:42-43`)
 
 ### Domain rules
-- Amount > 0 (`Payment.java:46-50`), plus bean validation min 0.01 (`Payment.java:27`)
-- Period not in the future, not older than 3 months before the current month (`Payment.java:52-66`)
+- Amount > 0 (`Payment.java:45-49`), plus bean validation min 0.01 (`Payment.java:26`)
+- Period not in the future, not older than 3 months before the current month (`Payment.java:51-65`)
 - One payment per member per period (`RecordPaymentUseCase.java:33`)
 
 ## Errors
@@ -75,4 +75,4 @@ All RFC 7807 ([../architecture.md](../architecture.md)); handler `src/main/java/
 - Payments cannot be deleted or voided yet; a void feature would need an audit trail.
 - `ProcessMemberPaymentUseCase` (never called) was removed in `chore: remove unused use cases, the membership policy and PhoneNumber`; `RecordPaymentUseCase` is the only record path.
 - Recording a payment does not check that the member is active (`RecordPaymentUseCase.java:22-44` never reads `active`).
-- `Member.markPaymentMissed` (`Member.java:60`) still has no caller; the missed-months counter is raised by `Member.markMissedFor` (`Member.java:69`) through the monthly job in [payment-reminder-scheduler.md](payment-reminder-scheduler.md) (audit C3).
+- The missed-months counter is raised by `Member.markMissedFor` (`Member.java:64`) through the monthly job in [payment-reminder-scheduler.md](payment-reminder-scheduler.md) (audit C3).

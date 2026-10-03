@@ -73,63 +73,6 @@ class PaymentTest {
             .extracting("errorCode").isEqualTo(PaymentDomainException.INVALID_PAYMENT_PERIOD);
     }
 
-    // isForCurrentPeriod
-
-    @Test
-    void isForCurrentPeriod() {
-        assertThat(payment(YearMonth.now(), 10.0).isForCurrentPeriod()).isTrue();
-        assertThat(payment(YearMonth.now().minusMonths(1), 10.0).isForCurrentPeriod()).isFalse();
-        assertThat(payment(null, 10.0).isForCurrentPeriod()).isFalse();
-    }
-
-    // isOnTime / getDaysLate
-
-    @Test
-    void isOnTime_paidOnLastDayOfPeriod_isOnTime() {
-        Payment p = payment(YearMonth.of(2024, 2), 10.0);
-        p.setPaymentDate(LocalDate.of(2024, 2, 29));
-        assertThat(p.isOnTime()).isTrue();
-        assertThat(p.getDaysLate()).isZero();
-    }
-
-    @Test
-    void isOnTime_paidDayAfterPeriodEnd_isLateByOneDay() {
-        Payment p = payment(YearMonth.of(2024, 2), 10.0);
-        p.setPaymentDate(LocalDate.of(2024, 3, 1));
-        assertThat(p.isOnTime()).isFalse();
-        assertThat(p.getDaysLate()).isEqualTo(1);
-    }
-
-    @Test
-    void isOnTime_missingDateOrPeriod_isFalse() {
-        Payment noDate = payment(YearMonth.now(), 10.0);
-        noDate.setPaymentDate(null);
-        assertThat(noDate.isOnTime()).isFalse();
-        assertThat(payment(null, 10.0).isOnTime()).isFalse();
-    }
-
-    // isValid
-
-    @Test
-    void isValid_happyPath() {
-        assertThat(payment(YearMonth.now(), 10.0).isValid()).isTrue();
-    }
-
-    @Test
-    void isValid_falseForBadAmountBadPeriodInactiveOrMissingMember() {
-        assertThat(payment(YearMonth.now(), 0.0).isValid()).isFalse();
-        assertThat(payment(YearMonth.now().minusMonths(4), 10.0).isValid()).isFalse();
-        assertThat(payment(YearMonth.now().plusMonths(1), 10.0).isValid()).isFalse();
-
-        Payment inactive = payment(YearMonth.now(), 10.0);
-        inactive.getMember().deactivate();
-        assertThat(inactive.isValid()).isFalse();
-
-        Payment noMember = payment(YearMonth.now(), 10.0);
-        noMember.setMember(null);
-        assertThat(noMember.isValid()).isFalse();
-    }
-
     // markAsProcessed
 
     @Test

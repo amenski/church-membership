@@ -54,7 +54,7 @@ Role view of the screen:
 ### Activate or deactivate
 1. Click the status button on a row (amber to deactivate, green to activate) (`MembersView.vue:101-103`) (STAFF+).
 2. The screen sends the member's name, email, phone, join date and `active` flipped as a `MemberRequest` (`MembersView.vue:289-297`). No confirmation, no message on success beyond the badge changing; on failure an error toast shows the server's message.
-- Reactivating (inactive to active) goes through `Member.activate()`, which resets the overdue counter to 0 (`Member.java:78-84`, called from `UpdateMemberUseCase.java:39`). Deactivating calls `deactivate()`; sending the state the member already has changes nothing.
+- Reactivating (inactive to active) goes through `Member.activate()`, which resets the overdue counter to 0 (`Member.java:73-79`, called from `UpdateMemberUseCase.java:39`). Deactivating calls `deactivate()`; sending the state the member already has changes nothing.
 - Automatic deactivation after 3 missed months does not exist (see Rules and Known issues).
 
 ### Delete a member
@@ -76,8 +76,8 @@ Role view of the screen:
 - New members: join date defaults to today, `active` is forced true, counters zero (`SaveMemberUseCase.java:18-26`).
 - Export ids: not empty, at most 5000, each positive (`infrastructure/dto/ExportMembersRequest.java:11-13`); unknown ids are skipped (`MemberController.java:143-147`).
 - `consecutiveMonthsMissed`, `lastPaymentDate` and `lastMissedCountMonth` are system-managed (never client-settable since audit C8):
-  - A recorded payment sets `lastPaymentDate`, and resets the counter to 0 only if the payment's period is the current month (`Member.java:47-58`, called from `RecordPaymentUseCase.java:40`).
-  - The monthly scheduler (1st, 06:00) adds 1 to the counter of active members with no payment for the previous month, once per member per month, through `Member.markMissedFor` and `lastMissedCountMonth` (`UpdateMissingPaymentCountersUseCase.java:34-49`); see [payment-reminder-scheduler.md](payment-reminder-scheduler.md). `Member.markPaymentMissed` (`Member.java:60-62`) has no caller.
+  - A recorded payment sets `lastPaymentDate`, and resets the counter to 0 only if the payment's period is the current month (`Member.java:46-57`, called from `RecordPaymentUseCase.java:40`).
+  - The monthly scheduler (1st, 06:00) adds 1 to the counter of active members with no payment for the previous month, once per member per month, through `Member.markMissedFor` and `lastMissedCountMonth` (`UpdateMissingPaymentCountersUseCase.java:34-49`); see [payment-reminder-scheduler.md](payment-reminder-scheduler.md). The unused `Member.markPaymentMissed` was removed in `chore: remove unused domain methods`.
 - Automatic deactivation: there is none. A membership policy (`shouldDeactivate`: 3 or more missed months) once existed but was only reachable through an unused use case; both were removed in `chore: remove unused use cases, the membership policy and PhoneNumber` and can be recovered from git history. Decide whether to build it for real.
 
 ## Known issues

@@ -8,7 +8,6 @@ import jakarta.validation.constraints.PastOrPresent;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.time.temporal.ChronoUnit;
 
 public class Payment {
 
@@ -62,40 +61,6 @@ public class Payment {
         YearMonth threeMonthsAgo = currentMonth.minusMonths(3);
         if (period.isBefore(threeMonthsAgo)) {
             throw PaymentDomainException.invalidPaymentPeriod(period);
-        }
-    }
-
-    public boolean isForCurrentPeriod() {
-        if (period == null) {
-            return false;
-        }
-        YearMonth currentMonth = YearMonth.now();
-        return period.equals(currentMonth);
-    }
-
-    public boolean isOnTime() {
-        if (paymentDate == null || period == null) {
-            return false;
-        }
-        LocalDate dueDate = period.atEndOfMonth();
-        return !paymentDate.isAfter(dueDate);
-    }
-
-    public int getDaysLate() {
-        if (!isOnTime() && paymentDate != null && period != null) {
-            LocalDate dueDate = period.atEndOfMonth();
-            return (int) ChronoUnit.DAYS.between(dueDate, paymentDate);
-        }
-        return 0;
-    }
-
-    public boolean isValid() {
-        try {
-            validateAmount();
-            validatePeriod();
-            return member != null && member.isActive();
-        } catch (PaymentDomainException e) {
-            return false;
         }
     }
 

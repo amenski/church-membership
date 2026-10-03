@@ -12,7 +12,7 @@ Two monthly cron jobs (no HTTP surface) that raise members' missed-payment count
 
 - Threshold: `app.payment.reminder.months-threshold`, injected through the constructor (`PaymentReminderScheduler.java:22-23`). Default 3 (`application.properties`), 2 under the `dev` profile (`application-dev.properties`); the code fallback is 3.
 - Counter job: `previousMonth = YearMonth.now(clock).minusMonths(1)`; loads `memberRepository.findByActive(true)`; skips members whose `joinDate` is after the end of `previousMonth` (a missing join date is counted); skips members with a payment for `previousMonth`; for the rest calls `Member.markMissedFor(previousMonth)` and saves only when it returned true (`UpdateMissingPaymentCountersUseCase.java:34-49`).
-- Idempotent: `Member.markMissedFor` (`domain/model/Member.java:69`) raises the counter once per month, remembering the month in `lastMissedCountMonth`, stored in `member.last_missed_count_month` (Liquibase changeset `005.add-member-last-missed-count-month.sql`). Running the job again in the same month changes nothing.
+- Idempotent: `Member.markMissedFor` (`domain/model/Member.java:64`) raises the counter once per month, remembering the month in `lastMissedCountMonth`, stored in `member.last_missed_count_month` (Liquibase changeset `005.add-member-last-missed-count-month.sql`). Running the job again in the same month changes nothing.
 - Reminder job: one `Communication` ("Payment Reminder", type `REMINDER`) to the overdue members that are active, channel `EMAIL` (`SendPaymentRemindersUseCase.java:29-40`). Returns `null` when nobody qualifies.
 
 ## Collaborators
@@ -30,7 +30,7 @@ Two monthly cron jobs (no HTTP surface) that raise members' missed-payment count
 ## Side effects
 - Counter job: updates `consecutiveMonthsMissed` and `lastMissedCountMonth` on member rows.
 - Reminder job: inserts a `Communication` and one `MessageDelivery` per overdue member (PENDING, then SENT or FAILED as each email result comes in); sends emails on a background thread, so the job's "Successfully sent ... to N members" log (`:54-55`, N is the number of deliveries) fires before delivery finishes.
-- Counter reset happens elsewhere: `Member.recordPayment` sets it to 0 when the payment covers the current period (`domain/model/Member.java:52-54`). `lastMissedCountMonth` is not reset, so a member who pays and misses a later month is counted again for that later month only.
+- Counter reset happens elsewhere: `Member.recordPayment` sets it to 0 when the payment covers the current period (`domain/model/Member.java:51-53`). `lastMissedCountMonth` is not reset, so a member who pays and misses a later month is counted again for that later month only.
 
 ## Gotchas
 - A single application instance is assumed: with two instances both would run the jobs, and reminders would be sent twice (the counter job is safe to run twice, the reminder job is not).

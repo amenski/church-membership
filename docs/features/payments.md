@@ -25,8 +25,8 @@ A VOLUNTEER sees the page without the record form. STAFF and ADMIN see it (`isSt
 1. STAFF picks a member, enters an amount, the payment month and the method (`PaymentsView.vue:15-38`). Defaults: method Cash, month = current month (`PaymentsView.vue:189-194`). There is no notes field, although the API accepts one.
 2. The browser sends `memberId`, `amount`, `paymentMethod`, `period` (`frontend/src/utils/paymentPayload.js:11-20`). Field rules: [payment-controller.md](payment-controller.md#request-body-post).
 3. The server loads the member by id, builds the payment (period defaults to the current month) and checks amount, period window and duplicates (`src/main/java/io/github/membertracker/usecase/RecordPaymentUseCase.java:24-36`).
-4. The payment date is set to today (`src/main/java/io/github/membertracker/domain/model/Payment.java:41`).
-5. The member's `lastPaymentDate` is set to the payment date. The missed-months counter is reset to 0 only when the period is the current month; a back-dated payment leaves the counter alone (`src/main/java/io/github/membertracker/domain/model/Member.java:47-58`, `Member.java:110-116`).
+4. The payment date is set to today (`src/main/java/io/github/membertracker/domain/model/Payment.java:40`).
+5. The member's `lastPaymentDate` is set to the payment date. The missed-months counter is reset to 0 only when the period is the current month; a back-dated payment leaves the counter alone (`src/main/java/io/github/membertracker/domain/model/Member.java:46-57`, `Member.java:88-94`).
 6. Member and payment are saved (`RecordPaymentUseCase.java:42-43`).
 7. Success: the table and cards reload, the form resets, and the receipt modal opens for the new payment (`PaymentsView.vue:282-288`).
 8. Failure (a 400 such as "Member 'X' already has a payment recorded for period 2026-10", or a period older than 3 months): a toast "Payment failed" with the server's message; the form keeps what was typed (`PaymentsView.vue:289-292`). Error codes: [payment-controller.md](payment-controller.md#errors).
@@ -43,11 +43,11 @@ A VOLUNTEER sees the page without the record form. STAFF and ADMIN see it (`isSt
 3. Columns: `id,memberId,memberName,amount,paymentDate,period,method` (`PaymentController.java:90`). Notes are not exported. Failure: toast "Export failed" (`PaymentsView.vue:329-337`).
 
 ## Rules
-- Amount must be above 0 (`Payment.java:46-50`; bean validation `Payment.java:27`, `src/main/java/io/github/membertracker/infrastructure/dto/RecordPaymentRequest.java:20-21`). No other minimum or maximum.
-- Period cannot be in the future and cannot be more than 3 months before the current month (`Payment.java:52-66`). Example: in October, July to October are accepted.
+- Amount must be above 0 (`Payment.java:45-49`; bean validation `Payment.java:26`, `src/main/java/io/github/membertracker/infrastructure/dto/RecordPaymentRequest.java:20-21`). No other minimum or maximum.
+- Period cannot be in the future and cannot be more than 3 months before the current month (`Payment.java:51-65`). Example: in October, July to October are accepted.
 - One payment per member per month (`RecordPaymentUseCase.java:33-36`).
 - Method is one of 7 codes: `CASH`, `BANK_TRANSFER`, `CREDIT_CARD`, `DEBIT_CARD`, `MOBILE_PAYMENT`, `ONLINE_PAYMENT`, `CHECK` (`src/main/java/io/github/membertracker/domain/enumeration/PaymentMethod.java:15-21`; form list `paymentPayload.js:1-9`). An unknown code is a 400.
-- The payment date is always today; the client cannot send one (`Payment.java:41`).
+- The payment date is always today; the client cannot send one (`Payment.java:40`).
 - Notes, if sent through the API, are limited to 500 characters (`RecordPaymentRequest.java:29-30`).
 - Payments cannot be edited, deleted or voided. The DELETE endpoint was removed; payments are financial records.
 - The member must exist; an unknown member id is a 400 (`RecordPaymentUseCase.java:24-25`).
@@ -56,11 +56,11 @@ A VOLUNTEER sees the page without the record form. STAFF and ADMIN see it (`isSt
 - No way to correct a mistaken payment (wrong amount, wrong member). A void-with-audit-trail feature is future work: [payment-controller.md](payment-controller.md#gotchas), audit C7 in [../functionality-audit.md](../functionality-audit.md).
 - Historic payments older than 3 months cannot be entered, so a church migrating from a spreadsheet cannot load past records ([../functionality-audit.md](../functionality-audit.md), Giving).
 - Recording a payment does not check that the member is active (`RecordPaymentUseCase.java:24-36`).
-- The missed-months counter is raised only by the monthly job through `Member.markMissedFor` (`Member.java:69`); `Member.markPaymentMissed` (`Member.java:60-62`) still has no caller ([payment-reminder-scheduler.md](payment-reminder-scheduler.md)).
+- The missed-months counter is raised only by the monthly job through `Member.markMissedFor` (`Member.java:64`); the unused `Member.markPaymentMissed` was removed in `chore: remove unused domain methods` ([payment-reminder-scheduler.md](payment-reminder-scheduler.md)).
 - `ProcessMemberPaymentUseCase` (never called by the API) was removed in `chore: remove unused use cases, the membership policy and PhoneNumber`; it can be recovered from git history.
 - `frontend/src/stores/paymentStore.js` is unused: the view calls `api.js` directly; the store is only re-exported (`frontend/src/stores/index.js:4`) ([payments-view.md](payments-view.md#collaborators)).
 - The page lists and sums every payment in the browser (no paging, no date filter); revenue cards and totals ignore the period and use the payment date (`PaymentsView.vue:225-279`).
-- Amounts are `Double` and shown with a `$` sign (`Payment.java:28`, `PaymentsView.vue:92`).
+- Amounts are `Double` and shown with a `$` sign (`Payment.java:27`, `PaymentsView.vue:92`).
 - The receipt reads the nested member name and shows "Unknown" if missing (`PaymentsView.vue:91`, `:136`).
 - Export is open to VOLUNTEER, so the lowest role can download every member's payment amounts (`PaymentController.java:86`).
 - Member save and payment save are two separate calls in one use case (`RecordPaymentUseCase.java:42-43`); the use case class has no `@Transactional` (only `ChangePasswordUseCase` does), so a failure between the two saves could leave the member updated without a payment.

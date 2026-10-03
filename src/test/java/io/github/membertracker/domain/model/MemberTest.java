@@ -31,8 +31,7 @@ class MemberTest {
     @Test
     void recordPayment_forCurrentPeriod_resetsMissedCounterAndSetsLastPaymentDate() {
         Member m = newMember();
-        m.markPaymentMissed();
-        m.markPaymentMissed();
+        m.setConsecutiveMonthsMissed(2);
         Payment p = paymentFor(m, YearMonth.now());
         p.setPaymentDate(LocalDate.of(2024, 5, 3));
 
@@ -45,7 +44,7 @@ class MemberTest {
     @Test
     void recordPayment_forOtherPeriod_keepsMissedCounterButUpdatesLastPaymentDate() {
         Member m = newMember();
-        m.markPaymentMissed();
+        m.setConsecutiveMonthsMissed(1);
         Payment p = paymentFor(m, YearMonth.now().minusMonths(1));
         p.setPaymentDate(LocalDate.of(2024, 5, 3));
 
@@ -58,7 +57,7 @@ class MemberTest {
     @Test
     void recordPayment_withoutPeriod_doesNotResetCounter() {
         Member m = newMember();
-        m.markPaymentMissed();
+        m.setConsecutiveMonthsMissed(1);
         Payment p = paymentFor(m, null);
 
         m.recordPayment(p);
@@ -73,20 +72,9 @@ class MemberTest {
     }
 
     @Test
-    void markPaymentMissed_incrementsAndMakesOverdue() {
-        Member m = newMember();
-        assertThat(m.isPaymentOverdue()).isFalse();
-        m.markPaymentMissed();
-        assertThat(m.getConsecutiveMonthsMissed()).isEqualTo(1);
-        assertThat(m.isPaymentOverdue()).isTrue();
-        m.markPaymentMissed();
-        assertThat(m.getConsecutiveMonthsMissed()).isEqualTo(2);
-    }
-
-    @Test
     void deactivate_thenActivate_resetsMissedCounter() {
         Member m = newMember();
-        m.markPaymentMissed();
+        m.setConsecutiveMonthsMissed(1);
         m.deactivate();
         assertThat(m.isActive()).isFalse();
 
@@ -110,41 +98,6 @@ class MemberTest {
         assertThatThrownBy(m::deactivate)
             .isInstanceOf(MemberDomainException.class)
             .extracting("errorCode").isEqualTo(MemberDomainException.MEMBER_ALREADY_INACTIVE);
-    }
-
-    @Test
-    void isValid_happyPath() {
-        assertThat(newMember().isValid()).isTrue();
-    }
-
-    @Test
-    void isValid_falseForBlankNameBlankEmailMissingOrFutureJoinDate() {
-        Member blankName = newMember();
-        blankName.setName("   ");
-        Member nullName = newMember();
-        nullName.setName(null);
-        Member blankEmail = newMember();
-        blankEmail.setEmail(" ");
-        Member nullEmail = newMember();
-        nullEmail.setEmail(null);
-        Member noJoinDate = newMember();
-        noJoinDate.setJoinDate(null);
-        Member futureJoin = newMember();
-        futureJoin.setJoinDate(LocalDate.now().plusDays(1));
-
-        assertThat(blankName.isValid()).isFalse();
-        assertThat(nullName.isValid()).isFalse();
-        assertThat(blankEmail.isValid()).isFalse();
-        assertThat(nullEmail.isValid()).isFalse();
-        assertThat(noJoinDate.isValid()).isFalse();
-        assertThat(futureJoin.isValid()).isFalse();
-    }
-
-    @Test
-    void isValid_joinDateToday_isAllowed() {
-        Member m = newMember();
-        m.setJoinDate(LocalDate.now());
-        assertThat(m.isValid()).isTrue();
     }
 
     @Test

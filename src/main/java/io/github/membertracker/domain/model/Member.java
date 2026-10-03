@@ -8,7 +8,6 @@ import jakarta.validation.constraints.PastOrPresent;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.time.temporal.ChronoUnit;
 
 public class Member {
 
@@ -57,10 +56,6 @@ public class Member {
         }
     }
 
-    public void markPaymentMissed() {
-        this.consecutiveMonthsMissed++;
-    }
-
     /**
      * Counts {@code month} as missed, at most once per month.
      *
@@ -88,23 +83,6 @@ public class Member {
             throw MemberDomainException.memberAlreadyInactive(this.name);
         }
         this.active = false;
-    }
-
-    public boolean isPaymentOverdue() {
-        return consecutiveMonthsMissed > 0;
-    }
-
-    public boolean isValid() {
-        return name != null && !name.trim().isEmpty() &&
-               email != null && !email.trim().isEmpty() &&
-               joinDate != null && !joinDate.isAfter(LocalDate.now());
-    }
-
-    public long getMembershipDurationInMonths() {
-        if (joinDate == null) {
-            return 0;
-        }
-        return ChronoUnit.MONTHS.between(joinDate, LocalDate.now());
     }
 
     private boolean paymentCoversCurrentPeriod(Payment payment) {

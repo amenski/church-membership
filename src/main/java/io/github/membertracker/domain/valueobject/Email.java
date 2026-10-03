@@ -45,22 +45,6 @@ public final class Email {
         return value;
     }
 
-    /**
-     * Returns the domain part of the email address.
-     */
-    public String getDomain() {
-        int atIndex = value.indexOf('@');
-        return value.substring(atIndex + 1);
-    }
-
-    /**
-     * Returns the local part of the email address.
-     */
-    public String getLocalPart() {
-        int atIndex = value.indexOf('@');
-        return value.substring(0, atIndex);
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

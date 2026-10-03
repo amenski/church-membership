@@ -27,7 +27,7 @@ Roles and hierarchy: [../authentication.md](../authentication.md).
 
 ## Recent payments
 - Loads all payments, sorts by `paymentDate` desc, takes 10 (`:107-120`).
-- Returns the domain `Payment` as-is: nested `member` object, no `memberId` field (`src/main/java/io/github/membertracker/domain/model/Payment.java:15-18`).
+- Returns the domain `Payment` as-is: nested `member` object, no `memberId` field (`src/main/java/io/github/membertracker/domain/model/Payment.java:14-17`). The derived fields `onTime`, `daysLate`, `forCurrentPeriod` and `valid` are no longer in the JSON (their getters were removed in `chore: remove unused domain methods`; the frontend never read them).
 
 ## Recent activities
 - Derived, not read from the `activity_log` table (no Java code references that table; it is only in the SQL scripts, `src/main/resources/db/sql/001.schema-creation.sql:71`).

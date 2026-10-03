@@ -265,67 +265,6 @@ public class User implements UserDetails {
     }
 
     /**
-     * Enables the user account.
-     */
-    public void enable() {
-        if (this.enabled) {
-            throw UserDomainException.userAlreadyEnabled(this.email.getValue());
-        }
-        this.enabled = true;
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    /**
-     * Disables the user account.
-     */
-    public void disable() {
-        if (!this.enabled) {
-            throw UserDomainException.userAlreadyDisabled(this.email.getValue());
-        }
-        this.enabled = false;
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    /**
-     * Promotes the user to a higher role.
-     */
-    public void promoteToRole(UserRole newRole) {
-        if (this.role == newRole) {
-            throw UserDomainException.invalidUserData("role", "User already has role: " + newRole);
-        }
-        
-        // Validate role hierarchy
-        if (newRole == UserRole.MEMBER && this.role != null) {
-            throw UserDomainException.invalidUserData("role", "Cannot demote user to USER role");
-        }
-        
-        this.role = newRole;
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    /**
-     * Checks if the user has admin privileges.
-     */
-    public boolean isAdmin() {
-        return this.role == UserRole.ADMIN;
-    }
-
-    /**
-     * Checks if the user has manager or admin privileges.
-     */
-    public boolean isManagerOrAdmin() {
-        return this.role == UserRole.STAFF || this.role == UserRole.ADMIN;
-    }
-
-    /**
-     * Checks if the user's password is expired (older than 90 days).
-     */
-    public boolean isPasswordExpired() {
-        return lastPasswordChange != null &&
-               lastPasswordChange.isBefore(LocalDateTime.now().minusDays(90));
-    }
-
-    /**
      * Checks if the account is locked due to too many failed login attempts.
      */
     public boolean isAccountLocked() {
@@ -378,6 +317,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return credentialsNonExpired; // && !isPasswordExpired();
+        return credentialsNonExpired;
     }
 }

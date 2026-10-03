@@ -32,16 +32,16 @@ There is no screen to start, stop or inspect the jobs. Role details of the scree
 Example with the default threshold 3, for a member who paid through September and then stops: 1 Nov counter 1 (October missed), 1 Dec counter 2, 1 Jan counter 3 and the first reminder at 09:00; the reminder repeats every 1st until they pay.
 
 ### The counter job runs twice in one month
-1. The counter is raised once per member per month: the member remembers the last month counted (`last_missed_count_month`) and refuses to count it again (`src/main/java/io/github/membertracker/domain/model/Member.java:64-76`, `src/main/resources/db/sql/005.add-member-last-missed-count-month.sql:5`).
+1. The counter is raised once per member per month: the member remembers the last month counted (`last_missed_count_month`) and refuses to count it again (`src/main/java/io/github/membertracker/domain/model/Member.java:59-71`, `src/main/resources/db/sql/005.add-member-last-missed-count-month.sql:5`).
 2. The second run changes nothing. The reminder job has no such protection: a second run emails again (see Rules).
 
 ### Paying clears the counter
-1. When staff record a payment whose month is the current month, the counter goes to 0 (`Member.java:47-58`, `src/main/java/io/github/membertracker/usecase/RecordPaymentUseCase.java:40-43`).
-2. A payment for an earlier month (back-dated) updates the last payment date but leaves the counter alone (`Member.java:55-57`). The member stays overdue and keeps getting reminders until a current-month payment is recorded.
+1. When staff record a payment whose month is the current month, the counter goes to 0 (`Member.java:46-57`, `src/main/java/io/github/membertracker/usecase/RecordPaymentUseCase.java:40-43`).
+2. A payment for an earlier month (back-dated) updates the last payment date but leaves the counter alone (`Member.java:54-56`). The member stays overdue and keeps getting reminders until a current-month payment is recorded.
 3. The next monthly run only counts a month the member did not pay. See [payments.md](payments.md).
 
 ### Reactivating clears the counter
-1. Switching an inactive member to active (Members screen, status button or edit form) resets the counter to 0 (`Member.java:78-84`, `src/main/java/io/github/membertracker/usecase/UpdateMemberUseCase.java:37-43`). See [members.md](members.md#activate-or-deactivate).
+1. Switching an inactive member to active (Members screen, status button or edit form) resets the counter to 0 (`Member.java:73-79`, `src/main/java/io/github/membertracker/usecase/UpdateMemberUseCase.java:37-43`). See [members.md](members.md#activate-or-deactivate).
 2. Deactivating does not change the counter. Inactive members are not counted and not reminded by the jobs.
 
 ### What the admin sees
@@ -70,8 +70,8 @@ Example with the default threshold 3, for a member who paid through September an
 - Members are reminded every month at or above the threshold, with no cap and no "reminded already" record.
 - Overdue members are not told how many months they owe: the text is fixed.
 - A missed run is lost (see Rules); there is no catch-up and no admin screen showing when the jobs last ran.
-- `Member.markPaymentMissed` has no caller (`Member.java:60-62`); the counter is raised only by the monthly job.
-- Paying an earlier month does not clear the counter, so a member who catches up on old months stays overdue until they pay the current month (`Member.java:55-57`).
+- The counter is raised only by the monthly job (`Member.markMissedFor`); the unused `Member.markPaymentMissed` was removed in `chore: remove unused domain methods`.
+- Paying an earlier month does not clear the counter, so a member who catches up on old months stays overdue until they pay the current month (`Member.java:54-56`).
 - Single instance only; no lock between instances.
 
 ## Related

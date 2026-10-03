@@ -15,8 +15,6 @@ class EmailTest {
     void of_trimsAndLowercases() {
         Email e = Email.of("  John.Doe+tag@Example.COM ");
         assertThat(e.getValue()).isEqualTo("john.doe+tag@example.com");
-        assertThat(e.getLocalPart()).isEqualTo("john.doe+tag");
-        assertThat(e.getDomain()).isEqualTo("example.com");
         assertThat(e).hasToString("john.doe+tag@example.com");
     }
 

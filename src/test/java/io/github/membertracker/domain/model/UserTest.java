@@ -92,13 +92,12 @@ class UserTest {
         u.setLastPasswordChange(LocalDateTime.now().minusDays(100));
         u.recordFailedLoginAttempt();
         u.recordFailedLoginAttempt();
-        assertThat(u.isPasswordExpired()).isTrue();
 
         u.changePassword(STRONG);
 
         assertThat(u.getPassword()).isEqualTo(STRONG);
         assertThat(u.getFailedLoginAttempts()).isZero();
-        assertThat(u.isPasswordExpired()).isFalse();
+        assertThat(u.getLastPasswordChange()).isAfter(LocalDateTime.now().minusDays(1));
     }
 
     @Test
@@ -214,46 +213,6 @@ class UserTest {
         assertThat(u.getLockedUntil()).isNull();
     }
 
-    // enable / disable
-
-    @Test
-    void disable_thenEnable_togglesEnabledFlag() {
-        User u = user();
-        assertThat(u.isEnabled()).isTrue();
-        u.disable();
-        assertThat(u.isEnabled()).isFalse();
-        u.enable();
-        assertThat(u.isEnabled()).isTrue();
-    }
-
-    @Test
-    void enable_whenAlreadyEnabled_throws() {
-        assertThatThrownBy(() -> user().enable())
-            .isInstanceOf(UserDomainException.class)
-            .extracting("errorCode").isEqualTo(UserDomainException.USER_ALREADY_ENABLED);
-    }
-
-    @Test
-    void disable_whenAlreadyDisabled_throws() {
-        User u = user();
-        u.disable();
-        assertThatThrownBy(u::disable)
-            .isInstanceOf(UserDomainException.class)
-            .extracting("errorCode").isEqualTo(UserDomainException.USER_ALREADY_DISABLED);
-    }
-
-    // role helpers
-
-    @Test
-    void roleHelpers_isAdminAndIsManagerOrAdmin() {
-        assertThat(user(UserRole.ADMIN).isAdmin()).isTrue();
-        assertThat(user(UserRole.STAFF).isAdmin()).isFalse();
-        assertThat(user(UserRole.ADMIN).isManagerOrAdmin()).isTrue();
-        assertThat(user(UserRole.STAFF).isManagerOrAdmin()).isTrue();
-        assertThat(user(UserRole.VOLUNTEER).isManagerOrAdmin()).isFalse();
-        assertThat(user(UserRole.MEMBER).isManagerOrAdmin()).isFalse();
-    }
-
     @Test
     void getAuthorities_usesRolePrefixAndDefaultsToMember() {
         assertThat(user(UserRole.STAFF).getAuthorities()).extracting("authority").containsExactly("ROLE_STAFF");
@@ -269,16 +228,5 @@ class UserTest {
         assertThat(u.isEnabled()).isTrue();
         assertThat(u.isAccountNonLocked()).isTrue();
         assertThat(u.getUsername()).isEqualTo("a@b.co");
-    }
-
-    @Test
-    void promoteToRole_changesRole_butRejectsSameRoleAndMemberDemotion() {
-        User u = user(UserRole.MEMBER);
-        u.promoteToRole(UserRole.STAFF);
-        assertThat(u.getRole()).isEqualTo(UserRole.STAFF);
-
-        assertThatThrownBy(() -> u.promoteToRole(UserRole.STAFF)).isInstanceOf(UserDomainException.class);
-        assertThatThrownBy(() -> u.promoteToRole(UserRole.MEMBER)).isInstanceOf(UserDomainException.class);
-        assertThat(u.getRole()).isEqualTo(UserRole.STAFF);
     }
 }

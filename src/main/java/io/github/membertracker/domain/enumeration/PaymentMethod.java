@@ -12,23 +12,21 @@ import java.util.stream.Collectors;
  * Provides type safety for payment method handling and validation.
  */
 public enum PaymentMethod {
-    CASH("CASH", "Cash"),
-    BANK_TRANSFER("BANK_TRANSFER", "Bank Transfer"),
-    CREDIT_CARD("CREDIT_CARD", "Credit Card"),
-    DEBIT_CARD("DEBIT_CARD", "Debit Card"),
-    MOBILE_PAYMENT("MOBILE_PAYMENT", "Mobile Payment"),
-    ONLINE_PAYMENT("ONLINE_PAYMENT", "Online Payment"),
-    CHECK("CHECK", "Check");
+    CASH("CASH"),
+    BANK_TRANSFER("BANK_TRANSFER"),
+    CREDIT_CARD("CREDIT_CARD"),
+    DEBIT_CARD("DEBIT_CARD"),
+    MOBILE_PAYMENT("MOBILE_PAYMENT"),
+    ONLINE_PAYMENT("ONLINE_PAYMENT"),
+    CHECK("CHECK");
 
     private final String code;
-    private final String displayName;
 
     private static final Map<String, PaymentMethod> BY_CODE = Arrays.stream(values())
         .collect(Collectors.toMap(PaymentMethod::getCode, Function.identity()));
 
-    PaymentMethod(String code, String displayName) {
+    PaymentMethod(String code) {
         this.code = code;
-        this.displayName = displayName;
     }
 
     /**
@@ -36,13 +34,6 @@ public enum PaymentMethod {
      */
     public String getCode() {
         return code;
-    }
-
-    /**
-     * Returns the display name of the payment method.
-     */
-    public String getDisplayName() {
-        return displayName;
     }
 
     /**
@@ -60,24 +51,6 @@ public enum PaymentMethod {
         }
         
         return method;
-    }
-
-    /**
-     * Checks if a given code represents a valid payment method.
-     */
-    public static boolean isValid(String code) {
-        if (code == null) {
-            return false;
-        }
-        return BY_CODE.containsKey(code.toUpperCase());
-    }
-
-    /**
-     * Returns all payment methods as a map of code to display name.
-     */
-    public static Map<String, String> getAllAsMap() {
-        return Arrays.stream(values())
-            .collect(Collectors.toMap(PaymentMethod::getCode, PaymentMethod::getDisplayName));
     }
 
     @Override
