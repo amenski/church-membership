@@ -18,6 +18,7 @@ import io.github.membertracker.usecase.GetAllPaymentsUseCase;
 import io.github.membertracker.usecase.GetCommunicationByIdUseCase;
 import io.github.membertracker.usecase.GetCurrentUserUseCase;
 import io.github.membertracker.usecase.GetDeliveriesByCommunicationUseCase;
+import io.github.membertracker.usecase.RetryDeliveryUseCase;
 import io.github.membertracker.usecase.GetInactiveMembersUseCase;
 import io.github.membertracker.usecase.GetMemberByIdUseCase;
 import io.github.membertracker.usecase.GetMembersWithMissedPaymentsUseCase;
@@ -161,6 +162,14 @@ public class UseCaseConfig {
             CommunicationRepository communicationRepository,
             MessageDeliveryRepository messageDeliveryRepository) {
         return new GetDeliveriesByCommunicationUseCase(communicationRepository, messageDeliveryRepository);
+    }
+
+    @Bean
+    public RetryDeliveryUseCase retryDeliveryUseCase(
+            CommunicationRepository communicationRepository,
+            MessageDeliveryRepository messageDeliveryRepository,
+            EmailService emailService) {
+        return new RetryDeliveryUseCase(communicationRepository, messageDeliveryRepository, emailService);
     }
 
     @Bean

@@ -73,10 +73,10 @@ This document tracks missing features, improvements, and technical debt in the M
 - [ ] Open questions: `RecordPaymentUseCase` accepts payments for inactive members; `UpdateMissingPaymentCountersUseCase` counts inactive members and members who joined this month
 
 ### Core Features
-- [ ] **Frontend Delivery Status Display**
+- [x] **Frontend Delivery Status Display**
   - [x] Add delivery status column in communications table (delivery dialog in `CommunicationsView.vue`)
   - [x] Implement status summary cards (sent / failed / pending)
-  - [ ] Add retry functionality for failed deliveries
+  - [x] Add retry functionality for failed deliveries
   - **Location**: `frontend/src/views/CommunicationsView.vue`
 
 - [ ] **Email Retry Logic Enhancement**

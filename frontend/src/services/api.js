@@ -332,6 +332,10 @@ const apiService = {
     return this.get(`/communications/${id}/deliveries`)
   },
 
+  async retryDelivery(communicationId, deliveryId) {
+    return this.post(`/communications/${communicationId}/deliveries/${deliveryId}/retry`)
+  },
+
   async createCommunication(communication) {
     return this.post('/communications', communication)
   },

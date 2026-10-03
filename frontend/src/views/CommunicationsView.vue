@@ -144,6 +144,7 @@
                     <th>Status</th>
                     <th>Delivered At</th>
                     <th>Notes</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -157,6 +158,22 @@
                     </td>
                     <td>{{ formatDateTime(delivery.deliveryTime) }}</td>
                     <td>{{ delivery.responseNotes || '-' }}</td>
+                    <td>
+                      <button
+                        v-if="delivery.status === 'FAILED' && authStore.isStaff"
+                        type="button"
+                        class="btn btn-sm btn-outline-primary"
+                        :disabled="retryingIds.includes(delivery.id)"
+                        @click="retryDelivery(delivery)"
+                      >
+                        <span
+                          v-if="retryingIds.includes(delivery.id)"
+                          class="spinner-border spinner-border-sm me-1"
+                          role="status"
+                        ></span>
+                        Retry
+                      </button>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -174,11 +191,20 @@
 <script>
 import api from '@/services/api'
 import * as bootstrap from 'bootstrap'
+import { useAuthStore } from '../stores/authStore'
+import { useAppStore } from '../stores/appStore'
 
 export default {
   name: 'CommunicationsView',
+  setup() {
+    return {
+      authStore: useAuthStore(),
+      appStore: useAppStore()
+    }
+  },
   data() {
     return {
+      retryingIds: [],
       members: [],
       communications: [],
       deliveries: [],
@@ -251,6 +277,39 @@ export default {
         sent: this.deliveries.filter(d => d.status === 'SENT').length,
         failed: this.deliveries.filter(d => d.status === 'FAILED').length,
         pending: this.deliveries.filter(d => d.status === 'PENDING').length
+      }
+    },
+    async retryDelivery(delivery) {
+      this.retryingIds.push(delivery.id)
+      try {
+        const response = await api.retryDelivery(this.selectedCommunication.id, delivery.id)
+        const updated = response.data || response
+        this.deliveries = this.deliveries.map(d => (d.id === updated.id ? updated : d))
+        this.calculateSummary()
+        if (updated.status === 'SENT') {
+          this.appStore.addNotification({
+            type: 'success',
+            title: 'Success',
+            message: 'Delivery re-sent',
+            isToast: true
+          })
+        } else {
+          this.appStore.addNotification({
+            type: 'warning',
+            title: 'Warning',
+            message: 'Retry failed',
+            isToast: true
+          })
+        }
+      } catch (error) {
+        this.appStore.addNotification({
+          type: 'error',
+          title: 'Error',
+          message: error.message || 'Failed to retry delivery',
+          isToast: true
+        })
+      } finally {
+        this.retryingIds = this.retryingIds.filter(id => id !== delivery.id)
       }
     },
     getDeliverySummary(comm) {

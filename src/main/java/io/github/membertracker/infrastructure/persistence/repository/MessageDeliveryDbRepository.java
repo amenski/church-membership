@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Repository
@@ -27,6 +28,11 @@ public class MessageDeliveryDbRepository implements MessageDeliveryRepository {
         this.messageDeliveryJpaRepository = messageDeliveryJpaRepository;
         this.memberJpaRepository = memberJpaRepository;
         this.communicationJpaRepository = communicationJpaRepository;
+    }
+
+    @Override
+    public Optional<MessageDelivery> findById(Long id) {
+        return messageDeliveryJpaRepository.findById(id).map(this::mapToDomain);
     }
 
     @Override

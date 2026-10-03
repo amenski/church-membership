@@ -89,7 +89,7 @@ The old `USER` role was removed. Migration `004.migrate-user-role-to-member.sql`
 |------|--------------------|-----------------|------------|
 | Members `/api/members` | List, get, active, inactive, overdue, export | Create, update | Delete |
 | Payments `/api/payments` | List, get, by member, export | Record | Delete |
-| Communications `/api/communications` | List, get, deliveries | Create, send to all, send to overdue | |
+| Communications `/api/communications` | List, get, deliveries | Create, send to all, send to overdue, retry failed delivery | |
 | Dashboard `/api/dashboard/*` | All | | |
 | Own account `/api/users/me*` | Any signed-in user, including MEMBER | | |
 

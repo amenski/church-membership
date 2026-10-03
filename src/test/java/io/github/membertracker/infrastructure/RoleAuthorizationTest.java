@@ -88,6 +88,7 @@ class RoleAuthorizationTest {
     @MockitoBean private SendCommunicationToAllMembersUseCase sendCommunicationToAllMembersUseCase;
     @MockitoBean private SendCommunicationToMembersUseCase sendCommunicationToMembersUseCase;
     @MockitoBean private GetDeliveriesByCommunicationUseCase getDeliveriesByCommunicationUseCase;
+    @MockitoBean private RetryDeliveryUseCase retryDeliveryUseCase;
 
     private record Endpoint(HttpMethod method, String path, String body, String minimumRole) {
         @Override
@@ -121,6 +122,7 @@ class RoleAuthorizationTest {
             new Endpoint(HttpMethod.POST, "/api/communications", COMMUNICATION_JSON, "STAFF"),
             new Endpoint(HttpMethod.POST, "/api/communications/send-to-all", COMMUNICATION_JSON, "STAFF"),
             new Endpoint(HttpMethod.POST, "/api/communications/send-to-overdue/1", COMMUNICATION_JSON, "STAFF"),
+            new Endpoint(HttpMethod.POST, "/api/communications/1/deliveries/1/retry", null, "STAFF"),
 
             new Endpoint(HttpMethod.GET, "/api/dashboard/stats", null, "VOLUNTEER"),
             new Endpoint(HttpMethod.GET, "/api/dashboard/recent-payments", null, "VOLUNTEER"),

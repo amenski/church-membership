@@ -26,6 +26,8 @@ Each recipient gets a `MessageDelivery` row:
 
 To see deliveries, call `GET /api/communications/{id}/deliveries`, or open the delivery dialog on the Communications page.
 
+STAFF can retry a `FAILED` email delivery from the delivery dialog (`POST /api/communications/{id}/deliveries/{deliveryId}/retry`). It re-sends once, synchronously.
+
 ## Configuration
 
 In `src/main/resources/application.properties`. Each value can be overridden by the environment variable shown.

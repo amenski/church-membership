@@ -34,6 +34,7 @@ public class CommunicationController {
     private final SendCommunicationToMembersUseCase sendCommunicationToMembersUseCase;
     private final GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase;
     private final GetDeliveriesByCommunicationUseCase getDeliveriesByCommunicationUseCase;
+    private final RetryDeliveryUseCase retryDeliveryUseCase;
 
     @Autowired
     public CommunicationController(GetAllCommunicationsUseCase getAllCommunicationsUseCase,
@@ -42,7 +43,8 @@ public class CommunicationController {
                                    SendCommunicationToAllMembersUseCase sendCommunicationToAllMembersUseCase,
                                    SendCommunicationToMembersUseCase sendCommunicationToMembersUseCase,
                                    GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase,
-                                   GetDeliveriesByCommunicationUseCase getDeliveriesByCommunicationUseCase) {
+                                   GetDeliveriesByCommunicationUseCase getDeliveriesByCommunicationUseCase,
+                                   RetryDeliveryUseCase retryDeliveryUseCase) {
         this.getAllCommunicationsUseCase = getAllCommunicationsUseCase;
         this.getCommunicationByIdUseCase = getCommunicationByIdUseCase;
         this.createCommunicationUseCase = createCommunicationUseCase;
@@ -50,6 +52,7 @@ public class CommunicationController {
         this.sendCommunicationToMembersUseCase = sendCommunicationToMembersUseCase;
         this.getMembersWithMissedPaymentsUseCase = getMembersWithMissedPaymentsUseCase;
         this.getDeliveriesByCommunicationUseCase = getDeliveriesByCommunicationUseCase;
+        this.retryDeliveryUseCase = retryDeliveryUseCase;
     }
 
     @GetMapping
@@ -99,5 +102,12 @@ public class CommunicationController {
     public ResponseEntity<List<MessageDelivery>> getDeliveries(@PathVariable @Positive Long id) {
         List<MessageDelivery> deliveries = getDeliveriesByCommunicationUseCase.invoke(id);
         return ResponseEntity.ok(deliveries);
+    }
+
+    @PostMapping("/{id}/deliveries/{deliveryId}/retry")
+    @PreAuthorize("hasRole('STAFF')")
+    public ResponseEntity<MessageDelivery> retryDelivery(@PathVariable @Positive Long id,
+                                                         @PathVariable @Positive Long deliveryId) {
+        return ResponseEntity.ok(retryDeliveryUseCase.invoke(id, deliveryId));
     }
 }
