@@ -130,11 +130,7 @@
               </div>
               <div class="mb-3">
                 <label class="form-label">Phone</label>
-                <input v-model="memberForm.phone" type="tel" class="form-control" required>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Address</label>
-                <textarea v-model="memberForm.address" class="form-control" rows="2"></textarea>
+                <input v-model="memberForm.phone" type="tel" class="form-control">
               </div>
               <div class="mb-3">
                 <div class="form-check">
@@ -179,6 +175,7 @@ import * as bootstrap from 'bootstrap'
 import { useAppStore } from '../stores/appStore'
 import { downloadBlob } from '@/utils'
 import { filterMembers, sortMembers, exportIds } from '@/utils/memberFilters'
+import { buildMemberRequest } from '@/utils/memberPayload'
 
 export default {
   name: 'MembersView',
@@ -202,7 +199,6 @@ export default {
         name: '',
         email: '',
         phone: '',
-        address: '',
         active: true
       },
       editingMember: null,
@@ -253,7 +249,6 @@ export default {
         name: '',
         email: '',
         phone: '',
-        address: '',
         active: true
       }
       new bootstrap.Modal(this.$refs.memberModal).show()
@@ -269,15 +264,17 @@ export default {
     },
     async saveMember() {
       try {
+        const request = buildMemberRequest(this.memberForm)
         if (this.editingMember) {
-          await api.updateMember(this.editingMember.id, this.memberForm)
+          await api.updateMember(this.editingMember.id, request)
         } else {
-          await api.createMember(this.memberForm)
+          await api.createMember(request)
         }
         await this.loadMembers()
         bootstrap.Modal.getInstance(this.$refs.memberModal).hide()
       } catch (error) {
         console.error('Error saving member:', error)
+        this.notifyFailure('Could not save member', error)
       }
     },
     async deleteMember() {
@@ -291,11 +288,22 @@ export default {
     },
     async toggleStatus(member) {
       try {
-        await api.updateMember(member.id, { ...member, active: !member.active })
+        await api.updateMember(member.id, buildMemberRequest({ ...member, active: !member.active }))
         await this.loadMembers()
       } catch (error) {
         console.error('Error toggling member status:', error)
+        this.notifyFailure('Could not change member status', error)
       }
+    },
+    // The shared API handler already shows an "Access Denied" toast for 403
+    notifyFailure(title, error) {
+      if (error.response?.status === 403) return
+      this.appStore.addNotification({
+        type: 'error',
+        title,
+        message: error.message || 'Request failed',
+        isToast: true
+      })
     },
     formatDate(date) {
       return new Date(date).toLocaleDateString()

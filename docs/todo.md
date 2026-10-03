@@ -67,7 +67,7 @@ This document tracks missing features, improvements, and technical debt in the M
 - [x] Phase 0: dev profile starts; full-context smoke tests
 - [x] Phase 1a: C5 token type + refresh cookie path, C6 generic login error
 - [x] Phase 1b: C3 scheduling monthly + idempotent counter (changeset 005), C4 {{member_name}}
-- [ ] Phase 2: C8 MemberRequest DTO
+- [x] Phase 2: C8 MemberRequest DTO
 - [ ] Phase 3: secrets out of config, CSRF back on, activity log writes
 - [ ] Phase 4: Person/Membership split (needs a decision, not started)
 
@@ -75,7 +75,7 @@ This document tracks missing features, improvements, and technical debt in the M
 - [ ] **Overdue tracking:** the reminder job does not use the reminder-window policy (`DefaultMembershipPolicy.shouldSendReminder`)
 - [ ] **Sign-in:** the landing-page Register button links to a non-existent `/register`; unlocking is not possible without editing the database
 - [ ] **Profile:** the Change Password button opens nothing (`ProfileView.vue:212`); the password rule rejects `-` and `_`; saving with an empty phone fails; client/server rule mismatches for phone and name length; `/api/users/me` returns 500 instead of 404 when the user is missing; `?error=access_denied` is never shown
-- [ ] **Members:** automatic deactivation after 3 missed months never runs; Phone is `required` in the form but optional on the server; the add form cannot set a join date; the form's address field is never saved
+- [ ] **Members:** automatic deactivation after 3 missed months never runs; the add form cannot set a join date
 - [ ] **Payments:** no active-member check when recording; payments older than 3 months cannot be entered (no way to migrate history); the receipt does not show the paid month; the CSV export is open to VOLUNTEER (audit: restrict to STAFF)
 - [ ] **Communications and dashboard:** send-to-overdue has no active-member filter; an empty overdue match still saves a communication marked as sent; no endpoint sends an existing draft; the delivery summary cards skip DELIVERED; dashboard endpoints return 200 with zeros on any exception (errors hidden); payments are loaded several times per dashboard load
 - [ ] **Dead code to delete or wire in:** `ProcessMemberPaymentUseCase`, `memberStore`, `paymentStore`, `communicationStore`, `RegisterView.vue`, `RegisterUserUseCase` (injected into AuthController, never called)
