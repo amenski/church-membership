@@ -19,8 +19,7 @@ Two monthly cron jobs (no HTTP surface) that raise members' missed-payment count
 - `UpdateMissingPaymentCountersUseCase` -> `MemberRepository.findByActive`/`save`, `HasPaymentForMonthUseCase` (`UpdateMissingPaymentCountersUseCase.java:21`; a second constructor takes a `Clock`, used by tests)
 - `SendPaymentRemindersUseCase` -> `MemberRepository.findByConsecutiveMonthsMissedGreaterThanEqual` (`SendPaymentRemindersUseCase.java:30`), `SendCommunicationToMembersUseCase.invoke` (`:40`)
 - `SendCommunicationToMembersUseCase` -> saves the `Communication` with `PENDING` deliveries, then sends async via `EmailService` and saves each delivery's result through `MessageDeliveryRepository` (`SendCommunicationToMembersUseCase.java:44-73`, `:75-103`, `:105-124`)
-- Both reminder use cases are wired as beans in `infrastructure/config/UseCaseConfig.java:203`, `:208`
-- `MembershipPolicy`/`DefaultMembershipPolicy`: not used here (see Gotchas)
+- Both reminder use cases are wired as beans in `infrastructure/config/UseCaseConfig.java:187`, `:192`
 - Mail config, retries, delivery tracking: [email.md](../email.md)
 
 ## Errors
@@ -38,6 +37,4 @@ Two monthly cron jobs (no HTTP surface) that raise members' missed-payment count
 - Inactive members are skipped by both jobs, and members who joined after the counted month are not counted for it.
 - The reminder text is stored once with the `{{member_name}}` placeholder (`SendPaymentRemindersUseCase.java:37`); each recipient's name is filled in at send time by `MessageTemplates.personalize` (`SendCommunicationToMembersUseCase.java:81-82`). See [email.md](../email.md#personalisation).
 - Members at or over the threshold are reminded every month until they pay (no "already reminded" state).
-- The reminder window in `DefaultMembershipPolicy.shouldSendReminder` (last 7 days of the month, `DefaultMembershipPolicy.java:30-43`) is not consulted by the scheduler; only `ProcessMemberPaymentUseCase` calls it (`usecase/ProcessMemberPaymentUseCase.java:104`).
-- The reminder threshold is unrelated to `MAX_CONSECUTIVE_MISSED_MONTHS = 3` (`DefaultMembershipPolicy.java:17`), the automatic-deactivation rule.
-- `ProcessMemberPaymentUseCase` (the only caller of `DefaultMembershipPolicy.shouldSendReminder`) is itself never invoked by any entry point (it is only a bean in `UseCaseConfig`), so neither the reminder window nor the automatic deactivation rule runs.
+- There is no pre-due reminder window and no automatic deactivation: the policy code for both never ran and was removed in `chore: remove unused use cases, the membership policy and PhoneNumber` (recover from git history; decide whether to build it for real).

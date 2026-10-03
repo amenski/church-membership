@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.github.membertracker.usecase.AuthenticateUserUseCase;
 import io.github.membertracker.usecase.LoadUserByUsernameUseCase;
-import io.github.membertracker.usecase.RegisterUserUseCase;
 import io.github.membertracker.utils.CookieUtils;
 import io.github.membertracker.utils.JwtUtils;
 import jakarta.servlet.http.Cookie;
@@ -34,19 +33,16 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthenticateUserUseCase authenticateUserUseCase;
-    private final RegisterUserUseCase registerUserUseCase;
     private final LoadUserByUsernameUseCase loadUserByUsernameUseCase;
     private final CookieUtils cookieUtils;
     private final AuthProperties authProperties;
     private final LoginAttemptLimiter loginAttemptLimiter;
 
     public AuthController(AuthenticateUserUseCase authenticateUserUseCase,
-                         RegisterUserUseCase registerUserUseCase,
                          LoadUserByUsernameUseCase loadUserByUsernameUseCase,
                          CookieUtils cookieUtils, AuthProperties authProperties,
                          LoginAttemptLimiter loginAttemptLimiter) {
         this.authenticateUserUseCase = authenticateUserUseCase;
-        this.registerUserUseCase = registerUserUseCase;
         this.loadUserByUsernameUseCase = loadUserByUsernameUseCase;
         this.cookieUtils = cookieUtils;
         this.authProperties = authProperties;

@@ -5,7 +5,6 @@ import io.github.membertracker.domain.repository.MemberRepository;
 import io.github.membertracker.infrastructure.persistence.entity.MemberEntity;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
@@ -36,13 +35,6 @@ public class MemberDbRepository implements MemberRepository {
     @Override
     public List<Member> findByActive(boolean active) {
         return memberJpaRepository.findByActive(active).stream()
-                .map(this::mapToMember)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<Member> findMembersWithLastPaymentBefore(LocalDate date) {
-        return memberJpaRepository.findMembersWithLastPaymentBefore(date).stream()
                 .map(this::mapToMember)
                 .collect(Collectors.toList());
     }

@@ -1,6 +1,5 @@
 package io.github.membertracker.infrastructure.config;
 
-import io.github.membertracker.domain.policy.DefaultMembershipPolicy;
 import io.github.membertracker.domain.repository.CommunicationRepository;
 import io.github.membertracker.domain.repository.MessageDeliveryRepository;
 import io.github.membertracker.domain.repository.MemberRepository;
@@ -22,14 +21,11 @@ import io.github.membertracker.usecase.RetryDeliveryUseCase;
 import io.github.membertracker.usecase.GetInactiveMembersUseCase;
 import io.github.membertracker.usecase.GetMemberByIdUseCase;
 import io.github.membertracker.usecase.GetMembersWithMissedPaymentsUseCase;
-import io.github.membertracker.usecase.GetMembersWithoutRecentPaymentUseCase;
 import io.github.membertracker.usecase.GetPaymentByIdUseCase;
 import io.github.membertracker.usecase.GetPaymentsByMemberUseCase;
 import io.github.membertracker.usecase.HasPaymentForMonthUseCase;
 import io.github.membertracker.usecase.LoadUserByUsernameUseCase;
-import io.github.membertracker.usecase.ProcessMemberPaymentUseCase;
 import io.github.membertracker.usecase.RecordPaymentUseCase;
-import io.github.membertracker.usecase.RegisterUserUseCase;
 import io.github.membertracker.usecase.SaveMemberUseCase;
 import io.github.membertracker.usecase.UpdateMemberUseCase;
 import io.github.membertracker.usecase.SendCommunicationToAllMembersUseCase;
@@ -45,11 +41,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class UseCaseConfig {
 
     // User-related use cases
-    @Bean
-    public RegisterUserUseCase registerUserUseCase(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-        return new RegisterUserUseCase(userRepository, passwordEncoder);
-    }
-
     @Bean
     public AuthenticateUserUseCase authenticateUserUseCase(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         return new AuthenticateUserUseCase(userRepository, passwordEncoder);
@@ -116,11 +107,6 @@ public class UseCaseConfig {
         return new GetMembersWithMissedPaymentsUseCase(memberRepository);
     }
 
-    @Bean
-    public GetMembersWithoutRecentPaymentUseCase getMembersWithoutRecentPaymentUseCase(MemberRepository memberRepository) {
-        return new GetMembersWithoutRecentPaymentUseCase(memberRepository);
-    }
-
     // Payment-related use cases
     @Bean
     public GetAllPaymentsUseCase getAllPaymentsUseCase(PaymentRepository paymentRepository) {
@@ -145,11 +131,6 @@ public class UseCaseConfig {
     @Bean
     public HasPaymentForMonthUseCase hasPaymentForMonthUseCase(PaymentRepository paymentRepository) {
         return new HasPaymentForMonthUseCase(paymentRepository);
-    }
-
-    @Bean
-    public ProcessMemberPaymentUseCase processMemberPaymentUseCase(MemberRepository memberRepository, PaymentRepository paymentRepository) {
-        return new ProcessMemberPaymentUseCase(memberRepository, paymentRepository, new DefaultMembershipPolicy());
     }
 
     // Communication-related use cases

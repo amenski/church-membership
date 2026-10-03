@@ -67,4 +67,4 @@ Format: [../architecture.md](../architecture.md).
 - `CommunicationDbRepository.save` writes the deliveries of the communication it is given; `findAll`/`findById` never load them, and saving a communication that has no deliveries (for example one read back with `findById`) leaves the stored delivery rows alone (no orphan removal). Covered by `CommunicationDeliveryPersistenceTest`.
 - `create` leaves `sentDate` null and sends nothing; the three send endpoints each build a new communication from the request body, so no endpoint sends an existing communication by id.
 - A client-supplied `sentDate` in the body is ignored, not rejected: the request DTO has no such field.
-- send-to-overdue has no `active` filter (`infrastructure/persistence/repository/MemberJpaRepository.java:16`), unlike send-to-all; an empty match still saves a communication marked sent with zero deliveries.
+- send-to-overdue has no `active` filter (`infrastructure/persistence/repository/MemberJpaRepository.java:12`), unlike send-to-all; an empty match still saves a communication marked sent with zero deliveries.

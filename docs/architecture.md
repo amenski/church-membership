@@ -18,12 +18,11 @@ Clean architecture: dependencies point inwards, and the domain layer depends on 
 src/main/java/io/github/membertracker/
 ├── domain/
 │   ├── model/          Member, Payment, User, Communication, MessageDelivery
-│   ├── valueobject/    Email, PhoneNumber
+│   ├── valueobject/    Email
 │   ├── enumeration/    PaymentMethod, UserRole, CommunicationType
 │   ├── exception/      DomainException + Member/Payment/User subclasses
-│   ├── policy/         MembershipPolicy, DefaultMembershipPolicy
 │   └── repository/     Repository interfaces
-├── usecase/            One class per operation (28), e.g. RecordPaymentUseCase
+├── usecase/            One class per operation (27), e.g. RecordPaymentUseCase
 ├── infrastructure/
 │   ├── *Controller     REST controllers
 │   ├── config/         SecurityConfig, WebMvcConfig, properties classes
@@ -41,15 +40,14 @@ Database migrations: `src/main/resources/db/master.xml` and `db/sql/NNN.*.sql`.
 
 ## Where logic belongs
 
-The project uses a hybrid of rich domain models and policies.
+The project uses rich domain models, with use cases coordinating them. A policy layer existed once and was removed (see Decisions).
 
 | Put it in… | When the logic… | Example |
 |------------|-----------------|---------|
 | **Domain model** | Uses only the entity's own data: invariants, state changes, simple calculations | `Member.recordPayment()`, `Member.deactivate()`, `Payment.validatePeriod()`, `User.recordFailedLoginAttempt()` |
-| **Policy** | Is a business rule that changes often, involves several entities, or needs configuration | `MembershipPolicy.shouldDeactivate()`, `shouldSendReminder()`, `canReactivate()` |
 | **Use case** | Coordinates several steps: transactions, repositories, external services | `RecordPaymentUseCase` |
 
-Shape of a use case that uses all three (`RecordPaymentUseCase` loads the member by id, then applies the domain behaviour):
+Shape of a use case that uses both (`RecordPaymentUseCase` loads the member by id, then applies the domain behaviour):
 
 ```java
 public Payment invoke(Long memberId, Double amount, PaymentMethod paymentMethod,
@@ -73,13 +71,11 @@ public Payment invoke(Long memberId, Double amount, PaymentMethod paymentMethod,
 }
 ```
 
-It does not call `MembershipPolicy` today.
-
 `Communication` owns its sent state (`markAsSent()`, `isSent()`) and its deliveries (`addDelivery()`).
 
 ### Testing by layer
 
-- **Domain models and policies:** plain unit tests, no Spring.
+- **Domain models:** plain unit tests, no Spring.
 - **Use cases:** integration tests covering the whole workflow.
 - **Controllers:** MockMvc tests for every role against every endpoint group (`RoleAuthorizationTest`, 125 cases).
 
@@ -117,7 +113,7 @@ frontend/src/
 | Date | Decision | Why | Status |
 |------|----------|-----|--------|
 | 2025-09 | Stateless JWT in HttpOnly cookies | Tokens stay out of JavaScript; no session store | In use. Details in [authentication.md](authentication.md) |
-| 2026-02 | Hybrid domain model (models + policies + use cases) | Avoids an anemic model without putting volatile rules in entities | In use |
+| 2026-02 | Hybrid domain model (models + policies + use cases) | Avoids an anemic model without putting volatile rules in entities | Removed: the policy was never wired in; see git history (`chore: remove unused use cases, the membership policy and PhoneNumber`) |
 | 2026-02 | Money as `Double`, not `BigDecimal` | Simpler arithmetic and JSON | **Under review:** the [functionality audit](functionality-audit.md) recommends going back to `BigDecimal` before adding funds and receipts |
 | 2026-02 | Cached thread pool for email sending, not virtual threads | Keeps the project on Java 17 | In use. The audit flags it as unbounded and not durable |
 | 2026-02 | Self-registration disabled | Only church staff should have accounts | In use. There is no admin user management yet |

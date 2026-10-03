@@ -39,8 +39,6 @@ Example: `{"memberId": 1, "amount": 50.0, "paymentMethod": "CASH", "period": "20
 | `RecordPaymentRequest` | POST body | see Request body |
 | `CsvUtils` | export | see above |
 
-`ProcessMemberPaymentUseCase` is not used by this controller or any other entry point: only declared as a bean (`src/main/java/io/github/membertracker/infrastructure/config/UseCaseConfig.java:145`) and unit-tested.
-
 ### Record flow
 `RecordPaymentUseCase.invoke(memberId, amount, paymentMethod, period, notes)` (`RecordPaymentUseCase.java:22-44`):
 0. Load the member with `memberRepository.findById`, else `MemberDomainException.memberNotFound` (`RecordPaymentUseCase.java:24-25`); build the `Payment`, period defaulting to `YearMonth.now()` (`RecordPaymentUseCase.java:27-28`)
@@ -75,6 +73,6 @@ All RFC 7807 ([../architecture.md](../architecture.md)); handler `src/main/java/
 
 ## Gotchas
 - Payments cannot be deleted or voided yet; a void feature would need an audit trail.
-- `ProcessMemberPaymentUseCase` is dead code from the API's point of view (see Collaborators).
+- `ProcessMemberPaymentUseCase` (never called) was removed in `chore: remove unused use cases, the membership policy and PhoneNumber`; `RecordPaymentUseCase` is the only record path.
 - Recording a payment does not check that the member is active (`RecordPaymentUseCase.java:22-44` never reads `active`).
 - `Member.markPaymentMissed` (`Member.java:60`) still has no caller; the missed-months counter is raised by `Member.markMissedFor` (`Member.java:69`) through the monthly job in [payment-reminder-scheduler.md](payment-reminder-scheduler.md) (audit C3).

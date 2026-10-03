@@ -9,7 +9,6 @@ import io.github.membertracker.domain.model.User;
 import io.github.membertracker.domain.enumeration.UserRole;
 import io.github.membertracker.domain.valueobject.Email;
 import io.github.membertracker.usecase.LoadUserByUsernameUseCase;
-import io.github.membertracker.usecase.RegisterUserUseCase;
 import io.github.membertracker.utils.CookieUtils;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
@@ -35,7 +34,6 @@ class AuthControllerTest {
     @Autowired private MockMvc mockMvc;
 
     @MockitoBean private AuthenticateUserUseCase authenticateUserUseCase;
-    @MockitoBean private RegisterUserUseCase registerUserUseCase;
     @MockitoBean private LoadUserByUsernameUseCase loadUserByUsernameUseCase;
 
     private MockHttpServletResponse login(String email) throws Exception {

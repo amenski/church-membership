@@ -57,7 +57,7 @@ A VOLUNTEER sees the page without the record form. STAFF and ADMIN see it (`isSt
 - Historic payments older than 3 months cannot be entered, so a church migrating from a spreadsheet cannot load past records ([../functionality-audit.md](../functionality-audit.md), Giving).
 - Recording a payment does not check that the member is active (`RecordPaymentUseCase.java:24-36`).
 - The missed-months counter is raised only by the monthly job through `Member.markMissedFor` (`Member.java:69`); `Member.markPaymentMissed` (`Member.java:60-62`) still has no caller ([payment-reminder-scheduler.md](payment-reminder-scheduler.md)).
-- `ProcessMemberPaymentUseCase` is dead code: only declared as a bean and unit-tested (`src/main/java/io/github/membertracker/infrastructure/config/UseCaseConfig.java:145`), not used by the API ([payment-controller.md](payment-controller.md#collaborators)).
+- `ProcessMemberPaymentUseCase` (never called by the API) was removed in `chore: remove unused use cases, the membership policy and PhoneNumber`; it can be recovered from git history.
 - `frontend/src/stores/paymentStore.js` is unused: the view calls `api.js` directly; the store is only re-exported (`frontend/src/stores/index.js:4`) ([payments-view.md](payments-view.md#collaborators)).
 - The page lists and sums every payment in the browser (no paging, no date filter); revenue cards and totals ignore the period and use the payment date (`PaymentsView.vue:225-279`).
 - Amounts are `Double` and shown with a `$` sign (`Payment.java:28`, `PaymentsView.vue:92`).

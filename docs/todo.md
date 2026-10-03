@@ -73,14 +73,14 @@ This document tracks missing features, improvements, and technical debt in the M
 - [ ] Phase 4: Person/Membership split (needs a decision, not started)
 
 ### Bugs found by checking the docs against the code (October 2026)
-- [ ] **Overdue tracking:** the reminder job does not use the reminder-window policy (`DefaultMembershipPolicy.shouldSendReminder`)
+- [ ] **Overdue tracking:** there is no pre-due reminder window (the unused policy code was removed in `chore: remove unused use cases, the membership policy and PhoneNumber`; recover from git history if you build it)
 - [x] **Sign-in:** locks end by themselves after 15 minutes (`locked_until`); one generic message; per-IP and per-email throttle (a permanent lock with no `locked_until` still needs a database edit)
 - [x] **Profile:** changing the password ends other sessions; refresh sessions last at most 30 days from sign-in
-- [ ] **Members:** automatic deactivation after 3 missed months never runs; the add form cannot set a join date
+- [ ] **Members:** there is no automatic deactivation after 3 missed months (the unused code was removed; see git history); the add form cannot set a join date
 - [ ] **Payments:** no active-member check when recording; payments older than 3 months cannot be entered (no way to migrate history); the receipt does not show the paid month; the CSV export is open to VOLUNTEER (audit: restrict to STAFF)
 - [ ] **Communications and dashboard:** send-to-overdue has no active-member filter; an empty overdue match still saves a communication marked as sent; no endpoint sends an existing draft; the delivery summary cards skip DELIVERED; dashboard endpoints return 200 with zeros on any exception (errors hidden); payments are loaded several times per dashboard load
 - [ ] **Communications (display):** the Recipients column shows "-" for everything except send-to-all (`CommunicationsView.vue:376`); the dashboard Send Reminder is stored as an announcement, not a REMINDER
-- [ ] **Dead code to delete or wire in:** `ProcessMemberPaymentUseCase`, `memberStore`, `paymentStore`, `communicationStore`, `RegisterView.vue`, `RegisterUserUseCase` (injected into AuthController, never called)
+- [ ] **Dead code to delete or wire in:** `memberStore`, `paymentStore`, `communicationStore`, `RegisterView.vue` (the backend half, `ProcessMemberPaymentUseCase`, `RegisterUserUseCase` and the policy, was removed in `chore: remove unused use cases, the membership policy and PhoneNumber`)
 
 ### Bugs found by tests (October 2026)
 - [x] Password change always failed (bcrypt hash checked against the strength rule) *(f26514e)*

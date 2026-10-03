@@ -55,7 +55,7 @@ Role view of the screen:
 1. Click the status button on a row (amber to deactivate, green to activate) (`MembersView.vue:101-103`) (STAFF+).
 2. The screen sends the member's name, email, phone, join date and `active` flipped as a `MemberRequest` (`MembersView.vue:289-297`). No confirmation, no message on success beyond the badge changing; on failure an error toast shows the server's message.
 - Reactivating (inactive to active) goes through `Member.activate()`, which resets the overdue counter to 0 (`Member.java:78-84`, called from `UpdateMemberUseCase.java:39`). Deactivating calls `deactivate()`; sending the state the member already has changes nothing.
-- Automatic deactivation after 3 missed months exists as policy but is never applied (see Rules and Known issues).
+- Automatic deactivation after 3 missed months does not exist (see Rules and Known issues).
 
 ### Delete a member
 1. Click the trash button; a confirmation names the member (`MembersView.vue:160`) (ADMIN only).
@@ -78,12 +78,12 @@ Role view of the screen:
 - `consecutiveMonthsMissed`, `lastPaymentDate` and `lastMissedCountMonth` are system-managed (never client-settable since audit C8):
   - A recorded payment sets `lastPaymentDate`, and resets the counter to 0 only if the payment's period is the current month (`Member.java:47-58`, called from `RecordPaymentUseCase.java:40`).
   - The monthly scheduler (1st, 06:00) adds 1 to the counter of active members with no payment for the previous month, once per member per month, through `Member.markMissedFor` and `lastMissedCountMonth` (`UpdateMissingPaymentCountersUseCase.java:34-49`); see [payment-reminder-scheduler.md](payment-reminder-scheduler.md). `Member.markPaymentMissed` (`Member.java:60-62`) has no caller.
-- Automatic deactivation: `DefaultMembershipPolicy.shouldDeactivate` is true for an active member with 3 or more missed months (`DefaultMembershipPolicy.java:17`, `:22-27`). It is applied only inside `ProcessMemberPaymentUseCase` (`ProcessMemberPaymentUseCase.java:67-72`), which no controller calls (bean at `UseCaseConfig.java:145-146`). The payment endpoint uses `RecordPaymentUseCase`, which never checks the policy.
+- Automatic deactivation: there is none. A membership policy (`shouldDeactivate`: 3 or more missed months) once existed but was only reachable through an unused use case; both were removed in `chore: remove unused use cases, the membership policy and PhoneNumber` and can be recovered from git history. Decide whether to build it for real.
 
 ## Known issues
 - Delete erases payments and delivery history, and the confirmation does not warn (audit C9).
 - One email per member is a model limit (audit C10).
-- Automatic deactivation never happens: the policy is only reachable through an unused use case (see Rules).
+- Automatic deactivation never ran: the pre-due reminder window and automatic deactivation never ran; the code was removed in `chore: remove unused use cases, the membership policy and PhoneNumber` and can be recovered from git history; decide whether to build them for real.
 - Add/Edit/Delete/toggle buttons show to VOLUNTEERs; the click fails with a 403 toast (`MembersView.vue:95-103`).
 - Delete and load errors are only logged to the console (`MembersView.vue:231`, `:286`), apart from the 403 toast. Save and toggle errors show a toast.
 - "Last Payment" column shows and sorts months overdue, not the last payment date (`MembersView.vue:71-73`, `:89-91`).

@@ -59,14 +59,14 @@ Example with the default threshold 3, for a member who paid through September an
 - The counter job counts only ACTIVE members, only the previous month, once per member per month (`UpdateMissingPaymentCountersUseCase.java:30-49`).
 - A member who joined after the end of the counted month is not counted for it.
 - Reminders go to ACTIVE members with a counter at or above the threshold, every month, until they pay: there is no "already reminded" state (`SendPaymentRemindersUseCase.java:29-40`).
-- The reminder threshold is unrelated to the 3-month rule of automatic deactivation (`src/main/java/io/github/membertracker/domain/policy/DefaultMembershipPolicy.java:17`).
+- The reminder threshold is unrelated to the 3-month rule of automatic deactivation, which does not exist (see Known issues).
 - A run missed because the application was down at 06:00 or 09:00 on the 1st is not repeated: that month is never counted, and the next run counts only the next month (`PaymentReminderScheduler.java:33`, `:48`; [payment-reminder-scheduler.md](payment-reminder-scheduler.md#errors)).
 - One application instance is assumed. With two running, both fire the jobs: the counter job is safe (once per month), the reminder job would email every overdue member twice.
 - A failure in either job is logged and swallowed; nothing is retried (`PaymentReminderScheduler.java:39-41`, `:59-61`).
 - Scheduling is switched on in `src/main/java/io/github/membertracker/infrastructure/config/SchedulingConfig.java:8`.
 
 ## Known issues
-- **Reminder window and auto-deactivation never run:** `DefaultMembershipPolicy.shouldSendReminder` (last 7 days of the month) and `shouldDeactivate` (3 or more missed months) are called only by `ProcessMemberPaymentUseCase` (`src/main/java/io/github/membertracker/usecase/ProcessMemberPaymentUseCase.java:70`, `:104`), which is only declared as a bean and never invoked by any controller or job (`src/main/java/io/github/membertracker/infrastructure/config/UseCaseConfig.java:150-153`). So there is no pre-due-date reminder and members are never deactivated automatically, however many months they miss. Logged in [../todo.md](../todo.md).
+- **Reminder window and auto-deactivation never ran:** the pre-due reminder window (last 7 days of the month) and automatic deactivation (3 or more missed months) lived in `DefaultMembershipPolicy`, reachable only through the unused `ProcessMemberPaymentUseCase`. The code was removed in `chore: remove unused use cases, the membership policy and PhoneNumber` and can be recovered from git history; decide whether to build them for real. So there is no pre-due-date reminder and members are never deactivated automatically, however many months they miss. Logged in [../todo.md](../todo.md).
 - Members are reminded every month at or above the threshold, with no cap and no "reminded already" record.
 - Overdue members are not told how many months they owe: the text is fixed.
 - A missed run is lost (see Rules); there is no catch-up and no admin screen showing when the jobs last ran.
