@@ -70,7 +70,12 @@ CORS allows credentials, but the allowed origins are hard-coded in two places: `
 - A new password must be 8 characters or more and at most 72 UTF-8 bytes (BCrypt ignores anything longer), with an uppercase letter, a lowercase letter, a digit and a special character (`User.validatePasswordStrength`). Special means any character that is not a letter, digit or whitespace, so `-`, `_`, `#` and `.` count; spaces are allowed but do not count as special. The web form checks the same rule (`frontend/src/utils/passwordRules.js`).
 - When the user changes their password the current one must be given and match; there is no minimum length on it, so the seeded 5-character admin password can be replaced. A wrong current password is a 400 "Current password is incorrect"; a weak new one is a 400 with the rule text.
 - Changing the password does not end other sessions.
-- Five failed logins lock the account. Nothing unlocks it automatically.
+- Five failed attempts lock the account for 15 minutes, and the lock ends by itself (`users.locked_until`, changeset 006). A lock with no `locked_until` (set by hand or an old row) stays permanent until someone clears `account_non_locked` in the database.
+- A wrong current password on a password change counts toward the same lock as a wrong sign-in password.
+- The lock is checked before the password. A locked account is never password-checked, and sign-in answers an unknown email, a wrong password and a locked account with the same 400 and the same text, "Invalid email or password. After several failed attempts an account is locked for 15 minutes.", so a lock cannot be used to find out a password or to tell which emails exist.
+- The attempt counter, its reset and the password update are single-row SQL updates (`UserRepository.recordFailedLogin`, `resetFailedLogins`, `updatePassword`); sign-in never saves the whole user, so 50 parallel guesses are all counted and a slow BCrypt check cannot overwrite a concurrent password change.
+- `LoginAttemptLimiter` (in memory, one process) counts failed sign-ins in a sliding 10-minute window: 10 per email (case-insensitive) and 30 per client IP. Over the limit, `POST /api/auth/login` answers 429 "Too many sign-in attempts. Try again in a few minutes." with a `Retry-After` header (seconds). Successes are never counted, and a success clears the email's entries. A restart resets the counters.
+- The client IP is `request.getRemoteAddr()`. Tomcat replaces it with the first `X-Forwarded-For` address only when the direct peer is a trusted proxy (`server.tomcat.remoteip.remote-ip-header=X-Forwarded-For`, `internal-proxies` limited to loopback by `TRUSTED_PROXIES`), so a client cannot choose its own IP. The per-email limit and the lock do not depend on the IP.
 
 ### CSRF
 
@@ -167,7 +172,7 @@ curl -i -b jar.txt -X POST -H "X-XSRF-TOKEN: $XSRF" http://localhost:8080/api/au
 
 | Symptom | Check |
 |---------|-------|
-| Login fails | A failed login returns 400 with "Invalid email or password" (the same for an unknown email and a wrong password), not 401. A 401 comes from protected endpoints called without a valid session. Check: backend running; email and password correct; the account is not locked (`users.account_non_locked`). Nothing unlocks an account automatically or through the API, so a locked account needs `account_non_locked` set back to true (and `failed_login_attempts` to 0) in the database |
+| Login fails | A failed login returns 400 with "Invalid email or password. After several failed attempts an account is locked for 15 minutes." (the same for an unknown email, a wrong password and a locked account), not 401. A 401 comes from protected endpoints called without a valid session. Check: backend running; email and password correct; the account is not locked (`users.account_non_locked`, `users.locked_until`): a lock ends 15 minutes after the fifth failure. To unlock at once: `UPDATE users SET account_non_locked = TRUE, failed_login_attempts = 0, locked_until = NULL WHERE email = '...'`. A 429 means the throttle (10 failures per email or 30 per IP in 10 minutes) tripped: wait for `Retry-After`, or restart the app |
 | Logged out after about 30 minutes | Should not happen while active: an expired access cookie gets a 401 and the client refreshes. Check that the browser sends `sid_refresh` to `/api/auth/refresh` (cookie path `/api/auth`) and that `JWT_SECRET` did not change |
 | Logged out sooner | The client-side 1-hour inactivity timeout, or the backend restarted with a different `JWT_SECRET` |
 | Redirect loop on load | `authStore.initialize()` must run in `App.vue` so `authChecked` gets set |
@@ -180,5 +185,5 @@ Full list and fixes in [functionality-audit.md](functionality-audit.md) and [tod
 
 - Logout does not revoke tokens, and refresh tokens are not rotated
 - No password reset, MFA, "remember me", or session list
-- Locked accounts never unlock automatically, and a locked account's message only appears after the correct password
+- The sign-in throttle is in memory (one process, reset on restart); a permanent lock (no `locked_until`) still needs a database edit
 - Sessions are not synchronised across browser tabs

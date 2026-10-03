@@ -66,4 +66,4 @@ Shown in the form alert (`LoginView.vue:11`) and a toast.
 - `clearErrorOnInput` is defined (`LoginView.vue:210`) but not bound to any input, so the error alert stays until the next submit.
 - Password length check is 6 (`LoginView.vue:133`) while the backend rule for new passwords is 8 with complexity; harmless for login.
 - `authStore.register` posts to `/v1/auth/register` (`authStore.js:113`), which becomes `/api/v1/auth/register`, not `/api/auth/register`; registration is disabled server-side anyway.
-- A locked account's message appears only after the correct password; the lockout counter only counts failures for existing accounts (by design: nothing to count for an unknown email).
+- A locked account shows the same generic message as any failed sign-in (the lock ends after 15 minutes); too many failures give a 429 whose message the form shows.

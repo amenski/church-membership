@@ -5,7 +5,9 @@ import io.github.membertracker.domain.repository.UserRepository;
 import io.github.membertracker.domain.valueobject.Email;
 import io.github.membertracker.infrastructure.persistence.entity.UserEntity;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Repository
@@ -44,6 +46,23 @@ public class UserDbRepository implements UserRepository {
     }
 
     @Override
+    @Transactional
+    public void recordFailedLogin(Long userId, int maxAttempts, LocalDateTime lockedUntil) {
+        userJpaRepository.incrementFailedLoginAttempts(userId);
+        userJpaRepository.lockWhenThresholdReached(userId, maxAttempts, lockedUntil);
+    }
+
+    @Override
+    public void resetFailedLogins(Long userId) {
+        userJpaRepository.resetFailedLogins(userId);
+    }
+
+    @Override
+    public void updatePassword(Long userId, String encodedPassword, LocalDateTime changedAt) {
+        userJpaRepository.updatePassword(userId, encodedPassword, changedAt);
+    }
+
+    @Override
     public boolean existsByEmail(String email) {
         return userJpaRepository.existsByEmail(email);
     }
@@ -59,6 +78,7 @@ public class UserDbRepository implements UserRepository {
         user.setCredentialsNonExpired(entity.isCredentialsNonExpired());
         user.setLastPasswordChange(entity.getLastPasswordChange());
         user.setFailedLoginAttempts(entity.getFailedLoginAttempts());
+        user.setLockedUntil(entity.getLockedUntil());
         user.setCreatedAt(entity.getCreatedAt());
         user.setUpdatedAt(entity.getUpdatedAt());
         user.setFirstName(entity.getFirstName());
@@ -79,6 +99,7 @@ public class UserDbRepository implements UserRepository {
         entity.setCredentialsNonExpired(user.isCredentialsNonExpired());
         entity.setLastPasswordChange(user.getLastPasswordChange());
         entity.setFailedLoginAttempts(user.getFailedLoginAttempts());
+        entity.setLockedUntil(user.getLockedUntil());
         entity.setCreatedAt(user.getCreatedAt());
         entity.setUpdatedAt(user.getUpdatedAt());
         entity.setFirstName(user.getFirstName());

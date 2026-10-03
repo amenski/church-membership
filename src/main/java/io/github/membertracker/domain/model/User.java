@@ -5,6 +5,7 @@ import io.github.membertracker.domain.exception.UserDomainException;
 import io.github.membertracker.domain.valueobject.Email;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -27,6 +28,12 @@ public class User implements UserDetails {
     private LocalDateTime updatedAt;
     private LocalDateTime lastPasswordChange;
     private int failedLoginAttempts;
+    private LocalDateTime lockedUntil;
+
+    /** Failed sign-ins (or password changes with a wrong current password) that lock the account. */
+    public static final int MAX_FAILED_LOGIN_ATTEMPTS = 5;
+    /** How long a failure-triggered lock lasts. */
+    public static final Duration LOCK_DURATION = Duration.ofMinutes(15);
 
     // Profile fields
     private String firstName;
@@ -155,6 +162,14 @@ public class User implements UserDetails {
         this.failedLoginAttempts = failedLoginAttempts;
     }
 
+    public LocalDateTime getLockedUntil() {
+        return lockedUntil;
+    }
+
+    public void setLockedUntil(LocalDateTime lockedUntil) {
+        this.lockedUntil = lockedUntil;
+    }
+
     public String getFirstName() {
         return firstName;
     }
@@ -226,11 +241,16 @@ public class User implements UserDetails {
      * Records a failed login attempt and locks account if threshold is reached.
      */
     public void recordFailedLoginAttempt() {
+        recordFailedLoginAttempt(LocalDateTime.now());
+    }
+
+    public void recordFailedLoginAttempt(LocalDateTime now) {
         this.failedLoginAttempts++;
-        this.updatedAt = LocalDateTime.now();
-        
-        if (this.failedLoginAttempts >= 5) {
+        this.updatedAt = now;
+
+        if (this.failedLoginAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
             this.accountNonLocked = false;
+            this.lockedUntil = now.plus(LOCK_DURATION);
         }
     }
 
@@ -240,6 +260,7 @@ public class User implements UserDetails {
     public void resetFailedLoginAttempts() {
         this.failedLoginAttempts = 0;
         this.accountNonLocked = true;
+        this.lockedUntil = null;
         this.updatedAt = LocalDateTime.now();
     }
 
@@ -308,7 +329,20 @@ public class User implements UserDetails {
      * Checks if the account is locked due to too many failed login attempts.
      */
     public boolean isAccountLocked() {
-        return !accountNonLocked;
+        return isLocked(LocalDateTime.now());
+    }
+
+    /**
+     * A lock without an expiry (set by an admin or an old row) is permanent; a lock with an expiry
+     * lasts until that moment.
+     */
+    public boolean isLocked(LocalDateTime now) {
+        return !accountNonLocked && (lockedUntil == null || lockedUntil.isAfter(now));
+    }
+
+    /** True when the account carries a temporary lock whose time has passed and can be cleared. */
+    public boolean isLockExpired(LocalDateTime now) {
+        return !accountNonLocked && lockedUntil != null && !lockedUntil.isAfter(now);
     }
 
     /**
@@ -339,7 +373,7 @@ public class User implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return accountNonLocked;
+        return !isAccountLocked();
     }
 
     @Override

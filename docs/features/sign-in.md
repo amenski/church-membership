@@ -19,10 +19,10 @@ The auth endpoints have no `@PreAuthorize`; `/api/auth/**` is public (`infrastru
 1. A signed-out visitor opens `/login`, enters email and password (`frontend/src/views/LoginView.vue:149`).
 2. The form checks email format and a password of 6+ characters before sending anything (`LoginView.vue:118-146`). Failure: inline field errors and a "Validation Error" toast.
 3. The store lowercases the email and posts to `/api/auth/login` (`frontend/src/stores/authStore.js:62-80`).
-4. The backend looks up the user, checks the password, then checks enabled, not locked and credentials not expired (`src/main/java/io/github/membertracker/usecase/AuthenticateUserUseCase.java:19-44`).
+4. The backend looks up the user, clears an expired lock, rejects a locked account (without checking the password), checks the password, then checks enabled and credentials not expired (`src/main/java/io/github/membertracker/usecase/AuthenticateUserUseCase.java:19-44`).
 5. On success it sets the `sid` and `sid_refresh` cookies and returns `{email, role}` (`AuthController.java:56-78`). The user sees a "Welcome back!" toast and is sent to the `?redirect=` page, or `/` (`LoginView.vue:175-197`).
 6. `/` is guest-only, so the guard forwards a signed-in user to their home page: `/dashboard` for VOLUNTEER+, `/profile` for MEMBER (`router/index.js:91-96`, `authStore.js:43`).
-7. On failure the server message is shown in the form alert and a "Login Failed" toast (`LoginView.vue:198-206`, `authStore.js:210-217`). Login errors come back as HTTP 400 (`AuthController.java:80-81`), with one message, "Invalid email or password", for an unknown email and a wrong password.
+7. On failure the server message is shown in the form alert and a "Login Failed" toast (`LoginView.vue:198-206`, `authStore.js:210-217`). Login errors come back as HTTP 400 (`AuthController.java:80-81`), with one message, "Invalid email or password. After several failed attempts an account is locked for 15 minutes.", for an unknown email, a wrong password and a locked account. After 10 failures for one email or 30 from one IP in 10 minutes the next attempt is a 429 with `Retry-After` (`LoginAttemptLimiter`).
 
 ### Stay signed in
 1. The access cookie `sid` lasts 30 minutes, the refresh cookie `sid_refresh` 30 days (`infrastructure/config/AuthProperties.java:11-12`). Cookie and CSRF settings: [../authentication.md](../authentication.md).
@@ -50,27 +50,27 @@ The auth endpoints have no `@PreAuthorize`; `/api/auth/**` is public (`infrastru
 2. The stale cookie does not block sign-in: `/api/auth/login`, `/refresh` and `/logout` work normally with it (`src/main/java/io/github/membertracker/infrastructure/filter/JwtAuthenticationFilter.java:62-66`). Before this fix those calls returned 500 for up to 30 minutes.
 
 ### Account lockout
-1. Each wrong password for an existing email adds one to the failed-attempt counter and saves it (`AuthenticateUserUseCase.java:28-32`); an unknown email has no counter to increase.
-2. The fifth failure locks the account (`src/main/java/io/github/membertracker/domain/model/User.java:214-220`).
-3. A locked user gets "Account for user '...' is locked" even with the right password (`AuthenticateUserUseCase.java:38-40`, `domain/exception/UserDomainException.java:94-98`).
-4. A successful login resets the counter (`AuthenticateUserUseCase.java:46-47`). Nothing unlocks a locked account automatically; an admin must set `account_non_locked` in the database (see [../authentication.md](../authentication.md)).
+1. Each wrong password for an existing email adds one to the failed-attempt counter with a single-row SQL update (`UserRepository.recordFailedLogin`); an unknown email has no counter to increase. The user is never saved as a whole on sign-in.
+2. The fifth failure locks the account for 15 minutes (`User.MAX_FAILED_LOGIN_ATTEMPTS`, `User.LOCK_DURATION`, column `users.locked_until`).
+3. The lock is checked before the password. While locked, even the right password gets the same generic 400 as any failure, and the password is not checked, so the lock reveals nothing.
+4. When `locked_until` has passed, the next attempt clears the lock and counter and carries on normally; a successful sign-in resets the counter. A lock with no `locked_until` stays permanent until the database is edited (see [../authentication.md](../authentication.md)).
+5. A wrong current password on a password change counts toward the same lock.
 
 ### What a signed-out visitor sees
 1. `/` shows the landing page with a Sign In button (`frontend/src/views/LandingView.vue:11-14`). There is no Register button: registration is disabled and `/register` is not a route.
 
 ## Rules
 - Roles rank MEMBER < VOLUNTEER < STAFF < ADMIN on the client (`authStore.js:21-30`); route `requiresRole` is a minimum (`router/index.js:103`).
-- Five failed logins lock the account (`User.java:218-219`).
-- Disabled and credential-expired accounts are rejected after the password check (`AuthenticateUserUseCase.java:34-44`).
+- Five failed logins lock the account for 15 minutes (`User.java`, `AuthenticateUserUseCase.java`).
+- Disabled and credential-expired accounts are rejected after the password check (`AuthenticateUserUseCase.java`).
 - Registration always returns 403 "Registration is disabled. Please contact administrator for access." (`AuthController.java:89`).
 - Logout does not revoke tokens; they stay valid until they expire (`AuthController.java:128-136`).
 
 ## Known issues
-- A locked account's message only appears after the correct password (disabled and expired-credential messages likewise), which confirms the password (`AuthenticateUserUseCase.java:34-44`).
-- The lockout counter only counts failures for existing accounts (by design: nothing to count for an unknown email).
+- Disabled and expired-credential messages are only returned after the correct password, so they confirm the password (the lock message no longer does: a locked account answers like any failure).
 - The "Session Expired" toast on `LoginView` fires only after the next successful sign-in, not on arrival at `/login?session=expired` (`LoginView.vue:187-194`).
 - The form error alert stays until the next submit: `clearErrorOnInput` is defined but not bound (`LoginView.vue:210-214`).
-- No password reset, no unlock flow, no admin screen for accounts (see [../authentication.md](../authentication.md)).
+- No password reset, no admin unlock for permanent locks, no admin screen for accounts (see [../authentication.md](../authentication.md)).
 
 ## Related
 - [auth-controller.md](auth-controller.md), [login-view.md](login-view.md), [user-controller.md](user-controller.md), [profile-view.md](profile-view.md)

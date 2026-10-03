@@ -131,6 +131,7 @@ The default profile has no secret defaults: it refuses to start if a required va
 | `JWT_SECRET` | yes | Token signing key, at least 32 characters. Startup fails with a clear message if it is shorter |
 | `DB_URL` | no | JDBC URL. Default `jdbc:mysql://localhost:3306/felege_selam?serverTimezone=UTC` |
 | `COOKIE_SECURE` | no | Default `true`: auth cookies are sent only over HTTPS. The `dev` profile sets `false` (local http). Set `false` only for a plain-http test |
+| `TRUSTED_PROXIES` | no | Regex of the peers allowed to set the client IP through `X-Forwarded-For` (used by the sign-in throttle). Default loopback only (`127\.0\.0\.1\|::1\|0:0:0:0:0:0:0:1`), right for Caddy on the same host. If the proxy is another container, set it to the proxy's address or subnet regex |
 | `SERVER_ADDRESS` | no | Address to listen on. Default `127.0.0.1` (loopback, behind Caddy). Set `0.0.0.0` inside a container |
 | `COOKIE_SAMESITE`, `COOKIE_DOMAIN`, `ACCESS_TTL`, `REFRESH_TTL` | no | See [authentication.md](authentication.md#configuration) |
 | Mail variables | no | See [email.md](email.md#configuration) |
@@ -185,7 +186,8 @@ services:
       DB_USERNAME: root
       DB_PASSWORD: change-me
       JWT_SECRET: replace-with-at-least-32-random-characters
-      SERVER_ADDRESS: 0.0.0.0   # inside the container; publish the port to loopback only if a proxy is on the host
+      SERVER_ADDRESS: 0.0.0.0   # inside the container
+      TRUSTED_PROXIES: 172\.20\.0\.\d+   # the proxy's address or subnet on the compose network (example)
     depends_on: [db]
     restart: unless-stopped
   db:
@@ -202,6 +204,7 @@ volumes:
 ### Production checklist
 
 - [ ] HTTPS via Caddy (see [HTTPS](#https-caddy-reverse-proxy)), app bound to 127.0.0.1 (`SERVER_ADDRESS`, the default) and `COOKIE_SECURE` left at its default `true`
+- [ ] Port 8080 is never published to an untrusted network (the app trusts `X-Forwarded-For` only from `TRUSTED_PROXIES`)
 - [ ] `JWT_SECRET` set to a random value of at least 32 characters (the default profile has no default and will not start without it)
 - [ ] `DB_USERNAME` and `DB_PASSWORD` set from the environment (not `root/password`); the default JDBC URL has no `useSSL=false`
 - [ ] CORS origins changed in **both** `SecurityConfig` and `WebMvcConfig`. They are hard-coded to localhost.

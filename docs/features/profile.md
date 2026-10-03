@@ -55,7 +55,7 @@ Every signed-in user views and edits their own name, phone and bio, and changes 
 ## Known issues
 - Any profile save failure replaces the whole page with one red message; the form is hidden until reload (`ProfileView.vue:24-27`). Server field messages are discarded. (Password errors no longer do this: they show inside the dialog.)
 - Changing the password does not end other sessions: existing access and refresh tokens stay valid (`User.changePassword`, `User.java:218-223`, only updates the hash).
-- No password reset, and locked accounts never unlock; see [../authentication.md](../authentication.md) known gaps and audit user-management item in [../functionality-audit.md](../functionality-audit.md).
+- No password reset; a wrong current password counts toward the 15-minute account lock; see [../authentication.md](../authentication.md) known gaps and audit user-management item in [../functionality-audit.md](../functionality-audit.md).
 
 ## Related
 - [user-controller.md](user-controller.md): endpoints, DTOs, errors

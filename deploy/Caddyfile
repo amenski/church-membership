@@ -4,6 +4,9 @@
 # The app's defaults match this setup: COOKIE_SECURE=true (Secure cookies) and
 # SERVER_ADDRESS=127.0.0.1 (listens on localhost only, so port 8080 is not
 # reachable directly and X-Forwarded-* headers cannot be spoofed).
+# Caddy overwrites a client-sent X-Forwarded-For with the real client address
+# unless trusted_proxies is set: do not set it. The app trusts X-Forwarded-For
+# only from loopback (TRUSTED_PROXIES), which is where Caddy connects from.
 
 members.example.org {
 	encode gzip

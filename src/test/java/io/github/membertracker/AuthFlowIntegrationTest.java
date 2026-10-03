@@ -178,7 +178,7 @@ class AuthFlowIntegrationTest {
             .andReturn().getResponse().getContentAsString();
 
         String unknownDetail = JsonPath.read(unknown, "$.detail");
-        assertThat(unknownDetail).isEqualTo("Invalid email or password").isEqualTo(JsonPath.<String>read(wrong, "$.detail"));
+        assertThat(unknownDetail).isEqualTo("Invalid email or password. After several failed attempts an account is locked for 15 minutes.").isEqualTo(JsonPath.<String>read(wrong, "$.detail"));
     }
 
     @Test
@@ -314,7 +314,7 @@ class AuthFlowIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(LOGIN_BODY))
             .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.detail").value("Invalid email or password"));
+            .andExpect(jsonPath("$.detail").value("Invalid email or password. After several failed attempts an account is locked for 15 minutes."));
     }
 
     @Test

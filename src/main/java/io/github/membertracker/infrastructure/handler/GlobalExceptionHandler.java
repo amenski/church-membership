@@ -1,6 +1,7 @@
 package io.github.membertracker.infrastructure.handler;
 
 import io.github.membertracker.domain.exception.DomainException;
+import io.github.membertracker.infrastructure.security.TooManyLoginAttemptsException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
@@ -71,6 +72,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, ex.getUserMessage(), request);
         problem.setProperty("code", ex.getErrorCode());
         return ResponseEntity.badRequest().body(problem);
+    }
+
+    @ExceptionHandler(TooManyLoginAttemptsException.class)
+    public ResponseEntity<ProblemDetail> handleTooManyLoginAttempts(TooManyLoginAttemptsException ex, WebRequest request) {
+        log.warn("Sign-in throttled, retry after {} s", ex.getRetryAfterSeconds());
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()))
+                .body(problem(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(), request));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

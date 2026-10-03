@@ -44,7 +44,7 @@ public class UserDomainException extends DomainException {
 
     public static UserDomainException invalidCredentials() {
         return new UserDomainException(
-            "Invalid email or password",
+            "Invalid email or password. After several failed attempts an account is locked for 15 minutes.",
             INVALID_CREDENTIALS
         );
     }

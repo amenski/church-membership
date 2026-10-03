@@ -74,7 +74,7 @@ This document tracks missing features, improvements, and technical debt in the M
 
 ### Bugs found by checking the docs against the code (October 2026)
 - [ ] **Overdue tracking:** the reminder job does not use the reminder-window policy (`DefaultMembershipPolicy.shouldSendReminder`)
-- [ ] **Sign-in:** unlocking is not possible without editing the database
+- [x] **Sign-in:** locks end by themselves after 15 minutes (`locked_until`); one generic message; per-IP and per-email throttle (a permanent lock with no `locked_until` still needs a database edit)
 - [ ] **Profile:** changing the password does not end other sessions
 - [ ] **Members:** automatic deactivation after 3 missed months never runs; the add form cannot set a join date
 - [ ] **Payments:** no active-member check when recording; payments older than 3 months cannot be entered (no way to migrate history); the receipt does not show the paid month; the CSV export is open to VOLUNTEER (audit: restrict to STAFF)

@@ -5,10 +5,17 @@ import io.github.membertracker.domain.model.User;
 import io.github.membertracker.domain.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+
+/**
+ * Changes a password after checking the current one. A wrong current password counts toward the same
+ * lock as a wrong sign-in password. There is deliberately no class-level transaction: the failed-attempt
+ * count must survive the exception thrown right after it, and each repository update is its own
+ * transaction.
+ */
 @Service
-@Transactional
 public class ChangePasswordUseCase {
 
     private final UserRepository userRepository;
@@ -23,17 +30,31 @@ public class ChangePasswordUseCase {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> UserDomainException.userNotFound(userId));
 
+        LocalDateTime now = LocalDateTime.now();
+
+        if (user.isLockExpired(now)) {
+            userRepository.resetFailedLogins(userId);
+            user.resetFailedLoginAttempts();
+        }
+
+        if (user.isLocked(now)) {
+            throw UserDomainException.invalidPassword();
+        }
+
         // Verify current password
         if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            userRepository.recordFailedLogin(userId, User.MAX_FAILED_LOGIN_ATTEMPTS, now.plus(User.LOCK_DURATION));
             throw UserDomainException.invalidPassword();
         }
 
         // Validate new password strength
         User.validatePasswordStrength(newPassword);
 
-        // Update password
+        // Update password. Whole seconds: token issue times are whole seconds and are compared with this value.
         user.changePassword(passwordEncoder.encode(newPassword));
-        
-        return userRepository.save(user);
+        user.setLastPasswordChange(user.getLastPasswordChange().truncatedTo(ChronoUnit.SECONDS));
+        userRepository.updatePassword(userId, user.getPassword(), user.getLastPasswordChange());
+
+        return user;
     }
 }

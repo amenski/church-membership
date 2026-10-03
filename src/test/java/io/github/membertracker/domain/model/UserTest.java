@@ -152,6 +152,68 @@ class UserTest {
         assertThat(u.isAccountLocked()).isFalse();
     }
 
+    // timed lock
+
+    @Test
+    void fifthFailureLocksForFifteenMinutes() {
+        User u = user();
+        LocalDateTime now = LocalDateTime.of(2026, 10, 4, 12, 0);
+        for (int i = 0; i < 5; i++) {
+            u.recordFailedLoginAttempt(now);
+        }
+
+        assertThat(u.getLockedUntil()).isEqualTo(now.plusMinutes(15));
+        assertThat(u.isLocked(now)).isTrue();
+        assertThat(u.isLocked(now.plusMinutes(14))).isTrue();
+        assertThat(u.isLockExpired(now.plusMinutes(14))).isFalse();
+    }
+
+    @Test
+    void expiredLockIsNotLockedAndCanBeCleared() {
+        User u = user();
+        LocalDateTime now = LocalDateTime.of(2026, 10, 4, 12, 0);
+        for (int i = 0; i < 5; i++) {
+            u.recordFailedLoginAttempt(now);
+        }
+
+        LocalDateTime later = now.plusMinutes(15);
+        assertThat(u.isLocked(later)).isFalse();
+        assertThat(u.isLockExpired(later)).isTrue();
+    }
+
+    @Test
+    void lockWithoutExpiryStaysPermanent() {
+        User u = user();
+        u.setAccountNonLocked(false);
+        u.setLockedUntil(null);
+
+        assertThat(u.isLocked(LocalDateTime.now().plusYears(10))).isTrue();
+        assertThat(u.isLockExpired(LocalDateTime.now().plusYears(10))).isFalse();
+        assertThat(u.isAccountNonLocked()).isFalse();
+    }
+
+    @Test
+    void expiredLockMakesTheAccountNonLockedForSpringSecurity() {
+        User u = user();
+        u.setAccountNonLocked(false);
+        u.setLockedUntil(LocalDateTime.now().minusMinutes(1));
+        assertThat(u.isAccountNonLocked()).isTrue();
+
+        u.setLockedUntil(LocalDateTime.now().plusMinutes(5));
+        assertThat(u.isAccountNonLocked()).isFalse();
+    }
+
+    @Test
+    void resetClearsLockedUntil() {
+        User u = user();
+        for (int i = 0; i < 5; i++) {
+            u.recordFailedLoginAttempt();
+        }
+        u.resetFailedLoginAttempts();
+
+        assertThat(u.getLockedUntil()).isNull();
+    }
+
     // enable / disable
 
     @Test

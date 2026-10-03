@@ -26,9 +26,9 @@ Scale: **0** absent · **1** stub or flat data · **2** basic, usable · **3** f
 
 | Area | Score | What exists today, and what is missing |
 |------|:-----:|----------------------------------------|
-| User accounts | 1 | Self-registration is disabled and there is no admin API to create, invite, unlock or disable users, so accounts can only be added in SQL. A user account is not linked to a member record. No password reset. |
+| User accounts | 1 | Self-registration is disabled and there is no admin API to create, invite, unlock (failure locks end by themselves after 15 minutes) or disable users, so accounts can only be added in SQL. A user account is not linked to a member record. No password reset. |
 | Roles and permissions | 1 | Four roles (Member, Volunteer, Staff, Admin) exist as an enum, but there is no role hierarchy, and 16 endpoints still require the removed `USER` role. No scoped permissions (for example, a group leader who sees only their group), no finance role. Frontend routes never set `requiresRole`. |
-| Authentication | 2 | BCrypt cost 12, httpOnly cookies, lockout after 5 failures, strong password rule. But refresh never reaches the server, refresh and access tokens are interchangeable, login reveals which emails exist, logout does not revoke tokens, there is no MFA, and a locked account never unlocks. |
+| Authentication | 2 | BCrypt cost 12, httpOnly cookies, lockout after 5 failures (15 minutes), strong password rule. But refresh never reaches the server, refresh and access tokens are interchangeable, login reveals which emails exist, logout does not revoke tokens, there is no MFA. Fixed since: a lock now ends after 15 minutes (`locked_until`), locked and failed attempts answer with one generic message, sign-in is throttled per email and per IP, and the attempt counter is atomic. |
 
 ### Engagement
 

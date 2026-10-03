@@ -27,7 +27,7 @@ The signed-in user's own profile and password, for any authenticated role. Base 
 ## Actions
 - `getCurrentUser` -> reads email from principal, calls `GetCurrentUserUseCase.execute(email)` (`UserController.java:42-55`); no try/catch.
 - `updateProfile` -> calls `UpdateUserProfileUseCase.execute(userId, firstName, lastName, phone, bio)`, maps the saved `User` to the DTO (`:57-87`); no try/catch.
-- `changePassword` -> calls `ChangePasswordUseCase.execute(userId, current, new)` and returns 200 `{"message": "Password changed successfully"}`; no try/catch, so domain exceptions reach `GlobalExceptionHandler` (`:89-108`).
+- `changePassword` -> calls `ChangePasswordUseCase.execute(userId, current, new)`; a wrong current password counts toward the same 5-failure, 15-minute lock as a wrong sign-in password (and a locked account is refused without a check); the new password is stored with a single-row update. Returns 200 `{"message": "Password changed successfully"}`; no try/catch, so domain exceptions reach `GlobalExceptionHandler` (`:89-108`).
 
 ## Collaborators
 - `GetCurrentUserUseCase` `usecase/GetCurrentUserUseCase.java:16`: `findByEmail`, builds the DTO.

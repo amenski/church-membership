@@ -3,6 +3,7 @@ package io.github.membertracker.infrastructure;
 import io.github.membertracker.domain.exception.UserDomainException;
 import io.github.membertracker.infrastructure.config.AuthProperties;
 import io.github.membertracker.infrastructure.handler.ProblemDetails;
+import io.github.membertracker.infrastructure.security.LoginAttemptLimiter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
@@ -36,24 +37,31 @@ public class AuthController {
     private final LoadUserByUsernameUseCase loadUserByUsernameUseCase;
     private final CookieUtils cookieUtils;
     private final AuthProperties authProperties;
+    private final LoginAttemptLimiter loginAttemptLimiter;
 
     public AuthController(AuthenticateUserUseCase authenticateUserUseCase,
                          RegisterUserUseCase registerUserUseCase,
                          LoadUserByUsernameUseCase loadUserByUsernameUseCase,
-                         CookieUtils cookieUtils, AuthProperties authProperties) {
+                         CookieUtils cookieUtils, AuthProperties authProperties,
+                         LoginAttemptLimiter loginAttemptLimiter) {
         this.authenticateUserUseCase = authenticateUserUseCase;
         this.registerUserUseCase = registerUserUseCase;
         this.loadUserByUsernameUseCase = loadUserByUsernameUseCase;
         this.cookieUtils = cookieUtils;
         this.authProperties = authProperties;
+        this.loginAttemptLimiter = loginAttemptLimiter;
     }
 
     @PostMapping("/login")
     @Operation(summary = "Sign in; sets the sid and sid_refresh cookies")
     @SecurityRequirements
-    public ResponseEntity<Object> login(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<Object> login(@RequestBody LoginRequest loginRequest, HttpServletRequest request) {
+        String ip = request.getRemoteAddr();
+        String email = loginRequest.getEmail();
+        loginAttemptLimiter.check(ip, email);
         try {
-            var user = authenticateUserUseCase.invoke(loginRequest.getEmail(), loginRequest.getPassword());
+            var user = authenticateUserUseCase.invoke(email, loginRequest.getPassword());
+            loginAttemptLimiter.recordSuccess(ip, email);
 
             String accessToken = JwtUtils.generateAccessToken(user, authProperties.getJwtSecret(), authProperties.getAccessTtlSeconds());
             String refreshToken = JwtUtils.generateRefreshToken(user, authProperties.getJwtSecret(), authProperties.getRefreshTtlSeconds());
@@ -78,6 +86,7 @@ public class AuthController {
                     .body(response);
 
         } catch (UserDomainException e) {
+            loginAttemptLimiter.recordFailure(ip, email);
             return ResponseEntity.badRequest().body(ProblemDetails.of(HttpStatus.BAD_REQUEST, e.getMessage()));
         }
     }
