@@ -8,7 +8,7 @@
     </div>
 
     <!-- Payment Form -->
-    <div class="card mb-4">
+    <div v-if="authStore.isStaff" class="card mb-4">
       <div class="card-body">
         <h5 class="card-title">Record New Payment</h5>
         <form @submit.prevent="submitPayment">
@@ -25,11 +25,15 @@
             <input v-model="newPayment.amount" type="number" class="form-control" required>
           </div>
           <div class="mb-3">
+            <label class="form-label">Payment month</label>
+            <input v-model="newPayment.period" type="month" class="form-control" required>
+          </div>
+          <div class="mb-3">
             <label class="form-label">Payment Method</label>
             <select v-model="newPayment.paymentMethod" class="form-select" required>
-              <option value="CASH">Cash</option>
-              <option value="BANK_TRANSFER">Bank Transfer</option>
-              <option value="MOBILE_PAYMENT">Mobile Payment</option>
+              <option v-for="method in paymentMethods" :key="method.value" :value="method.value">
+                {{ method.label }}
+              </option>
             </select>
           </div>
           <button type="submit" class="btn btn-primary">Record Payment</button>
@@ -84,10 +88,10 @@
             <tbody>
               <tr v-for="payment in payments" :key="payment.id">
                 <td>{{ formatDate(payment.paymentDate) }}</td>
-                <td>{{ getMemberName(payment.memberId) }}</td>
+                <td>{{ payment.member?.name || 'Unknown' }}</td>
                 <td>${{ payment.amount }}</td>
                 <td>{{ payment.paymentMethod }}</td>
-                <td>{{ payment.receiptNumber }}</td>
+                <td>{{ receiptNumber(payment) }}</td>
                 <td>
                   <button class="btn btn-sm btn-primary" @click="generateReceipt(payment)">
                     <i class="bi bi-file-earmark-pdf"></i> Receipt
@@ -118,7 +122,7 @@
               <div class="row mb-3">
                 <div class="col-6">
                   <strong>Receipt Number:</strong><br>
-                  {{ selectedPayment.receiptNumber }}
+                  {{ receiptNumber(selectedPayment) }}
                 </div>
                 <div class="col-6 text-end">
                   <strong>Date:</strong><br>
@@ -129,7 +133,7 @@
               <div class="row mb-3">
                 <div class="col-12">
                   <strong>Received From:</strong><br>
-                  {{ getMemberName(selectedPayment.memberId) }}
+                  {{ selectedPayment.member?.name || 'Unknown' }}
                 </div>
               </div>
 
@@ -174,13 +178,27 @@
 import api from '@/services/api'
 import * as bootstrap from 'bootstrap'
 import { useAppStore } from '../stores/appStore'
+import { useAuthStore } from '../stores/authStore'
 import { downloadBlob } from '@/utils'
+import { buildPaymentRequest, PAYMENT_METHODS } from '@/utils/paymentPayload'
+
+const currentMonth = () => {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+}
+const emptyPayment = () => ({
+  memberId: null,
+  amount: null,
+  paymentMethod: 'CASH',
+  period: currentMonth()
+})
 
 export default {
   name: 'PaymentsView',
   setup() {
     return {
-      appStore: useAppStore()
+      appStore: useAppStore(),
+      authStore: useAuthStore()
     }
   },
   data() {
@@ -192,11 +210,8 @@ export default {
         monthlyRevenue: 0,
         averagePayment: 0
       },
-      newPayment: {
-        memberId: null,
-        amount: null,
-        paymentMethod: 'CASH'
-      },
+      paymentMethods: PAYMENT_METHODS,
+      newPayment: emptyPayment(),
       selectedPayment: null
     }
   },
@@ -222,6 +237,7 @@ export default {
         console.error('Error loading data:', error)
         this.members = []
         this.payments = []
+        this.notifyError('Could not load payments', error, 'Could not load payments')
       }
     },
     calculateAnalytics() {
@@ -263,27 +279,31 @@ export default {
     },
     async submitPayment() {
       try {
-        const payment = await api.createPayment(this.newPayment)
+        const payment = await api.createPayment(buildPaymentRequest(this.newPayment))
         await this.loadData()
-        this.newPayment = {
-          memberId: null,
-          amount: null,
-          paymentMethod: 'CASH'
-        }
+        this.newPayment = emptyPayment()
         // Generate receipt for the newly created payment
         if (payment) {
           this.generateReceipt(payment)
         }
       } catch (error) {
         console.error('Error creating payment:', error)
+        this.notifyError('Payment failed', error, 'Could not record the payment')
       }
     },
     formatDate(date) {
       return new Date(date).toLocaleDateString()
     },
-    getMemberName(memberId) {
-      const member = this.members.find(m => m.id === memberId)
-      return member ? member.name : 'Unknown'
+    receiptNumber(payment) {
+      return `R-${String(payment.id).padStart(6, '0')}`
+    },
+    notifyError(title, error, fallback) {
+      this.appStore.addNotification({
+        type: 'error',
+        title,
+        message: error.message || fallback,
+        isToast: true
+      })
     },
     generateReceipt(payment) {
       this.selectedPayment = payment
@@ -293,7 +313,7 @@ export default {
       const element = this.$refs.receiptContent
       const options = {
         margin: 1,
-        filename: `receipt-${this.selectedPayment.receiptNumber}.pdf`,
+        filename: `receipt-${this.receiptNumber(this.selectedPayment)}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2 },
         jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }

@@ -1,6 +1,7 @@
 package io.github.membertracker.infrastructure;
 
 import io.github.membertracker.domain.model.Payment;
+import io.github.membertracker.infrastructure.dto.RecordPaymentRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.github.membertracker.usecase.*;
@@ -80,8 +81,10 @@ public class PaymentController {
     @PostMapping
     @PreAuthorize("hasRole('STAFF')")
     @Operation(summary = "Record a payment (STAFF+)")
-    public ResponseEntity<Payment> recordPayment(@Valid @RequestBody Payment payment) {
-        return ResponseEntity.ok(recordPaymentUseCase.invoke(payment));
+    public ResponseEntity<Payment> recordPayment(@Valid @RequestBody RecordPaymentRequest request) {
+        return ResponseEntity.ok(recordPaymentUseCase.invoke(
+                request.getMemberId(), request.getAmount(), request.getPaymentMethod(),
+                request.getPeriod(), request.getNotes()));
     }
 
     @DeleteMapping("/{id}")

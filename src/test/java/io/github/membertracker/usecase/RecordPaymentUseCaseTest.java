@@ -8,7 +8,6 @@ import io.github.membertracker.domain.model.Payment;
 import io.github.membertracker.domain.repository.MemberRepository;
 import io.github.membertracker.domain.repository.PaymentRepository;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -29,13 +28,16 @@ class RecordPaymentUseCaseTest {
     private PaymentRepository paymentRepository;
     private MemberRepository memberRepository;
     private RecordPaymentUseCase useCase;
+    private Member stored;
 
     @BeforeEach
     void setUp() {
+        stored = member(1L);
         paymentRepository = mock(PaymentRepository.class);
         memberRepository = mock(MemberRepository.class);
         useCase = new RecordPaymentUseCase(paymentRepository, memberRepository);
         when(paymentRepository.save(any(Payment.class))).thenAnswer(i -> i.getArgument(0));
+        when(memberRepository.findById(1L)).thenAnswer(i -> Optional.of(stored));
     }
 
     private Member member(long id) {
@@ -44,32 +46,36 @@ class RecordPaymentUseCaseTest {
         return m;
     }
 
-    private Payment payment(Member m, YearMonth period, Double amount) {
-        return new Payment(m, period, amount, PaymentMethod.CASH);
-    }
-
     @Test
     void currentPeriodPaymentIsSavedAndResetsMissedCounter() {
-        Member m = member(1L);
-        m.setConsecutiveMonthsMissed(2);
-        Payment p = payment(m, YearMonth.now(), 25.0);
+        stored.setConsecutiveMonthsMissed(2);
 
-        Payment result = useCase.invoke(p);
+        Payment result = useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now(), "front desk");
 
-        assertThat(result).isSameAs(p);
+        assertThat(result.getMember()).isSameAs(stored);
+        assertThat(result.getAmount()).isEqualTo(25.0);
+        assertThat(result.getPaymentMethod()).isEqualTo(PaymentMethod.CASH);
+        assertThat(result.getNotes()).isEqualTo("front desk");
         ArgumentCaptor<Member> saved = ArgumentCaptor.forClass(Member.class);
         verify(memberRepository).save(saved.capture());
         assertThat(saved.getValue().getConsecutiveMonthsMissed()).isZero();
         assertThat(saved.getValue().getLastPaymentDate()).isEqualTo(LocalDate.now());
-        verify(paymentRepository).save(p);
+        verify(paymentRepository).save(result);
+    }
+
+    @Test
+    void missingPeriodDefaultsToCurrentMonth() {
+        Payment result = useCase.invoke(1L, 25.0, PaymentMethod.CASH, null, null);
+
+        assertThat(result.getPeriod()).isEqualTo(YearMonth.now());
+        assertThat(result.getPaymentDate()).isEqualTo(LocalDate.now());
     }
 
     @Test
     void pastPeriodPaymentUpdatesLastPaymentDateButKeepsMissedCounter() {
-        Member m = member(1L);
-        m.setConsecutiveMonthsMissed(2);
+        stored.setConsecutiveMonthsMissed(2);
 
-        useCase.invoke(payment(m, YearMonth.now().minusMonths(1), 25.0));
+        useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now().minusMonths(1), null);
 
         ArgumentCaptor<Member> saved = ArgumentCaptor.forClass(Member.class);
         verify(memberRepository).save(saved.capture());
@@ -78,20 +84,9 @@ class RecordPaymentUseCaseTest {
     }
 
     @Test
-    void missingPaymentDateIsFilledWithToday() {
-        Payment p = payment(member(1L), YearMonth.now(), 25.0);
-        p.setPaymentDate(null);
-
-        Payment result = useCase.invoke(p);
-
-        assertThat(result.getPaymentDate()).isEqualTo(LocalDate.now());
-    }
-
-    @Test
     void zeroAmountIsRejectedAndNothingIsSaved() {
-        Payment p = payment(member(1L), YearMonth.now(), 0.0);
-
-        assertThatThrownBy(() -> useCase.invoke(p)).isInstanceOf(PaymentDomainException.class);
+        assertThatThrownBy(() -> useCase.invoke(1L, 0.0, PaymentMethod.CASH, YearMonth.now(), null))
+                .isInstanceOf(PaymentDomainException.class);
 
         verify(paymentRepository, never()).save(any());
         verify(memberRepository, never()).save(any());
@@ -99,73 +94,55 @@ class RecordPaymentUseCaseTest {
 
     @Test
     void nullAmountIsRejected() {
-        Payment p = payment(member(1L), YearMonth.now(), null);
-
-        assertThatThrownBy(() -> useCase.invoke(p)).isInstanceOf(PaymentDomainException.class);
+        assertThatThrownBy(() -> useCase.invoke(1L, null, PaymentMethod.CASH, YearMonth.now(), null))
+                .isInstanceOf(PaymentDomainException.class);
         verify(paymentRepository, never()).save(any());
     }
 
     @Test
     void futurePeriodIsRejected() {
-        Payment p = payment(member(1L), YearMonth.now().plusMonths(1), 25.0);
-
-        assertThatThrownBy(() -> useCase.invoke(p)).isInstanceOf(PaymentDomainException.class);
+        assertThatThrownBy(() -> useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now().plusMonths(1), null))
+                .isInstanceOf(PaymentDomainException.class);
         verify(paymentRepository, never()).save(any());
         verify(memberRepository, never()).save(any());
     }
 
     @Test
     void periodOlderThanThreeMonthsIsRejected() {
-        Payment p = payment(member(1L), YearMonth.now().minusMonths(4), 25.0);
-
-        assertThatThrownBy(() -> useCase.invoke(p)).isInstanceOf(PaymentDomainException.class);
+        assertThatThrownBy(() -> useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now().minusMonths(4), null))
+                .isInstanceOf(PaymentDomainException.class);
         verify(paymentRepository, never()).save(any());
     }
 
     @Test
-    void nullPeriodIsRejected() {
-        Payment p = payment(member(1L), null, 25.0);
-
-        assertThatThrownBy(() -> useCase.invoke(p)).isInstanceOf(PaymentDomainException.class);
-        verify(paymentRepository, never()).save(any());
-    }
-
-    @Test
-    @Disabled("AUDIT C2: use case saves the client-supplied member object instead of loading the member by id")
-    void savesTheStoredMemberNotTheClientSuppliedOne() {
-        Member stored = member(1L);
+    void savesTheMemberLoadedFromTheRepository() {
         stored.setName("Stored Name");
         stored.setActive(true);
-        when(memberRepository.findById(1L)).thenReturn(Optional.of(stored));
 
-        Member forged = member(1L);
-        forged.setName("Forged Name");
-        forged.setActive(false);
-
-        useCase.invoke(payment(forged, YearMonth.now(), 25.0));
+        useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now(), null);
 
         ArgumentCaptor<Member> saved = ArgumentCaptor.forClass(Member.class);
         verify(memberRepository).save(saved.capture());
+        assertThat(saved.getValue()).isSameAs(stored);
         assertThat(saved.getValue().getName()).isEqualTo("Stored Name");
         assertThat(saved.getValue().isActive()).isTrue();
     }
 
     @Test
-    @Disabled("AUDIT C2: use case saves the client-supplied member object instead of loading the member by id")
     void unknownMemberIdIsRejected() {
         when(memberRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> useCase.invoke(payment(member(99L), YearMonth.now(), 25.0)))
+        assertThatThrownBy(() -> useCase.invoke(99L, 25.0, PaymentMethod.CASH, YearMonth.now(), null))
                 .isInstanceOf(MemberDomainException.class);
         verify(paymentRepository, never()).save(any());
+        verify(memberRepository, never()).save(any());
     }
 
     @Test
     void duplicatePaymentForSameMemberAndPeriodIsRejected() {
-        Member m = member(1L);
-        when(paymentRepository.existsByMemberAndPeriod(m, YearMonth.now())).thenReturn(true);
+        when(paymentRepository.existsByMemberAndPeriod(stored, YearMonth.now())).thenReturn(true);
 
-        assertThatThrownBy(() -> useCase.invoke(payment(m, YearMonth.now(), 25.0)))
+        assertThatThrownBy(() -> useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now(), null))
                 .isInstanceOf(MemberDomainException.class);
         verify(paymentRepository, never()).save(any());
     }

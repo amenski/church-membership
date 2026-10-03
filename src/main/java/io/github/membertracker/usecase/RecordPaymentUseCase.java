@@ -1,10 +1,13 @@
 package io.github.membertracker.usecase;
 
+import io.github.membertracker.domain.enumeration.PaymentMethod;
 import io.github.membertracker.domain.exception.MemberDomainException;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.model.Payment;
 import io.github.membertracker.domain.repository.MemberRepository;
 import io.github.membertracker.domain.repository.PaymentRepository;
+
+import java.time.YearMonth;
 
 public class RecordPaymentUseCase {
 
@@ -16,9 +19,14 @@ public class RecordPaymentUseCase {
         this.memberRepository = memberRepository;
     }
 
-    public Payment invoke(Payment payment) {
-        Member member = payment.getMember();
-        
+    public Payment invoke(Long memberId, Double amount, PaymentMethod paymentMethod,
+                          YearMonth period, String notes) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> MemberDomainException.memberNotFound(memberId));
+
+        Payment payment = new Payment(member, period != null ? period : YearMonth.now(), amount, paymentMethod);
+        payment.setNotes(notes);
+
         payment.validateAmount();
         payment.validatePeriod();
 

@@ -64,7 +64,7 @@ class RoleAuthorizationTest {
         "{\"name\":\"Abel\",\"email\":\"abel@example.com\",\"phone\":\"+390612345678\",\"joinDate\":\"2025-01-01\"}";
     private static final String EXPORT_JSON = "{\"ids\":[1]}";
     private static final String PAYMENT_JSON =
-        "{\"member\":{\"id\":1},\"period\":\"2026-09\",\"amount\":20.0,\"paymentMethod\":\"CASH\"}";
+        "{\"memberId\":1,\"amount\":50,\"paymentMethod\":\"CASH\"}";
     private static final String COMMUNICATION_JSON =
         "{\"title\":\"Feast day\",\"messageContent\":\"Service starts at 9.\",\"type\":\"ANNOUNCEMENT\"}";
 

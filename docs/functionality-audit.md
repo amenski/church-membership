@@ -82,6 +82,7 @@ The role rename left `hasRole('USER')` on 16 endpoints (6 in Payment, 6 in Commu
 **C2. Recording a payment overwrites the member**
 The payment request body carries a full `member` object, and the use case saves that object as the member. A client can rename, reactivate or blank a member while recording a gift.
 `RecordPaymentUseCase.java:27`
+> **Status (3 Oct 2026):** fixed: `POST /api/payments` takes a `RecordPaymentRequest`; the use case loads the member by id.
 
 **C3. Reminders never run, and would spam if they did**
 There is no `@EnableScheduling`, so both jobs are dead. If enabled as written, the missed-months counter goes up every day (about 30 per month) and reminders go out every morning.
