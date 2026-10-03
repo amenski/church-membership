@@ -26,9 +26,9 @@ public class PaymentDomainException extends DomainException {
     }
 
     // Factory methods for common payment domain violations
-    public static PaymentDomainException invalidPaymentAmount(Double amount, Double minAmount) {
+    public static PaymentDomainException invalidPaymentAmount(Double amount) {
         return new PaymentDomainException(
-            String.format("Payment amount %s is invalid. Minimum amount is %s", amount, minAmount),
+            String.format("Payment amount %s is invalid. Amount must be greater than 0", amount),
             INVALID_PAYMENT_AMOUNT
         );
     }

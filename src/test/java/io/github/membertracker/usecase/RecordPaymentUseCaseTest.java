@@ -161,7 +161,6 @@ class RecordPaymentUseCaseTest {
     }
 
     @Test
-    @Disabled("BUG: RecordPaymentUseCase (the live /payments path) does not reject a second payment for the same member and period, unlike ProcessMemberPaymentUseCase")
     void duplicatePaymentForSameMemberAndPeriodIsRejected() {
         Member m = member(1L);
         when(paymentRepository.existsByMemberAndPeriod(m, YearMonth.now())).thenReturn(true);

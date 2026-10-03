@@ -1,5 +1,6 @@
 package io.github.membertracker.usecase;
 
+import io.github.membertracker.domain.exception.MemberDomainException;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.model.Payment;
 import io.github.membertracker.domain.repository.MemberRepository;
@@ -20,6 +21,12 @@ public class RecordPaymentUseCase {
         
         payment.validateAmount();
         payment.validatePeriod();
+
+        if (paymentRepository.existsByMemberAndPeriod(member, payment.getPeriod())) {
+            throw MemberDomainException.duplicatePaymentForPeriod(
+                member.getName(), payment.getPeriod().toString());
+        }
+
         payment.markAsProcessed();
         
         member.recordPayment(payment);

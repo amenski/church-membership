@@ -32,6 +32,11 @@ public class ProcessMemberPaymentUseCase {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> MemberDomainException.memberNotFound(memberId));
 
+        return processPayment(member, amount, period, paymentMethodCode, notes);
+    }
+
+    private Payment processPayment(Member member, Double amount, YearMonth period,
+                                   String paymentMethodCode, String notes) {
         if (!member.isActive()) {
             throw MemberDomainException.memberAlreadyInactive(member.getName());
         }
@@ -84,7 +89,8 @@ public class ProcessMemberPaymentUseCase {
             member.activate();
         }
 
-        return invoke(memberId, amount, period, paymentMethodCode, "Payment with reactivation");
+        // Process the member we just reactivated: reloading it would return a fresh, still-inactive copy.
+        return processPayment(member, amount, period, paymentMethodCode, "Payment with reactivation");
     }
 
     public MemberPaymentStatus getMemberPaymentStatus(Long memberId) {

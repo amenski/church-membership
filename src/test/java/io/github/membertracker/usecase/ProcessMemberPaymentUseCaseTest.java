@@ -9,7 +9,6 @@ import io.github.membertracker.domain.policy.DefaultMembershipPolicy;
 import io.github.membertracker.domain.repository.MemberRepository;
 import io.github.membertracker.domain.repository.PaymentRepository;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -176,7 +175,6 @@ class ProcessMemberPaymentUseCaseTest {
     }
 
     @Test
-    @Disabled("BUG: processPaymentWithReactivation activates a member it never saves, then invoke() reloads a fresh copy (JPA mapper returns a new object each call) which is still inactive, so reactivation always fails")
     void reactivationWorksWhenRepositoryReturnsFreshCopiesOnEachLookup() {
         when(memberRepository.findById(1L)).thenAnswer(i -> {
             Member fresh = member(1L, false, 3);

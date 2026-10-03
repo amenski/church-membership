@@ -37,6 +37,13 @@ class PaymentTest {
         }
     }
 
+    @Test
+    void validateAmount_invalid_messageSaysAmountMustBeGreaterThanZero() {
+        assertThatThrownBy(() -> payment(YearMonth.now(), 0.0).validateAmount())
+            .hasMessageContaining("must be greater than 0")
+            .hasMessageNotContaining("10.0");
+    }
+
     // validatePeriod
 
     @Test

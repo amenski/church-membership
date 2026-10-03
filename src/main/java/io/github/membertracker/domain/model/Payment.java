@@ -45,7 +45,7 @@ public class Payment {
 
     public void validateAmount() {
         if (amount == null || amount <= 0.0) {
-            throw PaymentDomainException.invalidPaymentAmount(amount, 10.0);
+            throw PaymentDomainException.invalidPaymentAmount(amount);
         }
     }
 
