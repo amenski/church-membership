@@ -170,7 +170,7 @@ class RoleAuthorizationTest {
         }
         int status = result.getResponse().getStatus();
 
-        assertThat(status).isIn(401, 403);
+        assertThat(status).isEqualTo(401);
     }
 
     private MockHttpServletRequestBuilder buildRequest(Endpoint endpoint) {

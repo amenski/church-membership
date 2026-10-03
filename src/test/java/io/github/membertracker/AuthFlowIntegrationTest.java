@@ -24,6 +24,8 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /** Full login / refresh / logout flow through the real security chain on in-memory H2, default profile. */
@@ -105,10 +107,11 @@ class AuthFlowIntegrationTest {
         mockMvc.perform(post("/api/auth/refresh").cookie(new Cookie("sid_refresh", access)))
             .andExpect(status().isBadRequest());
 
-        // a refresh token is not an access token: the request stays unauthenticated.
-        // (An unauthenticated request currently answers 403, not 401: no authentication entry point is configured.)
+        // a refresh token is not an access token: the request stays unauthenticated
         mockMvc.perform(get("/api/users/me").header("Authorization", "Bearer " + refresh))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isUnauthorized())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.detail").value("Authentication required"));
 
         // logout expires both cookies
         List<String> cleared = mockMvc.perform(post("/api/auth/logout"))
@@ -118,6 +121,20 @@ class AuthFlowIntegrationTest {
         assertThat(headerStartingWith(cleared, "sid")).contains("Max-Age=0");
         String clearedRefresh = headerStartingWith(cleared, "sid_refresh");
         assertThat(clearedRefresh).contains("Max-Age=0").contains("Path=/api/auth");
+
+        // after logout the browser holds no cookie
+        mockMvc.perform(get("/api/users/me")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void noCredentialsGives401Problem() throws Exception {
+        mockMvc.perform(get("/api/users/me"))
+            .andExpect(status().isUnauthorized())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.title").value("Unauthorized"))
+            .andExpect(jsonPath("$.detail").value("Authentication required"))
+            .andExpect(jsonPath("$.path").value("/api/users/me"))
+            .andExpect(jsonPath("$.timestamp").isNotEmpty());
     }
 
     @Test

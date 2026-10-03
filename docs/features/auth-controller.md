@@ -5,7 +5,7 @@
 Public sign-in, refresh and sign-out endpoints that issue and clear the `sid` / `sid_refresh` JWT cookies. Cookie, CSRF and lockout details: [../authentication.md](../authentication.md).
 
 ## Endpoints
-All under `/api/auth`. No `@PreAuthorize`; `/api/auth/**` is `permitAll` (`infrastructure/config/SecurityConfig.java:81-82`).
+All under `/api/auth`. No `@PreAuthorize`; `/api/auth/**` is `permitAll` (`infrastructure/config/SecurityConfig.java:97-98`).
 
 | Method | Path | Auth | Request | Response |
 |--------|------|------|---------|----------|
@@ -47,7 +47,7 @@ Login failures are 400, not 401, and refresh failures are 400. Unknown email and
 
 ## Gotchas
 - Tokens issued before the `typ` claim existed are rejected by both the filter and `/refresh`, so everyone signed in again once after that deploy.
-- A request without a valid access token gets 403, not 401 (no authentication entry point is configured), while the frontend only calls `/refresh` after a 401; automatic renewal therefore does not trigger yet.
+- A request with a missing, expired or wrong-type access token gets a 401 problem from the entry point bean (`SecurityConfig.java:80-88`); the frontend answers that 401 with one `/refresh` call and a retry. 403 is only for signed-in users lacking the role.
 - Disabled, locked and expired-credential messages are only returned after the password matches, so a locked account's message appears only after the correct password (`AuthenticateUserUseCase.java:34-44`).
 - The lockout counter only counts failures for existing accounts (by design: there is nothing to count for an unknown email).
 - `RegisterUserUseCase` is injected (`AuthController.java:45`) but never called.

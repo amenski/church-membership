@@ -97,7 +97,7 @@ The template placeholder is never filled in before sending.
 **C5. Sessions end after 30 minutes, and refresh tokens work as access tokens**
 The refresh cookie's path is `/v1/auth`, but the endpoint is `/api/auth/refresh`, so the browser never sends the cookie. Tokens carry no type claim, so a 30-day refresh token is accepted as a bearer access token.
 `CookieUtils.java:33`, `:50` · `JwtUtils.java`
-> **Status (3 Oct 2026):** fixed: `typ` claim enforced by the filter and the refresh endpoint; refresh cookie path is `/api/auth`; covered by `AuthFlowIntegrationTest`.
+> **Status (3 Oct 2026):** fixed: `typ` claim enforced by the filter and the refresh endpoint; refresh cookie path is `/api/auth`; covered by `AuthFlowIntegrationTest`; sessions renew: unauthenticated requests answer 401, which triggers the client refresh (audit C5 follow-up).
 
 ### Serious
 

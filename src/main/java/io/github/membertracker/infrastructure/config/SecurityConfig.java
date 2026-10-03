@@ -1,9 +1,13 @@
 package io.github.membertracker.infrastructure.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.membertracker.infrastructure.filter.JwtAuthenticationFilter;
+import io.github.membertracker.infrastructure.handler.ProblemDetails;
 import io.github.membertracker.usecase.LoadUserByUsernameUseCase;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -17,6 +21,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -71,8 +76,19 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
+    /** Anonymous or invalid-token requests get a 401 problem; 403 stays for signed-in users without the role. */
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, DaoAuthenticationProvider authenticationProvider, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+    public AuthenticationEntryPoint authenticationEntryPoint(ObjectMapper objectMapper) {
+        return (request, response, authException) -> {
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+            objectMapper.writeValue(response.getOutputStream(),
+                ProblemDetails.of(HttpStatus.UNAUTHORIZED, "Authentication required", request.getRequestURI()));
+        };
+    }
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http, DaoAuthenticationProvider authenticationProvider, JwtAuthenticationFilter jwtAuthenticationFilter, AuthenticationEntryPoint authenticationEntryPoint) throws Exception {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
@@ -85,6 +101,7 @@ public class SecurityConfig {
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .anyRequest().authenticated()
             )
+            .exceptionHandling(e -> e.authenticationEntryPoint(authenticationEntryPoint))
             .authenticationProvider(authenticationProvider)
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

@@ -124,7 +124,7 @@ await authStore.logout()
 
 - Axios with `withCredentials: true`, so cookies go with every request. Base URL: `VITE_API_BASE_URL`, default `/api`.
 - **401:** calls refresh once, then retries the original request. If refresh fails, it clears auth state and redirects to login.
-- **403:** no retry.
+- **403:** no retry. Only a signed-in user whose role is too low gets 403; a missing, expired or wrong-type access token gets a 401 `application/problem+json` (`SecurityConfig.authenticationEntryPoint`), which is what triggers the refresh.
 - **Network errors and 5xx:** retried after a delay. `VITE_API_RETRY_ATTEMPTS` (default 3) is meant to set the limit, but the `_retry` flag stops it after one retry.
 - Adds the `X-XSRF-TOKEN` header described under [CSRF](#csrf).
 
@@ -156,7 +156,7 @@ curl -i -b jar.txt -X POST http://localhost:8080/api/auth/logout          # then
 | Symptom | Check |
 |---------|-------|
 | Login fails | A failed login returns 400 with "Invalid email or password" (the same for an unknown email and a wrong password), not 401. A 401 comes from protected endpoints called without a valid session. Check: backend running; email and password correct; the account is not locked (`users.account_non_locked`). Nothing unlocks an account automatically or through the API, so a locked account needs `account_non_locked` set back to true (and `failed_login_attempts` to 0) in the database |
-| Logged out after about 30 minutes | The access cookie expired and the client did not renew it. The frontend only refreshes after a 401, but a request without a valid access token currently gets 403 (see Known gaps) |
+| Logged out after about 30 minutes | Should not happen while active: an expired access cookie gets a 401 and the client refreshes. Check that the browser sends `sid_refresh` to `/api/auth/refresh` (cookie path `/api/auth`) and that `JWT_SECRET` did not change |
 | Logged out sooner | The client-side 1-hour inactivity timeout, or the backend restarted with a different `JWT_SECRET` |
 | Redirect loop on load | `authStore.initialize()` must run in `App.vue` so `authChecked` gets set |
 | CORS error in the browser | The frontend origin must be in both CORS lists (see [Configuration](#configuration)) |
@@ -165,7 +165,6 @@ curl -i -b jar.txt -X POST http://localhost:8080/api/auth/logout          # then
 
 Full list and fixes in [functionality-audit.md](functionality-audit.md) and [todo.md](todo.md).
 
-- Requests without a valid access token get 403, not 401 (no authentication entry point is configured), while the frontend only calls `/api/auth/refresh` after a 401. Until that is aligned, the browser does not renew the access cookie automatically
 - Logout does not revoke tokens, and refresh tokens are not rotated
 - No password reset, MFA, "remember me", or session list
 - Locked accounts never unlock automatically, and a locked account's message only appears after the correct password

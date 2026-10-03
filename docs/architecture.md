@@ -128,4 +128,5 @@ frontend/src/
 | 2026-10 | OpenAPI/Swagger UI only under the dev profile | Public endpoint list helps attackers; devs still get docs | In use |
 | 2026-10 | All API errors are RFC 7807 ProblemDetail; no rejected values echoed | One format for the frontend; no input reflected back | In use |
 | 2026-10 | Member search, sort and filters stay in the browser | Under ~1,000 members the full list is ~200 kB; a paged API adds complexity for no visible gain | In use. Revisit above ~2,000 members |
+| 2026-10 | Unauthenticated requests answer 401 (problem+json); 403 only for authenticated users lacking the role | The client refreshes the session on 401 | In use |
 | 2026-10 | Roles ADMIN > STAFF > VOLUNTEER > MEMBER with `RoleHierarchy` | Replaces ADMIN/MANAGER/USER and the planned TREASURER/VIEWER | Done (3cf5d84; frontend routes in this change) |

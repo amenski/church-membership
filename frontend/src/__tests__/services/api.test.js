@@ -128,6 +128,29 @@ describe('api response interceptor', () => {
     }
   })
 
+  it('401 on a signed-in request refreshes once, retries the request and resolves', async () => {
+    signIn()
+    const calls = []
+    let membersCalls = 0
+    axiosInstance.defaults.adapter = async (config) => {
+      calls.push(config.url)
+      if (config.url === '/members') {
+        membersCalls++
+        if (membersCalls === 1) {
+          const response = { status: 401, data: undefined, headers: {}, config }
+          throw new AxiosError('Request failed with status code 401', 'ERR_BAD_REQUEST', config, null, response)
+        }
+      }
+      return { status: 200, data: [], headers: {}, config, statusText: 'OK' }
+    }
+
+    const response = await axiosInstance.get('/members')
+
+    expect(response.status).toBe(200)
+    expect(calls).toEqual(['/members', '/auth/refresh', '/members'])
+    expect(addNotification).not.toHaveBeenCalled()
+  })
+
   it('401 that persists after a successful refresh shows one Unauthorized', async () => {
     signIn()
     respondWith({
