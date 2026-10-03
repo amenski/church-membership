@@ -9,7 +9,7 @@ Monthly membership dues: staff record who paid what for which month, everyone wi
 | View one payment, or one member's payments | VOLUNTEER | `GET /api/payments/{id}` (`PaymentController.java:63`), `GET /api/payments/member/{memberId}` (`PaymentController.java:72`); API only, no screen uses them |
 | Record a payment | STAFF | form on `/payments` (`frontend/src/views/PaymentsView.vue:11`), `POST /api/payments` (`PaymentController.java:81`) |
 | View / print a receipt | VOLUNTEER | Receipt button on a table row (`PaymentsView.vue:96`) |
-| Export payments to CSV | VOLUNTEER | Export CSV button (`PaymentsView.vue:5`), `GET /api/payments/export` (`PaymentController.java:90`) |
+| Export payments to CSV | VOLUNTEER | Export CSV button (`PaymentsView.vue:5`), `GET /api/payments/export` (`PaymentController.java:86`) |
 | Delete or void a payment | nobody | not available |
 
 A VOLUNTEER sees the page without the record form. STAFF and ADMIN see it (`isStaff`, `frontend/src/stores/authStore.js:41`).
@@ -38,9 +38,9 @@ A VOLUNTEER sees the page without the record form. STAFF and ADMIN see it (`isSt
 4. Download PDF saves `receipt-R-000012.pdf` (letter, portrait). The PDF library is loaded on the first click (`PaymentsView.vue:312-323`).
 
 ### Export payments to CSV
-1. Click Export CSV. The server returns every payment (`PaymentController.java:89-125`).
+1. Click Export CSV. The server returns every payment as a plain UTF-8 CSV download with a byte order mark, so Excel shows Amharic names correctly (`PaymentController.java:86-102`).
 2. The browser saves `payments_<today>.csv` (`PaymentsView.vue:324-328`).
-3. Columns: `id,memberId,memberName,amount,paymentDate,period,method` (`PaymentController.java:101`). Notes are not exported. Failure: toast "Export failed" (`PaymentsView.vue:329-337`).
+3. Columns: `id,memberId,memberName,amount,paymentDate,period,method` (`PaymentController.java:90`). Notes are not exported. Failure: toast "Export failed" (`PaymentsView.vue:329-337`).
 
 ## Rules
 - Amount must be above 0 (`Payment.java:46-50`; bean validation `Payment.java:27`, `src/main/java/io/github/membertracker/infrastructure/dto/RecordPaymentRequest.java:20-21`). No other minimum or maximum.
@@ -62,7 +62,7 @@ A VOLUNTEER sees the page without the record form. STAFF and ADMIN see it (`isSt
 - The page lists and sums every payment in the browser (no paging, no date filter); revenue cards and totals ignore the period and use the payment date (`PaymentsView.vue:225-279`).
 - Amounts are `Double` and shown with a `$` sign (`Payment.java:28`, `PaymentsView.vue:92`).
 - The receipt reads the nested member name and shows "Unknown" if missing (`PaymentsView.vue:91`, `:136`).
-- Export is open to VOLUNTEER, so the lowest role can download every member's payment amounts (`PaymentController.java:90`).
+- Export is open to VOLUNTEER, so the lowest role can download every member's payment amounts (`PaymentController.java:86`).
 - Member save and payment save are two separate calls in one use case (`RecordPaymentUseCase.java:42-43`); the use case class has no `@Transactional` (only `ChangePasswordUseCase` does), so a failure between the two saves could leave the member updated without a payment.
 
 ## Related

@@ -11,8 +11,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -24,9 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import java.io.PrintWriter;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
@@ -136,14 +132,14 @@ public class MemberController {
     @GetMapping("/export")
     @PreAuthorize("hasRole('VOLUNTEER')")
     @Operation(summary = "Export all members as CSV (VOLUNTEER+)")
-    public ResponseEntity<StreamingResponseBody> exportMembers() {
+    public ResponseEntity<byte[]> exportMembers() {
         return csvResponse(getAllMembersUseCase.invoke());
     }
 
     @PostMapping("/export")
     @PreAuthorize("hasRole('VOLUNTEER')")
     @Operation(summary = "Export selected members as CSV (VOLUNTEER+)")
-    public ResponseEntity<StreamingResponseBody> exportSelectedMembers(@Valid @RequestBody ExportMembersRequest request) {
+    public ResponseEntity<byte[]> exportSelectedMembers(@Valid @RequestBody ExportMembersRequest request) {
         Set<Long> ids = new HashSet<>(request.getIds());
         List<Member> selected = getAllMembersUseCase.invoke().stream()
                 .filter(member -> ids.contains(member.getId()))
@@ -151,38 +147,18 @@ public class MemberController {
         return csvResponse(selected);
     }
 
-    private ResponseEntity<StreamingResponseBody> csvResponse(List<Member> members) {
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE;
-        
-        StreamingResponseBody stream = out -> {
-            PrintWriter writer = new PrintWriter(out);
-            try {
-                // CSV Header
-                writer.println("id,name,email,phone,joinDate,active,consecutiveMonthsMissed");
-                
-                // CSV Data
-                for (Member member : members) {
-                    writer.printf("%s,%s,%s,%s,%s,%s,%d%n",
-                        member.getId() != null ? member.getId() : "0",
-                        CsvUtils.escapeCsv(member.getName()),
-                        CsvUtils.escapeCsv(member.getEmail()),
-                        CsvUtils.escapeCsv(member.getPhone()),
-                        member.getJoinDate() != null ? member.getJoinDate().format(dateFormatter) : "",
-                        member.isActive(),
-                        member.getConsecutiveMonthsMissed()
-                    );
-                }
-            } catch (Exception e) {
-                System.err.println("Error exporting members: " + e.getMessage());
-                throw new RuntimeException("Error exporting members", e);
-            } finally {
-                writer.flush();
-            }
-        };
-        
-        return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=members.csv")
-            .contentType(MediaType.parseMediaType("text/csv"))
-            .body(stream);
+    private ResponseEntity<byte[]> csvResponse(List<Member> members) {
+        StringBuilder csv = new StringBuilder("id,name,email,phone,joinDate,active,consecutiveMonthsMissed\n");
+        for (Member member : members) {
+            csv.append(String.format("%s,%s,%s,%s,%s,%s,%d%n",
+                member.getId() != null ? member.getId() : "0",
+                CsvUtils.escapeCsv(member.getName()),
+                CsvUtils.escapeCsv(member.getEmail()),
+                CsvUtils.escapeCsv(member.getPhone()),
+                member.getJoinDate() != null ? member.getJoinDate().format(DateTimeFormatter.ISO_LOCAL_DATE) : "",
+                member.isActive(),
+                member.getConsecutiveMonthsMissed()));
+        }
+        return CsvUtils.attachment("members.csv", csv.toString());
     }
 }

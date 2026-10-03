@@ -9,8 +9,8 @@ Roles from `@PreAuthorize` and route meta; hierarchy ADMIN > STAFF > VOLUNTEER >
 |------|--------------|-------------------|
 | Open the Members screen | VOLUNTEER | `/members` (`frontend/src/router/index.js:18-22`) |
 | Browse, search, filter, sort | VOLUNTEER | `GET /api/members` (`MemberController.java:70-71`) |
-| Export all members to CSV | VOLUNTEER | `GET /api/members/export` (`MemberController.java:136-137`) |
-| Export filtered members to CSV | VOLUNTEER | `POST /api/members/export` (`MemberController.java:143-144`) |
+| Export all members to CSV | VOLUNTEER | `GET /api/members/export` (`MemberController.java:132-133`) |
+| Export filtered members to CSV | VOLUNTEER | `POST /api/members/export` (`MemberController.java:139-140`) |
 | Add a member | STAFF | `POST /api/members` (`MemberController.java:100-101`) |
 | Edit a member | STAFF | `PUT /api/members/{id}` (`MemberController.java:107-108`) |
 | Activate / deactivate | STAFF | same `PUT` (`MembersView.vue:289-297`) |
@@ -67,14 +67,14 @@ Role view of the screen:
 1. Click Export CSV. If the filters leave zero rows, a "Nothing to export" toast shows and no request is made (`MembersView.vue:323-331`).
 2. With no filter (or a filter matching everyone) the screen calls `GET /api/members/export`; with a narrowed list it calls `POST /api/members/export` with the visible ids (`memberFilters.js:59-62`, `frontend/src/services/api.js:374-379`).
 3. The file downloads as `members_<date>.csv`, or `members_filtered_<date>.csv` when any filter is set (`MembersView.vue:336-337`).
-4. Columns: id, name, email, phone, joinDate, active, consecutiveMonthsMissed (`MemberController.java:161`). Cells starting with a formula character are neutralised ([member-controller.md](member-controller.md)).
+4. Columns: id, name, email, phone, joinDate, active, consecutiveMonthsMissed (`MemberController.java:150-163`). The file is UTF-8 with a byte order mark so Excel reads non-Latin names correctly. Cells starting with a formula character are neutralised ([member-controller.md](member-controller.md)).
 5. Failure: error toast "Export failed" (`MembersView.vue:338-346`).
 
 ## Rules
 - Request shape `MemberRequest` (`infrastructure/dto/MemberRequest.java:15`): name required (max 100), email required, well-formed (max 100), phone optional (blank becomes null) but if present must match `^\+?[0-9\s\-\(\)]{10,}$`, join date optional and not in the future, `active` optional. Failures return 400 with a field list. `id`, counters, last payment date and the monthly-job marker are not part of it and are ignored if sent.
 - Email is unique, compared ignoring case (`001.schema-creation.sql:19`). A duplicate is a 400 from the use case; if two requests race past that check the database unique index answers 409 "The request conflicts with existing data" (`GlobalExceptionHandler.java:77`).
 - New members: join date defaults to today, `active` is forced true, counters zero (`SaveMemberUseCase.java:18-26`).
-- Export ids: not empty, at most 5000, each positive (`infrastructure/dto/ExportMembersRequest.java:11-13`); unknown ids are skipped (`MemberController.java:147-150`).
+- Export ids: not empty, at most 5000, each positive (`infrastructure/dto/ExportMembersRequest.java:11-13`); unknown ids are skipped (`MemberController.java:143-147`).
 - `consecutiveMonthsMissed`, `lastPaymentDate` and `lastMissedCountMonth` are system-managed (never client-settable since audit C8):
   - A recorded payment sets `lastPaymentDate`, and resets the counter to 0 only if the payment's period is the current month (`Member.java:47-58`, called from `RecordPaymentUseCase.java:40`).
   - The monthly scheduler (1st, 06:00) adds 1 to the counter of active members with no payment for the previous month, once per member per month, through `Member.markMissedFor` and `lastMissedCountMonth` (`UpdateMissingPaymentCountersUseCase.java:34-49`); see [payment-reminder-scheduler.md](payment-reminder-scheduler.md). `Member.markPaymentMissed` (`Member.java:60-62`) has no caller.

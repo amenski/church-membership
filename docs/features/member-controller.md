@@ -17,10 +17,10 @@ Roles per [../authentication.md](../authentication.md). All paths are under `/ap
 | PUT | `/{id}` (`:107`) | STAFF+ | `MemberRequest` body, validated | saved `Member` or 404 |
 | DELETE | `/{id}` (`:117`) | ADMIN | - | 200 empty, or 404 |
 | GET | `/overdue/{months}` (`:129`) | VOLUNTEER+ | - | members with `consecutiveMonthsMissed >= months` |
-| GET | `/export` (`:136`) | VOLUNTEER+ | - | `members.csv`, all members |
-| POST | `/export` (`:143`) | VOLUNTEER+ | `ExportMembersRequest {ids}` | `members.csv`, only the given ids |
+| GET | `/export` (`:132`) | VOLUNTEER+ | - | `members.csv`, all members |
+| POST | `/export` (`:139`) | VOLUNTEER+ | `ExportMembersRequest {ids}` | `members.csv`, only the given ids |
 
-CSV: `text/csv`, `Content-Disposition: attachment; filename=members.csv`, streamed (`:183-186`). Columns: `id,name,email,phone,joinDate,active,consecutiveMonthsMissed` (`:161`). `joinDate` is ISO local date.
+CSV: a plain response built in memory (`byte[]`), `Content-Type: text/csv; charset=UTF-8`, `Content-Disposition: attachment; filename=members.csv`, UTF-8 with a byte order mark so Excel reads non-Latin names (Amharic) correctly (`:150-163`, `CsvUtils.attachment`). Columns: `id,name,email,phone,joinDate,active,consecutiveMonthsMissed`. `joinDate` is ISO local date.
 
 ## Collaborators
 | Dependency | Used by | Ref |
@@ -70,5 +70,5 @@ All are RFC 7807 `ProblemDetail` ([../architecture.md](../architecture.md)), exc
 - 404 responses are empty bodies, not `ProblemDetail` (`MemberController.java:83`, `:114`, `:125`).
 - POST ignores `active: false`: new members are always active (`SaveMemberUseCase.java:22`). PUT applies `active` (reactivating resets the missed-months counter).
 - The email lookup is `findByEmailIgnoreCase`/`existsByEmailIgnoreCase`; check-then-save is not atomic, hence the 409 safety net.
-- POST `/export` loads all members and filters in memory; ids that do not exist are silently skipped (`MemberController.java:147-150`).
-- A failure while streaming the CSV is logged to stderr and rethrown after the 200 headers may be sent (`MemberController.java:175-177`).
+- POST `/export` loads all members and filters in memory; ids that do not exist are silently skipped (`MemberController.java:143-147`).
+- The CSV is fully built before the response starts, so a failure gives a normal 500 instead of a half-written file.

@@ -11,7 +11,7 @@ Membership-dues API: list, look up, record and export payments. Roles per endpoi
 | GET | `/api/payments/{id}` | VOLUNTEER+ (`PaymentController.java:63`) | path `id` > 0 | `Payment`, or 404 with empty body |
 | GET | `/api/payments/member/{memberId}` | VOLUNTEER+ (`PaymentController.java:72`) | path `memberId` > 0 | `List<Payment>`, or 404 with empty body if the member does not exist |
 | POST | `/api/payments` | STAFF+ (`PaymentController.java:81`) | `RecordPaymentRequest` JSON, `@Valid` | 200 + saved `Payment` |
-| GET | `/api/payments/export` | VOLUNTEER+ (`PaymentController.java:90`) | none | `text/csv` attachment `payments.csv` |
+| GET | `/api/payments/export` | VOLUNTEER+ (`PaymentController.java:86`) | none | `text/csv; charset=UTF-8` attachment `payments.csv`, UTF-8 with a byte order mark |
 
 Roles and hierarchy: [../authentication.md](../authentication.md).
 
@@ -26,7 +26,7 @@ Roles and hierarchy: [../authentication.md](../authentication.md).
 Example: `{"memberId": 1, "amount": 50.0, "paymentMethod": "CASH", "period": "2026-10"}`, shared with the frontend test as `src/test/resources/contracts/record-payment-request.json` (`PaymentContractTest`). `paymentDate` is not accepted; it is set to today.
 
 ### CSV columns
-`id,memberId,memberName,amount,paymentDate,period,method` (`PaymentController.java:101`). Member name goes through `CsvUtils.escapeCsv` (`PaymentController.java:108`), which prefixes formula-looking text with `'` and quotes fields containing `,` `"` or newlines (`src/main/java/io/github/membertracker/utils/CsvUtils.java:26-39`). Whole list is read first, then streamed; `notes` is not exported.
+`id,memberId,memberName,amount,paymentDate,period,method` (`PaymentController.java:90`). Member name goes through `CsvUtils.escapeCsv` (`PaymentController.java:95`), which prefixes formula-looking text with `'` and quotes fields containing `,` `"` or newlines (`src/main/java/io/github/membertracker/utils/CsvUtils.java:26-39`). The CSV is built in memory and returned as a plain `byte[]` response (`CsvUtils.attachment`) with a UTF-8 byte order mark so Excel reads non-Latin names correctly; `notes` is not exported.
 
 ## Collaborators
 | Dependency | Used by | Ref |
@@ -67,7 +67,7 @@ All RFC 7807 ([../architecture.md](../architecture.md)); handler `src/main/java/
 | 403 | `AccessDeniedException`, `GlobalExceptionHandler.java:86` | role too low |
 | 401 | `GlobalExceptionHandler.java:93` | not authenticated |
 | 404 | `ResponseEntity.notFound()` in controller (`PaymentController.java:68`, `:77`) | unknown payment or member; empty body, not a ProblemDetail |
-| 500 | `GlobalExceptionHandler.java:101` | anything else, including a failure mid-CSV-stream (`PaymentController.java:117`) |
+| 500 | `GlobalExceptionHandler.java:101` | anything else, including a failure while building the CSV |
 
 ## Side effects
 - POST updates the member row (`lastPaymentDate`, maybe `consecutiveMonthsMissed`) before saving the payment, in two `save` calls (`RecordPaymentUseCase.java:42-43`).

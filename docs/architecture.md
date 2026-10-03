@@ -134,4 +134,5 @@ frontend/src/
 | 2026-10 | The default profile has no secret defaults; local values live only in the dev profile | A production JAR must never sign tokens with a public key or connect as root/password | In use |
 | 2026-10 | CSRF protection is on: token cookie + X-XSRF-TOKEN header, no exempt endpoints | Auth uses cookies, which browsers send automatically | In use |
 | 2026-10 | YearMonth is stored as YYYY-MM text through an attribute converter | The column is VARCHAR(7); without a converter Hibernate serialised the value as binary and failed on MySQL | In use |
+| 2026-10 | CSV exports are built in memory and returned as a plain response, UTF-8 with BOM | Streaming gained nothing at this size and hung behind the dev proxy; the BOM makes Excel read Amharic names | In use |
 | 2026-10 | Roles ADMIN > STAFF > VOLUNTEER > MEMBER with `RoleHierarchy` | Replaces ADMIN/MANAGER/USER and the planned TREASURER/VIEWER | Done (3cf5d84; frontend routes in this change) |

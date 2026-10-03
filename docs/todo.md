@@ -109,7 +109,7 @@ This document tracks missing features, improvements, and technical debt in the M
   - Frontend blob handling unified in `downloadBlob`
   - Error notification added for failed exports
   - CSV formula-injection guard added (new, security)
-  - Streaming for large datasets: deferred. Exports load all rows in memory, which is fine for a congregation under ~1,000 people (see functionality-audit.md assumptions).
+  - Streaming for large datasets: dropped; exports are plain in-memory responses (UTF-8 with BOM). Exports load all rows in memory, which is fine for a congregation under ~1,000 people (see functionality-audit.md assumptions).
   - **Location**: `MemberController`, `PaymentController`, frontend views
 
 ### Code Quality

@@ -9,8 +9,6 @@ import io.github.membertracker.utils.CsvUtils;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -20,12 +18,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import java.io.PrintWriter;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 
 @RestController
 @RequestMapping("/api/payments")
@@ -89,40 +86,18 @@ public class PaymentController {
     @GetMapping("/export")
     @PreAuthorize("hasRole('VOLUNTEER')")
     @Operation(summary = "Export all payments as CSV (VOLUNTEER+)")
-    public ResponseEntity<StreamingResponseBody> exportPayments() {
-        List<Payment> payments = getAllPaymentsUseCase.invoke();
-        
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE;
-        
-        StreamingResponseBody stream = out -> {
-            PrintWriter writer = new PrintWriter(out);
-            try {
-                // CSV Header
-                writer.println("id,memberId,memberName,amount,paymentDate,period,method");
-                
-                // CSV Data
-                for (Payment payment : payments) {
-                    writer.printf("%s,%s,%s,%.2f,%s,%s,%s%n",
-                        payment.getId() != null ? payment.getId() : "0",
-                        payment.getMember() != null && payment.getMember().getId() != null ? payment.getMember().getId() : "0",
-                        CsvUtils.escapeCsv(payment.getMember() != null ? payment.getMember().getName() : ""),
-                        payment.getAmount() != null ? payment.getAmount() : 0.0,
-                        payment.getPaymentDate() != null ? payment.getPaymentDate().format(dateFormatter) : "",
-                        payment.getPeriod() != null ? payment.getPeriod().toString() : "",
-                        payment.getPaymentMethod() != null ? payment.getPaymentMethod().name() : ""
-                    );
-                }
-            } catch (Exception e) {
-                System.err.println("Error exporting payments: " + e.getMessage());
-                throw new RuntimeException("Error exporting payments", e);
-            } finally {
-                writer.flush();
-            }
-        };
-        
-        return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=payments.csv")
-            .contentType(MediaType.parseMediaType("text/csv"))
-            .body(stream);
+    public ResponseEntity<byte[]> exportPayments() {
+        StringBuilder csv = new StringBuilder("id,memberId,memberName,amount,paymentDate,period,method\n");
+        for (Payment payment : getAllPaymentsUseCase.invoke()) {
+            csv.append(String.format(Locale.ROOT, "%s,%s,%s,%.2f,%s,%s,%s%n",
+                payment.getId() != null ? payment.getId() : "0",
+                payment.getMember() != null && payment.getMember().getId() != null ? payment.getMember().getId() : "0",
+                CsvUtils.escapeCsv(payment.getMember() != null ? payment.getMember().getName() : ""),
+                payment.getAmount() != null ? payment.getAmount() : 0.0,
+                payment.getPaymentDate() != null ? payment.getPaymentDate().format(DateTimeFormatter.ISO_LOCAL_DATE) : "",
+                payment.getPeriod() != null ? payment.getPeriod().toString() : "",
+                payment.getPaymentMethod() != null ? payment.getPaymentMethod().name() : ""));
+        }
+        return CsvUtils.attachment("payments.csv", csv.toString());
     }
 }

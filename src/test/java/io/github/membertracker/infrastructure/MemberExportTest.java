@@ -7,18 +7,15 @@ import io.github.membertracker.usecase.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.core.task.SyncTaskExecutor;
-import org.springframework.core.task.support.TaskExecutorAdapter;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -26,27 +23,13 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = MemberController.class)
-@Import({SecurityConfig.class, AuthProperties.class, MemberExportTest.SyncAsyncConfig.class})
+@Import({SecurityConfig.class, AuthProperties.class})
 class MemberExportTest {
-
-    /** Runs StreamingResponseBody on the request thread so the body is complete when we read it. */
-    @TestConfiguration
-    static class SyncAsyncConfig {
-        @Bean
-        WebMvcConfigurer syncAsyncExecutor() {
-            return new WebMvcConfigurer() {
-                @Override
-                public void configureAsyncSupport(AsyncSupportConfigurer configurer) {
-                    configurer.setTaskExecutor(new TaskExecutorAdapter(new SyncTaskExecutor()));
-                }
-            };
-        }
-    }
 
     @Autowired
     private MockMvc mockMvc;
@@ -68,17 +51,18 @@ class MemberExportTest {
         return member;
     }
 
-    private String exportBody(String json) throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/members/export").with(csrf())
-                .with(user("v@example.com").roles("VOLUNTEER"))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json))
+    private static final String BOM = "\uFEFF";
+
+    private MockHttpServletResponse export(MockHttpServletRequestBuilder request) throws Exception {
+        MvcResult result = mockMvc.perform(request.with(csrf()).with(user("v@example.com").roles("VOLUNTEER")))
             .andReturn();
-        if (result.getRequest().isAsyncStarted()) {
-            result = mockMvc.perform(asyncDispatch(result)).andReturn();
-        }
+        assertThat(result.getRequest().isAsyncStarted()).isFalse();
         assertThat(result.getResponse().getStatus()).isEqualTo(200);
-        return result.getResponse().getContentAsString();
+        return result.getResponse();
+    }
+
+    private static String body(MockHttpServletResponse response) throws Exception {
+        return new String(response.getContentAsByteArray(), StandardCharsets.UTF_8);
     }
 
     @Test
@@ -86,14 +70,37 @@ class MemberExportTest {
         when(getAllMembersUseCase.invoke()).thenReturn(List.of(
             member(1, "Abel"), member(2, "=HYPERLINK(\"x\")"), member(3, "Selam")));
 
-        String csv = exportBody("{\"ids\":[1,2]}");
-        String[] lines = csv.strip().split("\\R");
+        MockHttpServletResponse response = export(post("/api/members/export")
+            .contentType(MediaType.APPLICATION_JSON).content("{\"ids\":[1,2]}"));
+        String csv = body(response);
+        assertThat(csv).startsWith(BOM);
+        String[] lines = csv.substring(BOM.length()).strip().split("\\R");
 
+        assertThat(response.getContentType()).isEqualTo("text/csv;charset=UTF-8");
+        assertThat(response.getHeader("Content-Disposition")).isEqualTo("attachment; filename=members.csv");
         assertThat(lines).hasSize(3);
         assertThat(lines[0]).isEqualTo("id,name,email,phone,joinDate,active,consecutiveMonthsMissed");
         assertThat(lines[1]).startsWith("1,Abel,");
         assertThat(lines[2]).startsWith("2,\"'=HYPERLINK(\"\"x\"\")\",");
         assertThat(csv).doesNotContain("Selam");
+    }
+
+    @Test
+    void exportsAllMembersAndKeepsAmharicNamesIntact() throws Exception {
+        when(getAllMembersUseCase.invoke()).thenReturn(List.of(member(1, "ፈለገ ሰላም"), member(2, "Abel")));
+
+        MockHttpServletResponse response = export(get("/api/members/export"));
+        byte[] bytes = response.getContentAsByteArray();
+        String csv = body(response);
+
+        assertThat(bytes).startsWith(0xEF, 0xBB, 0xBF);
+        assertThat(response.getContentType()).isEqualTo("text/csv;charset=UTF-8");
+        assertThat(response.getHeader("Content-Disposition")).isEqualTo("attachment; filename=members.csv");
+        String[] lines = csv.substring(BOM.length()).strip().split("\\R");
+        assertThat(lines).hasSize(3);
+        assertThat(lines[0]).isEqualTo("id,name,email,phone,joinDate,active,consecutiveMonthsMissed");
+        assertThat(lines[1]).startsWith("1,ፈለገ ሰላም,");
+        assertThat(lines[2]).startsWith("2,Abel,");
     }
 
     @Test

@@ -8,19 +8,13 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.core.task.SyncTaskExecutor;
-import org.springframework.core.task.support.TaskExecutorAdapter;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -28,7 +22,6 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
 
 /**
@@ -41,22 +34,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
     CommunicationController.class,
     DashboardController.class
 })
-@Import({SecurityConfig.class, AuthProperties.class, RoleAuthorizationTest.SyncAsyncConfig.class})
+@Import({SecurityConfig.class, AuthProperties.class})
 class RoleAuthorizationTest {
-
-    /** Runs StreamingResponseBody on the request thread so header writes cannot race. */
-    @TestConfiguration
-    static class SyncAsyncConfig {
-        @Bean
-        WebMvcConfigurer syncAsyncExecutor() {
-            return new WebMvcConfigurer() {
-                @Override
-                public void configureAsyncSupport(AsyncSupportConfigurer configurer) {
-                    configurer.setTaskExecutor(new TaskExecutorAdapter(new SyncTaskExecutor()));
-                }
-            };
-        }
-    }
 
     // Lowest to highest; each role inherits everything below it
     private static final List<String> ROLES = List.of("MEMBER", "VOLUNTEER", "STAFF", "ADMIN");
@@ -151,9 +130,6 @@ class RoleAuthorizationTest {
 
         MvcResult result = mockMvc.perform(buildRequest(endpoint).with(user("tester@example.com").roles(role)))
             .andReturn();
-        if (result.getRequest().isAsyncStarted()) {
-            result = mockMvc.perform(asyncDispatch(result)).andReturn();
-        }
         int status = result.getResponse().getStatus();
 
         if (allowed) {
@@ -167,9 +143,6 @@ class RoleAuthorizationTest {
     @MethodSource("allEndpoints")
     void anonymousIsDenied(Endpoint endpoint) throws Exception {
         MvcResult result = mockMvc.perform(buildRequest(endpoint)).andReturn();
-        if (result.getRequest().isAsyncStarted()) {
-            result = mockMvc.perform(asyncDispatch(result)).andReturn();
-        }
         int status = result.getResponse().getStatus();
 
         assertThat(status).isEqualTo(401);

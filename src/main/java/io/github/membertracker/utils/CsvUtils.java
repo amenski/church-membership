@@ -1,5 +1,10 @@
 package io.github.membertracker.utils;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+
+import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
 /**
@@ -36,5 +41,16 @@ public final class CsvUtils {
             return "\"" + safe.replace("\"", "\"\"") + "\"";
         }
         return safe;
+    }
+
+    /**
+     * Wraps CSV text in a plain download response: UTF-8 with a byte order mark, so Excel reads non-Latin
+     * names (for example Amharic) correctly.
+     */
+    public static ResponseEntity<byte[]> attachment(String filename, String csv) {
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+            .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
+            .body(("\uFEFF" + csv).getBytes(StandardCharsets.UTF_8));
     }
 }
