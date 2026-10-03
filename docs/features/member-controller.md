@@ -16,7 +16,7 @@ Roles per [../authentication.md](../authentication.md). All paths are under `/ap
 | POST | `` (`:100`) | STAFF+ | `MemberRequest` body, validated | saved `Member` |
 | PUT | `/{id}` (`:107`) | STAFF+ | `MemberRequest` body, validated | saved `Member` or 404 |
 | DELETE | `/{id}` (`:117`) | ADMIN | - | 200 empty, or 404 |
-| GET | `/overdue/{months}` (`:129`) | VOLUNTEER+ | - | members with `consecutiveMonthsMissed >= months` |
+| GET | `/overdue/{months}` (`:129`) | VOLUNTEER+ | - | ACTIVE members with `consecutiveMonthsMissed >= months`, longest behind first |
 | GET | `/export` (`:132`) | VOLUNTEER+ | - | `members.csv`, all members |
 | POST | `/export` (`:139`) | VOLUNTEER+ | `ExportMembersRequest {ids}` | `members.csv`, only the given ids |
 
@@ -29,7 +29,7 @@ CSV: a plain response built in memory (`byte[]`), `Content-Type: text/csv; chars
 | `GetMemberByIdUseCase` -> `findById` | read, and the existence check in DELETE | `usecase/GetMemberByIdUseCase.java:23` |
 | `GetActiveMembersUseCase` -> `findByActive(true)` | `/active` | `usecase/GetActiveMembersUseCase.java:22` |
 | `GetInactiveMembersUseCase` -> `findByActive(false)` | `/inactive` | `usecase/GetInactiveMembersUseCase.java:22` |
-| `GetMembersWithMissedPaymentsUseCase` -> `findByConsecutiveMonthsMissedGreaterThanEqual` | `/overdue/{months}` | `usecase/GetMembersWithMissedPaymentsUseCase.java:23` |
+| `GetMembersWithMissedPaymentsUseCase` -> `findActiveWithMissedAtLeastOrderByMissedDesc` | `/overdue/{months}` | `usecase/GetMembersWithMissedPaymentsUseCase.java` |
 | `SaveMemberUseCase` -> `invoke(name, email, phone, joinDate)` | POST | `usecase/SaveMemberUseCase.java:18` |
 | `UpdateMemberUseCase` -> `invoke(id, name, email, phone, joinDate, active)` | PUT | `usecase/UpdateMemberUseCase.java:22` |
 | `DeleteMemberUseCase` -> `deleteById` | DELETE | `usecase/DeleteMemberUseCase.java:18` |

@@ -49,7 +49,7 @@ Scale: **0** absent · **1** stub or flat data · **2** basic, usable · **3** f
 
 | Area | Score | What exists today, and what is missing |
 |------|:-----:|----------------------------------------|
-| Reporting | 1 | Four dashboard counters and two recent-activity lists, computed by loading every payment into memory. No date ranges, trends, giving by fund, attendance or growth reports. |
+| Reporting | 1 | Four dashboard counters and two recent-activity lists, computed by database queries (counts, a sum, limited recent lists). No date ranges, trends, giving by fund, attendance or growth reports. |
 | Search | 0 | No search or filter parameters on any endpoint, and no pagination. Filtering happens in the browser on the full list. |
 | Notifications | 0 | A monthly reminder scheduler runs on the 1st (C3 fixed); `{{member_name}}` in the reminder is filled in per recipient (C4 fixed). No in-app notifications, birthday or anniversary alerts, or staff task alerts. |
 | Import and export | 1 | CSV export of members and payments. No import, so a church moving from a spreadsheet must type every record by hand. |
@@ -138,7 +138,7 @@ A unique, required email per member blocks children and shared inboxes, and ther
 ### Usability
 - Payments are only accepted for the last 3 months, so existing records cannot be migrated
 - The frontend has no role-aware navigation, so users click into 403 screens
-- The dashboard swallows errors and shows zeros, which hides outages
+- ~~The dashboard swallows errors and shows zeros, which hides outages~~ fixed: a failure is a 500 problem
 - English only: i18n is wired but has one locale (assumption: the congregation may prefer Amharic or Tigrinya)
 - "Revenue" on the dashboard reads like a business, not a church
 

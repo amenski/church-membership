@@ -71,6 +71,9 @@ class RoleAuthorizationTest {
     @MockitoBean private SendCommunicationToMembersUseCase sendCommunicationToMembersUseCase;
     @MockitoBean private GetDeliveriesByCommunicationUseCase getDeliveriesByCommunicationUseCase;
     @MockitoBean private RetryDeliveryUseCase retryDeliveryUseCase;
+    @MockitoBean private GetDashboardStatsUseCase getDashboardStatsUseCase;
+    @MockitoBean private GetRecentPaymentsUseCase getRecentPaymentsUseCase;
+    @MockitoBean private GetRecentCommunicationsUseCase getRecentCommunicationsUseCase;
 
     private record Endpoint(HttpMethod method, String path, String body, String minimumRole) {
         @Override

@@ -7,61 +7,62 @@ Read-only summary figures (counts, revenue, recent payments, overdue members, ac
 ## Endpoints
 | Method | Path | Auth | Request | Response |
 |--------|------|------|---------|----------|
-| GET | `/api/dashboard/stats` | VOLUNTEER+ (`:48`) | none | `{totalMembers, activeMembers, overdueMembers, monthlyRevenue}` |
-| GET | `/api/dashboard/recent-payments` | VOLUNTEER+ (`:103`) | none | `Payment[]`, max 10 |
-| GET | `/api/dashboard/overdue-members` | VOLUNTEER+ (`:128`) | none | `Member[]` |
-| GET | `/api/dashboard/recent-activities` | VOLUNTEER+ (`:141`) | none | `{id, date, type, description}[]`, max 10 |
+| GET | `/api/dashboard/stats` | VOLUNTEER+ | none | `{totalMembers, activeMembers, overdueMembers, monthlyRevenue}` |
+| GET | `/api/dashboard/recent-payments` | VOLUNTEER+ | none | `Payment[]`, max 10 |
+| GET | `/api/dashboard/overdue-members` | VOLUNTEER+ | none | `Member[]`, active members only, longest behind first |
+| GET | `/api/dashboard/recent-activities` | VOLUNTEER+ | none | `{id, date, type, description}[]`, max 10 |
 
-Roles and hierarchy: [../authentication.md](../authentication.md).
+Roles and hierarchy: [../authentication.md](../authentication.md). The JSON keys and shapes are unchanged by the move to queries.
 
-## Stats (`:50`)
+## Stats
+Use case `GetDashboardStatsUseCase` (returns a `DashboardStats` record: four queries, no table is loaded).
+
 | Field | Meaning | Source |
 |-------|---------|--------|
-| `totalMembers` | all members, active or not | `findAll()` size (`:55`) |
-| `activeMembers` | members with `active = true` | `findByActive(true)` size (`:59`) |
-| `overdueMembers` | members with `consecutiveMonthsMissed >= 1` | `invoke(1)` (`:63`) |
-| `monthlyRevenue` | sum of `amount` where `payment.period == current YearMonth` | all payments filtered in memory (`:67-86`) |
+| `totalMembers` | all members, active or not | `MemberRepository.countAll()` |
+| `activeMembers` | members with `active = true` | `countByActive(true)` |
+| `overdueMembers` | ACTIVE members with `consecutiveMonthsMissed >= 1` | `countActiveWithMissedAtLeast(1)` |
+| `monthlyRevenue` | sum of `amount` where the billing `period` is the current month; always a double (`0.0` when there are no payments) | `PaymentRepository.sumAmountByPeriod(YearMonth.now())`, a SQL `SUM` |
 
 - Revenue is by billing `period`, not `paymentDate`: a payment made today for last month is excluded; an advance payment for this month made earlier is included.
-- Overdue is a stored counter, not computed here; it is raised once per member per month by the monthly `UpdateMissingPaymentCountersUseCase` (`src/main/java/io/github/membertracker/usecase/UpdateMissingPaymentCountersUseCase.java:45`).
+- Overdue is a stored counter, not computed here; it is raised once per member per month by the monthly `UpdateMissingPaymentCountersUseCase` (`src/main/java/io/github/membertracker/usecase/UpdateMissingPaymentCountersUseCase.java`). An inactive member who is behind is not counted, so the card, the overdue list and the dues meter agree.
 
 ## Recent payments
-- Loads all payments, sorts by `paymentDate` desc, takes 10 (`:107-120`).
-- Returns the domain `Payment` as-is: nested `member` object, no `memberId` field (`src/main/java/io/github/membertracker/domain/model/Payment.java:14-17`). The derived fields `onTime`, `daysLate`, `forCurrentPeriod` and `valid` are no longer in the JSON (their getters were removed in `chore: remove unused domain methods`; the frontend never read them).
+- `GetRecentPaymentsUseCase.invoke(10)` -> `PaymentRepository.findRecent(10)`: newest `paymentDate` first, then newest id, limited in SQL.
+- Returns the domain `Payment` as-is: nested `member` object, no `memberId` field (`src/main/java/io/github/membertracker/domain/model/Payment.java`). The derived fields `onTime`, `daysLate`, `forCurrentPeriod` and `valid` are no longer in the JSON (their getters were removed in `chore: remove unused domain methods`; the frontend never read them).
+
+## Overdue members
+- `GetMembersWithMissedPaymentsUseCase.invoke(1)` -> `MemberRepository.findActiveWithMissedAtLeastOrderByMissedDesc(1)`: active members only, the one furthest behind first (then by name). The same use case serves `GET /api/members/overdue/{months}` and the send-to-overdue endpoint, so they are active-only too.
 
 ## Recent activities
 - Derived, not read from the `activity_log` table (no Java code references that table; it is only in the SQL scripts, `src/main/resources/db/sql/001.schema-creation.sql:71`).
-- Sources: 5 newest payments by `paymentDate` (`:148-172`) + 5 newest communications by `createdDate` (`:175-199`).
+- Sources: `findRecent(5)` payments (newest `paymentDate`) + `CommunicationRepository.findRecent(5)` (newest `createdDate`, deliveries are not loaded).
 - Payment item: `id=payment_<id>`, `type=payment`, `description="Payment received: $<amount %.2f>"`.
 - Communication item: `id=comm_<id>`, `type=communication`, `description="Communication sent: <title>"`, `date` = `createdDate` truncated to date.
-- Merged, sorted by date desc, first 10 (`:202-208`). Same-date ordering between payments and communications is not defined by an explicit rule.
+- Merged, sorted by date desc (stable: payments come before communications on the same date), first 10.
 - Only `payment` and `communication` types are produced; no member events.
 
 ## Collaborators
-- `GetAllMembersUseCase` -> `memberRepository.findAll()` (`src/main/java/io/github/membertracker/usecase/GetAllMembersUseCase.java:17`)
-- `GetActiveMembersUseCase` -> `findByActive(true)` (`src/main/java/io/github/membertracker/usecase/GetActiveMembersUseCase.java:22`)
-- `GetMembersWithMissedPaymentsUseCase` -> `findByConsecutiveMonthsMissedGreaterThanEqual` (`src/main/java/io/github/membertracker/usecase/GetMembersWithMissedPaymentsUseCase.java:23`)
-- `GetAllPaymentsUseCase` -> `paymentRepository.findAll()` (`src/main/java/io/github/membertracker/usecase/GetAllPaymentsUseCase.java:22`)
-- `GetAllCommunicationsUseCase` -> `communicationRepository.findAll()` (`src/main/java/io/github/membertracker/usecase/GetAllCommunicationsUseCase.java:17`)
+- `GetDashboardStatsUseCase` -> `countAll`, `countByActive`, `countActiveWithMissedAtLeast`, `sumAmountByPeriod`
+- `GetMembersWithMissedPaymentsUseCase` -> `findActiveWithMissedAtLeastOrderByMissedDesc`
+- `GetRecentPaymentsUseCase` -> `PaymentRepository.findRecent`
+- `GetRecentCommunicationsUseCase` -> `CommunicationRepository.findRecent`
 - Models: `Member`, `Payment`, `Communication` (domain), returned unmapped.
 
 ## Data loaded per request
-| Endpoint | Full-table loads |
-|----------|------------------|
-| stats | members x2 (all + active), overdue members, all payments |
-| recent-payments | all payments |
-| overdue-members | overdue members |
-| recent-activities | all payments + all communications (incl. deliveries) |
+| Endpoint | Queries |
+|----------|---------|
+| stats | 3 counts + 1 `SUM` |
+| recent-payments | 1 query, `LIMIT 10` |
+| overdue-members | 1 query, active members only |
+| recent-activities | 2 queries, `LIMIT 5` each |
 
-- Sorting, filtering and limits are done in Java after load; no pagination or DB-side limits.
-- The dashboard view fires all four in parallel (see [dashboard-view.md](dashboard-view.md)): payments are loaded 3 times per page load.
+- No table is loaded and sorted in Java any more. Indexes are not justified at under about 1,000 members (see [../todo.md](../todo.md)).
 
 ## Errors
 - 401/403: from Spring Security / `@PreAuthorize` only (see [../architecture.md](../architecture.md) error format).
-- Every endpoint catches `Exception` and returns 200: stats with zeros (`:90-98`), others with `[]` (`:122-124`, `:135-137`, `:209-211`). Failures never reach the client as 5xx.
+- No endpoint catches exceptions: a failure reaches `GlobalExceptionHandler` and is a 500 `application/problem+json` with the generic detail (the frontend shows an inline alert). An outage is never shown as zeros or empty lists. Covered by `DashboardErrorsTest`; the numbers by `DashboardQueriesIntegrationTest`.
 
 ## Gotchas
-- Swallowed errors: a DB failure shows as "0 members / $0 / empty lists" with status 200; only `/stats` logs it (`:92`).
-- Per-item try/catch around casts silently drops or mis-sorts items (`:75`, `:115`, `:169`).
-- Stats failure fallback sets `monthlyRevenue` to int `0`, success path a `Double` (`:97` vs `:87`); JSON renders `0` vs e.g. `120.0`.
-- Activity description hardcodes `$` (`:167`).
+- Activity description hardcodes `$`.
+- `recent-payments` and the activity feed read payments with their member (an eager many-to-one): at most 10 extra member loads per request.

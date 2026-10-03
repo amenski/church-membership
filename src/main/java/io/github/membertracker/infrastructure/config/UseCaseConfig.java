@@ -22,6 +22,9 @@ import io.github.membertracker.usecase.GetInactiveMembersUseCase;
 import io.github.membertracker.usecase.GetMemberByIdUseCase;
 import io.github.membertracker.usecase.GetMembersWithMissedPaymentsUseCase;
 import io.github.membertracker.usecase.GetPaymentByIdUseCase;
+import io.github.membertracker.usecase.GetDashboardStatsUseCase;
+import io.github.membertracker.usecase.GetRecentCommunicationsUseCase;
+import io.github.membertracker.usecase.GetRecentPaymentsUseCase;
 import io.github.membertracker.usecase.GetPaymentsByMemberUseCase;
 import io.github.membertracker.usecase.HasPaymentForMonthUseCase;
 import io.github.membertracker.usecase.LoadUserByUsernameUseCase;
@@ -180,6 +183,22 @@ public class UseCaseConfig {
             MessageDeliveryRepository messageDeliveryRepository,
             EmailService emailService) {
         return new SendCommunicationToMembersUseCase(communicationRepository, messageDeliveryRepository, emailService);
+    }
+
+    // Dashboard use cases
+    @Bean
+    public GetDashboardStatsUseCase getDashboardStatsUseCase(MemberRepository memberRepository, PaymentRepository paymentRepository) {
+        return new GetDashboardStatsUseCase(memberRepository, paymentRepository);
+    }
+
+    @Bean
+    public GetRecentPaymentsUseCase getRecentPaymentsUseCase(PaymentRepository paymentRepository) {
+        return new GetRecentPaymentsUseCase(paymentRepository);
+    }
+
+    @Bean
+    public GetRecentCommunicationsUseCase getRecentCommunicationsUseCase(CommunicationRepository communicationRepository) {
+        return new GetRecentCommunicationsUseCase(communicationRepository);
     }
 
     // Scheduler-related use cases

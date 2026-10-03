@@ -11,6 +11,12 @@ public interface MemberJpaRepository extends JpaRepository<MemberEntity, Long> {
 
     List<MemberEntity> findByConsecutiveMonthsMissedGreaterThanEqual(int months);
 
+    long countByActive(boolean active);
+
+    long countByActiveTrueAndConsecutiveMonthsMissedGreaterThanEqual(int months);
+
+    List<MemberEntity> findByActiveTrueAndConsecutiveMonthsMissedGreaterThanEqualOrderByConsecutiveMonthsMissedDescNameAscIdAsc(int months);
+
     boolean existsByEmailIgnoreCase(String email);
 
     Optional<MemberEntity> findByEmailIgnoreCase(String email);

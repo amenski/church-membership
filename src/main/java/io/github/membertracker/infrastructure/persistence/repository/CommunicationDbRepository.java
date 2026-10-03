@@ -6,6 +6,8 @@ import io.github.membertracker.domain.model.MessageDelivery;
 import io.github.membertracker.domain.repository.CommunicationRepository;
 import io.github.membertracker.infrastructure.persistence.entity.CommunicationEntity;
 import io.github.membertracker.infrastructure.persistence.entity.MessageDeliveryEntity;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
@@ -31,6 +33,14 @@ public class CommunicationDbRepository implements CommunicationRepository {
     @Override
     public List<Communication> findAll() {
         return communicationJpaRepository.findAll().stream()
+                .map(this::mapToCommunication)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Communication> findRecent(int limit) {
+        Sort newestFirst = Sort.by(Sort.Order.desc("createdDate"), Sort.Order.desc("id"));
+        return communicationJpaRepository.findAll(PageRequest.of(0, limit, newestFirst)).stream()
                 .map(this::mapToCommunication)
                 .collect(Collectors.toList());
     }

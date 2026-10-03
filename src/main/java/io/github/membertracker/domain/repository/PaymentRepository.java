@@ -16,5 +16,11 @@ public interface PaymentRepository {
     
     boolean existsByMemberAndPeriod(Member member, YearMonth period);
     
+    /** Sum of the amounts whose billing period is {@code period}; 0.0 when there are none. */
+    double sumAmountByPeriod(YearMonth period);
+
+    /** Newest payment date first, then newest id. */
+    List<Payment> findRecent(int limit);
+
     Payment save(Payment payment);
 }

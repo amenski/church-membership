@@ -5,6 +5,8 @@ import io.github.membertracker.domain.model.Payment;
 import io.github.membertracker.domain.repository.PaymentRepository;
 import io.github.membertracker.infrastructure.persistence.entity.MemberEntity;
 import io.github.membertracker.infrastructure.persistence.entity.PaymentEntity;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 import java.time.YearMonth;
@@ -48,6 +50,19 @@ public class PaymentDbRepository implements PaymentRepository {
     public boolean existsByMemberAndPeriod(Member member, YearMonth period) {
         MemberEntity memberEntity = mapToMemberEntity(member);
         return paymentJpaRepository.existsByMemberAndPeriod(memberEntity, period);
+    }
+
+    @Override
+    public double sumAmountByPeriod(YearMonth period) {
+        return paymentJpaRepository.sumAmountByPeriod(period);
+    }
+
+    @Override
+    public List<Payment> findRecent(int limit) {
+        Sort newestFirst = Sort.by(Sort.Order.desc("paymentDate"), Sort.Order.desc("id"));
+        return paymentJpaRepository.findAll(PageRequest.of(0, limit, newestFirst)).stream()
+                .map(this::mapToPayment)
+                .collect(Collectors.toList());
     }
 
     @Override

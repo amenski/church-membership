@@ -47,6 +47,30 @@ public class MemberDbRepository implements MemberRepository {
     }
 
     @Override
+    public long countAll() {
+        return memberJpaRepository.count();
+    }
+
+    @Override
+    public long countByActive(boolean active) {
+        return memberJpaRepository.countByActive(active);
+    }
+
+    @Override
+    public long countActiveWithMissedAtLeast(int months) {
+        return memberJpaRepository.countByActiveTrueAndConsecutiveMonthsMissedGreaterThanEqual(months);
+    }
+
+    @Override
+    public List<Member> findActiveWithMissedAtLeastOrderByMissedDesc(int months) {
+        return memberJpaRepository
+                .findByActiveTrueAndConsecutiveMonthsMissedGreaterThanEqualOrderByConsecutiveMonthsMissedDescNameAscIdAsc(months)
+                .stream()
+                .map(this::mapToMember)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public boolean existsByEmailIgnoreCase(String email) {
         return memberJpaRepository.existsByEmailIgnoreCase(email);
     }
