@@ -58,12 +58,13 @@
       <div
           v-for="notification in notifications"
           :key="notification.id"
+          :id="'toast-' + notification.id"
           class="toast"
           :class="notificationClass(notification)"
           role="alert"
           aria-live="assertive"
           aria-atomic="true"
-          @hidden="removeNotification(notification.id)"
+          @hidden.bs.toast="removeNotification(notification.id)"
       >
         <div class="toast-header">
           <strong class="me-auto">{{ notification.title || 'Notification' }}</strong>
@@ -78,8 +79,9 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { Toast } from 'bootstrap'
 import { useAppStore } from '@/stores/appStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useRouter } from 'vue-router'
@@ -88,6 +90,7 @@ const { t } = useI18n()
 const appStore = useAppStore()
 const authStore = useAuthStore()
 const router = useRouter()
+const toastElements = ref({})
 
 const themeClass = computed(() => {
   const theme = appStore.currentTheme
@@ -117,6 +120,24 @@ const notificationClass = (notification) => {
 const removeNotification = (id) => {
   appStore.removeNotification(id)
 }
+
+// Watch for new notifications and show toast
+watch(notifications, async (newNotifications, oldNotifications) => {
+  if (newNotifications.length > oldNotifications.length) {
+    // A new notification was added
+    const newNotification = newNotifications[0]
+    await nextTick()
+    // Find and show the toast element
+    const toastElement = document.getElementById(`toast-${newNotification.id}`)
+    if (toastElement) {
+      const toast = new Toast(toastElement, {
+        autohide: newNotification.duration > 0,
+        delay: newNotification.duration || 5000
+      })
+      toast.show()
+    }
+  }
+}, { deep: true })
 
 const handleLogout = async () => {
   try {

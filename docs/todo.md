@@ -109,6 +109,7 @@ This document tracks missing features, improvements, and technical debt in the M
   - Add localized error messages
   - Implement structured logging for errors
   - **Location**: `GlobalExceptionHandler`, logging configuration
+  - [x] Frontend notifications for session expiry, 401 and 403 (c2a58d1)
 
 ---
 

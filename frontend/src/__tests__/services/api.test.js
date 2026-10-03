@@ -1,0 +1,105 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { setActivePinia, createPinia } from 'pinia'
+import { AxiosError } from 'axios'
+import { axiosInstance } from '@/services/api'
+import { useAuthStore, useAppStore } from '@/stores/index.js'
+
+// Adapter that never touches the network: answers each URL from `routes`
+function respondWith(routes) {
+  axiosInstance.defaults.adapter = async (config) => {
+    const route = routes[config.url]
+    const status = typeof route === 'number' ? route : route.status
+    const data = typeof route === 'number' ? undefined : route.data
+    if (status < 400) {
+      return { status, data, headers: {}, config, statusText: 'OK' }
+    }
+    const response = { status, data, headers: {}, config }
+    throw new AxiosError(`Request failed with status code ${status}`, 'ERR_BAD_REQUEST', config, null, response)
+  }
+}
+
+describe('api response interceptor', () => {
+  let originalAdapter
+  let addNotification
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    originalAdapter = axiosInstance.defaults.adapter
+    addNotification = vi.spyOn(useAppStore(), 'addNotification')
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    // Already on /login, so a failed refresh does not try to navigate
+    window.history.pushState({}, '', '/login')
+  })
+
+  afterEach(() => {
+    axiosInstance.defaults.adapter = originalAdapter
+    vi.restoreAllMocks()
+  })
+
+  function signIn() {
+    const authStore = useAuthStore()
+    authStore.user = { role: 'MEMBER' }
+    authStore.isAuthenticated = true
+  }
+
+  it('403 shows one Access Denied notification with the server detail', async () => {
+    respondWith({ '/members': { status: 403, data: { detail: 'Role STAFF required' } } })
+
+    await expect(axiosInstance.get('/members')).rejects.toBeDefined()
+
+    expect(addNotification).toHaveBeenCalledTimes(1)
+    expect(addNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Access Denied', message: 'Role STAFF required' })
+    )
+  })
+
+  it('401 on the login URL neither refreshes nor notifies', async () => {
+    const calls = []
+    respondWith({ '/auth/login': 401, '/auth/refresh': 200 })
+    const adapter = axiosInstance.defaults.adapter
+    axiosInstance.defaults.adapter = (config) => {
+      calls.push(config.url)
+      return adapter(config)
+    }
+
+    await expect(axiosInstance.post('/auth/login', {})).rejects.toBeDefined()
+
+    expect(calls).toEqual(['/auth/login'])
+    expect(addNotification).not.toHaveBeenCalled()
+  })
+
+  it('401 with failed refresh while signed in shows one Session Expired', async () => {
+    signIn()
+    respondWith({ '/members': 401, '/auth/refresh': 401 })
+
+    await expect(axiosInstance.get('/members')).rejects.toBeDefined()
+
+    expect(addNotification).toHaveBeenCalledTimes(1)
+    expect(addNotification).toHaveBeenCalledWith(expect.objectContaining({ title: 'Session Expired' }))
+    expect(useAuthStore().isAuthenticated).toBe(false)
+  })
+
+  it('401 with failed refresh while not signed in shows no notification', async () => {
+    respondWith({ '/users/me': 401, '/auth/refresh': 401 })
+
+    await expect(axiosInstance.get('/users/me')).rejects.toBeDefined()
+
+    expect(addNotification).not.toHaveBeenCalled()
+  })
+
+  it('401 that persists after a successful refresh shows one Unauthorized', async () => {
+    signIn()
+    respondWith({
+      '/members': { status: 401, data: { detail: 'Full authentication is required' } },
+      '/auth/refresh': 200
+    })
+
+    await expect(axiosInstance.get('/members')).rejects.toBeDefined()
+
+    expect(addNotification).toHaveBeenCalledTimes(1)
+    expect(addNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Unauthorized', message: 'Full authentication is required' })
+    )
+  })
+})

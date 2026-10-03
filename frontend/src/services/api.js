@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { useAuthStore } from '@/stores/index.js'
+import { useAuthStore, useAppStore } from '@/stores/index.js'
 
 // Configuration from environment variables
 const API_CONFIG = {
@@ -116,11 +116,29 @@ api.interceptors.response.use(
         // Refresh failed, redirect to login
         console.error('Token refresh failed:', refreshError)
 
-        // Clear authentication state
+        // Clear authentication state (remember whether the user was signed in)
+        let wasAuthenticated = false
         try {
           const authStore = useAuthStore()
+          wasAuthenticated = !!authStore?.isAuthenticated
           if (authStore && authStore.clearAuth) {
             authStore.clearAuth()
+          }
+        } catch (e) {
+          // Store may not be available
+        }
+
+        // Tell the user only if they were signed in; a first-time visitor's
+        // initial auth check failing is not a "session expired" event
+        try {
+          const appStore = useAppStore()
+          if (wasAuthenticated && appStore && appStore.addNotification) {
+            appStore.addNotification({
+              type: 'error',
+              title: 'Session Expired',
+              message: 'Your session has expired. Please log in again.',
+              duration: 5000
+            })
           }
         } catch (e) {
           // Store may not be available
@@ -139,6 +157,30 @@ api.interceptors.response.use(
       }
     }
 
+    // Handle 401 Unauthorized (access denied - not authenticated)
+    if (error.response?.status === 401) {
+      console.error('Unauthorized access:', originalRequest?.url)
+
+      // Show notification to user
+      try {
+        const appStore = useAppStore()
+        if (appStore && appStore.addNotification) {
+          const errorData = error.response?.data
+          const errorMessage = errorData?.detail || errorData?.title || 'Authentication required'
+          appStore.addNotification({
+            type: 'error',
+            title: 'Unauthorized',
+            message: errorMessage,
+            duration: 5000
+          })
+        }
+      } catch (e) {
+        // Store may not be available
+      }
+
+      return Promise.reject(error)
+    }
+
     // Handle 403 Forbidden (access denied)
     if (error.response?.status === 403) {
       console.error('Access forbidden:', originalRequest?.url)
@@ -148,6 +190,24 @@ api.interceptors.response.use(
         const authStore = useAuthStore()
         if (authStore && authStore.isLoggedIn) {
           console.warn('User does not have permission for this resource')
+        }
+      } catch (e) {
+        // Store may not be available
+      }
+
+      // Show notification to user
+      try {
+        const appStore = useAppStore()
+        if (appStore && appStore.addNotification) {
+          // Extract message from Problem Details format (RFC 7807) or fallback
+          const errorData = error.response?.data
+          const errorMessage = errorData?.detail || errorData?.title || 'You do not have permission to access this resource'
+          appStore.addNotification({
+            type: 'error',
+            title: 'Access Denied',
+            message: errorMessage,
+            duration: 5000
+          })
         }
       } catch (e) {
         // Store may not be available
