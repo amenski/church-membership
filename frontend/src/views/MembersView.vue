@@ -17,7 +17,7 @@
       <div class="card-body">
         <div class="row">
           <div class="col-md-4">
-            <input v-model="filters.search" type="text" class="form-control" placeholder="Search members...">
+            <input v-model="filters.search" type="text" class="form-control" placeholder="Search name, email or phone">
           </div>
           <div class="col-md-3">
             <select v-model="filters.status" class="form-select">
@@ -34,6 +34,21 @@
             </select>
           </div>
         </div>
+        <div class="row mt-3">
+          <div class="col-md-3">
+            <label class="form-label small mb-1" for="joinedFrom">Joined from</label>
+            <input id="joinedFrom" v-model="filters.joinedFrom" type="date" class="form-control">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small mb-1" for="joinedTo">Joined to</label>
+            <input id="joinedTo" v-model="filters.joinedTo" type="date" class="form-control">
+          </div>
+          <div v-if="hasActiveFilters" class="col-md-3 d-flex align-items-end">
+            <button type="button" class="btn btn-outline-secondary" @click="clearFilters">
+              <i class="bi bi-x-circle"></i> Clear filters
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -44,12 +59,18 @@
           <table class="table">
             <thead>
               <tr>
-                <th>Name</th>
+                <th role="button" tabindex="0" @click="setSort('name')" @keydown.enter="setSort('name')">
+                  Name <i v-if="sort.key === 'name'" :class="sortIcon"></i>
+                </th>
                 <th>Email</th>
                 <th>Phone</th>
-                <th>Join Date</th>
+                <th role="button" tabindex="0" @click="setSort('joinDate')" @keydown.enter="setSort('joinDate')">
+                  Join Date <i v-if="sort.key === 'joinDate'" :class="sortIcon"></i>
+                </th>
                 <th>Status</th>
-                <th>Last Payment</th>
+                <th role="button" tabindex="0" @click="setSort('consecutiveMonthsMissed')" @keydown.enter="setSort('consecutiveMonthsMissed')">
+                  Last Payment <i v-if="sort.key === 'consecutiveMonthsMissed'" :class="sortIcon"></i>
+                </th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -157,6 +178,7 @@ import api from '@/services/api'
 import * as bootstrap from 'bootstrap'
 import { useAppStore } from '../stores/appStore'
 import { downloadBlob } from '@/utils'
+import { filterMembers, sortMembers } from '@/utils/memberFilters'
 
 export default {
   name: 'MembersView',
@@ -171,8 +193,11 @@ export default {
       filters: {
         search: '',
         status: 'ALL',
-        paymentStatus: 'ALL'
+        paymentStatus: 'ALL',
+        joinedFrom: '',
+        joinedTo: ''
       },
+      sort: { key: null, direction: 'asc' },
       memberForm: {
         name: '',
         email: '',
@@ -186,21 +211,15 @@ export default {
   },
   computed: {
     filteredMembers() {
-      return this.members.filter(member => {
-        const matchesSearch = !this.filters.search ||
-          member.name.toLowerCase().includes(this.filters.search.toLowerCase()) ||
-          member.email.toLowerCase().includes(this.filters.search.toLowerCase())
-
-        const matchesStatus = this.filters.status === 'ALL' ||
-          (this.filters.status === 'ACTIVE' && member.active) ||
-          (this.filters.status === 'INACTIVE' && !member.active)
-
-        const matchesPayment = this.filters.paymentStatus === 'ALL' ||
-          (this.filters.paymentStatus === 'OVERDUE' && member.consecutiveMonthsMissed > 0) ||
-          (this.filters.paymentStatus === 'CURRENT' && member.consecutiveMonthsMissed === 0)
-
-        return matchesSearch && matchesStatus && matchesPayment
-      })
+      const filtered = filterMembers(this.members, this.filters)
+      return this.sort.key ? sortMembers(filtered, this.sort.key, this.sort.direction) : filtered
+    },
+    hasActiveFilters() {
+      const f = this.filters
+      return !!f.search.trim() || f.status !== 'ALL' || f.paymentStatus !== 'ALL' || !!f.joinedFrom || !!f.joinedTo
+    },
+    sortIcon() {
+      return this.sort.direction === 'asc' ? 'bi bi-caret-up-fill' : 'bi bi-caret-down-fill'
     }
   },
   async created() {
@@ -217,6 +236,16 @@ export default {
         // Ensure members is set to empty array on error
         this.members = []
       }
+    },
+    setSort(key) {
+      if (this.sort.key === key) {
+        this.sort.direction = this.sort.direction === 'asc' ? 'desc' : 'asc'
+      } else {
+        this.sort = { key, direction: 'asc' }
+      }
+    },
+    clearFilters() {
+      this.filters = { search: '', status: 'ALL', paymentStatus: 'ALL', joinedFrom: '', joinedTo: '' }
     },
     showAddModal() {
       this.editingMember = null
