@@ -6,6 +6,7 @@ import io.github.membertracker.domain.model.MessageDelivery;
 import io.github.membertracker.domain.repository.CommunicationRepository;
 import io.github.membertracker.domain.repository.MemberRepository;
 import io.github.membertracker.infrastructure.service.EmailService;
+import io.github.membertracker.utils.MessageTemplates;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,8 +72,8 @@ public class SendCommunicationToAllMembersUseCase {
                     // Use retry-enabled email sending with callback for logging
                     boolean sent = emailService.sendSimpleEmailWithRetry(
                         member,
-                        communication.getTitle(),
-                        communication.getMessageContent(),
+                        MessageTemplates.personalize(communication.getTitle(), member),
+                        MessageTemplates.personalize(communication.getMessageContent(), member),
                         new EmailService.RetryCallback() {
                             @Override
                             public void onRetry(int currentAttempt, int maxAttempts) {

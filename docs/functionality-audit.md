@@ -34,7 +34,7 @@ Scale: **0** absent · **1** stub or flat data · **2** basic, usable · **3** f
 
 | Area | Score | What exists today, and what is missing |
 |------|:-----:|----------------------------------------|
-| Communication | 1 | Email to all members or to overdue members, with delivery status per recipient and retry with backoff. Only those two audiences. No templates. No personalisation: the name placeholder is sent literally. No unsubscribe or consent. SMS and WhatsApp are stubs that mark every delivery as failed. Sends run on an in-memory thread pool and are lost on restart. |
+| Communication | 1 | Email to all members or to overdue members, with delivery status per recipient and retry with backoff. Only those two audiences. No templates. Personalisation: `{{member_name}}` is replaced per recipient. No unsubscribe or consent. SMS and WhatsApp are stubs that mark every delivery as failed. Sends run on an in-memory thread pool and are lost on restart. |
 | Events and calendar | 0 | Not present. No services, feasts, meetings, registrations or room booking. |
 | Attendance | 0 | Not present. No service headcount, check-in or absence follow-up. |
 | Groups and ministries | 0 | Not present. No choir, Sunday school, youth or committee membership, no leaders, no volunteer rosters. |
@@ -51,7 +51,7 @@ Scale: **0** absent · **1** stub or flat data · **2** basic, usable · **3** f
 |------|:-----:|----------------------------------------|
 | Reporting | 1 | Four dashboard counters and two recent-activity lists, computed by loading every payment into memory. No date ranges, trends, giving by fund, attendance or growth reports. |
 | Search | 0 | No search or filter parameters on any endpoint, and no pagination. Filtering happens in the browser on the full list. |
-| Notifications | 0 | A monthly reminder scheduler runs on the 1st (C3 fixed); the reminder text is still not personalised (C4). No in-app notifications, birthday or anniversary alerts, or staff task alerts. |
+| Notifications | 0 | A monthly reminder scheduler runs on the 1st (C3 fixed); `{{member_name}}` in the reminder is filled in per recipient (C4 fixed). No in-app notifications, birthday or anniversary alerts, or staff task alerts. |
 | Import and export | 1 | CSV export of members and payments. No import, so a church moving from a spreadsheet must type every record by hand. |
 | Privacy | 0 | No consent records, retention rules, subject-access export or audit log. An `activity_log` table exists, but nothing writes to it. Volunteers can export the full member list. Deleting a member permanently deletes their giving history. |
 | Security operations | 1 | CSRF protection is off while authentication uses cookies. A default JWT secret and `root/password` database credentials ship in `application.properties`, with `useSSL=false` and SQL logging on. No HTTPS configuration. The repo has one test (context load, disabled). |
@@ -93,6 +93,8 @@ There is no `@EnableScheduling`, so both jobs are dead. If enabled as written, t
 **C4. Reminder emails say "Dear {{member_name}}"**
 The template placeholder is never filled in before sending.
 `SendPaymentRemindersUseCase.java` · `EmailService.java:97`
+
+> **Status (3 Oct 2026):** fixed: `MessageTemplates.personalize` applied at all three send sites.
 
 **C5. Sessions end after 30 minutes, and refresh tokens work as access tokens**
 The refresh cookie's path is `/v1/auth`, but the endpoint is `/api/auth/refresh`, so the browser never sends the cookie. Tokens carry no type claim, so a 30-day refresh token is accepted as a bearer access token.

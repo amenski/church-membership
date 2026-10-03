@@ -98,6 +98,21 @@ class SendCommunicationToMembersUseCaseTest {
     }
 
     @Test
+    void emailSubjectAndBodyArePersonalisedPerRecipientButTheStoredTextKeepsThePlaceholder() {
+        when(emailService.sendSimpleEmail(any(), any(), any())).thenReturn(true);
+        Communication c = communication();
+        c.setTitle("Hello {{member_name}}");
+        c.setMessageContent("Dear {{member_name}}, see you soon");
+
+        useCase.invoke(c, List.of(alice, bob), DeliveryChannel.EMAIL);
+
+        verify(emailService, timeout(5000)).sendSimpleEmail(alice, "Hello Alice", "Dear Alice, see you soon");
+        verify(emailService, timeout(5000)).sendSimpleEmail(bob, "Hello Bob", "Dear Bob, see you soon");
+        assertThat(c.getTitle()).isEqualTo("Hello {{member_name}}");
+        assertThat(c.getMessageContent()).isEqualTo("Dear {{member_name}}, see you soon");
+    }
+
+    @Test
     void successfulEmailsEventuallyMarkDeliveriesSent() {
         when(emailService.sendSimpleEmail(any(), any(), any())).thenReturn(true);
         Communication c = communication();

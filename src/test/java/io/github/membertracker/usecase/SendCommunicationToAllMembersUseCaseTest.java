@@ -99,6 +99,26 @@ class SendCommunicationToAllMembersUseCaseTest {
     }
 
     @Test
+    void emailSubjectAndBodyArePersonalisedPerRecipientButTheStoredTextKeepsThePlaceholder() {
+        when(memberRepository.findByActive(true)).thenReturn(List.of(alice, bob));
+        when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenReturn(true);
+        Communication c = communication();
+        c.setTitle("News for {{member_name}}");
+        c.setMessageContent("Dear {{member_name}}, welcome");
+
+        useCase.invoke(c);
+
+        verify(emailService, timeout(5000)).sendSimpleEmailWithRetry(org.mockito.ArgumentMatchers.eq(alice),
+                org.mockito.ArgumentMatchers.eq("News for Alice"),
+                org.mockito.ArgumentMatchers.eq("Dear Alice, welcome"), any());
+        verify(emailService, timeout(5000)).sendSimpleEmailWithRetry(org.mockito.ArgumentMatchers.eq(bob),
+                org.mockito.ArgumentMatchers.eq("News for Bob"),
+                org.mockito.ArgumentMatchers.eq("Dear Bob, welcome"), any());
+        assertThat(c.getTitle()).isEqualTo("News for {{member_name}}");
+        assertThat(c.getMessageContent()).isEqualTo("Dear {{member_name}}, welcome");
+    }
+
+    @Test
     void failedEmailEventuallyMarksDeliveryFailed() {
         when(memberRepository.findByActive(true)).thenReturn(List.of(alice));
         when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenReturn(false);

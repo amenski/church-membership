@@ -66,7 +66,7 @@ This document tracks missing features, improvements, and technical debt in the M
 ### Remediation loop
 - [x] Phase 0: dev profile starts; full-context smoke tests
 - [x] Phase 1a: C5 token type + refresh cookie path, C6 generic login error
-- [ ] Phase 1b: C3 scheduling monthly + idempotent counter (needs a DB migration: confirm first), C4 {{member_name}}
+- [x] Phase 1b: C3 scheduling monthly + idempotent counter (changeset 005), C4 {{member_name}}
 - [ ] Phase 2: C8 MemberRequest DTO
 - [ ] Phase 3: secrets out of config, CSRF back on, activity log writes
 - [ ] Phase 4: Person/Membership split (needs a decision, not started)
@@ -87,7 +87,7 @@ This document tracks missing features, improvements, and technical debt in the M
 - [x] "Send to all" included inactive members *(1e0eb4a)*
 - [x] Reminder skipped exactly 7 days before the due date *(6b31097)*
 - [x] Minimum-amount message said 10.0 while 0.01 was accepted *(fe2eac5)*
-- [ ] Audit C2–C4 are pinned by @Disabled tests in `RecordPaymentUseCaseTest`, `UpdateMissingPaymentCountersUseCaseTest` and `SendPaymentRemindersUseCaseTest` (see functionality-audit.md)
+- [x] Audit C2–C4 are pinned by @Disabled tests (all three are fixed and their tests enabled; see functionality-audit.md)
 - [ ] Open questions: `RecordPaymentUseCase` accepts payments for inactive members
 
 ### Core Features

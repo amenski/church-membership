@@ -4,9 +4,10 @@ import io.github.membertracker.domain.enumeration.CommunicationType;
 import io.github.membertracker.domain.model.Communication;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.model.MessageDelivery;
+import io.github.membertracker.domain.repository.CommunicationRepository;
 import io.github.membertracker.domain.repository.MemberRepository;
+import io.github.membertracker.infrastructure.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -15,6 +16,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -86,8 +88,7 @@ class SendPaymentRemindersUseCaseTest {
     }
 
     @Test
-    @Disabled("AUDIT C4: reminder body is sent with the literal \"{{member_name}}\" placeholder instead of the member's name")
-    void reminderBodyDoesNotContainUnfilledPlaceholder() {
+    void reminderHandedToTheSendUseCaseIsTheTemplateWithThePlaceholder() {
         when(memberRepository.findByConsecutiveMonthsMissedGreaterThanEqual(2))
                 .thenReturn(List.of(new Member("Alice", "a@example.com", "+1234567890")));
 
@@ -95,6 +96,26 @@ class SendPaymentRemindersUseCaseTest {
 
         ArgumentCaptor<Communication> comm = ArgumentCaptor.forClass(Communication.class);
         verify(sender).invoke(comm.capture(), any(), any());
-        assertThat(comm.getValue().getMessageContent()).doesNotContain("{{member_name}}");
+        assertThat(comm.getValue().getMessageContent()).contains("{{member_name}}");
+    }
+
+    @Test
+    void theEmailedReminderNamesTheMember() {
+        CommunicationRepository communicationRepository = mock(CommunicationRepository.class);
+        when(communicationRepository.save(any(Communication.class))).thenAnswer(i -> i.getArgument(0));
+        EmailService emailService = mock(EmailService.class);
+        when(emailService.sendSimpleEmail(any(), any(), any())).thenReturn(true);
+        Member alice = new Member("Alice", "a@example.com", "+1234567890");
+        alice.setId(1L);
+        when(memberRepository.findByConsecutiveMonthsMissedGreaterThanEqual(3)).thenReturn(List.of(alice));
+        SendPaymentRemindersUseCase endToEnd = new SendPaymentRemindersUseCase(memberRepository,
+                new SendCommunicationToMembersUseCase(communicationRepository, emailService));
+
+        endToEnd.invoke(3);
+
+        ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
+        verify(emailService, timeout(5000)).sendSimpleEmail(org.mockito.ArgumentMatchers.eq(alice),
+                org.mockito.ArgumentMatchers.eq("Payment Reminder"), body.capture());
+        assertThat(body.getValue()).startsWith("Dear Alice,").doesNotContain("{{member_name}}");
     }
 }

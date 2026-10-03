@@ -76,6 +76,20 @@ class RetryDeliveryUseCaseTest {
     }
 
     @Test
+    void resentEmailIsPersonalisedForTheRecipient() {
+        member.setName("Alice");
+        communication.setTitle("Hello {{member_name}}");
+        communication.setMessageContent("Dear {{member_name}}, see you soon");
+        when(emailService.sendSimpleEmailWithRetry(member, "Hello Alice", "Dear Alice, see you soon", null))
+                .thenReturn(true);
+
+        MessageDelivery result = useCase.invoke(COMMUNICATION_ID, DELIVERY_ID);
+
+        assertThat(result.getStatus()).isEqualTo(MessageDelivery.DeliveryStatus.SENT);
+        assertThat(communication.getMessageContent()).isEqualTo("Dear {{member_name}}, see you soon");
+    }
+
+    @Test
     void failedAgainStaysFailedWithNotes() {
         when(emailService.sendSimpleEmailWithRetry(member, "Title", "Body", null)).thenReturn(false);
 

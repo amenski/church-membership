@@ -6,6 +6,7 @@ import io.github.membertracker.domain.model.MessageDelivery;
 import io.github.membertracker.domain.repository.CommunicationRepository;
 import io.github.membertracker.domain.repository.MessageDeliveryRepository;
 import io.github.membertracker.infrastructure.service.EmailService;
+import io.github.membertracker.utils.MessageTemplates;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,8 +57,8 @@ public class RetryDeliveryUseCase {
 
         boolean sent = emailService.sendSimpleEmailWithRetry(
                 delivery.getRecipient(),
-                communication.getTitle(),
-                communication.getMessageContent(),
+                MessageTemplates.personalize(communication.getTitle(), delivery.getRecipient()),
+                MessageTemplates.personalize(communication.getMessageContent(), delivery.getRecipient()),
                 null
         );
 

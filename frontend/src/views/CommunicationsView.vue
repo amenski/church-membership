@@ -38,6 +38,7 @@
           <div class="mb-3">
             <label class="form-label">Message</label>
             <textarea v-model="newMessage.message" class="form-control" rows="4" required></textarea>
+            <div class="form-text">Tip: write <code v-pre>{{member_name}}</code> to insert each member's name.</div>
           </div>
           
           <button type="submit" class="btn btn-primary" :disabled="sending">

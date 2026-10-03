@@ -24,14 +24,15 @@ Request body is `SendCommunicationRequest` (`infrastructure/dto/SendCommunicatio
 | Flow | Audience | Sends email | Thread |
 |------|----------|-------------|--------|
 | create | none | no. Sets `createdDate` only (`usecase/CreateCommunicationUseCase.java:16-19`) | request |
-| send-to-all | active members only, `findByActive(true)` (`usecase/SendCommunicationToAllMembersUseCase.java:45`) | yes, sets `sentToAllMembers` (`:42`) | save on request; emails on background thread (`:62`, `:67-110`) |
-| send-to-overdue | members with `consecutiveMonthsMissed >= months` (`usecase/GetMembersWithMissedPaymentsUseCase.java:22-24`), channel fixed to EMAIL | yes | save on request; emails on background thread (`usecase/SendCommunicationToMembersUseCase.java:55-56`, `:70-98`) |
-| send-to-member | the single member loaded by id (`CommunicationController.java:121-122`); unknown id -> 400 | yes | save on request; emails on background thread (`usecase/SendCommunicationToMembersUseCase.java:55-56`, `:70-98`) |
-| retry | one delivery | yes, once | request thread, blocks until the SMTP attempts finish (`usecase/RetryDeliveryUseCase.java:57-62`) |
+| send-to-all | active members only, `findByActive(true)` (`usecase/SendCommunicationToAllMembersUseCase.java:46`) | yes, sets `sentToAllMembers` (`:43`) | save on request; emails on background thread (`:63`, `:68-111`) |
+| send-to-overdue | members with `consecutiveMonthsMissed >= months` (`usecase/GetMembersWithMissedPaymentsUseCase.java:22-24`), channel fixed to EMAIL | yes | save on request; emails on background thread (`usecase/SendCommunicationToMembersUseCase.java:56-57`, `:71-99`) |
+| send-to-member | the single member loaded by id (`CommunicationController.java:121-122`); unknown id -> 400 | yes | save on request; emails on background thread (`usecase/SendCommunicationToMembersUseCase.java:56-57`, `:71-99`) |
+| retry | one delivery | yes, once | request thread, blocks until the SMTP attempts finish (`usecase/RetryDeliveryUseCase.java:58-63`) |
 
-- Send flows: build one `PENDING` `MessageDelivery` per recipient, save, return immediately. One background task per call (cached thread pool) then loops recipients with a 100 ms pause (`SendCommunicationToAllMembersUseCase.java:99`, `SendCommunicationToMembersUseCase.java:87`) and saves the whole communication after each status change (`SendCommunicationToAllMembersUseCase.java:112-127`).
+- Send flows: build one `PENDING` `MessageDelivery` per recipient, save, return immediately. One background task per call (cached thread pool) then loops recipients with a 100 ms pause (`SendCommunicationToAllMembersUseCase.java:100`, `SendCommunicationToMembersUseCase.java:88`) and saves the whole communication after each status change (`SendCommunicationToAllMembersUseCase.java:113-128`).
+- Title and message are personalised per recipient at send time: `{{member_name}}` becomes the member's name (`MessageTemplates.personalize`, called from `SendCommunicationToAllMembersUseCase.java:75-76`, `SendCommunicationToMembersUseCase.java:77-78`, `RetryDeliveryUseCase.java:60-61`); the stored `Communication` keeps the placeholder. See [../email.md](../email.md#personalisation).
 - Response therefore shows `PENDING`; read final status via the deliveries endpoint.
-- Retry: only `FAILED` (`RetryDeliveryUseCase.java:46`) and `EMAIL` (`:49`) deliveries. Success sets `SENT` + `deliveryTime` (`:64-67`); failure keeps `FAILED`, writes "Retry failed at ..." to `responseNotes` (`:69-70`).
+- Retry: only `FAILED` (`RetryDeliveryUseCase.java:47`) and `EMAIL` (`:50`) deliveries. Success sets `SENT` + `deliveryTime` (`:65-68`); failure keeps `FAILED`, writes "Retry failed at ..." to `responseNotes` (`:70-71`).
 
 ## Collaborators
 - Use cases: `usecase/GetAllCommunicationsUseCase.java`, `usecase/GetCommunicationByIdUseCase.java`, `usecase/GetMemberByIdUseCase.java` (send-to-member), `usecase/CreateCommunicationUseCase.java`, `usecase/SendCommunicationToAllMembersUseCase.java`, `usecase/SendCommunicationToMembersUseCase.java`, `usecase/GetMembersWithMissedPaymentsUseCase.java`, `usecase/GetDeliveriesByCommunicationUseCase.java`, `usecase/RetryDeliveryUseCase.java` 
@@ -55,10 +56,10 @@ Format: [../architecture.md](../architecture.md).
 ## Side effects
 - Emails via SMTP; disabled mail returns `false` immediately, so deliveries become `FAILED` (`EmailService.java:73-76`). See [../email.md](../email.md).
 - Rows in communications and message deliveries tables; background thread keeps writing after the response.
-- SMS/WhatsApp branch of the shared use case marks deliveries `FAILED` ("not implemented") (`SendCommunicationToMembersUseCase.java:57-64`); the controller only ever passes EMAIL (`CommunicationController.java:109`, `:127`).
+- SMS/WhatsApp branch of the shared use case marks deliveries `FAILED` ("not implemented") (`SendCommunicationToMembersUseCase.java:58-65`); the controller only ever passes EMAIL (`CommunicationController.java:109`, `:127`).
 
 ## Gotchas
-- Not-found is a 400, not 404, for retry (`RetryDeliveryUseCase.java:39-40` throws a domain exception; `GlobalExceptionHandler.java:70`).
+- Not-found is a 400, not 404, for retry (`RetryDeliveryUseCase.java:40-41` throws a domain exception; `GlobalExceptionHandler.java:70`).
 - `GET /{id}` unknown id returns an empty 404, not a ProblemDetail (`CommunicationController.java:74`).
 - `GET /{id}/deliveries` unknown id returns 200 with `[]` (`usecase/GetDeliveriesByCommunicationUseCase.java:36-40`).
 - A failed retry returns 200 with `status: FAILED`; check the body.

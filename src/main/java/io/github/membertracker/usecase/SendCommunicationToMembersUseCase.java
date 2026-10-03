@@ -5,6 +5,7 @@ import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.model.MessageDelivery;
 import io.github.membertracker.domain.repository.CommunicationRepository;
 import io.github.membertracker.infrastructure.service.EmailService;
+import io.github.membertracker.utils.MessageTemplates;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,8 +74,8 @@ public class SendCommunicationToMembersUseCase {
                 try {
                     boolean sent = emailService.sendSimpleEmail(
                         member,
-                        communication.getTitle(),
-                        communication.getMessageContent()
+                        MessageTemplates.personalize(communication.getTitle(), member),
+                        MessageTemplates.personalize(communication.getMessageContent(), member)
                     );
                     
                     // Update delivery status

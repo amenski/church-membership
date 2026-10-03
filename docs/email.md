@@ -29,6 +29,10 @@ To see deliveries, call `GET /api/communications/{id}/deliveries`, or open the d
 
 STAFF can retry a `FAILED` email delivery from the delivery dialog (`POST /api/communications/{id}/deliveries/{deliveryId}/retry`). It re-sends once, synchronously.
 
+## Personalisation
+
+`{{member_name}}` in a communication's title or message is replaced with each recipient's name when the email is sent: bulk send, send to selected members, send-to-overdue, the monthly reminder job and a delivery retry. A blank or missing name becomes "member". The stored communication keeps the placeholder; only the emailed text is personalised (`utils/MessageTemplates.java`). Other text is left as written.
+
 ## Configuration
 
 In `src/main/resources/application.properties`. Each value can be overridden by the environment variable shown.
@@ -114,7 +118,6 @@ logging.level.org.springframework.mail=DEBUG
 
 Tracked in [functionality-audit.md](functionality-audit.md) (C3, C4) and [todo.md](todo.md).
 
-- Reminder text contains a literal `{{member_name}}`
 - No unsubscribe link or consent record
 - Only two audiences: everyone, or overdue members
 - No durable queue
