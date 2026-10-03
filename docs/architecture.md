@@ -49,20 +49,31 @@ The project uses a hybrid of rich domain models and policies.
 | **Policy** | Is a business rule that changes often, involves several entities, or needs configuration | `MembershipPolicy.shouldDeactivate()`, `shouldSendReminder()`, `canReactivate()` |
 | **Use case** | Coordinates several steps: transactions, repositories, external services | `RecordPaymentUseCase` |
 
-The intended shape of a use case that uses all three. Today's `RecordPaymentUseCase` saves the member object sent by the client instead of loading it by id (C2 in the audit).
+Shape of a use case that uses all three (`RecordPaymentUseCase` loads the member by id, then applies the domain behaviour):
 
 ```java
-@Transactional
-public Payment invoke(Payment payment) {
-    Member member = memberRepository.findById(payment.getMemberId()).orElseThrow();
-    member.recordPayment(payment);                                    // domain behaviour
-    if (membershipPolicy.shouldDeactivate(member, LocalDate.now())) {  // policy decision
-        member.deactivate();
+public Payment invoke(Long memberId, Double amount, PaymentMethod paymentMethod,
+                      YearMonth period, String notes) {
+    Member member = memberRepository.findById(memberId)
+            .orElseThrow(() -> MemberDomainException.memberNotFound(memberId));
+
+    Payment payment = new Payment(member, period != null ? period : YearMonth.now(), amount, paymentMethod);
+    payment.setNotes(notes);
+    payment.validateAmount();                                          // domain rules
+    payment.validatePeriod();
+
+    if (paymentRepository.existsByMemberAndPeriod(member, payment.getPeriod())) {
+        throw MemberDomainException.duplicatePaymentForPeriod(member.getName(), payment.getPeriod().toString());
     }
+
+    payment.markAsProcessed();
+    member.recordPayment(payment);                                     // domain behaviour
     memberRepository.save(member);
     return paymentRepository.save(payment);
 }
 ```
+
+It does not call `MembershipPolicy` today.
 
 `Communication` owns its sent state (`markAsSent()`, `isSent()`) and its deliveries (`addDelivery()`).
 

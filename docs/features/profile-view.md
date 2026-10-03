@@ -58,3 +58,7 @@ Local `ref`s; no store of its own. Reads `useAuthStore().user` only as the initi
 - The "Change Password" button only sets `showChangePasswordModal = true` (`ProfileView.vue:212`). Nothing reads that ref and nothing calls Bootstrap's `Modal.show` (the ref `changePasswordModal` is not returned from `setup`, `:550-568`), so the modal never opens and the password flow is unreachable from this page.
 - Client phone regex rejects numbers starting with `0`, which the server pattern accepts (`UpdateUserProfileRequest.java:14`).
 - First/last name must be >= 2 chars client-side; the server has no minimum.
+- Saving with an empty phone sends `""` (the form starts at `''` and `:411` fills `data.phone || ''`; `:382` skips the check when empty), but the server's `@Pattern` only skips `null`, and `""` does not match `{10,}`, so the save fails with 400 (`UpdateUserProfileRequest.java:13-14`). Found by reading the regex and the form code, not run. The user sees "Failed to update profile".
+- Short numbers such as `5551234` pass the client regex (`:398`) but fail the server, which needs at least 10 characters (`UpdateUserProfileRequest.java:14`).
+- Names over 50 characters pass the form (no `maxlength` on the inputs, no cap in `validateForm`, `:364-379`) but fail the server (`@Size(max = 50)`, `UpdateUserProfileRequest.java:8`, `:11`).
+- `?error=access_denied` (added by the router guard, `router/index.js:103`) is never read by this view, so a MEMBER redirected here sees no message.

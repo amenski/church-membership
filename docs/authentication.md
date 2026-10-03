@@ -153,7 +153,7 @@ curl -i -b jar.txt -X POST http://localhost:8080/api/auth/logout          # then
 
 | Symptom | Check |
 |---------|-------|
-| Login returns 401 | Backend running; email and password correct; the account is not locked (`users.account_non_locked`) |
+| Login fails | A failed login returns 400 with the error message, not 401. A 401 comes from protected endpoints called without a valid session. Check: backend running; email and password correct; the account is not locked (`users.account_non_locked`). Nothing unlocks an account automatically or through the API, so a locked account needs `account_non_locked` set back to true (and `failed_login_attempts` to 0) in the database |
 | Logged out after about 30 minutes | Expected until the refresh-cookie path bug (C5) is fixed |
 | Logged out sooner | The client-side 1-hour inactivity timeout, or the backend restarted with a different `JWT_SECRET` |
 | Redirect loop on load | `authStore.initialize()` must run in `App.vue` so `authChecked` gets set |

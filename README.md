@@ -24,17 +24,17 @@ Full setup, build and deployment steps are in [docs/development.md](docs/develop
 
 ### Features
 
-One doc per entry point: endpoints, state, actions, errors, side effects and gotchas (known bugs are listed there, each with the audit ID where there is one).
+Overviews explain a feature to people (who can do what, how it works, rules, known issues); the Backend/Frontend docs are the technical reference per entry point (endpoints, state, actions, errors, gotchas).
 
-| Feature | Backend | Frontend |
-|---------|---------|----------|
-| Sign-in and sessions | [auth-controller](docs/features/auth-controller.md) | [login-view](docs/features/login-view.md) |
-| Profile and password | [user-controller](docs/features/user-controller.md) | [profile-view](docs/features/profile-view.md) |
-| Members | [member-controller](docs/features/member-controller.md) | [members-view](docs/features/members-view.md) |
-| Payments | [payment-controller](docs/features/payment-controller.md) | [payments-view](docs/features/payments-view.md) |
-| Communications | [communication-controller](docs/features/communication-controller.md) | [communications-view](docs/features/communications-view.md) |
-| Dashboard | [dashboard-controller](docs/features/dashboard-controller.md) | [dashboard-view](docs/features/dashboard-view.md) |
-| Payment reminders (scheduled) | [payment-reminder-scheduler](docs/features/payment-reminder-scheduler.md) | none |
+| Feature | Overview | Backend | Frontend |
+|---------|----------|---------|----------|
+| Sign-in and sessions | [sign-in](docs/features/sign-in.md) | [auth-controller](docs/features/auth-controller.md) | [login-view](docs/features/login-view.md) |
+| Profile and password | [profile](docs/features/profile.md) | [user-controller](docs/features/user-controller.md) | [profile-view](docs/features/profile-view.md) |
+| Members | [members](docs/features/members.md) | [member-controller](docs/features/member-controller.md) | [members-view](docs/features/members-view.md) |
+| Payments | [payments](docs/features/payments.md) | [payment-controller](docs/features/payment-controller.md) | [payments-view](docs/features/payments-view.md) |
+| Communications | soon | [communication-controller](docs/features/communication-controller.md) | [communications-view](docs/features/communications-view.md) |
+| Dashboard | soon | [dashboard-controller](docs/features/dashboard-controller.md) | [dashboard-view](docs/features/dashboard-view.md) |
+| Payment reminders (scheduled) | soon | [payment-reminder-scheduler](docs/features/payment-reminder-scheduler.md) | none |
 
 **Planning**
 

@@ -40,3 +40,4 @@ Two daily cron jobs (no HTTP surface) that bump members' missed-payment counters
 - Neither job filters on `isActive`: counter uses `findAll` (`UpdateMissingPaymentCountersUseCase.java:27`); reminder query is by counter only (`SendPaymentRemindersUseCase.java:29`).
 - The reminder window in `DefaultMembershipPolicy.shouldSendReminder` (last 7 days of the month, `DefaultMembershipPolicy.java:18`, `:30-43`) is not consulted by the scheduler; only `ProcessMemberPaymentUseCase` calls it (`usecase/ProcessMemberPaymentUseCase.java:104`).
 - Threshold `2` is a literal in the scheduler (`PaymentReminderScheduler.java:47`), unrelated to `MAX_CONSECUTIVE_MISSED_MONTHS = 3` (`DefaultMembershipPolicy.java:17`).
+- `ProcessMemberPaymentUseCase` (the only caller of `DefaultMembershipPolicy.shouldSendReminder`) is itself never invoked by any entry point (it is only a bean in `UseCaseConfig`), so neither the reminder window nor the automatic deactivation rule runs.

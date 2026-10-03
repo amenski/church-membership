@@ -88,6 +88,8 @@ The payment request body carries a full `member` object, and the use case saves 
 There is no `@EnableScheduling`, so both jobs are dead. If enabled as written, the missed-months counter goes up every day (about 30 per month) and reminders go out every morning.
 `PaymentReminderScheduler.java:29`, `:43` · `Application.java`
 
+> **Impact (verified 3 Oct 2026):** nothing ever raises `consecutiveMonthsMissed` in production: `UpdateMissingPaymentCountersUseCase` is only called by the scheduler, which never runs (no `@EnableScheduling`), and `Member.markPaymentMissed` has no callers. So the Overdue filter, the dashboard overdue list, send-to-overdue and the reminders all match nobody. Fixing C3 therefore enables the whole overdue feature; the counter job must run monthly and be idempotent.
+
 **C4. Reminder emails say "Dear {{member_name}}"**
 The template placeholder is never filled in before sending.
 `SendPaymentRemindersUseCase.java` · `EmailService.java:97`
@@ -100,7 +102,7 @@ The refresh cookie's path is `/v1/auth`, but the endpoint is `/api/auth/refresh`
 
 **C6. Login tells an attacker which emails exist**
 The raw domain message ("User with email '…' not found" vs "Invalid password provided") is returned to the client.
-`AuthController.java:72`
+`AuthController.java:79-80`
 
 **C7. Deleting a payment reports success and deletes nothing**
 The handler checks that the payment exists and returns 200 without deleting it.

@@ -30,7 +30,7 @@ Local component `data()` (`frontend/src/views/PaymentsView.vue:204-217`):
 - `loadData` -> `Promise.all` of members + payments, then `calculateAnalytics`; on error empties both lists and shows an error toast (`PaymentsView.vue:222-241`)
 - `calculateAnalytics` -> sums client-side from `payments` (`PaymentsView.vue:243-279`)
 - `submitPayment` -> `api.createPayment(buildPaymentRequest(newPayment))`, reload, reset form, open receipt for the response; on error shows a toast (`PaymentsView.vue:280-293`)
-- `buildPaymentRequest(form)` -> `{ memberId: Number, amount: Number, paymentMethod, period, notes? }`, notes only when non-empty (`frontend/src/utils/paymentPayload.js:11-20`)
+- `buildPaymentRequest(form)` -> `{ memberId: Number, amount: Number, paymentMethod, period, notes? }`; the form has no notes input, so `notes` is only ever set through the API (`frontend/src/utils/paymentPayload.js:11-20`)
 - `receiptNumber(payment)` -> `R-` + payment id zero-padded to 6 digits, derived because the backend has no receipt number (`PaymentsView.vue:297-299`)
 - `notifyError(title, error, fallback)` -> error toast with `error.message` (the server `detail`) (`PaymentsView.vue:300-307`)
 - `generateReceipt(payment)` -> sets `selectedPayment`, opens the Bootstrap modal (`PaymentsView.vue:308-311`)

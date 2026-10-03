@@ -61,7 +61,7 @@ All in `frontend/src/utils/memberFilters.js`; all filters are ANDed.
 - No localStorage writes.
 
 ## Gotchas
-- Add, Edit, Delete and toggle buttons render for every role; there is no role check in the template. Add/Edit/toggle need STAFF+ and Delete needs ADMIN, so a VOLUNTEER gets 403 and, because errors are only logged, no feedback (`MembersView.vue:9`, `:95-103`, `:280`).
+- Add, Edit, Delete and toggle buttons render for every role; there is no role check in the template (`MembersView.vue:9`, `:95-103`). Add/Edit/toggle need STAFF+ and Delete needs ADMIN, so a VOLUNTEER gets 403. The shared handler in `frontend/src/services/api.js` shows an "Access Denied" error toast for any 403 (`api.js:198-224`); the component itself only `console.error`s (`MembersView.vue:280`, `:290`, `:298`) and the Add/Edit modal stays open on failure. A duplicate-email failure (500) shows nothing specific.
 - The form has an `address` field (`:136`) that `Member` does not have (`Member.java:15-32`), so it is not saved.
 - `toggleStatus` and edit send the whole member back, including `consecutiveMonthsMissed` and `lastPaymentDate` (audit C8).
 - Delete confirmation does not mention that payments and delivery history are erased too (`:164`) (audit C9).

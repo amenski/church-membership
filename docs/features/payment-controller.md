@@ -76,3 +76,5 @@ All RFC 7807 ([../architecture.md](../architecture.md)); handler `src/main/java/
 ## Gotchas
 - Payments cannot be deleted or voided yet; a void feature would need an audit trail.
 - `ProcessMemberPaymentUseCase` is dead code from the API's point of view (see Collaborators).
+- Recording a payment does not check that the member is active (`RecordPaymentUseCase.java:22-44` never reads `active`).
+- `Member.markPaymentMissed` (`Member.java:59`) has no caller, so the missed-months counter never rises (see audit C3 in [../functionality-audit.md](../functionality-audit.md)).

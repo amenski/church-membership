@@ -38,7 +38,7 @@ CSV: `text/csv`, `Content-Disposition: attachment; filename=members.csv`, stream
 - `Member` (`domain/model/Member.java:13`) is the request and response body (no separate DTO).
 - Validation on `Member`: name and email required, email format, phone `^\+?[0-9\s\-\(\)]{10,}$` (optional), `joinDate` not in the future (`Member.java:17-28`).
 - `ExportMembersRequest.ids`: not empty, max 5000, each positive (`ExportMembersRequest.java:11-13`).
-- Business methods on `Member` (`recordPayment` `:46`, `markPaymentMissed` `:59`, `activate` `:63`, `deactivate` `:71`, `isPaymentOverdue` `:78`, `getMembershipDurationInMonths` `:88`) are not called by this controller. Payment and reminder flows use them.
+- Business methods on `Member` (`recordPayment` `:46`, `markPaymentMissed` `:59`, `activate` `:63`, `deactivate` `:71`, `isPaymentOverdue` `:78`, `getMembershipDurationInMonths` `:88`) are not called by this controller. Only `recordPayment` is used in production (by `RecordPaymentUseCase`). `markPaymentMissed` has no caller anywhere in `src/main`. `activate()` and `deactivate()` are only called from `ProcessMemberPaymentUseCase` (`:89`, `:71`), which no entry point invokes (it is only a bean in `UseCaseConfig`).
 - `SaveMemberUseCase` on create (id null): `joinDate` defaults to today, `active` is forced to `true` (`SaveMemberUseCase.java:18-26`).
 - `CsvUtils.escapeCsv`: null -> empty; a leading `= + - @ TAB CR` gets a `'` prefix unless the value looks like a phone number or plain number (`CsvUtils.java:31-34`); values with `,` `"` or newline are quoted (`:35-37`).
 
@@ -47,7 +47,7 @@ All are RFC 7807 `ProblemDetail` ([../architecture.md](../architecture.md)), exc
 
 | Status | Cause | Source |
 |--------|-------|--------|
-| 400 | Invalid `Member` or `ExportMembersRequest` body: "One or more fields are invalid" + `errors[]` | `GlobalExceptionHandler.java:52` |
+| 400 | Invalid `Member` or `ExportMembersRequest` body: "One or more fields are invalid" + `errors[]` | `src/main/java/io/github/membertracker/infrastructure/handler/GlobalExceptionHandler.java:52` |
 | 400 | Bad `{id}` (not positive) or `{months}` (< 1) | `GlobalExceptionHandler.java:76` |
 | 400 | Malformed JSON | `GlobalExceptionHandler.java:42` (Spring base class) |
 | 401 | Not authenticated | `GlobalExceptionHandler.java:94` |
