@@ -2,20 +2,26 @@
   Tailwind v4, CSS-first. Tokens live in @theme below (names and hex values from
   docs/design.md). No preflight until phase T4 removes Bootstrap.
 
-  Layer order: Bootstrap and the legacy theme.css share the lowest layer (one layer, so
-  their !important rules keep fighting in file order, as before) and a Tailwind utility
-  always beats them on a migrated screen (unlayered CSS would win over
-  any layer). Screens not yet migrated use only Bootstrap classes and look the same.
-  Component <style> blocks stay unlayered and still win over everything.
+  Coexistence with Bootstrap until T4:
+  1. Unlayered CSS beats every layer, so Bootstrap and the legacy theme.css share one low
+     layer ("legacy"; one layer so their !important rules keep fighting in file order).
+     A Tailwind utility then beats a Bootstrap element rule (h1, a, body) on migrated
+     screens. Component <style> blocks stay unlayered.
+  2. Bootstrap's own utility classes (p-3, gap-3, border, m-0, text-end ...) are !important
+     and share names with Tailwind's, with different values: no cascade order can satisfy
+     both the migrated and the unmigrated screens. So every Tailwind class carries a
+     prefix: write `tw:flex tw:gap-3 tw:md:flex`, never `flex`. T4 removes Bootstrap, the
+     legacy layer and the prefix (a mechanical search and replace of `tw:`).
 */
 @layer legacy, theme, base, components, utilities;
 
 @import "bootstrap/dist/css/bootstrap.min.css" layer(legacy);
 @import "./theme.css" layer(legacy);
-@import "tailwindcss/theme.css" layer(theme);
-@import "tailwindcss/utilities.css" layer(utilities);
+@import "tailwindcss/theme.css" layer(theme) prefix(tw);
+@import "tailwindcss/utilities.css" layer(utilities) prefix(tw);
 
-@theme {
+/* static: emit every token as a variable, used or not (focus ring, own CSS read them) */
+@theme static {
   /* Only the design's colours: nothing else in Tailwind's default palette exists */
   --color-*: initial;
   --color-mist: #F2F5F2;
@@ -74,15 +80,15 @@
 
 @layer base {
   :focus-visible {
-    outline: 2px solid var(--color-teal);
+    outline: 2px solid var(--tw-color-teal);
     outline-offset: 2px;
   }
 }
 
 /*
   Two densities, set by a data-density attribute at runtime (so plain custom properties,
-  not @theme). Read in utilities as h-(--control-h), min-h-(--row-h), p-(--card-pad),
-  text-(length:--text-body). See "Density" in docs/design.md.
+  not @theme). Read in utilities as tw:h-(--control-h), tw:min-h-(--row-h), tw:p-(--card-pad),
+  tw:text-(length:--text-body). See "Density" in docs/design.md.
 */
 @layer base {
   :root, [data-density="dense"] {

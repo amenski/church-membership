@@ -71,36 +71,16 @@
       <router-view/>
     </main>
 
-    <!-- Toast Container for Notifications -->
-    <div class="toast-container position-fixed bottom-0 end-0 p-3">
-      <div
-          v-for="notification in notifications"
-          :key="notification.id"
-          :id="'toast-' + notification.id"
-          class="toast"
-          :class="notificationClass(notification)"
-          role="alert"
-          aria-live="assertive"
-          aria-atomic="true"
-          @hidden.bs.toast="removeNotification(notification.id)"
-      >
-        <div class="toast-header">
-          <strong class="me-auto">{{ notification.title || 'Notification' }}</strong>
-          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-        <div class="toast-body">
-          {{ notification.message }}
-        </div>
-      </div>
-    </div>
+    <ToastHost />
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, watch, nextTick, ref } from 'vue'
+import { computed, onMounted, watch, ref } from 'vue'
 import WovenBand from '@/components/WovenBand.vue'
+import ToastHost from '@/components/ToastHost.vue'
 import { useI18n } from 'vue-i18n'
-import { Toast, Offcanvas } from 'bootstrap'
+import { Offcanvas } from 'bootstrap'
 import { useAppStore } from '@/stores/appStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useRouter, useRoute } from 'vue-router'
@@ -111,7 +91,6 @@ const authStore = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 const rail = ref(null)
-const toastElements = ref({})
 
 const themeClass = computed(() => {
   const theme = appStore.currentTheme
@@ -122,7 +101,6 @@ const themeClass = computed(() => {
   return 'data-bs-theme="light"'
 })
 
-const notifications = computed(() => appStore.notifications)
 const isAuthenticated = computed(() => authStore.isLoggedIn)
 const currentUser = computed(() => authStore.currentUser)
 const displayName = computed(() => {
@@ -136,32 +114,6 @@ const homePath = computed(() => (authStore.hasRole('VOLUNTEER') ? '/dashboard' :
 watch(() => route.fullPath, () => {
   if (rail.value) Offcanvas.getInstance(rail.value)?.hide()
 })
-
-const notificationClass = (notification) => {
-  return `toast-note toast-note--${notification.type || 'info'}`
-}
-
-const removeNotification = (id) => {
-  appStore.removeNotification(id)
-}
-
-// Watch for new notifications and show toast
-watch(notifications, async (newNotifications, oldNotifications) => {
-  if (newNotifications.length > oldNotifications.length) {
-    // A new notification was added
-    const newNotification = newNotifications[0]
-    await nextTick()
-    // Find and show the toast element
-    const toastElement = document.getElementById(`toast-${newNotification.id}`)
-    if (toastElement) {
-      const toast = new Toast(toastElement, {
-        autohide: newNotification.duration > 0,
-        delay: newNotification.duration || 5000
-      })
-      toast.show()
-    }
-  }
-}, { deep: true })
 
 const handleLogout = async () => {
   try {
@@ -189,10 +141,6 @@ onMounted(() => {
 </script>
 
 <style>
-.toast-container {
-  z-index: 1100;
-}
-
 #app {
   min-height: 100vh;
 }
