@@ -54,7 +54,7 @@ Roles and hierarchy: [../authentication.md](../authentication.md).
 | recent-activities | all payments + all communications (incl. deliveries) |
 
 - Sorting, filtering and limits are done in Java after load; no pagination or DB-side limits.
-- The dashboard view fires all four plus `GET /api/members` in parallel (see [dashboard-view.md](dashboard-view.md)): payments are loaded 3 times per page load.
+- The dashboard view fires all four in parallel (see [dashboard-view.md](dashboard-view.md)): payments are loaded 3 times per page load.
 
 ## Errors
 - 401/403: from Spring Security / `@PreAuthorize` only (see [../architecture.md](../architecture.md) error format).

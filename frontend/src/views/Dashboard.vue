@@ -54,7 +54,7 @@
                 <tbody>
                   <tr v-for="payment in recentPayments" :key="payment.id">
                     <td>{{ formatDate(payment.paymentDate) }}</td>
-                    <td>{{ getMemberName(payment.memberId) }}</td>
+                    <td>{{ payment.member?.name || 'Unknown' }}</td>
                     <td>${{ payment.amount }}</td>
                   </tr>
                 </tbody>
@@ -83,7 +83,12 @@
                     <td>{{ member.name }}</td>
                     <td>{{ member.consecutiveMonthsMissed }}</td>
                     <td>
-                      <button class="btn btn-sm btn-warning" @click="sendReminder(member)">
+                      <button
+                        v-if="authStore.isStaff"
+                        class="btn btn-sm btn-warning"
+                        :disabled="remindingIds.includes(member.id)"
+                        @click="sendReminder(member)"
+                      >
                         Send Reminder
                       </button>
                     </td>
@@ -122,11 +127,21 @@
 
 <script>
 import api from '@/services/api'
+import { useAuthStore } from '../stores/authStore'
+import { useAppStore } from '../stores/appStore'
+import { buildReminderRequest } from '@/utils/communicationPayload'
 
 export default {
   name: 'DashboardView',
+  setup() {
+    return {
+      authStore: useAuthStore(),
+      appStore: useAppStore()
+    }
+  },
   data() {
     return {
+      remindingIds: [],
       stats: {
         totalMembers: 0,
         activeMembers: 0,
@@ -135,8 +150,7 @@ export default {
       },
       recentPayments: [],
       overdueMembers: [],
-      activities: [],
-      members: []
+      activities: []
     }
   },
   async created() {
@@ -149,21 +163,18 @@ export default {
           statsRes,
           paymentsRes,
           overdueRes,
-          activitiesRes,
-          membersRes
+          activitiesRes
         ] = await Promise.all([
           api.getDashboardStats(),
           api.getRecentPayments(),
           api.getOverdueMembers(),
-          api.getRecentActivities(),
-          api.getMembers()
+          api.getRecentActivities()
         ])
 
         this.stats = statsRes
         this.recentPayments = paymentsRes
         this.overdueMembers = overdueRes
         this.activities = activitiesRes
-        this.members = membersRes
       } catch (error) {
         console.error('Error loading dashboard data:', error)
       }
@@ -171,20 +182,26 @@ export default {
     formatDate(date) {
       return new Date(date).toLocaleDateString()
     },
-    getMemberName(memberId) {
-      const member = this.members.find(m => m.id === memberId)
-      return member ? member.name : 'Unknown'
-    },
     async sendReminder(member) {
+      this.remindingIds.push(member.id)
       try {
-        await api.createCommunication({
-          memberId: member.id,
-          subject: 'Payment Reminder',
-          message: `Dear ${member.name}, this is a reminder that your membership payment is overdue.`
+        await api.sendToMember(member.id, buildReminderRequest(member))
+        this.appStore.addNotification({
+          type: 'success',
+          title: 'Success',
+          message: `Reminder sent to ${member.name}`,
+          isToast: true
         })
         await this.loadData()
       } catch (error) {
-        console.error('Error sending reminder:', error)
+        this.appStore.addNotification({
+          type: 'error',
+          title: 'Error',
+          message: error.message || 'Failed to send reminder',
+          isToast: true
+        })
+      } finally {
+        this.remindingIds = this.remindingIds.filter(id => id !== member.id)
       }
     },
     getActivityIcon(type) {
