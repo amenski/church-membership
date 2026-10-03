@@ -39,9 +39,15 @@ class CsvUtilsTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"=1+1", "+39123", "-5", "@SUM(A1)"})
+    @ValueSource(strings = {"=1+1", "+cmd|' /C calc'!A0", "@SUM(A1)"})
     void formulaPrefixIsNeutralised(String value) {
         assertEquals("'" + value, CsvUtils.escapeCsv(value));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"+39 333 1234567", "(06) 123-4567", "-12.50"})
+    void phoneNumbersAndPlainNumbersAreNotPrefixed(String value) {
+        assertEquals(value, CsvUtils.escapeCsv(value));
     }
 
     @Test
