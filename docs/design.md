@@ -141,6 +141,36 @@ Tried and removed, so nobody puts them back:
 - [ ] Empty states: every list gets a plain sentence that invites the next action.
 - [ ] Register view: unreachable (registration is disabled); delete or keep restyled, decide.
 
+## Styling system
+
+Tailwind CSS v4, CSS-first (`@tailwindcss/vite` in `vite.config.js`, no `tailwind.config.js`, no PostCSS config).
+
+- **Tokens live in `frontend/src/assets/styles/tailwind.css`, inside `@theme`.** Colours (`mist paper ink muted rule field teal teal-hover teal-tint ochre ochre-edge ochre-text ochre-tint fern fern-text fern-tint clay clay-tint`), fonts (`font-display`, `font-sans`, `font-ethiopic`), the type scale (`text-sm` 14, `base` 16, `lg` 18, `xl` 22, `2xl` 28, `3xl` 40), `rounded-md` (6px), `shadow-modal`, Bootstrap's breakpoints and the `animate-weave` meter sweep. Each family starts with `--x-*: initial`, so Tailwind's default palette and scale do not exist: only token colours can be used, by accident or otherwise. The hex values are the ones in the table above; `theme.css` keeps its own copies until T4.
+- **No `@apply`, no `<style scoped>`** except where Tailwind cannot say it. Shared patterns are small Vue components (or a JS constant in the component), never a custom CSS class. Use the animation as `motion-safe:animate-weave`.
+- **Bootstrap stays until T4.** Members, Payments, Messages and Profile still use Bootstrap classes, tables and modals; they migrate in T2 and T3. Until then Bootstrap's CSS and `theme.css` are imported by `tailwind.css` into one low `legacy` cascade layer, below Tailwind's `utilities` layer. Unlayered CSS beats any layer, so without this a Bootstrap `h1` or `a` rule would beat a Tailwind utility on a migrated screen. Tailwind runs WITHOUT its global reset (`preflight`) so the unmigrated screens do not change; T4 adds it.
+- **Migration order:** T1 Tailwind foundation, toast and dialog components, shell, Overview, landing, sign-in. T2 Members and Payments. T3 Messages and Profile. T4 remove Bootstrap (CSS, JS, `theme.css`, the `legacy` layer) and add preflight.
+
+## Density
+
+Two densities share one palette and one type family. They are plain CSS custom properties in `tailwind.css`, switched by a `data-density` attribute (not `@theme`: they change at runtime). Utilities read them with `h-(--control-h)`, `min-h-(--row-h)`, `p-(--card-pad)`, `text-(length:--text-body)`.
+
+| Property | dense (default) | comfortable |
+|---|---|---|
+| `--control-h` | 36px | 44px |
+| `--control-primary-h` | 36px | 48px |
+| `--row-h` | 44px | 56px |
+| `--list-row-h` | 48px | 56px |
+| `--card-pad` | 16px | 16px (24px from 768px) |
+| `--text-body` / `--lh-body` | 16px / 22px | 18px / 26px |
+| `--text-label` / `--lh-label` | 14px / 18px | 15px / 20px |
+| `--text-title` / `--lh-title` | 18px / 24px | 20px / 26px |
+
+- **Dense:** staff screens (Overview, Members, Payments, Messages). **Comfortable:** guests (landing, sign-in) and a MEMBER's Profile.
+- `App.vue` sets `data-density` on the shell root: `comfortable` when signed out or when the role is MEMBER, otherwise `dense`. `LandingView` and `LoginView` render outside the rail shell and set `data-density="comfortable"` on their own root.
+- Inputs never go below 16px text (iOS zooms the page on smaller). The primary action on a comfortable screen is 48px and full width on mobile.
+- Status, as before, is a dot plus a word, never plain coloured text. Every list has an empty state that names the next step. A switch's whole row is the click target (wrap it in a label). Disabled means a light fill, muted text and the real `disabled` attribute.
+- T1 defines and plumbs the tokens only. The Overview keeps its own sizes (it must look exactly as before); T2 and T3 consume the tokens.
+
 ## Tailwind migration (next)
 
 The frontend is moving to Tailwind CSS. What stays: the tokens (names and hex values), the

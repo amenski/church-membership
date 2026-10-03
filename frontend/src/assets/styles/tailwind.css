@@ -1,0 +1,117 @@
+/*
+  Tailwind v4, CSS-first. Tokens live in @theme below (names and hex values from
+  docs/design.md). No preflight until phase T4 removes Bootstrap.
+
+  Layer order: Bootstrap and the legacy theme.css share the lowest layer (one layer, so
+  their !important rules keep fighting in file order, as before) and a Tailwind utility
+  always beats them on a migrated screen (unlayered CSS would win over
+  any layer). Screens not yet migrated use only Bootstrap classes and look the same.
+  Component <style> blocks stay unlayered and still win over everything.
+*/
+@layer legacy, theme, base, components, utilities;
+
+@import "bootstrap/dist/css/bootstrap.min.css" layer(legacy);
+@import "./theme.css" layer(legacy);
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme {
+  /* Only the design's colours: nothing else in Tailwind's default palette exists */
+  --color-*: initial;
+  --color-mist: #F2F5F2;
+  --color-paper: #FFFFFF;
+  --color-ink: #14323A;
+  --color-muted: #4F6870;
+  --color-rule: #D9E0DC;
+  --color-field: #6F8680;
+  --color-teal: #0E6B6E;
+  --color-teal-hover: #0A5457;
+  --color-teal-tint: #E3EFEE;
+  --color-ochre: #C98A1B;
+  --color-ochre-edge: #B87A0E;
+  --color-ochre-text: #7A4F00;
+  --color-ochre-tint: #F7ECD4;
+  --color-fern: #3F7A4B;
+  --color-fern-text: #2F5E39;
+  --color-fern-tint: #E2EFE4;
+  --color-clay: #A8412F;
+  --color-clay-tint: #F7E6E2;
+
+  --font-*: initial;
+  --font-display: "Alegreya", Georgia, "Times New Roman", serif;
+  --font-sans: "Alegreya Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-ethiopic: "Noto Sans Ethiopic", "Abyssinica SIL", sans-serif;
+
+  /* 14 / 16 / 18 / 22 / 28 / 40 px */
+  --text-*: initial;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.5rem;
+
+  --radius-*: initial;
+  --radius-md: 6px;
+
+  --shadow-*: initial;
+  --shadow-modal: 0 4px 16px rgb(20 50 58 / 0.08);
+
+  /* Bootstrap's breakpoints, so migrated and unmigrated screens switch layout together */
+  --breakpoint-*: initial;
+  --breakpoint-sm: 36rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 62rem;
+  --breakpoint-xl: 75rem;
+  --breakpoint-2xl: 87.5rem;
+
+  /* The one animation: the dues meter sweeping in from the left */
+  --animate-weave: weave-in 700ms ease-out both;
+  @keyframes weave-in {
+    from { clip-path: inset(0 100% 0 0); }
+  }
+}
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-teal);
+    outline-offset: 2px;
+  }
+}
+
+/*
+  Two densities, set by a data-density attribute at runtime (so plain custom properties,
+  not @theme). Read in utilities as h-(--control-h), min-h-(--row-h), p-(--card-pad),
+  text-(length:--text-body). See "Density" in docs/design.md.
+*/
+@layer base {
+  :root, [data-density="dense"] {
+    --control-h: 36px;
+    --control-primary-h: 36px;
+    --row-h: 44px;
+    --list-row-h: 48px;
+    --card-pad: 16px;
+    --text-body: 16px;
+    --lh-body: 22px;
+    --text-label: 14px;
+    --lh-label: 18px;
+    --text-title: 18px;
+    --lh-title: 24px;
+  }
+  [data-density="comfortable"] {
+    --control-h: 44px;
+    --control-primary-h: 48px;
+    --row-h: 56px;
+    --list-row-h: 56px;
+    --card-pad: 16px;
+    --text-body: 18px;
+    --lh-body: 26px;
+    --text-label: 15px;
+    --lh-label: 20px;
+    --text-title: 20px;
+    --lh-title: 26px;
+  }
+  @media (min-width: 768px) {
+    [data-density="comfortable"] { --card-pad: 24px; }
+  }
+}
