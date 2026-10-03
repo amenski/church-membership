@@ -1,6 +1,8 @@
 package io.github.membertracker.infrastructure;
 
 import io.github.membertracker.domain.model.Payment;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.github.membertracker.usecase.*;
 import io.github.membertracker.utils.CsvUtils;
 import jakarta.validation.Valid;
@@ -28,6 +30,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/payments")
 @Validated
+@Tag(name = "Payments", description = "Membership dues: record, list and export payments.")
 public class PaymentController {
 
     private final GetAllPaymentsUseCase getAllPaymentsUseCase;
@@ -51,12 +54,14 @@ public class PaymentController {
 
     @GetMapping
     @PreAuthorize("hasRole('VOLUNTEER')")
+    @Operation(summary = "List payments (VOLUNTEER+)")
     public List<Payment> getAllPayments() {
         return getAllPaymentsUseCase.invoke();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('VOLUNTEER')")
+    @Operation(summary = "Get a payment by id (VOLUNTEER+)")
     public ResponseEntity<Payment> getPaymentById(@PathVariable @Positive Long id) {
         return getPaymentByIdUseCase.invoke(id)
                 .map(ResponseEntity::ok)
@@ -65,6 +70,7 @@ public class PaymentController {
 
     @GetMapping("/member/{memberId}")
     @PreAuthorize("hasRole('VOLUNTEER')")
+    @Operation(summary = "List payments of one member (VOLUNTEER+)")
     public ResponseEntity<List<Payment>> getPaymentsByMember(@PathVariable @Positive Long memberId) {
         return getMemberByIdUseCase.invoke(memberId)
                 .map(member -> ResponseEntity.ok(getPaymentsByMemberUseCase.invoke(member)))
@@ -73,12 +79,14 @@ public class PaymentController {
 
     @PostMapping
     @PreAuthorize("hasRole('STAFF')")
+    @Operation(summary = "Record a payment (STAFF+)")
     public ResponseEntity<Payment> recordPayment(@Valid @RequestBody Payment payment) {
         return ResponseEntity.ok(recordPaymentUseCase.invoke(payment));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Delete a payment (ADMIN)")
     public ResponseEntity<Void> deletePayment(@PathVariable @Positive Long id) {
         if (getPaymentByIdUseCase.invoke(id).isPresent()) {
             // In a real application, you might want to revert the member's last payment date
@@ -90,6 +98,7 @@ public class PaymentController {
 
     @GetMapping("/export")
     @PreAuthorize("hasRole('VOLUNTEER')")
+    @Operation(summary = "Export all payments as CSV (VOLUNTEER+)")
     public ResponseEntity<StreamingResponseBody> exportPayments() {
         List<Payment> payments = getAllPaymentsUseCase.invoke();
         

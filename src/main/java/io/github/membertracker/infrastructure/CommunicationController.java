@@ -2,6 +2,8 @@ package io.github.membertracker.infrastructure;
 
 
 import io.github.membertracker.domain.model.Communication;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.model.MessageDelivery;
 import io.github.membertracker.usecase.*;
@@ -25,6 +27,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/communications")
 @Validated
+@Tag(name = "Communications", description = "Emails to members, delivery tracking and retry.")
 public class CommunicationController {
 
     private final GetAllCommunicationsUseCase getAllCommunicationsUseCase;
@@ -57,12 +60,14 @@ public class CommunicationController {
 
     @GetMapping
     @PreAuthorize("hasRole('VOLUNTEER')")
+    @Operation(summary = "List communications (VOLUNTEER+)")
     public List<Communication> getAllCommunications() {
         return getAllCommunicationsUseCase.invoke();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('VOLUNTEER')")
+    @Operation(summary = "Get a communication by id (VOLUNTEER+)")
     public ResponseEntity<Communication> getCommunicationById(@PathVariable @Positive Long id) {
         return getCommunicationByIdUseCase.invoke(id)
                 .map(ResponseEntity::ok)
@@ -71,18 +76,21 @@ public class CommunicationController {
 
     @PostMapping
     @PreAuthorize("hasRole('STAFF')")
+    @Operation(summary = "Create a communication without sending it (STAFF+)")
     public ResponseEntity<Communication> createCommunication(@Valid @RequestBody Communication communication) {
         return ResponseEntity.ok(createCommunicationUseCase.invoke(communication));
     }
 
     @PostMapping("/send-to-all")
     @PreAuthorize("hasRole('STAFF')")
+    @Operation(summary = "Send a communication to all members (STAFF+)")
     public ResponseEntity<Communication> sendToAllMembers(@Valid @RequestBody Communication communication) {
         return ResponseEntity.ok(sendCommunicationToAllMembersUseCase.invoke(communication));
     }
 
     @PostMapping("/send-to-overdue/{months}")
     @PreAuthorize("hasRole('STAFF')")
+    @Operation(summary = "Send a communication by email to members overdue by the given months (STAFF+)")
     public ResponseEntity<Communication> sendToOverdueMembers(
             @PathVariable @Min(1) int months,
             @Valid @RequestBody Communication communication
@@ -99,6 +107,7 @@ public class CommunicationController {
 
     @GetMapping("/{id}/deliveries")
     @PreAuthorize("hasRole('VOLUNTEER')")
+    @Operation(summary = "List delivery attempts of a communication (VOLUNTEER+)")
     public ResponseEntity<List<MessageDelivery>> getDeliveries(@PathVariable @Positive Long id) {
         List<MessageDelivery> deliveries = getDeliveriesByCommunicationUseCase.invoke(id);
         return ResponseEntity.ok(deliveries);
@@ -106,6 +115,7 @@ public class CommunicationController {
 
     @PostMapping("/{id}/deliveries/{deliveryId}/retry")
     @PreAuthorize("hasRole('STAFF')")
+    @Operation(summary = "Retry a failed delivery (STAFF+)")
     public ResponseEntity<MessageDelivery> retryDelivery(@PathVariable @Positive Long id,
                                                          @PathVariable @Positive Long deliveryId) {
         return ResponseEntity.ok(retryDeliveryUseCase.invoke(id, deliveryId));

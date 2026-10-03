@@ -98,7 +98,7 @@ This document tracks missing features, improvements, and technical debt in the M
   - [x] Move `CommunicationType` from an inner enum to `domain/enumeration`
   - **Location**: `domain/model/Communication.java`
 
-- [ ] **API Documentation**
+- [x] **API Documentation** *(springdoc, dev profile only)*
   - Add OpenAPI/Swagger documentation
   - Document all endpoints with request/response examples
   - Generate interactive API documentation

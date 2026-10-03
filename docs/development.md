@@ -45,6 +45,14 @@ Open **http://localhost:3000**. Vite proxies `/api/*` to the backend (`frontend/
 | `cd frontend && npm run build` | Frontend production build into `frontend/dist` |
 | `cd frontend && npm run preview` | Serve the frontend build locally |
 
+### API documentation
+
+1. Start the backend with `SPRING_PROFILES_ACTIVE=dev ./gradlew bootRun`.
+2. In the same browser, sign in first with `POST /api/auth/login` so the `sid` cookie is set. Swagger's requests then carry the cookie.
+3. Open http://localhost:8080/swagger-ui.html.
+
+The raw spec is at `/v3/api-docs`. Swagger and the spec are off in every other profile on purpose (the paths return 404).
+
 ### Frontend environment variables
 
 From `frontend/.env.example`:
@@ -158,6 +166,7 @@ volumes:
 - [ ] Database credentials from the environment, not `root/password`. Remove `useSSL=false` from the JDBC URL.
 - [ ] CORS origins changed in **both** `SecurityConfig` and `WebMvcConfig`. They are hard-coded to localhost.
 - [ ] SQL logging turned off: `spring.jpa.show-sql=false`. It is `true` in both properties files.
+- [ ] Don't enable the `dev` profile in production (it turns on Swagger and SQL logging)
 - [ ] Mail settings provided (see [email.md](email.md))
 - [ ] Daily database backups
 - [ ] JVM memory set, for example `-Xms512m -Xmx1024m`

@@ -1,6 +1,8 @@
 package io.github.membertracker.infrastructure;
 
 import io.github.membertracker.domain.model.User;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.github.membertracker.infrastructure.dto.ChangePasswordRequest;
 import io.github.membertracker.infrastructure.dto.UpdateUserProfileRequest;
 import io.github.membertracker.infrastructure.dto.UserResponseDto;
@@ -19,6 +21,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
+@Tag(name = "Users", description = "The signed-in user: profile and password.")
 public class UserController {
 
     private final GetCurrentUserUseCase getCurrentUserUseCase;
@@ -34,6 +37,7 @@ public class UserController {
     }
 
     @GetMapping("/me")
+    @Operation(summary = "Get the signed-in user (any signed-in user)")
     public ResponseEntity<UserResponseDto> getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -58,6 +62,7 @@ public class UserController {
     }
 
     @PutMapping("/me/profile")
+    @Operation(summary = "Update own profile (any signed-in user)")
     public ResponseEntity<UserResponseDto> updateProfile(@Valid @RequestBody UpdateUserProfileRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -97,6 +102,7 @@ public class UserController {
     }
 
     @PutMapping("/me/password")
+    @Operation(summary = "Change own password (any signed-in user)")
     public ResponseEntity<Map<String, String>> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 

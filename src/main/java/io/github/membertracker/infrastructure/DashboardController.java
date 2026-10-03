@@ -1,6 +1,8 @@
 package io.github.membertracker.infrastructure;
 
 import io.github.membertracker.usecase.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +20,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/dashboard")
+@Tag(name = "Dashboard", description = "Summary figures for the home screen.")
 public class DashboardController {
 
     private static final Logger logger = LoggerFactory.getLogger(DashboardController.class);
@@ -43,6 +46,7 @@ public class DashboardController {
 
     @GetMapping("/stats")
     @PreAuthorize("hasRole('VOLUNTEER')")
+    @Operation(summary = "Dashboard statistics (VOLUNTEER+)")
     public ResponseEntity<Map<String, Object>> getDashboardStats() {
         Map<String, Object> stats = new HashMap<>();
 
@@ -97,6 +101,7 @@ public class DashboardController {
 
     @GetMapping("/recent-payments")
     @PreAuthorize("hasRole('VOLUNTEER')")
+    @Operation(summary = "Ten most recent payments (VOLUNTEER+)")
     public ResponseEntity<List<?>> getRecentPayments() {
         try {
             List<?> allPayments = getAllPaymentsUseCase.invoke();
@@ -121,6 +126,7 @@ public class DashboardController {
 
     @GetMapping("/overdue-members")
     @PreAuthorize("hasRole('VOLUNTEER')")
+    @Operation(summary = "Members overdue by one month (VOLUNTEER+)")
     public ResponseEntity<List<?>> getOverdueMembers() {
         try {
             // Get members with overdue payments (last 1 month)
@@ -133,6 +139,7 @@ public class DashboardController {
 
     @GetMapping("/recent-activities")
     @PreAuthorize("hasRole('VOLUNTEER')")
+    @Operation(summary = "Recent activity feed (VOLUNTEER+)")
     public ResponseEntity<List<Map<String, Object>>> getRecentActivities() {
         try {
             List<Map<String, Object>> activities = new java.util.ArrayList<>();

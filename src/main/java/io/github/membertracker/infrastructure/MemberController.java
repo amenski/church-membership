@@ -1,6 +1,8 @@
 package io.github.membertracker.infrastructure;
 
 import io.github.membertracker.domain.model.Member;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.github.membertracker.usecase.*;
 import io.github.membertracker.utils.CsvUtils;
 import jakarta.validation.Valid;
@@ -30,6 +32,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/members")
 @Validated
+@Tag(name = "Members", description = "Church members: list, edit, overdue and CSV export.")
 public class MemberController {
 
     private final GetAllMembersUseCase getAllMembersUseCase;
@@ -59,12 +62,14 @@ public class MemberController {
 
     @GetMapping
     @PreAuthorize("hasRole('VOLUNTEER')")
+    @Operation(summary = "List members (VOLUNTEER+)")
     public List<Member> getAllMembers() {
         return getAllMembersUseCase.invoke();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('VOLUNTEER')")
+    @Operation(summary = "Get a member by id (VOLUNTEER+)")
     public ResponseEntity<Member> getMemberById(@PathVariable @Positive Long id) {
         return getMemberByIdUseCase.invoke(id)
                 .map(ResponseEntity::ok)
@@ -73,24 +78,28 @@ public class MemberController {
 
     @GetMapping("/active")
     @PreAuthorize("hasRole('VOLUNTEER')")
+    @Operation(summary = "List active members (VOLUNTEER+)")
     public List<Member> getActiveMembers() {
         return getActiveMembersUseCase.invoke();
     }
 
     @GetMapping("/inactive")
     @PreAuthorize("hasRole('VOLUNTEER')")
+    @Operation(summary = "List inactive members (VOLUNTEER+)")
     public List<Member> getInactiveMembers() {
         return getInactiveMembersUseCase.invoke();
     }
 
     @PostMapping
     @PreAuthorize("hasRole('STAFF')")
+    @Operation(summary = "Create a member (STAFF+)")
     public Member createMember(@Valid @RequestBody Member member) {
         return saveMemberUseCase.invoke(member);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('STAFF')")
+    @Operation(summary = "Update a member (STAFF+)")
     public ResponseEntity<Member> updateMember(@PathVariable @Positive Long id, @Valid @RequestBody Member member) {
         return getMemberByIdUseCase.invoke(id)
                 .map(existingMember -> {
@@ -102,6 +111,7 @@ public class MemberController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Delete a member (ADMIN)")
     public ResponseEntity<Void> deleteMember(@PathVariable @Positive Long id) {
         if (getMemberByIdUseCase.invoke(id).isPresent()) {
             deleteMemberUseCase.invoke(id);
@@ -113,12 +123,14 @@ public class MemberController {
 
     @GetMapping("/overdue/{months}")
     @PreAuthorize("hasRole('VOLUNTEER')")
+    @Operation(summary = "List members who missed payments for the given number of months (VOLUNTEER+)")
     public List<Member> getMembersWithOverduePayments(@PathVariable @Min(1) int months) {
         return getMembersWithMissedPaymentsUseCase.invoke(months);
     }
 
     @GetMapping("/export")
     @PreAuthorize("hasRole('VOLUNTEER')")
+    @Operation(summary = "Export all members as CSV (VOLUNTEER+)")
     public ResponseEntity<StreamingResponseBody> exportMembers() {
         List<Member> members = getAllMembersUseCase.invoke();
         

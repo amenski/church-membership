@@ -1,6 +1,9 @@
 package io.github.membertracker.infrastructure;
 
 import io.github.membertracker.infrastructure.config.AuthProperties;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.github.membertracker.usecase.AuthenticateUserUseCase;
 import io.github.membertracker.usecase.LoadUserByUsernameUseCase;
 import io.github.membertracker.usecase.RegisterUserUseCase;
@@ -22,6 +25,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "Auth", description = "Sign in, refresh and sign out. Tokens travel in HttpOnly cookies.")
 public class AuthController {
 
     private final AuthenticateUserUseCase authenticateUserUseCase;
@@ -42,6 +46,8 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @Operation(summary = "Sign in; sets the sid and sid_refresh cookies")
+    @SecurityRequirements
     public ResponseEntity<Object> login(@RequestBody LoginRequest loginRequest) {
         try {
             var user = authenticateUserUseCase.invoke(loginRequest.getEmail(), loginRequest.getPassword());
@@ -74,11 +80,15 @@ public class AuthController {
     }
 
     @PostMapping("/register")
+    @Operation(summary = "Registration (disabled, always returns 403)")
+    @SecurityRequirements
     public ResponseEntity<Object> register(@RequestBody RegisterRequest registerRequest) {
         return ResponseEntity.status(403).body(Map.of("error", "Registration is disabled. Please contact administrator for access."));
     }
 
     @PostMapping("/refresh")
+    @Operation(summary = "Rotate the access cookie using the refresh cookie")
+    @SecurityRequirements
     public ResponseEntity<Object> refresh(HttpServletRequest request) {
         try {
             String refreshToken = getRefreshTokenFromCookie(request);
@@ -110,6 +120,8 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
+    @Operation(summary = "Sign out; clears both cookies")
+    @SecurityRequirements
     public ResponseEntity<Void> logout() {
         // Clear both cookies
         ResponseCookie clearAccessCookie = cookieUtils.buildClearAccessCookie();
