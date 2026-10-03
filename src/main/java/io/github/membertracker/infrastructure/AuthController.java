@@ -98,7 +98,7 @@ public class AuthController {
                 return ResponseEntity.badRequest().body(ProblemDetails.of(HttpStatus.BAD_REQUEST, "Refresh token not found"));
             }
             
-            if (!JwtUtils.validateToken(refreshToken, authProperties.getJwtSecret())) {
+            if (!JwtUtils.validateToken(refreshToken, authProperties.getJwtSecret(), JwtUtils.TOKEN_TYPE_REFRESH)) {
                 return ResponseEntity.badRequest().body(ProblemDetails.of(HttpStatus.BAD_REQUEST, "Invalid refresh token"));
             }
             
@@ -139,7 +139,7 @@ public class AuthController {
     private String getRefreshTokenFromCookie(HttpServletRequest request) {
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
-                if ("sid_refresh".equals(cookie.getName())) {
+                if (authProperties.getCookies().getRefreshName().equals(cookie.getName())) {
                     return cookie.getValue();
                 }
             }

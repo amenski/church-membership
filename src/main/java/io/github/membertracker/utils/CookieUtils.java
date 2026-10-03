@@ -30,7 +30,7 @@ public class CookieUtils {
             authProperties.getCookies().getRefreshName(),
             value,
             authProperties.getRefreshTtlSeconds(),
-            "/v1/auth",
+            "/api/auth",
             authProperties.getCookies().isSecure(),
             authProperties.getCookies().getSameSite(),
             authProperties.getCookies().getDomain()
@@ -47,7 +47,7 @@ public class CookieUtils {
     public ResponseCookie buildClearRefreshCookie() {
         return buildClearCookie(
             authProperties.getCookies().getRefreshName(),
-            "/v1/auth"
+            "/api/auth"
         );
     }
 

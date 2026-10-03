@@ -27,10 +27,10 @@ The auth endpoints have no `@PreAuthorize`; `/api/auth/**` is public (`infrastru
 ### Stay signed in
 1. The access cookie `sid` lasts 30 minutes, the refresh cookie `sid_refresh` 30 days (`infrastructure/config/AuthProperties.java:11-12`). Cookie and CSRF settings: [../authentication.md](../authentication.md).
 2. When an API call returns 401, the browser calls `/api/auth/refresh` once and retries the original request (`frontend/src/services/api.js:105-126`).
-3. Today that refresh never works: the refresh cookie is scoped to `/v1/auth`, so the browser does not send it to `/api/auth/refresh` (`utils/CookieUtils.java:33`, `AuthController.java:96-99`). The user is signed out about 30 minutes after login, even when active.
-4. The user sees a "Session Expired" error toast and is hard-redirected to `/login?session=expired` (`api.js:147-152`, `api.js:166-168`).
+3. The refresh cookie is scoped to `/api/auth`, so the browser sends it to `/api/auth/refresh` (`utils/CookieUtils.java:33`, `AuthController.java:96-99`). Only a refresh token is accepted there; an access token gets 400.
+4. If the refresh fails, the user sees a "Session Expired" error toast and is hard-redirected to `/login?session=expired` (`api.js:147-152`, `api.js:166-168`).
 5. Client-side idle timeout: after 1 hour without mouse, key, scroll or touch activity, or any API request, the store logs the user out (`authStore.js:18`, `:246-258`, `:283-285`; request bump at `api.js:56-62`). The check runs every 30 seconds, and again on each route change (`router/index.js:74-78`).
-6. Idle-timeout fix: `isSessionExpired()` and `getTimeUntilExpiry()` are plain functions that read the clock on every call, not cached computeds (`authStore.js:45-53`). Because of step 3, the 30-minute cookie expiry hits first, so this timeout is rarely what ends a session.
+6. Idle-timeout fix: `isSessionExpired()` and `getTimeUntilExpiry()` are plain functions that read the clock on every call, not cached computeds (`authStore.js:45-53`). Because sessions renew through the refresh cookie while the user is active, this 1-hour idle timeout is the intended limit (but see the 403 issue under Known issues).
 7. On page reload, the router guard asks `GET /users/me` once to restore the session (`router/index.js:64-69`, `authStore.js:159-181`).
 
 ### Sign out
@@ -63,8 +63,7 @@ The auth endpoints have no `@PreAuthorize`; `/api/auth/**` is public (`infrastru
 - Logout does not revoke tokens; they stay valid until they expire (`AuthController.java:127-135`).
 
 ## Known issues
-- Sessions end after 30 minutes regardless of activity; the refresh cookie path is wrong. Audit C5; [auth-controller.md](auth-controller.md) gotchas, [login-view.md](login-view.md) gotchas.
-- Access and refresh tokens are interchangeable (no type claim). Audit C5.
+- Automatic renewal does not trigger yet: the interceptor refreshes only on 401, but a missing or expired access cookie gets 403 (no authentication entry point), so the session ends when the 30-minute access cookie expires. See [auth-controller.md](auth-controller.md) gotchas, [login-view.md](login-view.md) gotchas.
 - Login reveals which emails exist: "User with email '...' not found" vs "Invalid password provided" (`domain/exception/UserDomainException.java:37-40`, `:58-61`). Audit C6.
 - Disabled, locked and expired messages only appear after a correct password, which confirms the password (`AuthenticateUserUseCase.java:28-38`).
 - The "Session Expired" toast on `LoginView` fires only after the next successful sign-in, not on arrival at `/login?session=expired` (`LoginView.vue:187-194`).

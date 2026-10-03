@@ -14,6 +14,10 @@ import java.util.function.Function;
 
 public final class JwtUtils {
 
+    public static final String TOKEN_TYPE_CLAIM = "typ";
+    public static final String TOKEN_TYPE_ACCESS = "access";
+    public static final String TOKEN_TYPE_REFRESH = "refresh";
+
     private JwtUtils() {
         // Utility class - prevent instantiation
         throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
@@ -51,11 +55,13 @@ public final class JwtUtils {
 
     public static String generateAccessToken(UserDetails userDetails, String jwtSecret, long accessTtlSeconds) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put(TOKEN_TYPE_CLAIM, TOKEN_TYPE_ACCESS);
         return createToken(claims, userDetails.getUsername(), accessTtlSeconds, jwtSecret);
     }
 
     public static String generateRefreshToken(UserDetails userDetails, String jwtSecret, long refreshTtlSeconds) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put(TOKEN_TYPE_CLAIM, TOKEN_TYPE_REFRESH);
         return createToken(claims, userDetails.getUsername(), refreshTtlSeconds, jwtSecret);
     }
 
@@ -83,6 +89,19 @@ public final class JwtUtils {
                 .build()
                 .parseClaimsJws(token);
             return isTokenValid(token, jwtSecret);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** True only for a well-formed, unexpired token signed with the secret whose {@code typ} claim equals expectedType. */
+    public static boolean validateToken(String token, String jwtSecret, String expectedType) {
+        try {
+            Claims claims = extractAllClaims(token, jwtSecret);
+            return expectedType != null
+                    && expectedType.equals(claims.get(TOKEN_TYPE_CLAIM, String.class))
+                    && claims.getExpiration() != null
+                    && !claims.getExpiration().before(new Date());
         } catch (Exception e) {
             return false;
         }

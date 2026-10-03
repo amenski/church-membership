@@ -34,9 +34,11 @@ Registration was disabled in February 2026 (commit `5356063`). There is no admin
 | Cookie | Holds | Path | Lifetime | Property |
 |--------|-------|------|----------|----------|
 | `sid` | Access JWT | `/` | 30 min | `auth.access-ttl-seconds` (`ACCESS_TTL`) |
-| `sid_refresh` | Refresh JWT | `/v1/auth` | 30 days | `auth.refresh-ttl-seconds` (`REFRESH_TTL`) |
+| `sid_refresh` | Refresh JWT | `/api/auth` | 30 days | `auth.refresh-ttl-seconds` (`REFRESH_TTL`) |
 
-> **Known bug:** the refresh cookie's path is `/v1/auth`, but the endpoint is `/api/auth/refresh`, so the browser never sends the cookie and sessions end after 30 minutes. See C5 in [functionality-audit.md](functionality-audit.md).
+### Token types
+
+Every token carries a `typ` claim: `access` or `refresh` (`JwtUtils.TOKEN_TYPE_ACCESS`, `TOKEN_TYPE_REFRESH`). `JwtAuthenticationFilter` accepts only `access` tokens and `POST /api/auth/refresh` accepts only `refresh` tokens, so a 30-day refresh token cannot be used as an access token. Tokens issued before this change carry no `typ` and are rejected, so everyone signs in again once after deploy.
 
 `JwtAuthenticationFilter` reads the `sid` cookie first, then falls back to the `Authorization: Bearer` header.
 
@@ -154,16 +156,16 @@ curl -i -b jar.txt -X POST http://localhost:8080/api/auth/logout          # then
 | Symptom | Check |
 |---------|-------|
 | Login fails | A failed login returns 400 with the error message, not 401. A 401 comes from protected endpoints called without a valid session. Check: backend running; email and password correct; the account is not locked (`users.account_non_locked`). Nothing unlocks an account automatically or through the API, so a locked account needs `account_non_locked` set back to true (and `failed_login_attempts` to 0) in the database |
-| Logged out after about 30 minutes | Expected until the refresh-cookie path bug (C5) is fixed |
+| Logged out after about 30 minutes | The access cookie expired and the client did not renew it. The frontend only refreshes after a 401, but a request without a valid access token currently gets 403 (see Known gaps) |
 | Logged out sooner | The client-side 1-hour inactivity timeout, or the backend restarted with a different `JWT_SECRET` |
 | Redirect loop on load | `authStore.initialize()` must run in `App.vue` so `authChecked` gets set |
 | CORS error in the browser | The frontend origin must be in both CORS lists (see [Configuration](#configuration)) |
 
 ## Known gaps
 
-Full list and fixes in [functionality-audit.md](functionality-audit.md) (C5, C6) and [todo.md](todo.md).
+Full list and fixes in [functionality-audit.md](functionality-audit.md) (C6) and [todo.md](todo.md).
 
-- The refresh cookie is never sent (path bug), and refresh and access tokens are interchangeable (no type claim)
+- Requests without a valid access token get 403, not 401 (no authentication entry point is configured), while the frontend only calls `/api/auth/refresh` after a 401. Until that is aligned, the browser does not renew the access cookie automatically
 - Login error messages reveal whether an email exists
 - Logout does not revoke tokens, and refresh tokens are not rotated
 - No password reset, MFA, "remember me", or session list

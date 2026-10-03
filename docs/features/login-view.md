@@ -61,7 +61,7 @@ Shown in the form alert (`LoginView.vue:11`) and a toast.
 - 30 s `setInterval` while signed in.
 
 ## Gotchas
-- Sessions end after about 30 min regardless of activity: refresh cookie is never sent, so the interceptor's refresh fails and redirects to `/login?session=expired` (audit C5). The 1 h inactivity timeout is never the limiting factor.
+- The refresh cookie is now sent to `/api/auth/refresh`, but the interceptor only refreshes on a 401 (`api.js:105`) and the backend answers a missing or expired access cookie with 403, so the access cookie is not renewed automatically yet and a session still ends when it expires (about 30 min). The 1 h inactivity timeout is the intended limit.
 - The "Session Expired" toast on `LoginView` fires only after a successful sign-in (`LoginView.vue:187-194`), not on arrival at `/login?session=expired`.
 - `clearErrorOnInput` is defined (`LoginView.vue:210`) but not bound to any input, so the error alert stays until the next submit.
 - Password length check is 6 (`LoginView.vue:133`) while the backend rule for new passwords is 8 with complexity; harmless for login.
