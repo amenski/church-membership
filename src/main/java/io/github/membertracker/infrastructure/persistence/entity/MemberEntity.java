@@ -1,5 +1,6 @@
 package io.github.membertracker.infrastructure.persistence.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -22,6 +23,10 @@ public class MemberEntity {
     private LocalDate joinDate;
     private LocalDate lastPaymentDate;
     private int consecutiveMonthsMissed;
+
+    @Column(name = "last_missed_count_month", length = 7)
+    private String lastMissedCountMonth;
+
     private boolean active;
 
     public MemberEntity() {
@@ -91,6 +96,14 @@ public class MemberEntity {
 
     public void setConsecutiveMonthsMissed(int consecutiveMonthsMissed) {
         this.consecutiveMonthsMissed = consecutiveMonthsMissed;
+    }
+
+    public String getLastMissedCountMonth() {
+        return lastMissedCountMonth;
+    }
+
+    public void setLastMissedCountMonth(String lastMissedCountMonth) {
+        this.lastMissedCountMonth = lastMissedCountMonth;
     }
 
     public boolean isActive() {

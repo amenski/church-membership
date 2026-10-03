@@ -72,7 +72,7 @@ This document tracks missing features, improvements, and technical debt in the M
 - [ ] Phase 4: Person/Membership split (needs a decision, not started)
 
 ### Bugs found by checking the docs against the code (October 2026)
-- [ ] **Overdue tracking (audit C3):** the missed-months counter is never raised, so overdue lists, send-to-overdue and reminders reach nobody; scheduling is not enabled (no `@EnableScheduling`); the counter job must run monthly and be idempotent; the scheduler should skip inactive members and use the reminder-window policy
+- [ ] **Overdue tracking:** the reminder job does not use the reminder-window policy (`DefaultMembershipPolicy.shouldSendReminder`)
 - [ ] **Sign-in:** the landing-page Register button links to a non-existent `/register`; unlocking is not possible without editing the database
 - [ ] **Profile:** the Change Password button opens nothing (`ProfileView.vue:212`); the password rule rejects `-` and `_`; saving with an empty phone fails; client/server rule mismatches for phone and name length; `/api/users/me` returns 500 instead of 404 when the user is missing; `?error=access_denied` is never shown
 - [ ] **Members:** automatic deactivation after 3 missed months never runs; reactivating with the status button does not reset the missed-months counter; a duplicate email returns 500 instead of 400; Phone is `required` in the form but optional on the server; the add form cannot set a join date; the form's address field is never saved
@@ -88,7 +88,7 @@ This document tracks missing features, improvements, and technical debt in the M
 - [x] Reminder skipped exactly 7 days before the due date *(6b31097)*
 - [x] Minimum-amount message said 10.0 while 0.01 was accepted *(fe2eac5)*
 - [ ] Audit C2–C4 are pinned by @Disabled tests in `RecordPaymentUseCaseTest`, `UpdateMissingPaymentCountersUseCaseTest` and `SendPaymentRemindersUseCaseTest` (see functionality-audit.md)
-- [ ] Open questions: `RecordPaymentUseCase` accepts payments for inactive members; `UpdateMissingPaymentCountersUseCase` counts inactive members and members who joined this month
+- [ ] Open questions: `RecordPaymentUseCase` accepts payments for inactive members
 
 ### Core Features
 - [x] **Frontend Delivery Status Display**

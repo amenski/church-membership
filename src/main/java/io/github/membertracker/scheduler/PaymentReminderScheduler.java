@@ -5,6 +5,7 @@ import io.github.membertracker.usecase.UpdateMissingPaymentCountersUseCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -15,18 +16,21 @@ public class PaymentReminderScheduler {
 
     private final UpdateMissingPaymentCountersUseCase updateMissingPaymentCountersUseCase;
     private final SendPaymentRemindersUseCase sendPaymentRemindersUseCase;
+    private final int monthsThreshold;
 
     @Autowired
     public PaymentReminderScheduler(UpdateMissingPaymentCountersUseCase updateMissingPaymentCountersUseCase,
-                                   SendPaymentRemindersUseCase sendPaymentRemindersUseCase) {
+                                   SendPaymentRemindersUseCase sendPaymentRemindersUseCase,
+                                   @Value("${app.payment.reminder.months-threshold:3}") int monthsThreshold) {
         this.updateMissingPaymentCountersUseCase = updateMissingPaymentCountersUseCase;
         this.sendPaymentRemindersUseCase = sendPaymentRemindersUseCase;
+        this.monthsThreshold = monthsThreshold;
     }
 
     /**
-     * Updates missing payment counters every day at 6 AM
+     * Counts the previous month as missed for active members without a payment, on the 1st of every month at 6 AM
      */
-    @Scheduled(cron = "0 0 6 * * ?")
+    @Scheduled(cron = "0 0 6 1 * ?")
     public void updateMissingPaymentCounters() {
         try {
             logger.info("Starting update of missing payment counters");
@@ -38,13 +42,14 @@ public class PaymentReminderScheduler {
     }
 
     /**
-     * Sends payment reminders every day at 9 AM for members who have missed 2 or more payments
+     * Sends payment reminders on the 1st of every month at 9 AM (after the counters are updated) to active members
+     * who have missed at least {@code app.payment.reminder.months-threshold} months
      */
-    @Scheduled(cron = "0 0 9 * * ?")
+    @Scheduled(cron = "0 0 9 1 * ?")
     public void sendPaymentReminders() {
         try {
             logger.info("Starting payment reminder process");
-            var result = sendPaymentRemindersUseCase.invoke(2); // Send reminders for 2+ months missed
+            var result = sendPaymentRemindersUseCase.invoke(monthsThreshold);
             if (result != null) {
                 logger.info("Successfully sent payment reminders to {} members",
                     result.getDeliveries() != null ? result.getDeliveries().size() : 0);

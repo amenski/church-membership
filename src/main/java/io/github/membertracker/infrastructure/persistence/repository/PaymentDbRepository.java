@@ -104,6 +104,8 @@ public class PaymentDbRepository implements PaymentRepository {
         member.setJoinDate(entity.getJoinDate());
         member.setLastPaymentDate(entity.getLastPaymentDate());
         member.setConsecutiveMonthsMissed(entity.getConsecutiveMonthsMissed());
+        member.setLastMissedCountMonth(entity.getLastMissedCountMonth() == null
+                ? null : YearMonth.parse(entity.getLastMissedCountMonth()));
         member.setActive(entity.isActive());
         return member;
     }
@@ -117,6 +119,8 @@ public class PaymentDbRepository implements PaymentRepository {
         entity.setJoinDate(member.getJoinDate());
         entity.setLastPaymentDate(member.getLastPaymentDate());
         entity.setConsecutiveMonthsMissed(member.getConsecutiveMonthsMissed());
+        entity.setLastMissedCountMonth(member.getLastMissedCountMonth() == null
+                ? null : member.getLastMissedCountMonth().toString());
         entity.setActive(member.isActive());
         return entity;
     }

@@ -55,7 +55,7 @@ Role view of the screen:
 ### Activate or deactivate
 1. Click the status button on a row (amber to deactivate, green to activate) (`MembersView.vue:101-103`) (STAFF+).
 2. The screen re-sends the member with `active` flipped (`MembersView.vue:292-299`). No confirmation, no message on success beyond the badge changing.
-- Reactivating through this button does not reset the overdue counter (`SaveMemberUseCase` just saves). The domain `Member.activate()` does reset it (`Member.java:63-69`) but is not called from here.
+- Reactivating through this button does not reset the overdue counter (`SaveMemberUseCase` just saves). The domain `Member.activate()` does reset it (`Member.java:78-84`) but is not called from here.
 - Automatic deactivation after 3 missed months exists as policy but is never applied (see Rules and Known issues).
 
 ### Delete a member
@@ -77,8 +77,8 @@ Role view of the screen:
 - New members: join date defaults to today, `active` is forced true (`SaveMemberUseCase.java:18-26`).
 - Export ids: not empty, at most 5000, each positive (`infrastructure/dto/ExportMembersRequest.java:11-13`); unknown ids are skipped (`MemberController.java:145-148`).
 - `consecutiveMonthsMissed` and `lastPaymentDate` are meant to be system-managed:
-  - A recorded payment sets `lastPaymentDate`, and resets the counter to 0 only if the payment's period is the current month (`Member.java:46-57`, called from `RecordPaymentUseCase.java:40`).
-  - The daily scheduler adds 1 to the counter for members with no payment for the previous month (`UpdateMissingPaymentCountersUseCase.java:25-33`); see [payment-reminder-scheduler.md](payment-reminder-scheduler.md). `Member.markPaymentMissed` (`Member.java:59-61`) has no caller.
+  - A recorded payment sets `lastPaymentDate`, and resets the counter to 0 only if the payment's period is the current month (`Member.java:47-58`, called from `RecordPaymentUseCase.java:40`).
+  - The monthly scheduler (1st, 06:00) adds 1 to the counter of active members with no payment for the previous month, once per member per month, through `Member.markMissedFor` and `lastMissedCountMonth` (`UpdateMissingPaymentCountersUseCase.java:34-49`); see [payment-reminder-scheduler.md](payment-reminder-scheduler.md). `Member.markPaymentMissed` (`Member.java:60-62`) has no caller.
 - Automatic deactivation: `DefaultMembershipPolicy.shouldDeactivate` is true for an active member with 3 or more missed months (`DefaultMembershipPolicy.java:17`, `:22-27`). It is applied only inside `ProcessMemberPaymentUseCase` (`ProcessMemberPaymentUseCase.java:67-72`), which no controller calls (bean at `UseCaseConfig.java:145-146`). The payment endpoint uses `RecordPaymentUseCase`, which never checks the policy.
 
 ## Known issues
@@ -86,7 +86,6 @@ Role view of the screen:
 - Delete erases payments and delivery history, and the confirmation does not warn (audit C9).
 - A duplicate email returns 500 "An unexpected error occurred", not a 400 (`GlobalExceptionHandler.java:101-105` in `infrastructure/handler/`; audit C10 covers the underlying one-email-per-member model). The form shows nothing.
 - Automatic deactivation never happens: the policy is only reachable through an unused use case (see Rules).
-- The daily counter job is not scheduled today (no `@EnableScheduling`; audit C3), so `consecutiveMonthsMissed` only ever resets, never grows, in practice.
 - Add/Edit/Delete/toggle buttons show to VOLUNTEERs; the click fails with a 403 toast (`MembersView.vue:95-103`).
 - Save, delete, toggle and load errors are only logged to the console (`MembersView.vue:235`, `:280`, `:289`, `:297`), apart from the 403 toast.
 - Address field in the form is ignored by the backend (`MembersView.vue:137`).

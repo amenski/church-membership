@@ -47,7 +47,7 @@ Example: `{"memberId": 1, "amount": 50.0, "paymentMethod": "CASH", "period": "20
 1. `validateAmount` then `validatePeriod` (`RecordPaymentUseCase.java:30-31`)
 2. Reject if the member already has a payment for that period (`RecordPaymentUseCase.java:33`)
 3. Default `paymentDate` to today (`Payment.java:102-106`)
-4. `member.recordPayment` sets `lastPaymentDate`; resets `consecutiveMonthsMissed` only when the period is the current month (`src/main/java/io/github/membertracker/domain/model/Member.java:46-57`)
+4. `member.recordPayment` sets `lastPaymentDate`; resets `consecutiveMonthsMissed` only when the period is the current month (`src/main/java/io/github/membertracker/domain/model/Member.java:47-58`)
 5. Save member, then payment (`RecordPaymentUseCase.java:42-43`)
 
 ### Domain rules
@@ -77,4 +77,4 @@ All RFC 7807 ([../architecture.md](../architecture.md)); handler `src/main/java/
 - Payments cannot be deleted or voided yet; a void feature would need an audit trail.
 - `ProcessMemberPaymentUseCase` is dead code from the API's point of view (see Collaborators).
 - Recording a payment does not check that the member is active (`RecordPaymentUseCase.java:22-44` never reads `active`).
-- `Member.markPaymentMissed` (`Member.java:59`) has no caller, so the missed-months counter never rises (see audit C3 in [../functionality-audit.md](../functionality-audit.md)).
+- `Member.markPaymentMissed` (`Member.java:60`) still has no caller; the missed-months counter is raised by `Member.markMissedFor` (`Member.java:69`) through the monthly job in [payment-reminder-scheduler.md](payment-reminder-scheduler.md) (audit C3).

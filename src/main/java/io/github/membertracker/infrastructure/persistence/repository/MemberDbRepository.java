@@ -6,6 +6,7 @@ import io.github.membertracker.infrastructure.persistence.entity.MemberEntity;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -73,6 +74,8 @@ public class MemberDbRepository implements MemberRepository {
         member.setJoinDate(entity.getJoinDate());
         member.setLastPaymentDate(entity.getLastPaymentDate());
         member.setConsecutiveMonthsMissed(entity.getConsecutiveMonthsMissed());
+        member.setLastMissedCountMonth(entity.getLastMissedCountMonth() == null
+                ? null : YearMonth.parse(entity.getLastMissedCountMonth()));
         member.setActive(entity.isActive());
         return member;
     }
@@ -86,6 +89,8 @@ public class MemberDbRepository implements MemberRepository {
         entity.setJoinDate(member.getJoinDate());
         entity.setLastPaymentDate(member.getLastPaymentDate());
         entity.setConsecutiveMonthsMissed(member.getConsecutiveMonthsMissed());
+        entity.setLastMissedCountMonth(member.getLastMissedCountMonth() == null
+                ? null : member.getLastMissedCountMonth().toString());
         entity.setActive(member.isActive());
         return entity;
     }

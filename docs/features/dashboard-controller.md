@@ -23,7 +23,7 @@ Roles and hierarchy: [../authentication.md](../authentication.md).
 | `monthlyRevenue` | sum of `amount` where `payment.period == current YearMonth` | all payments filtered in memory (`:67-86`) |
 
 - Revenue is by billing `period`, not `paymentDate`: a payment made today for last month is excluded; an advance payment for this month made earlier is included.
-- Overdue is a stored counter, not computed here; it is incremented by `UpdateMissingPaymentCountersUseCase` (`src/main/java/io/github/membertracker/usecase/UpdateMissingPaymentCountersUseCase.java:31`).
+- Overdue is a stored counter, not computed here; it is raised once per member per month by the monthly `UpdateMissingPaymentCountersUseCase` (`src/main/java/io/github/membertracker/usecase/UpdateMissingPaymentCountersUseCase.java:45`).
 
 ## Recent payments
 - Loads all payments, sorts by `paymentDate` desc, takes 10 (`:107-120`).

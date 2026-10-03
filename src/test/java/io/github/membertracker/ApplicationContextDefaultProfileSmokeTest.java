@@ -1,5 +1,6 @@
 package io.github.membertracker;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -9,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
+import org.springframework.scheduling.annotation.ScheduledAnnotationBeanPostProcessor;
+import org.springframework.scheduling.config.CronTask;
 import org.springframework.test.web.servlet.MockMvc;
 
 /** Full-context smoke test with no active profile (Swagger disabled) on in-memory H2. */
@@ -34,6 +37,16 @@ class ApplicationContextDefaultProfileSmokeTest {
     @Test
     void contextLoads() {
         assertNotNull(context);
+    }
+
+    @Test
+    void schedulingIsEnabledWithTheTwoMonthlyCronJobs() {
+        ScheduledAnnotationBeanPostProcessor processor = context.getBean(ScheduledAnnotationBeanPostProcessor.class);
+
+        assertThat(processor.getScheduledTasks()).hasSize(2);
+        assertThat(processor.getScheduledTasks())
+                .extracting(task -> ((CronTask) task.getTask()).getExpression())
+                .containsExactlyInAnyOrder("0 0 6 1 * ?", "0 0 9 1 * ?");
     }
 
     @Test

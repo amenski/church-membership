@@ -51,7 +51,7 @@ Scale: **0** absent · **1** stub or flat data · **2** basic, usable · **3** f
 |------|:-----:|----------------------------------------|
 | Reporting | 1 | Four dashboard counters and two recent-activity lists, computed by loading every payment into memory. No date ranges, trends, giving by fund, attendance or growth reports. |
 | Search | 0 | No search or filter parameters on any endpoint, and no pagination. Filtering happens in the browser on the full list. |
-| Notifications | 0 | A reminder scheduler is written but never runs, because scheduling is not enabled. No in-app notifications, birthday or anniversary alerts, or staff task alerts. |
+| Notifications | 0 | A monthly reminder scheduler runs on the 1st (C3 fixed); the reminder text is still not personalised (C4). No in-app notifications, birthday or anniversary alerts, or staff task alerts. |
 | Import and export | 1 | CSV export of members and payments. No import, so a church moving from a spreadsheet must type every record by hand. |
 | Privacy | 0 | No consent records, retention rules, subject-access export or audit log. An `activity_log` table exists, but nothing writes to it. Volunteers can export the full member list. Deleting a member permanently deletes their giving history. |
 | Security operations | 1 | CSRF protection is off while authentication uses cookies. A default JWT secret and `root/password` database credentials ship in `application.properties`, with `useSSL=false` and SQL logging on. No HTTPS configuration. The repo has one test (context load, disabled). |
@@ -88,7 +88,7 @@ The payment request body carries a full `member` object, and the use case saves 
 There is no `@EnableScheduling`, so both jobs are dead. If enabled as written, the missed-months counter goes up every day (about 30 per month) and reminders go out every morning.
 `PaymentReminderScheduler.java:29`, `:43` · `Application.java`
 
-> **Impact (verified 3 Oct 2026):** nothing ever raises `consecutiveMonthsMissed` in production: `UpdateMissingPaymentCountersUseCase` is only called by the scheduler, which never runs (no `@EnableScheduling`), and `Member.markPaymentMissed` has no callers. So the Overdue filter, the dashboard overdue list, send-to-overdue and the reminders all match nobody. Fixing C3 therefore enables the whole overdue feature; the counter job must run monthly and be idempotent.
+> **Status (3 Oct 2026):** fixed: `@EnableScheduling` (SchedulingConfig), monthly crons, idempotent counter (`member.last_missed_count_month`, changeset 005), active members only. Reminder text personalisation is C4.
 
 **C4. Reminder emails say "Dear {{member_name}}"**
 The template placeholder is never filled in before sending.

@@ -26,7 +26,7 @@ A VOLUNTEER sees the page without the record form. STAFF and ADMIN see it (`isSt
 2. The browser sends `memberId`, `amount`, `paymentMethod`, `period` (`frontend/src/utils/paymentPayload.js:11-20`). Field rules: [payment-controller.md](payment-controller.md#request-body-post).
 3. The server loads the member by id, builds the payment (period defaults to the current month) and checks amount, period window and duplicates (`src/main/java/io/github/membertracker/usecase/RecordPaymentUseCase.java:24-36`).
 4. The payment date is set to today (`src/main/java/io/github/membertracker/domain/model/Payment.java:41`).
-5. The member's `lastPaymentDate` is set to the payment date. The missed-months counter is reset to 0 only when the period is the current month; a back-dated payment leaves the counter alone (`src/main/java/io/github/membertracker/domain/model/Member.java:46-57`, `Member.java:95-101`).
+5. The member's `lastPaymentDate` is set to the payment date. The missed-months counter is reset to 0 only when the period is the current month; a back-dated payment leaves the counter alone (`src/main/java/io/github/membertracker/domain/model/Member.java:47-58`, `Member.java:110-116`).
 6. Member and payment are saved (`RecordPaymentUseCase.java:42-43`).
 7. Success: the table and cards reload, the form resets, and the receipt modal opens for the new payment (`PaymentsView.vue:282-288`).
 8. Failure (a 400 such as "Member 'X' already has a payment recorded for period 2026-10", or a period older than 3 months): a toast "Payment failed" with the server's message; the form keeps what was typed (`PaymentsView.vue:289-292`). Error codes: [payment-controller.md](payment-controller.md#errors).
@@ -56,7 +56,7 @@ A VOLUNTEER sees the page without the record form. STAFF and ADMIN see it (`isSt
 - No way to correct a mistaken payment (wrong amount, wrong member). A void-with-audit-trail feature is future work: [payment-controller.md](payment-controller.md#gotchas), audit C7 in [../functionality-audit.md](../functionality-audit.md).
 - Historic payments older than 3 months cannot be entered, so a church migrating from a spreadsheet cannot load past records ([../functionality-audit.md](../functionality-audit.md), Giving).
 - Recording a payment does not check that the member is active (`RecordPaymentUseCase.java:24-36`).
-- The missed-months counter is only ever reset: `Member.markPaymentMissed` has no caller, and the reminder scheduler is not running (no `@EnableScheduling`), so the counter never goes up (`Member.java:59-61`; [payment-reminder-scheduler.md](payment-reminder-scheduler.md)).
+- The missed-months counter is raised only by the monthly job through `Member.markMissedFor` (`Member.java:69`); `Member.markPaymentMissed` (`Member.java:60-62`) still has no caller ([payment-reminder-scheduler.md](payment-reminder-scheduler.md)).
 - `ProcessMemberPaymentUseCase` is dead code: only declared as a bean and unit-tested (`src/main/java/io/github/membertracker/infrastructure/config/UseCaseConfig.java:145`), not used by the API ([payment-controller.md](payment-controller.md#collaborators)).
 - `frontend/src/stores/paymentStore.js` is unused: the view calls `api.js` directly; the store is only re-exported (`frontend/src/stores/index.js:4`) ([payments-view.md](payments-view.md#collaborators)).
 - The page lists and sums every payment in the browser (no paging, no date filter); revenue cards and totals ignore the period and use the payment date (`PaymentsView.vue:225-279`).

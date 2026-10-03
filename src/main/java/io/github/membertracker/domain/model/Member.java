@@ -29,6 +29,7 @@ public class Member {
     
     private LocalDate lastPaymentDate;
     private int consecutiveMonthsMissed;
+    private YearMonth lastMissedCountMonth;
     private boolean active;
 
     public Member() {
@@ -58,6 +59,20 @@ public class Member {
 
     public void markPaymentMissed() {
         this.consecutiveMonthsMissed++;
+    }
+
+    /**
+     * Counts {@code month} as missed, at most once per month.
+     *
+     * @return true if the counter was raised, false if this month was already counted
+     */
+    public boolean markMissedFor(YearMonth month) {
+        if (month.equals(lastMissedCountMonth)) {
+            return false;
+        }
+        this.consecutiveMonthsMissed++;
+        this.lastMissedCountMonth = month;
+        return true;
     }
 
     public void activate() {
@@ -154,6 +169,14 @@ public class Member {
 
     public void setConsecutiveMonthsMissed(int consecutiveMonthsMissed) {
         this.consecutiveMonthsMissed = consecutiveMonthsMissed;
+    }
+
+    public YearMonth getLastMissedCountMonth() {
+        return lastMissedCountMonth;
+    }
+
+    public void setLastMissedCountMonth(YearMonth lastMissedCountMonth) {
+        this.lastMissedCountMonth = lastMissedCountMonth;
     }
 
     public boolean isActive() {

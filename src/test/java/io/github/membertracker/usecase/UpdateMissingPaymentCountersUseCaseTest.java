@@ -4,10 +4,13 @@ import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.repository.MemberRepository;
 import io.github.membertracker.domain.repository.PaymentRepository;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,13 +37,18 @@ class UpdateMissingPaymentCountersUseCaseTest {
     private Member member(String name, int missed) {
         Member m = new Member(name, name + "@example.com", "+1234567890");
         m.setConsecutiveMonthsMissed(missed);
+        m.setJoinDate(LocalDate.of(2020, 1, 1));
         return m;
+    }
+
+    private static Clock clockAt(String isoDate) {
+        return Clock.fixed(Instant.parse(isoDate + "T08:00:00Z"), ZoneOffset.UTC);
     }
 
     @Test
     void memberWithoutPreviousMonthPaymentIsIncrementedAndSaved() {
         Member late = member("late", 1);
-        when(memberRepository.findAll()).thenReturn(List.of(late));
+        when(memberRepository.findByActive(true)).thenReturn(List.of(late));
         when(paymentRepository.existsByMemberAndPeriod(late, previousMonth)).thenReturn(false);
 
         useCase.invoke();
@@ -52,12 +60,13 @@ class UpdateMissingPaymentCountersUseCaseTest {
     @Test
     void memberWhoPaidPreviousMonthIsLeftAloneAndNotSaved() {
         Member paid = member("paid", 0);
-        when(memberRepository.findAll()).thenReturn(List.of(paid));
+        when(memberRepository.findByActive(true)).thenReturn(List.of(paid));
         when(paymentRepository.existsByMemberAndPeriod(paid, previousMonth)).thenReturn(true);
 
         useCase.invoke();
 
         assertThat(paid.getConsecutiveMonthsMissed()).isZero();
+        assertThat(paid.getLastMissedCountMonth()).isNull();
         verify(memberRepository, never()).save(any());
     }
 
@@ -65,7 +74,7 @@ class UpdateMissingPaymentCountersUseCaseTest {
     void onlyMembersWithoutAPaymentAreIncremented() {
         Member paid = member("paid", 0);
         Member late = member("late", 0);
-        when(memberRepository.findAll()).thenReturn(List.of(paid, late));
+        when(memberRepository.findByActive(true)).thenReturn(List.of(paid, late));
         when(paymentRepository.existsByMemberAndPeriod(paid, previousMonth)).thenReturn(true);
 
         useCase.invoke();
@@ -79,7 +88,7 @@ class UpdateMissingPaymentCountersUseCaseTest {
     @Test
     void checksThePreviousMonthNotTheCurrentOne() {
         Member m = member("m", 0);
-        when(memberRepository.findAll()).thenReturn(List.of(m));
+        when(memberRepository.findByActive(true)).thenReturn(List.of(m));
 
         useCase.invoke();
 
@@ -89,7 +98,7 @@ class UpdateMissingPaymentCountersUseCaseTest {
 
     @Test
     void noMembersMeansNoSaves() {
-        when(memberRepository.findAll()).thenReturn(List.of());
+        when(memberRepository.findByActive(true)).thenReturn(List.of());
 
         useCase.invoke();
 
@@ -97,14 +106,99 @@ class UpdateMissingPaymentCountersUseCaseTest {
     }
 
     @Test
-    @Disabled("AUDIT C3: counter is incremented on every run, so a daily schedule adds about 30 per month for the same missed month")
     void runningTwiceForTheSameMonthIncrementsOnlyOnce() {
         Member late = member("late", 0);
-        when(memberRepository.findAll()).thenReturn(List.of(late));
+        when(memberRepository.findByActive(true)).thenReturn(List.of(late));
 
         useCase.invoke();
         useCase.invoke();
 
         assertThat(late.getConsecutiveMonthsMissed()).isEqualTo(1);
+        verify(memberRepository).save(late);
+    }
+
+    @Test
+    void onlyActiveMembersAreLoaded() {
+        Member inactive = member("inactive", 0);
+        inactive.setActive(false);
+        when(memberRepository.findByActive(true)).thenReturn(List.of());
+
+        useCase.invoke();
+
+        verify(memberRepository, never()).findAll();
+        assertThat(inactive.getConsecutiveMonthsMissed()).isZero();
+        verify(memberRepository, never()).save(any());
+    }
+
+    @Test
+    void memberWhoJoinedAfterTheEndOfTheCountedMonthIsSkipped() {
+        Member newcomer = member("newcomer", 0);
+        newcomer.setJoinDate(previousMonth.plusMonths(1).atDay(1));
+        when(memberRepository.findByActive(true)).thenReturn(List.of(newcomer));
+
+        useCase.invoke();
+
+        assertThat(newcomer.getConsecutiveMonthsMissed()).isZero();
+        verify(memberRepository, never()).save(any());
+    }
+
+    @Test
+    void memberWhoJoinedOnTheLastDayOfTheCountedMonthIsCounted() {
+        Member lastDay = member("lastDay", 0);
+        lastDay.setJoinDate(previousMonth.atEndOfMonth());
+        when(memberRepository.findByActive(true)).thenReturn(List.of(lastDay));
+
+        useCase.invoke();
+
+        assertThat(lastDay.getConsecutiveMonthsMissed()).isEqualTo(1);
+    }
+
+    @Test
+    void memberWithoutJoinDateIsCounted() {
+        Member unknown = member("unknown", 0);
+        unknown.setJoinDate(null);
+        when(memberRepository.findByActive(true)).thenReturn(List.of(unknown));
+
+        useCase.invoke();
+
+        assertThat(unknown.getConsecutiveMonthsMissed()).isEqualTo(1);
+        verify(memberRepository).save(unknown);
+    }
+
+    @Test
+    void savesNothingWhenTheMonthWasAlreadyCounted() {
+        Member counted = member("counted", 1);
+        counted.setLastMissedCountMonth(previousMonth);
+        when(memberRepository.findByActive(true)).thenReturn(List.of(counted));
+
+        useCase.invoke();
+
+        assertThat(counted.getConsecutiveMonthsMissed()).isEqualTo(1);
+        verify(memberRepository, never()).save(any());
+    }
+
+    @Test
+    void recordsWhichMonthWasCounted() {
+        Member late = member("late", 0);
+        when(memberRepository.findByActive(true)).thenReturn(List.of(late));
+
+        useCase.invoke();
+
+        assertThat(late.getLastMissedCountMonth()).isEqualTo(previousMonth);
+    }
+
+    @Test
+    void consecutiveMonthsRaiseTheCounterOneThenTwo() {
+        Member late = member("late", 0);
+        when(memberRepository.findByActive(true)).thenReturn(List.of(late));
+        HasPaymentForMonthUseCase hasPayment = new HasPaymentForMonthUseCase(paymentRepository);
+
+        new UpdateMissingPaymentCountersUseCase(memberRepository, hasPayment, clockAt("2026-10-01")).invoke();
+        assertThat(late.getConsecutiveMonthsMissed()).isEqualTo(1);
+        assertThat(late.getLastMissedCountMonth()).isEqualTo(YearMonth.of(2026, 9));
+
+        new UpdateMissingPaymentCountersUseCase(memberRepository, hasPayment, clockAt("2026-11-01")).invoke();
+        assertThat(late.getConsecutiveMonthsMissed()).isEqualTo(2);
+        assertThat(late.getLastMissedCountMonth()).isEqualTo(YearMonth.of(2026, 10));
     }
 }

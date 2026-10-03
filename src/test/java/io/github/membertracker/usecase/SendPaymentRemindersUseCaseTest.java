@@ -61,6 +61,31 @@ class SendPaymentRemindersUseCaseTest {
     }
 
     @Test
+    void inactiveMembersAreNotReminded() {
+        Member active = new Member("a", "a@example.com", "+1234567890");
+        Member inactive = new Member("b", "b@example.com", "+1234567890");
+        inactive.setActive(false);
+        when(memberRepository.findByConsecutiveMonthsMissedGreaterThanEqual(3)).thenReturn(List.of(active, inactive));
+        when(sender.invoke(any(), any(), any())).thenReturn(new Communication());
+
+        useCase.invoke(3);
+
+        verify(sender).invoke(any(), org.mockito.ArgumentMatchers.eq(List.of(active)),
+                org.mockito.ArgumentMatchers.eq(MessageDelivery.DeliveryChannel.EMAIL));
+    }
+
+    @Test
+    void onlyInactiveOverdueMembersMeansNothingIsSent() {
+        Member inactive = new Member("b", "b@example.com", "+1234567890");
+        inactive.setActive(false);
+        when(memberRepository.findByConsecutiveMonthsMissedGreaterThanEqual(3)).thenReturn(List.of(inactive));
+
+        assertThat(useCase.invoke(3)).isNull();
+
+        verifyNoInteractions(sender);
+    }
+
+    @Test
     @Disabled("AUDIT C4: reminder body is sent with the literal \"{{member_name}}\" placeholder instead of the member's name")
     void reminderBodyDoesNotContainUnfilledPlaceholder() {
         when(memberRepository.findByConsecutiveMonthsMissedGreaterThanEqual(2))

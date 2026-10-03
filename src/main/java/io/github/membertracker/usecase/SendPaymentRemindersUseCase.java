@@ -21,12 +21,15 @@ public class SendPaymentRemindersUseCase {
 
     /**
      * Sends payment reminders to members who have missed payments for a specified number of months.
+     * Inactive members are never reminded.
      *
      * @param monthsThreshold the number of consecutive months missed to trigger a reminder
      * @return the created communication if reminders were sent, or null if no reminders were needed
      */
     public Communication invoke(int monthsThreshold) {
-        List<Member> overdueMembers = memberRepository.findByConsecutiveMonthsMissedGreaterThanEqual(monthsThreshold);
+        List<Member> overdueMembers = memberRepository.findByConsecutiveMonthsMissedGreaterThanEqual(monthsThreshold).stream()
+                .filter(Member::isActive)
+                .toList();
 
         if (!overdueMembers.isEmpty()) {
             Communication reminder = new Communication();

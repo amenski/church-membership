@@ -146,4 +146,39 @@ class MemberTest {
         m.setJoinDate(LocalDate.now());
         assertThat(m.isValid()).isTrue();
     }
+
+    @Test
+    void markMissedFor_firstCallIncrementsAndRemembersTheMonth() {
+        Member m = newMember();
+
+        boolean changed = m.markMissedFor(YearMonth.of(2026, 9));
+
+        assertThat(changed).isTrue();
+        assertThat(m.getConsecutiveMonthsMissed()).isEqualTo(1);
+        assertThat(m.getLastMissedCountMonth()).isEqualTo(YearMonth.of(2026, 9));
+    }
+
+    @Test
+    void markMissedFor_sameMonthAgainChangesNothing() {
+        Member m = newMember();
+        m.markMissedFor(YearMonth.of(2026, 9));
+
+        boolean changed = m.markMissedFor(YearMonth.of(2026, 9));
+
+        assertThat(changed).isFalse();
+        assertThat(m.getConsecutiveMonthsMissed()).isEqualTo(1);
+        assertThat(m.getLastMissedCountMonth()).isEqualTo(YearMonth.of(2026, 9));
+    }
+
+    @Test
+    void markMissedFor_laterMonthIncrementsAgain() {
+        Member m = newMember();
+        m.markMissedFor(YearMonth.of(2026, 9));
+
+        boolean changed = m.markMissedFor(YearMonth.of(2026, 10));
+
+        assertThat(changed).isTrue();
+        assertThat(m.getConsecutiveMonthsMissed()).isEqualTo(2);
+        assertThat(m.getLastMissedCountMonth()).isEqualTo(YearMonth.of(2026, 10));
+    }
 }

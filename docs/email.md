@@ -11,7 +11,7 @@ How MemberTracker sends email to members, and how to configure and test it.
 | `POST /api/communications/send-to-all` | `SendCommunicationToAllMembersUseCase` | All **active** members | Plain text, with retry |
 | `POST /api/communications/send-to-overdue/{months}` | `SendCommunicationToMembersUseCase` | Members overdue by at least `months` | Plain text, no retry |
 | `POST /api/communications/send-to-member/{memberId}` | `SendCommunicationToMembersUseCase` | One member (path `memberId`) | Plain text, no retry |
-| Daily reminder job | `SendPaymentRemindersUseCase` (2+ months missed) | Overdue members | Plain text, no retry. **Does not run:** there is no `@EnableScheduling`. |
+| Monthly reminder job (1st, 09:00) | `SendPaymentRemindersUseCase` (`app.payment.reminder.months-threshold` months missed, default 3) | Active members at or over the threshold | Plain text, no retry. Runs only while the application is up at that time; see [features/payment-reminder-scheduler.md](features/payment-reminder-scheduler.md). |
 
 Each send runs on a background thread from `Executors.newCachedThreadPool()`, with a 100 ms pause between emails to stay under SMTP rate limits. A send still in progress is lost if the app restarts.
 
@@ -114,7 +114,6 @@ logging.level.org.springframework.mail=DEBUG
 
 Tracked in [functionality-audit.md](functionality-audit.md) (C3, C4) and [todo.md](todo.md).
 
-- Reminder jobs never run, and if they were enabled as written they would run every day
 - Reminder text contains a literal `{{member_name}}`
 - No unsubscribe link or consent record
 - Only two audiences: everyone, or overdue members
