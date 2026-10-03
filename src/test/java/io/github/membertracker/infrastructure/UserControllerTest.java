@@ -8,6 +8,7 @@ import io.github.membertracker.infrastructure.config.AuthProperties;
 import io.github.membertracker.infrastructure.config.SecurityConfig;
 import io.github.membertracker.infrastructure.dto.UserResponseDto;
 import io.github.membertracker.usecase.ChangePasswordUseCase;
+import io.github.membertracker.utils.CookieUtils;
 import io.github.membertracker.usecase.GetCurrentUserUseCase;
 import io.github.membertracker.usecase.LoadUserByUsernameUseCase;
 import io.github.membertracker.usecase.UpdateUserProfileUseCase;
@@ -21,6 +22,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -36,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = UserController.class)
-@Import({SecurityConfig.class, AuthProperties.class})
+@Import({SecurityConfig.class, AuthProperties.class, CookieUtils.class})
 class UserControllerTest {
 
     private static final String WEAK_MESSAGE = "Password must be 8 to 72 characters (bytes) and contain an "
@@ -109,6 +111,27 @@ class UserControllerTest {
         mockMvc.perform(changePassword(body("Current-pass1", "Newpass1-x")))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.message").value("Password changed successfully"));
+    }
+
+    @Test
+    void successSetsFreshSessionCookies() throws Exception {
+        var response = mockMvc.perform(changePassword(body("Current-pass1", "Newpass1-x")))
+            .andExpect(status().isOk()).andReturn().getResponse();
+
+        var cookies = response.getHeaders("Set-Cookie");
+        assertThat(cookies).hasSize(2);
+        assertThat(cookies.stream().anyMatch(c -> c.startsWith("sid=") && c.contains("HttpOnly"))).isTrue();
+        assertThat(cookies.stream().anyMatch(c -> c.startsWith("sid_refresh=") && c.contains("Path=/api/auth"))).isTrue();
+    }
+
+    @Test
+    void failedChangeSetsNoCookies() throws Exception {
+        when(changePasswordUseCase.execute(eq(7L), eq("Wrong-pass1"), any()))
+            .thenThrow(UserDomainException.invalidPassword());
+
+        var response = mockMvc.perform(changePassword(body("Wrong-pass1", "Newpass1-x"))).andReturn().getResponse();
+
+        assertThat(response.getHeaders("Set-Cookie")).isEmpty();
     }
 
     @Test

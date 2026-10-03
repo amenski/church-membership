@@ -7,10 +7,14 @@ import io.github.membertracker.infrastructure.dto.ChangePasswordRequest;
 import io.github.membertracker.infrastructure.dto.UpdateUserProfileRequest;
 import io.github.membertracker.infrastructure.dto.UserResponseDto;
 import io.github.membertracker.infrastructure.handler.ProblemDetails;
+import io.github.membertracker.infrastructure.config.AuthProperties;
 import io.github.membertracker.usecase.ChangePasswordUseCase;
+import io.github.membertracker.utils.CookieUtils;
+import io.github.membertracker.utils.JwtUtils;
 import io.github.membertracker.usecase.GetCurrentUserUseCase;
 import io.github.membertracker.usecase.UpdateUserProfileUseCase;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -20,6 +24,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.Map;
 
 @RestController
@@ -30,13 +35,18 @@ public class UserController {
     private final GetCurrentUserUseCase getCurrentUserUseCase;
     private final UpdateUserProfileUseCase updateUserProfileUseCase;
     private final ChangePasswordUseCase changePasswordUseCase;
+    private final CookieUtils cookieUtils;
+    private final AuthProperties authProperties;
 
     public UserController(GetCurrentUserUseCase getCurrentUserUseCase,
                          UpdateUserProfileUseCase updateUserProfileUseCase,
-                         ChangePasswordUseCase changePasswordUseCase) {
+                         ChangePasswordUseCase changePasswordUseCase,
+                         CookieUtils cookieUtils, AuthProperties authProperties) {
         this.getCurrentUserUseCase = getCurrentUserUseCase;
         this.updateUserProfileUseCase = updateUserProfileUseCase;
         this.changePasswordUseCase = changePasswordUseCase;
+        this.cookieUtils = cookieUtils;
+        this.authProperties = authProperties;
     }
 
     @GetMapping("/me")
@@ -87,7 +97,7 @@ public class UserController {
     }
 
     @PutMapping("/me/password")
-    @Operation(summary = "Change own password (any signed-in user)")
+    @Operation(summary = "Change own password (any signed-in user); ends every other session and sets fresh cookies for this one")
     public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -104,7 +114,15 @@ public class UserController {
             request.getNewPassword()
         );
 
-        return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
+        // Tokens issued before the change are now rejected. Give this browser fresh ones so it stays signed in.
+        long authTime = Instant.now().getEpochSecond();
+        String accessToken = JwtUtils.generateAccessToken(userDetails, authProperties.getJwtSecret(), authProperties.getAccessTtlSeconds(), authTime);
+        String refreshToken = JwtUtils.generateRefreshToken(userDetails, authProperties.getJwtSecret(), authProperties.getRefreshTtlSeconds(), authTime);
+
+        return ResponseEntity.ok()
+            .header(HttpHeaders.SET_COOKIE, cookieUtils.buildAccessCookie(accessToken).toString())
+            .header(HttpHeaders.SET_COOKIE, cookieUtils.buildRefreshCookie(refreshToken).toString())
+            .body(Map.of("message", "Password changed successfully"));
     }
 
     private static ResponseEntity<ProblemDetail> unauthorized() {

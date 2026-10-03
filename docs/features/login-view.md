@@ -22,7 +22,7 @@ Via `frontend/src/services/api.js` (`baseURL` `/api`, `:6`; `withCredentials`, `
 - `lastActivity`, `sessionTimeout` (1 h, `:18`): inactivity clock
 - `userRole`, `isAdmin`, `isStaff`, `isVolunteer`, `homePath` (`/dashboard` for VOLUNTEER+, else `/profile`, `:43`)
 
-`LoginView.vue`: `form`, `errors` (per-field), `isFormValid` (`:110`).
+`LoginView.vue`: `form`, `errors` (per-field), `isFormValid` (`:111`). The page is a paper card with the woven band on top, on the mist background, with the Felege Selam wordmark above it and the note "Accounts are set up by the church office." below; there is no Sign up link.
 
 ## Actions
 Store:
@@ -38,7 +38,7 @@ Store:
 - `clearAuth()`, `clearError()`, `setSessionTimeout()`, `forceLogout()`, `register()` (see Gotchas).
 
 View:
-- `handleLogin` (`LoginView.vue:149`): clears error, validates (email format, password >= 6 chars, `:118-146`), calls `authStore.login`, toasts, then `router.push` to `?redirect` or `/` (`:184-197`). Failure toasts `authStore.authError` (`:198-205`).
+- `handleLogin` (`LoginView.vue:148`): clears error, validates (email format and a non-empty password, no minimum length, `:119-146`), calls `authStore.login`, toasts, then `router.push` to `?redirect` or `/` (`:182-196`). Failure toasts `authStore.authError` (`:197-205`).
 
 ## Interceptor (`api.js`, auth parts)
 - Request: copies `XSRF-TOKEN` cookie into `X-XSRF-TOKEN` on post/put/patch/delete (`:30-52`). The backend requires it on every write, login included, and sets the cookie on its first response; see CSRF in [../authentication.md](../authentication.md).
@@ -51,8 +51,8 @@ View:
 - Router guard: `router/index.js:75-77` logs out and redirects to `/login?session=expired` when `isSessionExpired()`; `:91-93` sends a signed-in user from `/login` to `homePath`.
 
 ## Errors
-Shown in the form alert (`LoginView.vue:11`) and a toast.
-- Client: "Email is required", "Please enter a valid email address", "Password is required", "Password must be at least 6 characters" (`:121-134`).
+Shown in the form alert (`LoginView.vue:15`) and a toast.
+- Client: "Email is required", "Please enter a valid email address", "Password is required" (`:119-137`).
 - Server: ProblemDetail `detail` shown verbatim (`authStore.js:215`). Backend login failures are 400, so the status-based fallbacks (`:219-236`) apply only when there is no `detail` (e.g. network error -> `error.message`).
 
 ## Side effects
@@ -62,8 +62,7 @@ Shown in the form alert (`LoginView.vue:11`) and a toast.
 
 ## Gotchas
 - Sessions renew: an expired access cookie gets a 401, the interceptor refreshes once and retries (`api.js:105-126`), so the 1 h client idle timeout is the limit. The "Access Denied" toast appears only for a real 403 (signed in, role too low), not for an expired session.
-- The "Session Expired" toast on `LoginView` fires only after a successful sign-in (`LoginView.vue:187-194`), not on arrival at `/login?session=expired`.
-- `clearErrorOnInput` is defined (`LoginView.vue:210`) but not bound to any input, so the error alert stays until the next submit.
-- Password length check is 6 (`LoginView.vue:133`) while the backend rule for new passwords is 8 with complexity; harmless for login.
+- The "Session Expired" toast on `LoginView` fires only after a successful sign-in (`LoginView.vue:186-193`), not on arrival at `/login?session=expired`.
+- `clearErrorOnInput` is defined (`LoginView.vue:209`) but not bound to any input, so the error alert stays until the next submit.
 - `authStore.register` posts to `/v1/auth/register` (`authStore.js:113`), which becomes `/api/v1/auth/register`, not `/api/auth/register`; registration is disabled server-side anyway.
 - A locked account shows the same generic message as any failed sign-in (the lock ends after 15 minutes); too many failures give a 429 whose message the form shows.

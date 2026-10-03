@@ -16,7 +16,7 @@ All under `/api/auth`. No `@PreAuthorize`; `/api/auth/**` is `permitAll` (`infra
 
 ## Actions
 - `login` -> `AuthenticateUserUseCase.invoke(email, password)`, then signs access + refresh JWTs and builds both cookies (`:56-62`)
-- `refresh` -> reads the refresh cookie named by `auth.cookies.refresh-name` (`getRefreshTokenFromCookie`, `:140`), `JwtUtils.validateToken(.., "refresh")` (`:102`), loads user by token subject, issues a fresh pair (`:97-110`). Rotation only; the old refresh token is not revoked.
+- `refresh` -> reads the refresh cookie named by `auth.cookies.refresh-name` (`getRefreshTokenFromCookie`, `:140`), `JwtUtils.validateToken(.., "refresh")` (`:102`), loads user by token subject, issues a fresh pair keeping the token's `auth_time` and expiry (rejected: no `auth_time`, or issued before the user's last password change) (`:97-110`). Rotation keeps the original expiry (`auth_time` + 30 days); the old refresh token is not revoked.
 - `logout` -> only clears cookies (`:130-131`); tokens stay valid until they expire.
 - `register` -> returns 403 without touching any use case (`:89`).
 
@@ -24,7 +24,7 @@ All under `/api/auth`. No `@PreAuthorize`; `/api/auth/**` is `permitAll` (`infra
 - `usecase/AuthenticateUserUseCase.java:19`: lookup by email; for an unknown email a dummy BCrypt check (`:24`, hash memoised in `dummyHash()` `:52`) then `invalidCredentials()`; clears an expired lock, rejects a locked account with the generic error (dummy BCrypt, password not checked), BCrypt match (a failure goes to `recordFailedLogin`), then checks enabled and credentials non-expired; `resetFailedLogins` on success. No full-user save.
 - `usecase/LoadUserByUsernameUseCase.java`: used by `refresh` (`AuthController.java:107`).
 - `utils/CookieUtils.java:16,28,40,47`: builds access, refresh and clearing cookies from `AuthProperties`.
-- `utils/JwtUtils.java:56,62,98`: HS256 token generation and typed validation. Tokens carry subject, timestamps and a `typ` claim (`access` / `refresh`).
+- `utils/JwtUtils.java:56,62,98`: HS256 token generation and typed validation. Tokens carry subject, `iat`, `exp`, a `typ` claim (`access` / `refresh`) and `auth_time` (original sign-in, epoch seconds).
 - `infrastructure/config/AuthProperties.java:8`: `auth.*` (TTLs `:11-12`, cookie names/flags `:15-21`, secret `:13`).
 - `infrastructure/filter/JwtAuthenticationFilter.java:43`: accepts only `access` tokens (`:47`) from the `sid` cookie, then the Bearer header (`:74-82`), on every request, including the public `/api/auth/**` paths. If the token's user cannot be loaded, the request continues unauthenticated (`:62-66`).
 - Models: `domain/model/User` (returned by the use case; only email + role leave the controller).

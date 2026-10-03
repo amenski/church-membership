@@ -80,4 +80,58 @@ class JwtUtilsTest {
         assertThatThrownBy(() -> JwtUtils.generateAccessToken(user, " ", 60))
                 .isInstanceOf(IllegalStateException.class);
     }
+
+    @Test
+    void bothTokenTypesCarryAuthTimeAndIssuedAtInSeconds() {
+        long before = java.time.Instant.now().getEpochSecond();
+        String access = JwtUtils.generateAccessToken(user, SECRET, 60);
+        String refresh = JwtUtils.generateRefreshToken(user, SECRET, 60);
+
+        assertThat(JwtUtils.extractAuthTime(access, SECRET)).isBetween(before, before + 5);
+        assertThat(JwtUtils.extractAuthTime(refresh, SECRET)).isBetween(before, before + 5);
+        assertThat(JwtUtils.extractIssuedAt(access, SECRET)).isBetween(before, before + 5);
+    }
+
+    @Test
+    void rotatingARefreshTokenKeepsTheOriginalAuthTimeAndTheAbsoluteExpiry() {
+        long authTime = java.time.Instant.now().getEpochSecond() - 1000;
+        String rotated = JwtUtils.generateRefreshToken(user, SECRET, 3600, authTime);
+
+        assertThat(JwtUtils.extractAuthTime(rotated, SECRET)).isEqualTo(authTime);
+        assertThat(JwtUtils.extractExpiration(rotated, SECRET).getTime() / 1000).isEqualTo(authTime + 3600);
+        // and rotating again changes nothing about the expiry
+        String again = JwtUtils.generateRefreshToken(user, SECRET, 3600, JwtUtils.extractAuthTime(rotated, SECRET));
+        assertThat(JwtUtils.extractExpiration(again, SECRET)).isEqualTo(JwtUtils.extractExpiration(rotated, SECRET));
+    }
+
+    @Test
+    void refreshTokenOlderThanTheTtlFromAuthTimeIsInvalid() {
+        long authTime = java.time.Instant.now().getEpochSecond() - 3601;
+
+        String token = JwtUtils.generateRefreshToken(user, SECRET, 3600, authTime);
+
+        assertThat(JwtUtils.validateToken(token, SECRET, JwtUtils.TOKEN_TYPE_REFRESH)).isFalse();
+    }
+
+    @Test
+    void accessTokenKeepsTheAuthTimeItWasGiven() {
+        String token = JwtUtils.generateAccessToken(user, SECRET, 60, 12345L);
+
+        assertThat(JwtUtils.extractAuthTime(token, SECRET)).isEqualTo(12345L);
+    }
+
+    @Test
+    void legacyTokenWithoutAuthTimeHasNullAuthTime() {
+        assertThat(JwtUtils.extractAuthTime(untyped(60_000, SECRET), SECRET)).isNull();
+    }
+
+    @Test
+    void issuedBeforePasswordChangeComparesWholeSeconds() {
+        String token = JwtUtils.generateAccessToken(user, SECRET, 60);
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+
+        assertThat(JwtUtils.issuedBeforePasswordChange(token, SECRET, now.minusMinutes(5))).isFalse();
+        assertThat(JwtUtils.issuedBeforePasswordChange(token, SECRET, now.plusMinutes(5))).isTrue();
+        assertThat(JwtUtils.issuedBeforePasswordChange(token, SECRET, null)).isFalse();
+    }
 }

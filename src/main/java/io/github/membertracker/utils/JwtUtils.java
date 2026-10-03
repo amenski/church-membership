@@ -7,6 +7,9 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.crypto.SecretKey;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,6 +20,8 @@ public final class JwtUtils {
     public static final String TOKEN_TYPE_CLAIM = "typ";
     public static final String TOKEN_TYPE_ACCESS = "access";
     public static final String TOKEN_TYPE_REFRESH = "refresh";
+    /** Epoch seconds of the original sign-in; carried unchanged through every refresh. */
+    public static final String AUTH_TIME_CLAIM = "auth_time";
 
     private JwtUtils() {
         // Utility class - prevent instantiation
@@ -53,27 +58,71 @@ public final class JwtUtils {
         return !isTokenExpired(token, jwtSecret);
     }
 
+    /** Access token for a sign-in happening now. */
     public static String generateAccessToken(UserDetails userDetails, String jwtSecret, long accessTtlSeconds) {
+        return generateAccessToken(userDetails, jwtSecret, accessTtlSeconds, nowSeconds());
+    }
+
+    /** Access token that expires {@code accessTtlSeconds} from now and records the original sign-in time. */
+    public static String generateAccessToken(UserDetails userDetails, String jwtSecret, long accessTtlSeconds, long authTimeSeconds) {
         Map<String, Object> claims = new HashMap<>();
         claims.put(TOKEN_TYPE_CLAIM, TOKEN_TYPE_ACCESS);
-        return createToken(claims, userDetails.getUsername(), accessTtlSeconds, jwtSecret);
+        claims.put(AUTH_TIME_CLAIM, authTimeSeconds);
+        return createToken(claims, userDetails.getUsername(), System.currentTimeMillis() + accessTtlSeconds * 1000, jwtSecret);
     }
 
+    /** Refresh token for a sign-in happening now. */
     public static String generateRefreshToken(UserDetails userDetails, String jwtSecret, long refreshTtlSeconds) {
+        return generateRefreshToken(userDetails, jwtSecret, refreshTtlSeconds, nowSeconds());
+    }
+
+    /**
+     * Refresh token whose expiry is {@code authTimeSeconds + refreshTtlSeconds}: rotating it keeps the
+     * original sign-in time, so a session never lasts longer than the refresh TTL from the sign-in.
+     */
+    public static String generateRefreshToken(UserDetails userDetails, String jwtSecret, long refreshTtlSeconds, long authTimeSeconds) {
         Map<String, Object> claims = new HashMap<>();
         claims.put(TOKEN_TYPE_CLAIM, TOKEN_TYPE_REFRESH);
-        return createToken(claims, userDetails.getUsername(), refreshTtlSeconds, jwtSecret);
+        claims.put(AUTH_TIME_CLAIM, authTimeSeconds);
+        return createToken(claims, userDetails.getUsername(), (authTimeSeconds + refreshTtlSeconds) * 1000, jwtSecret);
     }
 
-    private static String createToken(Map<String, Object> claims, String subject, long ttlSeconds, String jwtSecret) {
+    private static String createToken(Map<String, Object> claims, String subject, long expiresAtMillis, String jwtSecret) {
         SecretKey secretKey = getSecretKey(jwtSecret);
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + ttlSeconds * 1000))
+                .setExpiration(new Date(expiresAtMillis))
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    private static long nowSeconds() {
+        return Instant.now().getEpochSecond();
+    }
+
+    /** Issue time in epoch seconds. */
+    public static long extractIssuedAt(String token, String jwtSecret) {
+        return extractClaim(token, jwtSecret, Claims::getIssuedAt).toInstant().getEpochSecond();
+    }
+
+    /** Original sign-in time in epoch seconds, or null for a token that has no such claim (issued before it existed). */
+    public static Long extractAuthTime(String token, String jwtSecret) {
+        Number authTime = extractClaim(token, jwtSecret, claims -> claims.get(AUTH_TIME_CLAIM, Number.class));
+        return authTime == null ? null : authTime.longValue();
+    }
+
+    /**
+     * True when the token was issued in an earlier second than the last password change, i.e. it belongs to a
+     * session that the change must end. A null change time means no check.
+     */
+    public static boolean issuedBeforePasswordChange(String token, String jwtSecret, LocalDateTime lastPasswordChange) {
+        if (lastPasswordChange == null) {
+            return false;
+        }
+        long changedAt = lastPasswordChange.atZone(ZoneId.systemDefault()).toEpochSecond();
+        return extractIssuedAt(token, jwtSecret) < changedAt;
     }
 
     public static boolean validateToken(String token, UserDetails userDetails, String jwtSecret) {

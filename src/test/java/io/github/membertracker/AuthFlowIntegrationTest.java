@@ -5,6 +5,7 @@ import io.github.membertracker.domain.model.User;
 import io.github.membertracker.domain.repository.UserRepository;
 import io.github.membertracker.domain.valueobject.Email;
 import io.github.membertracker.infrastructure.persistence.repository.UserJpaRepository;
+import io.github.membertracker.utils.JwtUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -326,5 +327,83 @@ class AuthFlowIntegrationTest {
                 .content("{\"currentPassword\":\"nope\",\"newPassword\":\"Newpass1-x\"}"))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.detail").value("Current password is incorrect"));
+    }
+
+    // sessions and password change
+
+    private static String cookieValue(MockHttpServletResponse response, String name) {
+        return valueOf(headerStartingWith(response.getHeaders(HttpHeaders.SET_COOKIE), name));
+    }
+
+    @Test
+    void aPasswordChangeEndsOtherSessionsButNotTheOneThatChangedIt() throws Exception {
+        MockHttpServletResponse a = login();
+        MockHttpServletResponse b = login();
+        String accessA = cookieValue(a, "sid");
+        String refreshA = cookieValue(a, "sid_refresh");
+        String accessB = cookieValue(b, "sid");
+        Thread.sleep(1100); // token issue times and the change time are whole seconds
+
+        MockHttpServletResponse changed = mockMvc.perform(withXsrf(put("/api/users/me/password")).cookie(new Cookie("sid", accessB))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"currentPassword\":\"" + PASSWORD + "\",\"newPassword\":\"Newpass1-x\"}"))
+            .andExpect(status().isOk())
+            .andReturn().getResponse();
+        assertThat(changed.getHeaders(HttpHeaders.SET_COOKIE)).hasSize(2);
+        String newAccessB = cookieValue(changed, "sid");
+        String newRefreshB = cookieValue(changed, "sid_refresh");
+
+        // session A is over: access and refresh
+        mockMvc.perform(get("/api/users/me").cookie(new Cookie("sid", accessA))).andExpect(status().isUnauthorized());
+        mockMvc.perform(withXsrf(post("/api/auth/refresh")).cookie(new Cookie("sid_refresh", refreshA)))
+            .andExpect(status().isBadRequest());
+        // the old access cookie of B is over too (it was issued before the change); the new cookies work
+        mockMvc.perform(get("/api/users/me").cookie(new Cookie("sid", accessB))).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/users/me").cookie(new Cookie("sid", newAccessB))).andExpect(status().isOk());
+        mockMvc.perform(withXsrf(post("/api/auth/refresh")).cookie(new Cookie("sid_refresh", newRefreshB)))
+            .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void aRefreshTokenOlderThanThirtyDaysFromSignInIsRejected() throws Exception {
+        User user = userRepository.findByEmail(EMAIL).orElseThrow();
+        long thirtyOneDaysAgo = java.time.Instant.now().getEpochSecond() - 31L * 24 * 3600;
+        String stale = JwtUtils.generateRefreshToken(user, jwtSecret(), 30L * 24 * 3600, thirtyOneDaysAgo);
+
+        mockMvc.perform(withXsrf(post("/api/auth/refresh")).cookie(new Cookie("sid_refresh", stale)))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void rotatingARefreshTokenDoesNotExtendTheSession() throws Exception {
+        User user = userRepository.findByEmail(EMAIL).orElseThrow();
+        long authTime = java.time.Instant.now().getEpochSecond() - 10L * 24 * 3600;
+        String refresh = JwtUtils.generateRefreshToken(user, jwtSecret(), 30L * 24 * 3600, authTime);
+
+        MockHttpServletResponse rotated = mockMvc.perform(withXsrf(post("/api/auth/refresh")).cookie(new Cookie("sid_refresh", refresh)))
+            .andExpect(status().isNoContent()).andReturn().getResponse();
+
+        String newRefresh = cookieValue(rotated, "sid_refresh");
+        assertThat(JwtUtils.extractAuthTime(newRefresh, jwtSecret())).isEqualTo(authTime);
+        assertThat(JwtUtils.extractExpiration(newRefresh, jwtSecret()).getTime() / 1000).isEqualTo(authTime + 30L * 24 * 3600);
+    }
+
+    @Test
+    void aRefreshTokenWithoutAuthTimeIsRejected() throws Exception {
+        String legacy = io.jsonwebtoken.Jwts.builder()
+            .setClaims(new java.util.HashMap<>(java.util.Map.of(JwtUtils.TOKEN_TYPE_CLAIM, JwtUtils.TOKEN_TYPE_REFRESH)))
+            .setSubject(EMAIL).setIssuedAt(new java.util.Date())
+            .setExpiration(new java.util.Date(System.currentTimeMillis() + 3_600_000))
+            .signWith(io.jsonwebtoken.security.Keys.hmacShaKeyFor(jwtSecret().getBytes()), io.jsonwebtoken.SignatureAlgorithm.HS256)
+            .compact();
+
+        mockMvc.perform(withXsrf(post("/api/auth/refresh")).cookie(new Cookie("sid_refresh", legacy)))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Autowired private io.github.membertracker.infrastructure.config.AuthProperties authProperties;
+
+    private String jwtSecret() {
+        return authProperties.getJwtSecret();
     }
 }

@@ -40,6 +40,8 @@ Registration was disabled in February 2026 (commit `5356063`). There is no admin
 
 Every token carries a `typ` claim: `access` or `refresh` (`JwtUtils.TOKEN_TYPE_ACCESS`, `TOKEN_TYPE_REFRESH`). `JwtAuthenticationFilter` accepts only `access` tokens and `POST /api/auth/refresh` accepts only `refresh` tokens, so a 30-day refresh token cannot be used as an access token. Tokens issued before this change carry no `typ` and are rejected, so everyone signs in again once after deploy.
 
+Both token types also carry `iat` (issue time) and `auth_time` (epoch seconds of the original sign-in). Rotation keeps `auth_time`: a refresh token expires at `auth_time + refresh TTL` (30 days), so refreshing never extends a session beyond 30 days from sign-in, and the rotated refresh cookie only lives for the time that is left. A refresh token without `auth_time` (issued before this change) is rejected by `/api/auth/refresh` (the user signs in again once); access tokens without it still work until they expire. A token whose `iat` is in an earlier second than the user's `lastPasswordChange` is rejected by the filter (401) and by `/api/auth/refresh` (400); no `lastPasswordChange` means no check.
+
 `JwtAuthenticationFilter` reads the `sid` cookie first, then falls back to the `Authorization: Bearer` header.
 
 A valid access token for a user who no longer exists, or who is disabled, locked or has expired credentials, is treated as signed out: the filter logs it at DEBUG, leaves the request unauthenticated, and protected paths answer 401. Sign-in, refresh and logout (public paths) still work with that stale cookie.
@@ -69,7 +71,7 @@ CORS allows credentials, but the allowed origins are hard-coded in two places: `
 - Passwords are hashed with BCrypt, cost 12.
 - A new password must be 8 characters or more and at most 72 UTF-8 bytes (BCrypt ignores anything longer), with an uppercase letter, a lowercase letter, a digit and a special character (`User.validatePasswordStrength`). Special means any character that is not a letter, digit or whitespace, so `-`, `_`, `#` and `.` count; spaces are allowed but do not count as special. The web form checks the same rule (`frontend/src/utils/passwordRules.js`).
 - When the user changes their password the current one must be given and match; there is no minimum length on it, so the seeded 5-character admin password can be replaced. A wrong current password is a 400 "Current password is incorrect"; a weak new one is a 400 with the rule text.
-- Changing the password does not end other sessions.
+- Changing the password ends every other session: tokens issued before the change are rejected (see the token claims above). `PUT /api/users/me/password` answers with fresh `sid` and `sid_refresh` cookies, so the browser that changed the password stays signed in. The change time is stored in whole seconds, as token issue times are.
 - Five failed attempts lock the account for 15 minutes, and the lock ends by itself (`users.locked_until`, changeset 006). A lock with no `locked_until` (set by hand or an old row) stays permanent until someone clears `account_non_locked` in the database.
 - A wrong current password on a password change counts toward the same lock as a wrong sign-in password.
 - The lock is checked before the password. A locked account is never password-checked, and sign-in answers an unknown email, a wrong password and a locked account with the same 400 and the same text, "Invalid email or password. After several failed attempts an account is locked for 15 minutes.", so a lock cannot be used to find out a password or to tell which emails exist.
@@ -183,7 +185,7 @@ curl -i -b jar.txt -X POST -H "X-XSRF-TOKEN: $XSRF" http://localhost:8080/api/au
 
 Full list and fixes in [functionality-audit.md](functionality-audit.md) and [todo.md](todo.md).
 
-- Logout does not revoke tokens, and refresh tokens are not rotated
+- Logout does not revoke tokens: a stolen refresh cookie works until the password changes or 30 days after sign-in (refresh tokens are rotated, but the old one stays valid until it expires)
 - No password reset, MFA, "remember me", or session list
 - The sign-in throttle is in memory (one process, reset on restart); a permanent lock (no `locked_until`) still needs a database edit
 - Sessions are not synchronised across browser tabs

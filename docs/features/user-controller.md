@@ -9,7 +9,7 @@ The signed-in user's own profile and password, for any authenticated role. Base 
 |--------|------|------|---------|----------|
 | GET | `/api/users/me` | any signed-in user | none | `UserResponseDto` |
 | PUT | `/api/users/me/profile` | any signed-in user | `UpdateUserProfileRequest` | `UserResponseDto` |
-| PUT | `/api/users/me/password` | any signed-in user | `ChangePasswordRequest` | `{"message": "Password changed successfully"}` |
+| PUT | `/api/users/me/password` | any signed-in user | `ChangePasswordRequest` | `{"message": "Password changed successfully"}` and fresh `sid` / `sid_refresh` cookies |
 
 - No `@PreAuthorize` on any method; access comes from `anyRequest().authenticated()` (`infrastructure/config/SecurityConfig.java:130`). Roles: see [../authentication.md](../authentication.md).
 - The user is always the one in the security context. No id in the path, so no way to touch another user.
@@ -32,7 +32,7 @@ The signed-in user's own profile and password, for any authenticated role. Base 
 ## Collaborators
 - `GetCurrentUserUseCase` `usecase/GetCurrentUserUseCase.java:16`: `findByEmail`, builds the DTO.
 - `UpdateUserProfileUseCase` `usecase/UpdateUserProfileUseCase.java:15`: `findById`, `User.updateProfile`, `userRepository.update`.
-- `ChangePasswordUseCase` `usecase/ChangePasswordUseCase.java:22`: `@Transactional`; checks current password with `PasswordEncoder.matches` (`:27`), then `User.validatePasswordStrength` (`:32`), `User.changePassword`, `save`.
+- `ChangePasswordUseCase` `usecase/ChangePasswordUseCase.java`: no class-level transaction (the failed-attempt count must survive the exception); checks current password with `PasswordEncoder.matches`, then `User.validatePasswordStrength`, `User.changePassword` (change time in whole seconds), `UserRepository.updatePassword`.
 - Password rule: `User.validatePasswordStrength` (`domain/model/User.java:196`): 8 characters minimum, 72 UTF-8 bytes maximum, upper, lower, digit and one special character (anything that is not a letter, digit or whitespace; spaces allowed); see [../authentication.md](../authentication.md#passwords-and-lockout).
 - Models: `User`, `UserResponseDto`.
 
@@ -47,7 +47,7 @@ The signed-in user's own profile and password, for any authenticated role. Base 
 
 ## Side effects
 - `updateProfile` writes `phone`/`bio`/names and `updatedAt`.
-- `changePassword` writes the password hash, `lastPasswordChange`, `updatedAt`, and resets `failedLoginAttempts` to 0 (`domain/model/User.java:218-223`). Existing sessions/tokens are not revoked.
+- `changePassword` writes the password hash, `lastPasswordChange`, `updatedAt`, and resets `failedLoginAttempts` to 0 (`domain/model/User.java:218-223`). Every session that started before the change is rejected (token `iat` older than `lastPasswordChange`); the controller sets fresh `sid` and `sid_refresh` cookies on the success response so the caller stays signed in.
 
 ## Gotchas
 - There are no catch-all blocks any more: every failure reaches `GlobalExceptionHandler`. A user row that is gone is a 400 ProblemDetail (domain exceptions all map to 400), not an empty 500; a session for a user deleted after sign-in is already a 401 at the filter.

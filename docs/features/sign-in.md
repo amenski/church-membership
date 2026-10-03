@@ -8,7 +8,7 @@ How staff, volunteers and members sign in, stay signed in, and get sent to the r
 | See the landing page | none (signed out only) | `/` (`frontend/src/router/index.js:6-11`) |
 | Sign in | none (signed out only) | `/login` (`router/index.js:42-47`), `POST /api/auth/login` |
 | Stay signed in | any signed-in user | cookies, `POST /api/auth/refresh` |
-| Sign out | any signed-in user | Sign Out menu item (`frontend/src/App.vue:41`), `POST /api/auth/logout` |
+| Sign out | any signed-in user | Sign out button in the left rail's user block (`frontend/src/App.vue:61`), `POST /api/auth/logout` |
 | Open `/dashboard`, `/members`, `/payments`, `/communications` | VOLUNTEER+ | `router/index.js:12-35` |
 | Open `/profile` | MEMBER+ (any signed-in user) | `router/index.js:36-41` |
 
@@ -16,25 +16,25 @@ The auth endpoints have no `@PreAuthorize`; `/api/auth/**` is public (`infrastru
 
 ## How it works
 ### Sign in
-1. A signed-out visitor opens `/login`, enters email and password (`frontend/src/views/LoginView.vue:149`).
-2. The form checks email format and a password of 6+ characters before sending anything (`LoginView.vue:118-146`). Failure: inline field errors and a "Validation Error" toast.
+1. A signed-out visitor opens `/login`, enters email and password (`frontend/src/views/LoginView.vue:148`).
+2. The form checks email format and that the password is not empty before sending anything; there is no minimum password length on sign-in, the server decides (`LoginView.vue:119-146`). Failure: inline field errors and a "Validation Error" toast.
 3. The store lowercases the email and posts to `/api/auth/login` (`frontend/src/stores/authStore.js:62-80`).
 4. The backend looks up the user, clears an expired lock, rejects a locked account (without checking the password), checks the password, then checks enabled and credentials not expired (`src/main/java/io/github/membertracker/usecase/AuthenticateUserUseCase.java:19-44`).
-5. On success it sets the `sid` and `sid_refresh` cookies and returns `{email, role}` (`AuthController.java:56-78`). The user sees a "Welcome back!" toast and is sent to the `?redirect=` page, or `/` (`LoginView.vue:175-197`).
+5. On success it sets the `sid` and `sid_refresh` cookies and returns `{email, role}` (`AuthController.java:56-78`). The user sees a "Welcome back!" toast and is sent to the `?redirect=` page, or `/` (`LoginView.vue:174-196`).
 6. `/` is guest-only, so the guard forwards a signed-in user to their home page: `/dashboard` for VOLUNTEER+, `/profile` for MEMBER (`router/index.js:91-96`, `authStore.js:43`).
-7. On failure the server message is shown in the form alert and a "Login Failed" toast (`LoginView.vue:198-206`, `authStore.js:210-217`). Login errors come back as HTTP 400 (`AuthController.java:80-81`), with one message, "Invalid email or password. After several failed attempts an account is locked for 15 minutes.", for an unknown email, a wrong password and a locked account. After 10 failures for one email or 30 from one IP in 10 minutes the next attempt is a 429 with `Retry-After` (`LoginAttemptLimiter`).
+7. On failure the server message is shown in the form alert and a "Login Failed" toast (`LoginView.vue:197-205`, `authStore.js:210-217`). Login errors come back as HTTP 400 (`AuthController.java:80-81`), with one message, "Invalid email or password. After several failed attempts an account is locked for 15 minutes.", for an unknown email, a wrong password and a locked account. After 10 failures for one email or 30 from one IP in 10 minutes the next attempt is a 429 with `Retry-After` (`LoginAttemptLimiter`).
 
 ### Stay signed in
 1. The access cookie `sid` lasts 30 minutes, the refresh cookie `sid_refresh` 30 days (`infrastructure/config/AuthProperties.java:11-12`). Cookie and CSRF settings: [../authentication.md](../authentication.md).
 2. When an API call returns 401, the browser calls `/api/auth/refresh` once and retries the original request (`frontend/src/services/api.js:105-126`).
-3. The refresh cookie is scoped to `/api/auth`, so the browser sends it to `/api/auth/refresh` (`utils/CookieUtils.java:33`, `AuthController.java:97-100`). Only a refresh token is accepted there; an access token gets 400.
+3. The refresh cookie is scoped to `/api/auth`, so the browser sends it to `/api/auth/refresh` (`utils/CookieUtils.java:33`, `AuthController.java:97-100`). Only a refresh token is accepted there; an access token gets 400. A rotated refresh token keeps the original sign-in time (`auth_time`) and expiry, so a session lasts at most 30 days from sign-in, and a refresh token issued before the user's last password change is rejected.
 4. If the refresh fails, the user sees a "Session Expired" error toast and is hard-redirected to `/login?session=expired` (`api.js:147-152`, `api.js:166-168`).
 5. Client-side idle timeout: after 1 hour without mouse, key, scroll or touch activity, or any API request, the store logs the user out (`authStore.js:18`, `:246-258`, `:283-285`; request bump at `api.js:56-62`). The check runs every 30 seconds, and again on each route change (`router/index.js:75-79`).
 6. Idle-timeout fix: `isSessionExpired()` and `getTimeUntilExpiry()` are plain functions that read the clock on every call, not cached computeds (`authStore.js:45-53`). Because sessions renew through the refresh cookie while the user is active, this 1-hour idle timeout is the intended limit.
 7. On page reload, the router guard asks `GET /users/me` once to restore the session (`router/index.js:65-70`, `authStore.js:159-181`).
 
 ### Sign out
-1. The user picks Sign Out in the navbar (`App.vue:140-152`).
+1. The user picks Sign out in the left rail, which is the menu drawer on small screens (`App.vue:61`, `handleLogout` `:166`).
 2. The store stops the idle timer, posts `/api/auth/logout`, then clears local state even if the call fails (`authStore.js:136-157`).
 3. The server only clears both cookies (`AuthController.java:128-136`). The user lands on `/login`.
 
@@ -46,6 +46,7 @@ The auth endpoints have no `@PreAuthorize`; `/api/auth/**` is public (`infrastru
 5. An idle-expired user is logged out and sent to `/login?session=expired` (`router/index.js:75-79`).
 
 ### A session for an account that no longer works
+0. Changing the password ends every other session: their tokens are older than `lastPasswordChange` and are rejected with 401 (and 400 on refresh). The browser that changed it receives fresh cookies.
 1. If a user is deleted, disabled or locked while their `sid` cookie is still valid, the next request is treated as signed out: protected endpoints answer 401 (the browser then tries `/api/auth/refresh`, which also fails, and sends the user to `/login?session=expired`).
 2. The stale cookie does not block sign-in: `/api/auth/login`, `/refresh` and `/logout` work normally with it (`src/main/java/io/github/membertracker/infrastructure/filter/JwtAuthenticationFilter.java:62-66`). Before this fix those calls returned 500 for up to 30 minutes.
 
@@ -57,7 +58,7 @@ The auth endpoints have no `@PreAuthorize`; `/api/auth/**` is public (`infrastru
 5. A wrong current password on a password change counts toward the same lock.
 
 ### What a signed-out visitor sees
-1. `/` shows the landing page with a Sign In button (`frontend/src/views/LandingView.vue:11-14`). There is no Register button: registration is disabled and `/register` is not a route.
+1. `/` shows a quiet welcome: the Felege Selam wordmark, one line ("Membership and dues for the church community."), a Sign in button and the note "Accounts are set up by the church office." (`frontend/src/views/LandingView.vue:2-9`). There is no Register button: registration is disabled and `/register` is not a route.
 
 ## Rules
 - Roles rank MEMBER < VOLUNTEER < STAFF < ADMIN on the client (`authStore.js:21-30`); route `requiresRole` is a minimum (`router/index.js:103`).
@@ -68,8 +69,8 @@ The auth endpoints have no `@PreAuthorize`; `/api/auth/**` is public (`infrastru
 
 ## Known issues
 - Disabled and expired-credential messages are only returned after the correct password, so they confirm the password (the lock message no longer does: a locked account answers like any failure).
-- The "Session Expired" toast on `LoginView` fires only after the next successful sign-in, not on arrival at `/login?session=expired` (`LoginView.vue:187-194`).
-- The form error alert stays until the next submit: `clearErrorOnInput` is defined but not bound (`LoginView.vue:210-214`).
+- The "Session Expired" toast on `LoginView` fires only after the next successful sign-in, not on arrival at `/login?session=expired` (`LoginView.vue:186-193`).
+- The form error alert stays until the next submit: `clearErrorOnInput` is defined but not bound (`LoginView.vue:209-213`).
 - No password reset, no admin unlock for permanent locks, no admin screen for accounts (see [../authentication.md](../authentication.md)).
 
 ## Related

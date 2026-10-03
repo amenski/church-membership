@@ -111,4 +111,42 @@ class JwtAuthenticationFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
         assertThat(chain.getRequest()).isNotNull();
     }
+
+    // password change ends older sessions
+
+    private void runWithDomainUser(io.github.membertracker.domain.model.User domainUser, String token) throws Exception {
+        filter.setUserDetailsService(username -> domainUser);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setCookies(new Cookie("sid", token));
+        run(request);
+    }
+
+    private io.github.membertracker.domain.model.User domainUser(java.time.LocalDateTime lastPasswordChange) {
+        var u = new io.github.membertracker.domain.model.User(
+            io.github.membertracker.domain.valueobject.Email.of(EMAIL), "pw",
+            io.github.membertracker.domain.enumeration.UserRole.MEMBER);
+        u.setLastPasswordChange(lastPasswordChange);
+        return u;
+    }
+
+    @Test
+    void tokenIssuedBeforeThePasswordChangeIsRejected() throws Exception {
+        runWithDomainUser(domainUser(java.time.LocalDateTime.now().plusMinutes(1)), access());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
+    void tokenIssuedAfterThePasswordChangeIsAccepted() throws Exception {
+        runWithDomainUser(domainUser(java.time.LocalDateTime.now().minusMinutes(1)), access());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
+    }
+
+    @Test
+    void nullLastPasswordChangeSkipsTheCheck() throws Exception {
+        runWithDomainUser(domainUser(null), access());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
+    }
 }

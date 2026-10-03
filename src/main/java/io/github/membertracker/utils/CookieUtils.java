@@ -26,10 +26,15 @@ public class CookieUtils {
     }
 
     public ResponseCookie buildRefreshCookie(String value) {
+        return buildRefreshCookie(value, authProperties.getRefreshTtlSeconds());
+    }
+
+    /** Refresh cookie that lives {@code maxAgeSeconds}; a rotated token has less than the full TTL left. */
+    public ResponseCookie buildRefreshCookie(String value, long maxAgeSeconds) {
         return buildCookie(
             authProperties.getCookies().getRefreshName(),
             value,
-            authProperties.getRefreshTtlSeconds(),
+            maxAgeSeconds,
             "/api/auth",
             authProperties.getCookies().isSecure(),
             authProperties.getCookies().getSameSite(),

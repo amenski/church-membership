@@ -32,7 +32,7 @@ Every signed-in user views and edits their own name, phone and bio, and changes 
 1. The Change Password button opens a dialog through Bootstrap's data API (`data-bs-toggle="modal"`, `frontend/src/views/ProfileView.vue:195-196`, dialog `:208`) with current, new and confirm fields.
 2. Client checks on submit: current is present, new follows the password rule (`frontend/src/utils/passwordRules.js`, same rule as the server), confirm matches (`ProfileView.vue:430-462`).
 3. `PUT /users/me/password`. The server checks the current password (`src/main/java/io/github/membertracker/usecase/ChangePasswordUseCase.java:27`), then the strength rule (`:32`), then stores the new hash (`:35-37`).
-4. Success: `{"message": "Password changed successfully"}` (`src/main/java/io/github/membertracker/infrastructure/UserController.java:101-107`); the dialog closes, its fields are cleared and a "Password changed" toast shows (`ProfileView.vue:494-501`).
+4. Success: fresh session cookies plus `{"message": "Password changed successfully"}` (`src/main/java/io/github/membertracker/infrastructure/UserController.java:101-107`); the dialog closes, its fields are cleared and a "Password changed" toast shows (`ProfileView.vue:494-501`).
 5. Failure: the dialog stays open and shows the server's reason in a red alert (`ProfileView.vue:503-505`): "Current password is incorrect" (400, code `USER_003`) or the password rule text (400, code `USER_004`). Both are ProblemDetail responses.
 6. Closing the dialog by any route (Cancel, X, Escape, backdrop) clears the fields and the alert (`hidden.bs.modal`, `ProfileView.vue:513`).
 
@@ -54,7 +54,7 @@ Every signed-in user views and edits their own name, phone and bio, and changes 
 
 ## Known issues
 - Any profile save failure replaces the whole page with one red message; the form is hidden until reload (`ProfileView.vue:24-27`). Server field messages are discarded. (Password errors no longer do this: they show inside the dialog.)
-- Changing the password does not end other sessions: existing access and refresh tokens stay valid (`User.changePassword`, `User.java:218-223`, only updates the hash).
+- Changing the password ends every other session: tokens issued before the change are rejected. The response sets fresh `sid` / `sid_refresh` cookies so this browser stays signed in (`UserController.changePassword`).
 - No password reset; a wrong current password counts toward the 15-minute account lock; see [../authentication.md](../authentication.md) known gaps and audit user-management item in [../functionality-audit.md](../functionality-audit.md).
 
 ## Related

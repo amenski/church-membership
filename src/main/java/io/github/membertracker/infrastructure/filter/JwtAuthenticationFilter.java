@@ -1,5 +1,6 @@
 package io.github.membertracker.infrastructure.filter;
 
+import io.github.membertracker.domain.model.User;
 import io.github.membertracker.infrastructure.config.AuthProperties;
 import io.github.membertracker.utils.JwtUtils;
 import jakarta.servlet.FilterChain;
@@ -51,7 +52,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 try {
                     UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-                    if (JwtUtils.validateToken(jwt, userDetails, authProperties.getJwtSecret())) {
+                    boolean endedByPasswordChange = userDetails instanceof User user
+                            && JwtUtils.issuedBeforePasswordChange(jwt, authProperties.getJwtSecret(), user.getLastPasswordChange());
+
+                    if (!endedByPasswordChange && JwtUtils.validateToken(jwt, userDetails, authProperties.getJwtSecret())) {
                         UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

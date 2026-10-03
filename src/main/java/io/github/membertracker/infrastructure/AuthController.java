@@ -1,6 +1,7 @@
 package io.github.membertracker.infrastructure;
 
 import io.github.membertracker.domain.exception.UserDomainException;
+import io.github.membertracker.domain.model.User;
 import io.github.membertracker.infrastructure.config.AuthProperties;
 import io.github.membertracker.infrastructure.handler.ProblemDetails;
 import io.github.membertracker.infrastructure.security.LoginAttemptLimiter;
@@ -18,13 +19,13 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Instant;
 import java.util.Map;
 
 @RestController
@@ -63,8 +64,9 @@ public class AuthController {
             var user = authenticateUserUseCase.invoke(email, loginRequest.getPassword());
             loginAttemptLimiter.recordSuccess(ip, email);
 
-            String accessToken = JwtUtils.generateAccessToken(user, authProperties.getJwtSecret(), authProperties.getAccessTtlSeconds());
-            String refreshToken = JwtUtils.generateRefreshToken(user, authProperties.getJwtSecret(), authProperties.getRefreshTtlSeconds());
+            long authTime = Instant.now().getEpochSecond();
+            String accessToken = JwtUtils.generateAccessToken(user, authProperties.getJwtSecret(), authProperties.getAccessTtlSeconds(), authTime);
+            String refreshToken = JwtUtils.generateRefreshToken(user, authProperties.getJwtSecret(), authProperties.getRefreshTtlSeconds(), authTime);
 
             ResponseCookie accessCookie = cookieUtils.buildAccessCookie(accessToken);
             ResponseCookie refreshCookie = cookieUtils.buildRefreshCookie(refreshToken);
@@ -112,14 +114,28 @@ public class AuthController {
                 return ResponseEntity.badRequest().body(ProblemDetails.of(HttpStatus.BAD_REQUEST, "Invalid refresh token"));
             }
             
+            // A token without auth_time predates the absolute session lifetime: sign in again.
+            Long authTime = JwtUtils.extractAuthTime(refreshToken, authProperties.getJwtSecret());
+            if (authTime == null) {
+                return ResponseEntity.badRequest().body(ProblemDetails.of(HttpStatus.BAD_REQUEST, "Invalid refresh token"));
+            }
+
             String username = JwtUtils.extractUsername(refreshToken, authProperties.getJwtSecret());
-            UserDetails user = loadUserByUsernameUseCase.invoke(username);
-            
-            String newAccessToken = JwtUtils.generateAccessToken(user, authProperties.getJwtSecret(), authProperties.getAccessTtlSeconds());
-            String newRefreshToken = JwtUtils.generateRefreshToken(user, authProperties.getJwtSecret(), authProperties.getRefreshTtlSeconds());
-            
+            User user = loadUserByUsernameUseCase.invoke(username);
+
+            // A password change ends every session that started before it.
+            if (JwtUtils.issuedBeforePasswordChange(refreshToken, authProperties.getJwtSecret(), user.getLastPasswordChange())) {
+                return ResponseEntity.badRequest().body(ProblemDetails.of(HttpStatus.BAD_REQUEST, "Invalid refresh token"));
+            }
+
+            // The new refresh token keeps the original sign-in time and expiry: rotating never extends the session.
+            long refreshTtl = authProperties.getRefreshTtlSeconds();
+            String newAccessToken = JwtUtils.generateAccessToken(user, authProperties.getJwtSecret(), authProperties.getAccessTtlSeconds(), authTime);
+            String newRefreshToken = JwtUtils.generateRefreshToken(user, authProperties.getJwtSecret(), refreshTtl, authTime);
+            long remaining = Math.max(1, authTime + refreshTtl - Instant.now().getEpochSecond());
+
             ResponseCookie accessCookie = cookieUtils.buildAccessCookie(newAccessToken);
-            ResponseCookie refreshCookie = cookieUtils.buildRefreshCookie(newRefreshToken);
+            ResponseCookie refreshCookie = cookieUtils.buildRefreshCookie(newRefreshToken, remaining);
             
             return ResponseEntity.noContent()
                     .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
