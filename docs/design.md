@@ -130,7 +130,7 @@ Utilities read them with `h-(--control-h)`, `min-h-(--row-h)`, `p-(--card-pad)`,
 
 - `Icon` holds the whole icon set as inline SVG path data — no icon font, and only the glyphs named
   reach the bundle.
-- `StatTile` is the one place a large figure is styled; it sits inside a `<dl>`. `slim` shrinks it (20px figure, less padding) for the Overview's facts strip.
+- `StatTile` is the one place a large figure is styled; it sits inside a `<dl>`. `slim` shrinks it (20px figure, less padding) for the Overview's facts strip, whose tiles are Collected in <month>, Paid up (N of M members), Behind on dues (N members, X months unpaid) and Reminders (failed deliveries, with a Review link to Messages). There is no "expected" amount: the app has no dues amount to compare with.
 - `StatusLabel` is a coloured dot **plus a word**, never colour alone. Tones: `paid` (fern),
   `behind` (ochre), `danger` (clay), `muted` (neutral — inactive, transferred, deceased, archived).
 
@@ -148,10 +148,11 @@ existing ones, and state is carried by fill and border pattern as well as colour
 | not a member yet, or not owing dues | dashed `field` border | Not a member that month |
 | unpaid, no longer counted by the server | dashed `field` border | Unpaid, no longer counted |
 
-The Overview ledger uses the compact strip for every member who is behind or has not paid this month; the "Call this week" panel sits beside it.
+The Overview ledger lists every member who is behind or has not paid this month; the "Call this week" panel sits beside it. From the 2xl breakpoint (1400px) it is the "Dues by month" grid: `ledger` squares, a header row of month names, the legend (Paid, Missed, Due now, Not a member) at the card's top right and a footer row "Members who paid" (dues-paying members with a payment in each month). Below 1400px and on phones it keeps the compact strip.
 
 Sizes: `compact` 10x18px with a 2px gap (table rows), `large` 20x26px with a 3px gap and the month
-initial underneath (phone cards, initial is `aria-hidden`). Each square has a visually hidden
+initial underneath (phone cards, initial is `aria-hidden`), `ledger` 28px squares with a 4px gap and
+no initials (the parent draws the month names once above the column). Each square has a visually hidden
 "Oct 2026: Paid"; the container is a `role="group"` named per member.
 
 Rule (also in the util header): a past unpaid month on or after the join month is "missed" only for
