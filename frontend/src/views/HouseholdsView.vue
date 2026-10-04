@@ -17,125 +17,118 @@
 
     <p v-if="!loaded" class="m-0 py-4 text-(length:--text-body) text-muted" role="status">Loading households...</p>
 
-    <!-- Search -->
-    <form v-if="households.length" class="mb-6" role="search" aria-label="Search households" @submit.prevent>
-      <div class="md:w-80">
-        <label for="household-search" :class="LABEL">Search</label>
-        <input id="household-search" v-model="search" type="search" placeholder="Search by household name" autocomplete="off" :class="CONTROL">
-      </div>
-    </form>
-
-    <!-- Empty states -->
+    <!-- Empty state -->
     <div v-if="loaded && !loadError && !households.length">
       <EmptyNote>No households yet. <template v-if="authStore.isStaff">Add the first household, then choose it when you add or edit a member.</template><template v-else>A staff member can add the first one.</template></EmptyNote>
       <BaseButton v-if="authStore.isStaff" class="mt-2" @click="showAddModal">Add household</BaseButton>
     </div>
-    <div v-else-if="households.length && !visibleHouseholds.length">
-      <EmptyNote>No household matches "{{ search.trim() }}".</EmptyNote>
-      <BaseButton variant="secondary" class="mt-2" @click="search = ''">Clear search</BaseButton>
-    </div>
 
-    <template v-if="visibleHouseholds.length">
-      <p class="mt-0 mb-2 text-sm text-muted" aria-live="polite">
-        {{ visibleHouseholds.length !== households.length ? `${visibleHouseholds.length} of ${households.length} households` : `${households.length} ${households.length === 1 ? 'household' : 'households'}` }}
-      </p>
+    <!-- From lg: the list on the left, the chosen household on the right. Below lg: one or the other (the URL's ?id= says which) -->
+    <div v-if="households.length" class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:items-start">
+      <section :class="['min-w-0', selectedId && 'max-lg:hidden']" aria-label="All households">
+        <form class="mb-3" role="search" aria-label="Search households" @submit.prevent>
+          <label for="household-search" :class="LABEL">Search</label>
+          <input id="household-search" v-model="search" type="search" placeholder="Search by household name" autocomplete="off" :class="CONTROL">
+        </form>
 
-      <!-- md and up: ruled table -->
-      <table :class="TABLE">
-        <caption class="sr-only">Households</caption>
-        <thead>
-          <tr class="border-b border-rule">
-            <th scope="col" :class="TH">Name</th>
-            <th scope="col" :class="TH">City</th>
-            <th scope="col" :class="[TH, 'w-32']">Members</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="household in visibleHouseholds" :key="household.id" class="h-(--row-h) border-b border-rule">
-            <td :class="[TD, 'max-w-0 w-[50%]']">
-              <button type="button" :class="OPEN" @click="openDetail(household)">{{ household.name }}</button>
-            </td>
-            <td :class="[TD, 'max-w-0 [overflow-wrap:anywhere]']">
-              <template v-if="household.city">{{ household.city }}</template>
-              <span v-else class="text-muted"><span aria-hidden="true">&ndash;</span><span class="sr-only">No city</span></span>
-            </td>
-            <td :class="TD">{{ household.memberCount }}</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <!-- Below md: the same rows, stacked -->
-      <ul class="m-0 list-none border-t border-rule p-0 md:hidden">
-        <li v-for="household in visibleHouseholds" :key="household.id" class="border-b border-rule">
-          <button type="button" class="flex min-h-(--list-row-h) w-full cursor-pointer items-center justify-between gap-3 border-0 bg-transparent px-0 py-3 text-left font-sans text-(length:--text-body) text-ink" @click="openDetail(household)">
-            <span class="min-w-0">
-              <span :class="[NAME, 'block']">{{ household.name }}</span>
-              <span v-if="household.city" class="block text-sm text-muted [overflow-wrap:anywhere]">{{ household.city }}</span>
-            </span>
-            <span class="shrink-0 text-sm text-muted tabular-nums">{{ memberCountText(household.memberCount) }}</span>
-          </button>
-        </li>
-      </ul>
-    </template>
-
-    <!-- Detail -->
-    <BaseModal v-model="detailOpen" :title="selected?.name || 'Household'" size="md">
-      <AlertBanner v-if="detailError">{{ detailError }}</AlertBanner>
-      <p v-if="detailLoading" class="m-0 text-muted" role="status">Loading household...</p>
-      <div v-else-if="detail" class="flex flex-col gap-5">
-        <div>
-          <h3 :class="SUBHEAD">Address</h3>
-          <address v-if="addressLines.length" class="m-0 text-base not-italic [overflow-wrap:anywhere]">
-            <div v-for="line in addressLines" :key="line">{{ line }}</div>
-          </address>
-          <p v-else class="m-0 text-base text-muted">No address recorded.</p>
+        <div v-if="!visibleHouseholds.length">
+          <EmptyNote>No household matches "{{ search.trim() }}".</EmptyNote>
+          <BaseButton variant="secondary" class="mt-2" @click="search = ''">Clear search</BaseButton>
         </div>
-        <div v-if="detail.notes">
-          <h3 :class="SUBHEAD">Notes</h3>
-          <p class="m-0 text-base whitespace-pre-line [overflow-wrap:anywhere]">{{ detail.notes }}</p>
-        </div>
-        <div>
-          <h3 :class="SUBHEAD">Members ({{ detail.members.length }})</h3>
-          <ul v-if="detail.members.length" class="m-0 list-none border-t border-rule p-0">
-            <li v-for="member in detail.members" :key="member.id" class="flex min-h-11 flex-wrap items-center justify-between gap-x-4 border-b border-rule py-2">
-              <router-link :to="{ path: '/members', query: { search: member.name } }" class="font-medium [overflow-wrap:anywhere]">{{ member.name }}</router-link>
-              <StatusLabel :tone="statusTone(member.status)">{{ statusLabel(member.status) }}</StatusLabel>
-            </li>
-          </ul>
-          <p v-else class="m-0 text-base text-muted">
-            No members yet.<template v-if="authStore.isStaff"> Choose this household when you add or edit a member.</template>
+        <template v-else>
+          <p class="mt-0 mb-2 text-sm text-muted" aria-live="polite">
+            {{ visibleHouseholds.length !== households.length ? `${visibleHouseholds.length} of ${households.length} households` : `${households.length} ${households.length === 1 ? 'household' : 'households'}` }}
           </p>
-        </div>
-        <div>
-          <h3 :class="SUBHEAD">People without a membership ({{ dependents.length }})</h3>
-          <p class="m-0 mb-2 text-sm text-muted">Children, or a spouse who pays no dues. They get no messages and are not counted as members.</p>
-          <ul v-if="dependents.length" class="m-0 list-none border-t border-rule p-0">
-            <li v-for="person in dependents" :key="person.id" class="border-b border-rule py-2">
-              <div class="min-h-6 font-medium [overflow-wrap:anywhere]">{{ person.name }}</div>
-              <div v-if="person.birthDate" class="text-sm text-muted">Born {{ formatDay(person.birthDate) }}<template v-if="ageText(person.birthDate)"> &middot; {{ ageText(person.birthDate) }}</template></div>
-              <div v-if="authStore.isStaff" class="-mx-2 mt-1 flex flex-wrap">
-                <button type="button" :class="ROW_ACTION" @click="showEditPerson(person)">Edit<span class="sr-only"> {{ person.name }}</span></button>
-                <button type="button" :class="ROW_ACTION" @click="showMembershipModal(person)">Make a member<span class="sr-only">: {{ person.name }}</span></button>
-                <button v-if="authStore.isAdmin" type="button" :class="ROW_ACTION_DANGER" @click="showPersonDeleteConfirm(person)">Delete<span class="sr-only"> {{ person.name }}</span></button>
-              </div>
+          <ul class="m-0 list-none overflow-hidden rounded-md border border-rule bg-paper p-0">
+            <li v-for="household in visibleHouseholds" :key="household.id" class="border-b border-rule last:border-b-0">
+              <button
+                type="button"
+                :aria-current="String(household.id) === selectedId ? 'true' : undefined"
+                :class="['block min-h-(--list-row-h) w-full cursor-pointer border-0 px-4 py-3 text-left font-sans text-(length:--text-body) text-ink', String(household.id) === selectedId ? 'bg-teal-tint ring-2 ring-teal ring-inset' : 'bg-paper hover:bg-teal-tint']"
+                @click="openDetail(household)"
+              >
+                <span class="flex items-baseline justify-between gap-3">
+                  <span :class="NAME">{{ household.name }}</span>
+                  <span v-if="household.city" class="shrink-0 text-xs text-muted [overflow-wrap:anywhere]">{{ household.city }}</span>
+                </span>
+                <span class="block text-sm text-muted tabular-nums">{{ memberCountText(household.memberCount) }}</span>
+              </button>
             </li>
           </ul>
-          <template v-else>
-            <p class="m-0 text-base text-muted">
-              Nobody here without a membership.<template v-if="authStore.isStaff"> Add a child or a spouse who pays no dues, so the household shows everyone.</template><template v-else> A staff member can add them.</template>
+        </template>
+      </section>
+
+      <!-- Detail -->
+      <section v-if="selectedId" class="min-w-0" aria-labelledby="household-title">
+        <TextButton class="mb-2 inline-flex min-h-11 items-center lg:hidden" @click="closeDetail">All households</TextButton>
+        <AlertBanner v-if="detailError">{{ detailError }}</AlertBanner>
+        <p v-if="detailLoading" class="m-0 py-3 text-muted" role="status">Loading household...</p>
+        <div v-else-if="detail" :class="[CARD, 'flex flex-col gap-5']">
+          <div class="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+            <div class="min-w-0">
+              <h2 id="household-title" class="m-0 mb-1 text-xl font-semibold text-ink [overflow-wrap:anywhere]">{{ detail.name }}</h2>
+              <address v-if="addressLines.length" class="m-0 text-base not-italic [overflow-wrap:anywhere]">
+                <div v-for="line in addressLines" :key="line">{{ line }}</div>
+              </address>
+              <p v-else class="m-0 text-base text-muted">No address recorded.</p>
+            </div>
+            <div v-if="authStore.isStaff" class="flex flex-wrap gap-2">
+              <BaseButton variant="secondary" @click="showEditModal">Edit household</BaseButton>
+              <BaseButton v-if="authStore.isAdmin" variant="danger" @click="showDeleteConfirm">Delete household</BaseButton>
+            </div>
+          </div>
+
+          <p v-if="owedNotice" class="m-0 rounded-md border border-ochre-line bg-ochre-tint px-4 py-3 text-base text-ochre-text">{{ owedNotice }}</p>
+
+          <div v-if="detail.notes">
+            <h3 :class="SUBHEAD">Notes</h3>
+            <p class="m-0 text-base whitespace-pre-line [overflow-wrap:anywhere]">{{ detail.notes }}</p>
+          </div>
+
+          <div>
+            <h3 :class="SUBHEAD">Members ({{ memberRows.length }})</h3>
+            <p v-if="memberRows.length" class="m-0 mb-2 text-sm text-muted">Each pays dues on their own.</p>
+            <ul v-if="memberRows.length" class="m-0 list-none border-t border-rule p-0">
+              <li v-for="member in memberRows" :key="member.id" class="flex min-h-11 flex-wrap items-center gap-x-4 gap-y-2 border-b border-rule py-3">
+                <router-link :to="`/members/${member.id}`" class="min-w-0 flex-[1_1_10rem] font-medium [overflow-wrap:anywhere]">{{ member.name }}</router-link>
+                <StatusBadge :tone="statusTone(member.status)">{{ statusLabel(member.status) }}</StatusBadge>
+                <YearStrip v-if="member.strip" v-bind="member.strip" :muted="member.status === 'ARCHIVED'" />
+                <span class="min-w-28 text-right max-sm:ml-auto">
+                  <StatusLabel v-if="member.behindText" :tone="member.behindTone">{{ member.behindText }}</StatusLabel>
+                </span>
+              </li>
+            </ul>
+            <p v-else class="m-0 text-base text-muted">
+              No members yet.<template v-if="authStore.isStaff"> Choose this household when you add or edit a member.</template>
             </p>
-          </template>
-          <BaseButton v-if="authStore.isStaff" variant="secondary" class="mt-3 max-sm:min-h-11" @click="showAddPerson">
-            <Icon name="plus" :size="16" class="mr-1.5" />Add person
-          </BaseButton>
+          </div>
+
+          <div>
+            <h3 :class="SUBHEAD">People without a membership ({{ dependents.length }})</h3>
+            <p class="m-0 mb-2 text-sm text-muted">Children, or a spouse who pays no dues. They get no messages and are not counted as members.</p>
+            <ul v-if="dependents.length" class="m-0 list-none border-t border-rule p-0">
+              <li v-for="person in dependents" :key="person.id" class="border-b border-rule py-2">
+                <div class="min-h-6 font-medium [overflow-wrap:anywhere]">{{ person.name }}</div>
+                <div v-if="person.birthDate" class="text-sm text-muted">Born {{ formatDay(person.birthDate) }}<template v-if="ageText(person.birthDate)"> &middot; {{ ageText(person.birthDate) }}</template></div>
+                <div v-if="authStore.isStaff" class="-mx-2 mt-1 flex flex-wrap">
+                  <button type="button" :class="ROW_ACTION" @click="showEditPerson(person)">Edit<span class="sr-only"> {{ person.name }}</span></button>
+                  <button type="button" :class="ROW_ACTION" @click="showMembershipModal(person)">Make a member<span class="sr-only">: {{ person.name }}</span></button>
+                  <button v-if="authStore.isAdmin" type="button" :class="ROW_ACTION_DANGER" @click="showPersonDeleteConfirm(person)">Delete<span class="sr-only"> {{ person.name }}</span></button>
+                </div>
+              </li>
+            </ul>
+            <template v-else>
+              <p class="m-0 text-base text-muted">
+                Nobody here without a membership.<template v-if="authStore.isStaff"> Add a child or a spouse who pays no dues, so the household shows everyone.</template><template v-else> A staff member can add them.</template>
+              </p>
+            </template>
+            <BaseButton v-if="authStore.isStaff" variant="secondary" class="mt-3 max-sm:min-h-11" @click="showAddPerson">
+              <Icon name="plus" :size="16" class="mr-1.5" />Add person
+            </BaseButton>
+          </div>
         </div>
-      </div>
-      <template #footer>
-        <BaseButton variant="secondary" @click="detailOpen = false">Close</BaseButton>
-        <BaseButton v-if="authStore.isAdmin" variant="danger" :disabled="!detail" @click="showDeleteConfirm">Delete household</BaseButton>
-        <BaseButton v-if="authStore.isStaff" :disabled="!detail" @click="showEditModal">Edit household</BaseButton>
-      </template>
-    </BaseModal>
+      </section>
+    </div>
 
     <!-- Add and edit -->
     <BaseModal v-model="formOpen" :title="editing ? 'Edit household' : 'Add household'" size="md">
@@ -222,9 +215,11 @@ import api from '@/services/api'
 import { useAppStore } from '../stores/appStore'
 import { useAuthStore } from '../stores/authStore'
 import { formatDate, isValidEmail, localISODate } from '@/utils'
+import { monthsBehind } from '@/utils/dues'
 import { NEW_MEMBER_STATUS_OPTIONS, statusLabel, statusTone } from '@/utils/memberStatus'
 import { buildMembershipRequest, buildPersonRequest, ageText } from '@/utils/person'
 import { isValidPhone } from '@/utils/phoneRules'
+import { paidMonthsByMember } from '@/utils/yearStrip'
 import AlertBanner from '@/components/AlertBanner.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import BaseInput from '@/components/BaseInput.vue'
@@ -235,15 +230,20 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import EmptyNote from '@/components/EmptyNote.vue'
 import Icon from '@/components/Icon.vue'
 import PageHead from '@/components/PageHead.vue'
+import StatusBadge from '@/components/StatusBadge.vue'
 import StatusLabel from '@/components/StatusLabel.vue'
+import TextButton from '@/components/TextButton.vue'
+import YearStrip from '@/components/YearStrip.vue'
 
-import { CONTROL, LABEL, NAME, TABLE, TABLE_TH as TH, TABLE_TD as TD } from '@/ui/classes'
-const OPEN = 'cursor-pointer border-0 bg-transparent p-0 text-left font-sans text-(length:--text-body) font-medium text-teal underline underline-offset-2 hover:text-teal-hover [overflow-wrap:anywhere]'
+import { CARD, CONTROL, LABEL, NAME } from '@/ui/classes'
 const SUBHEAD = 'm-0 mb-1 font-sans text-[0.9375rem] font-medium text-muted'
 // a text action in a person's row: 44px tall, so it is easy to hit on a phone
 const ROW_ACTION_BASE = 'inline-flex min-h-11 cursor-pointer items-center border-0 bg-transparent px-2 font-sans text-sm font-medium underline underline-offset-[3px]'
 const ROW_ACTION = `${ROW_ACTION_BASE} text-teal hover:text-teal-hover`
 const ROW_ACTION_DANGER = `${ROW_ACTION_BASE} text-clay hover:text-clay-hover`
+
+// Same breakpoint as the shell (lg): from here the list and the household sit side by side
+const WIDE = '(min-width: 62rem)'
 
 const EMPTY_FORM = { name: '', addressLine1: '', addressLine2: '', city: '', postalCode: '', notes: '' }
 const FIELDS = Object.keys(EMPTY_FORM)
@@ -255,12 +255,12 @@ const EMPTY_MEMBERSHIP_ERRORS = { status: '', joinDate: '' }
 
 export default {
   name: 'HouseholdsView',
-  components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, BaseTextarea, ConfirmDialog, EmptyNote, Icon, PageHead, StatusLabel },
+  components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, BaseTextarea, ConfirmDialog, EmptyNote, Icon, PageHead, StatusBadge, StatusLabel, TextButton, YearStrip },
   setup() {
     return {
       appStore: useAppStore(),
       authStore: useAuthStore(),
-      TABLE, LABEL, CONTROL, TH, TD, NAME, OPEN, SUBHEAD, ROW_ACTION, ROW_ACTION_DANGER, NEW_MEMBER_STATUS_OPTIONS,
+      CARD, LABEL, CONTROL, NAME, SUBHEAD, ROW_ACTION, ROW_ACTION_DANGER, NEW_MEMBER_STATUS_OPTIONS,
       ageText,
       statusLabel,
       statusTone
@@ -272,11 +272,14 @@ export default {
       loaded: false,
       loadError: false,
       search: '',
-      selected: null,
       detail: null,
-      detailOpen: false,
       detailLoading: false,
       detailError: '',
+      detailToken: 0,
+      wide: true,
+      // for the strips and the dues notice: id -> member (months missed, join date) and id -> paid months; null when they did not load
+      membersById: null,
+      paidByMember: null,
       form: { ...EMPTY_FORM },
       formOpen: false,
       editing: false,
@@ -308,6 +311,50 @@ export default {
       const term = this.search.trim().toLowerCase()
       return term ? this.households.filter(household => (household.name || '').toLowerCase().includes(term)) : this.households
     },
+    // /households?id=<id> chooses the household (a member's page links here)
+    selectedId() {
+      const id = this.$route?.query?.id
+      return typeof id === 'string' && /^\d+$/.test(id) ? id : ''
+    },
+    // the open household, or its row in the list while it loads
+    selected() {
+      return this.detail || this.households.find(household => String(household.id) === this.selectedId) || null
+    },
+    // each member of the open household with the strip and the words that say where they stand (the strip rule: utils/yearStrip.js)
+    memberRows() {
+      const currentMonth = this.today.slice(0, 7)
+      return (this.detail?.members || []).map(member => {
+        const known = this.membersById?.get(member.id)
+        const owes = member.status === 'MEMBER'
+        const missed = known?.consecutiveMonthsMissed || 0
+        const strip = known && this.paidByMember
+          ? {
+              joinDate: known.joinDate || '',
+              paidMonths: this.paidByMember.get(member.id) || new Set(),
+              currentMonth,
+              monthsMissed: missed,
+              countsForDues: owes,
+              label: `Dues for ${member.name}, last 12 months`
+            }
+          : null
+        const behind = owes && known && missed > 0
+        return {
+          ...member,
+          strip,
+          missed: owes ? missed : 0,
+          behindText: behind ? monthsBehind(missed) : owes && known ? 'Paid up' : '',
+          behindTone: behind ? 'behind' : 'paid'
+        }
+      })
+    },
+    // "Dues are per member: 2 members in this household owe 3 months in total." Nothing when nobody is behind or the figures did not load.
+    owedNotice() {
+      const behind = this.memberRows.filter(member => member.missed > 0)
+      if (!behind.length) return ''
+      const months = behind.reduce((sum, member) => sum + member.missed, 0)
+      const who = `${behind.length} ${behind.length === 1 ? 'member' : 'members'} in this household ${behind.length === 1 ? 'owes' : 'owe'}`
+      return `Dues are per member: ${who} ${months} ${months === 1 ? 'month' : 'months'} in total.${this.dependents.length ? ' People without a membership owe nothing.' : ''}`
+    },
     // people with no membership (memberStatus is null; an archived member still has one)
     dependents() {
       return (this.detail?.people || []).filter(person => person.memberStatus == null)
@@ -319,10 +366,51 @@ export default {
       return [d.addressLine1, d.addressLine2, place].filter(Boolean)
     }
   },
+  watch: {
+    selectedId() {
+      this.loadDetail()
+    }
+  },
   async created() {
+    this.wideQuery = window.matchMedia?.(WIDE)
+    this.wide = this.wideQuery ? this.wideQuery.matches : true
+    this.wideQuery?.addEventListener('change', this.onWide)
+    this.loadDetail()
+    this.loadMembers()
+    this.loadPaidMonths()
     await this.loadHouseholds()
+    this.ensureSelection()
+  },
+  beforeUnmount() {
+    this.wideQuery?.removeEventListener('change', this.onWide)
   },
   methods: {
+    onWide(event) {
+      this.wide = event.matches
+      this.ensureSelection()
+    },
+    // Side by side there is always a household on the right: the first one until the user chooses
+    ensureSelection() {
+      if (this.wide && !this.selectedId && this.households.length) this.$router.replace({ query: { id: String(this.households[0].id) } })
+    },
+    // The members and their payments behind the strips (the calls the Overview makes too). A failure only hides the strips and the notice.
+    async loadMembers() {
+      try {
+        const members = await api.getMembers()
+        this.membersById = new Map((Array.isArray(members) ? members : []).map(member => [member.id, member]))
+      } catch (error) {
+        console.error('Error loading members for the household strips:', error)
+        this.membersById = null
+      }
+    },
+    async loadPaidMonths() {
+      try {
+        this.paidByMember = paidMonthsByMember(await api.getPayments())
+      } catch (error) {
+        console.error('Error loading payments for the household strips:', error)
+        this.paidByMember = null
+      }
+    },
     async loadHouseholds() {
       try {
         const data = await api.getHouseholds()
@@ -339,21 +427,31 @@ export default {
     memberCountText(count) {
       return `${count} ${count === 1 ? 'member' : 'members'}`
     },
-    async openDetail(household) {
-      this.selected = household
+    openDetail(household) {
+      this.$router.push({ query: { id: String(household.id) } })
+    },
+    closeDetail() {
+      this.$router.push({ query: {} })
+    },
+    // A later call (another household chosen) makes an earlier one that is still running stop
+    async loadDetail() {
+      const token = ++this.detailToken
       this.detail = null
       this.detailError = ''
+      this.detailLoading = false
+      if (!this.selectedId) return
       this.detailLoading = true
-      this.detailOpen = true
       try {
-        this.detail = await api.getHousehold(household.id)
+        const detail = await api.getHousehold(this.selectedId)
+        if (token === this.detailToken) this.detail = detail
       } catch (error) {
+        if (token !== this.detailToken) return
         console.error('Error loading household:', error)
         this.detailError = error.response?.status === 404
-          ? 'This household no longer exists. Close this window to see the current list.'
-          : 'The household did not load. Close this window and try again.'
+          ? 'This household no longer exists. Choose another from the list.'
+          : 'The household did not load. Choose it again from the list to retry.'
       } finally {
-        this.detailLoading = false
+        if (token === this.detailToken) this.detailLoading = false
       }
     },
     resetFormErrors() {
@@ -370,7 +468,6 @@ export default {
       this.editing = true
       this.form = Object.fromEntries(FIELDS.map(field => [field, this.detail[field] || '']))
       this.resetFormErrors()
-      this.detailOpen = false
       this.formOpen = true
     },
     validateForm() {
@@ -400,9 +497,10 @@ export default {
       this.saving = true
       try {
         const request = Object.fromEntries(FIELDS.map(field => [field, this.form[field].trim()]))
-        if (this.editing) await api.updateHousehold(this.selected.id, request)
-        else await api.createHousehold(request)
+        const saved = this.editing ? await api.updateHousehold(this.selected.id, request) : await api.createHousehold(request)
         await this.loadHouseholds()
+        if (this.editing) await this.reloadDetail()
+        else if (saved?.id) this.openDetail(saved)
         this.formOpen = false
         this.notify('success', this.editing ? 'Household saved' : 'Household added', request.name)
       } catch (error) {
@@ -422,11 +520,12 @@ export default {
         await api.deleteHousehold(id)
         await this.loadHouseholds()
         this.deleteOpen = false
-        this.detailOpen = false
+        await this.$router.replace({ query: {} })
+        this.ensureSelection()
         this.notify('success', 'Household deleted', name)
       } catch (error) {
         console.error('Error deleting household:', error)
-        // the server says why (for example, who is still assigned): show it in the open detail and in a toast
+        // the server says why (for example, who is still assigned): show it above the open household and in a toast
         this.deleteOpen = false
         this.detailError = error.message || 'Request failed'
         this.notifyFailure('Could not delete household', error)
@@ -437,19 +536,19 @@ export default {
     formatDay(date) {
       return formatDate(date, 'MMM d, yyyy')
     },
-    // After a person changes: the counts in the list and the people in the open household
+    // After a person changes: the counts in the list, the people in the open household and (a new member) the strips
     async reloadDetail() {
       try {
-        this.detail = await api.getHousehold(this.selected.id)
+        this.detail = await api.getHousehold(this.selectedId)
       } catch (error) {
         console.error('Error reloading household:', error)
         this.detailError = error.response?.status === 404
-          ? 'This household no longer exists. Close this window to see the current list.'
-          : 'The household did not refresh. Close this window and open it again.'
+          ? 'This household no longer exists. Choose another from the list.'
+          : 'The household did not refresh. Choose it again from the list.'
       }
     },
     async reloadAfterPersonChange() {
-      await Promise.all([this.loadHouseholds(), this.reloadDetail()])
+      await Promise.all([this.loadHouseholds(), this.reloadDetail(), this.loadMembers()])
     },
     // The messages for the answers the user can act on; '' means "show the server's own text"
     personProblem(error, name) {

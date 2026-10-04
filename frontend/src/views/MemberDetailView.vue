@@ -163,7 +163,7 @@
                 <span class="text-sm text-muted">No membership</span>
               </li>
             </ul>
-            <router-link to="/households" class="mt-3 inline-flex min-h-11 items-center text-base lg:min-h-0">Open household</router-link>
+            <router-link :to="{ path: '/households', query: { id: household.id } }" class="mt-3 inline-flex min-h-11 items-center text-base lg:min-h-0">Open household</router-link>
           </section>
         </div>
       </div>
