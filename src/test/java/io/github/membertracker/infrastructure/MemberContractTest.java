@@ -83,7 +83,7 @@ class MemberContractTest {
 
     @Test
     void putFixtureIsAcceptedAndReachesTheUseCase() throws Exception {
-        when(updateMemberUseCase.invoke(any(), any(), any(), any(), any(), any(), any())).thenReturn(Optional.of(new Member()));
+        when(updateMemberUseCase.invoke(any(), any(), any(), any(), any(), any())).thenReturn(Optional.of(new Member()));
 
         mockMvc.perform(put("/api/members/1").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
@@ -92,12 +92,12 @@ class MemberContractTest {
             .andExpect(status().isOk());
 
         verify(updateMemberUseCase).invoke(eq(1L), eq("Test Member"), eq("member@example.com"),
-            eq("+39 333 1234567"), eq(JOIN), eq(MemberStatus.MEMBER), isNull());
+            eq("+39 333 1234567"), eq(JOIN), eq(MemberStatus.MEMBER));
     }
 
     @Test
     void putForUnknownIdIsNotFound() throws Exception {
-        when(updateMemberUseCase.invoke(any(), any(), any(), any(), any(), any(), any())).thenReturn(Optional.empty());
+        when(updateMemberUseCase.invoke(any(), any(), any(), any(), any(), any())).thenReturn(Optional.empty());
 
         mockMvc.perform(put("/api/members/99").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
@@ -108,7 +108,7 @@ class MemberContractTest {
 
     @Test
     void systemManagedFieldsInTheBodyAreIgnored() throws Exception {
-        when(updateMemberUseCase.invoke(any(), any(), any(), any(), any(), any(), any())).thenReturn(Optional.of(new Member()));
+        when(updateMemberUseCase.invoke(any(), any(), any(), any(), any(), any())).thenReturn(Optional.of(new Member()));
         String body = fixture().replace("}", ", \"id\": 99, \"consecutiveMonthsMissed\": 7, "
             + "\"lastPaymentDate\": \"2020-01-01\", \"lastMissedCountMonth\": \"2026-09\"}");
 
@@ -120,7 +120,7 @@ class MemberContractTest {
 
         // the use case has no parameter for these fields, and the id comes from the path only
         verify(updateMemberUseCase).invoke(eq(1L), eq("Test Member"), eq("member@example.com"),
-            eq("+39 333 1234567"), eq(JOIN), eq(MemberStatus.MEMBER), isNull());
+            eq("+39 333 1234567"), eq(JOIN), eq(MemberStatus.MEMBER));
 
         when(saveMemberUseCase.invoke(any(), any(), any(), any(), any())).thenReturn(new Member());
         mockMvc.perform(post("/api/members").with(csrf())
@@ -177,7 +177,7 @@ class MemberContractTest {
 
     @Test
     void aBlankEmailBecomesNullAndAnEmailIsTrimmedOnUpdate() throws Exception {
-        when(updateMemberUseCase.invoke(any(), any(), any(), any(), any(), any(), any())).thenReturn(Optional.of(new Member()));
+        when(updateMemberUseCase.invoke(any(), any(), any(), any(), any(), any())).thenReturn(Optional.of(new Member()));
 
         mockMvc.perform(put("/api/members/1").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
@@ -191,14 +191,14 @@ class MemberContractTest {
             .andExpect(status().isOk());
 
         verify(updateMemberUseCase).invoke(eq(1L), eq("Test Member"), eq(null),
-            eq("+39 333 1234567"), eq(JOIN), eq(MemberStatus.MEMBER), isNull());
+            eq("+39 333 1234567"), eq(JOIN), eq(MemberStatus.MEMBER));
         verify(updateMemberUseCase).invoke(eq(2L), eq("Test Member"), eq("member@example.com"),
-            eq("+39 333 1234567"), eq(JOIN), eq(MemberStatus.MEMBER), isNull());
+            eq("+39 333 1234567"), eq(JOIN), eq(MemberStatus.MEMBER));
     }
 
     @Test
     void theStatusInTheBodyReachesTheUseCase() throws Exception {
-        when(updateMemberUseCase.invoke(any(), any(), any(), any(), any(), any(), any())).thenReturn(Optional.of(new Member()));
+        when(updateMemberUseCase.invoke(any(), any(), any(), any(), any(), any())).thenReturn(Optional.of(new Member()));
 
         mockMvc.perform(put("/api/members/1").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
@@ -207,42 +207,7 @@ class MemberContractTest {
             .andExpect(status().isOk());
 
         verify(updateMemberUseCase).invoke(eq(1L), eq("Test Member"), eq("member@example.com"),
-            eq("+39 333 1234567"), eq(JOIN), eq(MemberStatus.TRANSFERRED), isNull());
-    }
-
-    @Test
-    void theLegacyActiveFlagIsStillAcceptedOnUpdateWithAnInlineBody() throws Exception {
-        when(updateMemberUseCase.invoke(any(), any(), any(), any(), any(), any(), any())).thenReturn(Optional.of(new Member()));
-        String legacy = "{\"name\": \"Test Member\", \"email\": \"member@example.com\", \"phone\": \"+39 333 1234567\","
-            + " \"joinDate\": \"2025-01-15\", \"active\": true}";
-
-        mockMvc.perform(put("/api/members/1").with(csrf())
-                .with(user("s@example.com").roles("STAFF"))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(legacy))
-            .andExpect(status().isOk());
-
-        verify(updateMemberUseCase).invoke(eq(1L), eq("Test Member"), eq("member@example.com"),
-            eq("+39 333 1234567"), eq(JOIN), isNull(), eq(true));
-    }
-
-    @Test
-    void createMapsTheLegacyActiveFlagToAStatus() throws Exception {
-        when(saveMemberUseCase.invoke(any(), any(), any(), any(), any())).thenReturn(new Member());
-
-        mockMvc.perform(post("/api/members").with(csrf())
-                .with(user("s@example.com").roles("STAFF"))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(fixture().replace("\"status\": \"MEMBER\"", "\"active\": false")))
-            .andExpect(status().isOk());
-        mockMvc.perform(post("/api/members").with(csrf())
-                .with(user("s@example.com").roles("STAFF"))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(fixture().replace("\"status\": \"MEMBER\"", "\"active\": true, \"status\": \"INACTIVE\"")))
-            .andExpect(status().isOk());
-
-        verify(saveMemberUseCase, org.mockito.Mockito.times(2))
-            .invoke(eq("Test Member"), eq("member@example.com"), eq("+39 333 1234567"), eq(JOIN), eq(MemberStatus.INACTIVE));
+            eq("+39 333 1234567"), eq(JOIN), eq(MemberStatus.TRANSFERRED));
     }
 
     @Test
@@ -272,7 +237,7 @@ class MemberContractTest {
     }
 
     @Test
-    void theMemberJsonCarriesBothStatusAndActive() throws Exception {
+    void theMemberJsonCarriesTheStatusAndNoActiveFlag() throws Exception {
         Member member = new Member("A", null, null);
         member.setId(3L);
         member.setStatus(MemberStatus.DECEASED);
@@ -282,6 +247,6 @@ class MemberContractTest {
                 .with(user("v@example.com").roles("VOLUNTEER")))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.status").value("DECEASED"))
-            .andExpect(jsonPath("$.active").value(false));
+            .andExpect(jsonPath("$.active").doesNotExist());
     }
 }

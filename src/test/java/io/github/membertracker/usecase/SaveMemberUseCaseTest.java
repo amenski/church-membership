@@ -54,7 +54,7 @@ class SaveMemberUseCaseTest {
         assertThat(s.getEmail()).isEqualTo("dan@example.com");
         assertThat(s.getPhone()).isNull();
         assertThat(s.getJoinDate()).isEqualTo(LocalDate.now());
-        assertThat(s.isActive()).isTrue();
+        assertThat(s.getStatus().countsForDues()).isTrue();
         assertThat(s.getConsecutiveMonthsMissed()).isZero();
         assertThat(s.getLastPaymentDate()).isNull();
         assertThat(s.getLastMissedCountMonth()).isNull();
@@ -101,7 +101,7 @@ class SaveMemberUseCaseTest {
         Member inactive = useCase.invoke("C", null, null, null, MemberStatus.INACTIVE);
 
         assertThat(inactive.getStatus()).isEqualTo(MemberStatus.INACTIVE);
-        assertThat(inactive.isActive()).isFalse();
+        assertThat(inactive.getStatus().countsForDues()).isFalse();
     }
 
     @Test

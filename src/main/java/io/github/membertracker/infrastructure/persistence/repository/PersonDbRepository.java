@@ -5,7 +5,6 @@ import io.github.membertracker.domain.model.Person;
 import io.github.membertracker.domain.repository.PersonRepository;
 import io.github.membertracker.infrastructure.persistence.entity.HouseholdEntity;
 import io.github.membertracker.infrastructure.persistence.entity.PersonEntity;
-import io.github.membertracker.infrastructure.persistence.mapper.MemberPersistenceMapper;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,13 +15,11 @@ import java.util.Optional;
 public class PersonDbRepository implements PersonRepository {
 
     private final PersonJpaRepository personJpaRepository;
-    private final MemberJpaRepository memberJpaRepository;
     private final HouseholdJpaRepository householdJpaRepository;
 
-    public PersonDbRepository(PersonJpaRepository personJpaRepository, MemberJpaRepository memberJpaRepository,
+    public PersonDbRepository(PersonJpaRepository personJpaRepository,
                               HouseholdJpaRepository householdJpaRepository) {
         this.personJpaRepository = personJpaRepository;
-        this.memberJpaRepository = memberJpaRepository;
         this.householdJpaRepository = householdJpaRepository;
     }
 
@@ -46,10 +43,6 @@ public class PersonDbRepository implements PersonRepository {
         return toDomain(personJpaRepository.findRowsByHousehold(householdId));
     }
 
-    /**
-     * DUAL-WRITE, remove at plan step 12: a person who has a membership also gets its legacy member columns rewritten
-     * ({@link MemberPersistenceMapper#copyToLegacyColumns}), in the same transaction, so the drift query stays empty.
-     */
     @Override
     @Transactional
     public Person save(Person person) {
@@ -63,10 +56,6 @@ public class PersonDbRepository implements PersonRepository {
         entity.setBirthDate(person.birthDate());
         entity.setHousehold(resolveHousehold(person.householdId(), isStored ? entity.getHousehold() : null));
         PersonEntity saved = personJpaRepository.save(entity);
-        if (isStored) {
-            memberJpaRepository.findByPersonId(saved.getId())
-                    .ifPresent(member -> MemberPersistenceMapper.copyToLegacyColumns(saved, member));
-        }
         personJpaRepository.flush();
         return personJpaRepository.findRowById(saved.getId()).map(PersonRow::toDomain).orElseThrow();
     }

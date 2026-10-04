@@ -30,13 +30,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
- * Step 9: name, email and phone are READ from the person row. Each test alters the legacy member columns behind the
- * application's back (UPDATE member SET name = 'LEGACY ...') while the person keeps the real values, and the API must
- * still answer with the person's. Real persistence on in-memory H2.
+ * Name, email and phone live on the person row only (the legacy member columns are gone, plan step 12): every read
+ * path (members, overdue lists, exports, payments, deliveries) must answer with the person's values, and each list read
+ * must be one joined statement. Real persistence on in-memory H2.
  */
 @SpringBootTest(
     properties = {
@@ -53,7 +52,6 @@ import org.springframework.test.web.servlet.MockMvc;
 class PersonReadSwitchTest {
 
     @Autowired private MockMvc mockMvc;
-    @Autowired private JdbcTemplate jdbc;
     @Autowired private EntityManagerFactory entityManagerFactory;
     @Autowired private SaveMemberUseCase saveMember;
     @Autowired private MemberRepository memberRepository;
@@ -83,10 +81,6 @@ class PersonReadSwitchTest {
         messageDeliveryJpaRepository.save(new MessageDeliveryEntity(
             memberJpaRepository.findById(abebe.getId()).orElseThrow(), communication,
             MessageDeliveryEntity.DeliveryChannel.EMAIL));
-
-        // The legacy columns now disagree with the person rows, in the opposite name order.
-        jdbc.update("UPDATE member SET name = 'LEGACY Z', email = 'legacy-z@example.org', phone = '000' WHERE id = ?", abebe.getId());
-        jdbc.update("UPDATE member SET name = 'LEGACY A', email = 'legacy-a@example.org', phone = '111' WHERE id = ?", zed.getId());
     }
 
     @AfterEach
@@ -126,8 +120,8 @@ class PersonReadSwitchTest {
     }
 
     @Test
-    void theOverdueListsSortByThePersonNameNotTheLegacyName() throws Exception {
-        // Same months missed, so the tie is broken by name: by person Abebe < Zed, by the legacy columns it would be reversed.
+    void theOverdueListsSortByThePersonName() throws Exception {
+        // Same months missed, so the tie is broken by the person's name: Abebe < Zed.
         assertThat((List<String>) JsonPath.read(getAsAdmin("/api/dashboard/overdue-members"), "$[*].name"))
             .containsExactly("Abebe Kebede", "Zed Zewdu");
         assertThat((List<String>) JsonPath.read(getAsAdmin("/api/members/overdue/1"), "$[*].name"))
@@ -140,8 +134,7 @@ class PersonReadSwitchTest {
     void theMemberExportWritesThePersonValues() throws Exception {
         String csv = getAsAdmin("/api/members/export");
 
-        assertThat(csv).contains("Abebe Kebede").contains("abebe@example.org").contains("+390611")
-            .doesNotContain("LEGACY").doesNotContain("legacy-");
+        assertThat(csv).contains("Abebe Kebede").contains("abebe@example.org").contains("+390611");
     }
 
     @Test
@@ -154,7 +147,7 @@ class PersonReadSwitchTest {
         }
         long paymentId = paymentJpaRepository.findAll().get(0).getId();
         assertThat((String) JsonPath.read(getAsAdmin("/api/payments/" + paymentId), "$.member.name")).isEqualTo("Abebe Kebede");
-        assertThat(getAsAdmin("/api/payments/export")).contains("Abebe Kebede").doesNotContain("LEGACY");
+        assertThat(getAsAdmin("/api/payments/export")).contains("Abebe Kebede");
     }
 
     @Test
@@ -174,23 +167,6 @@ class PersonReadSwitchTest {
         assertThat((List<String>) JsonPath.read(body, "$[*].recipient.phone")).containsExactly("+390611");
         assertThat(messageDeliveryRepository.findByCommunicationId(communication.getId()))
             .extracting(d -> d.getRecipient().getName()).containsExactly("Abebe Kebede");
-    }
-
-    @Test
-    void savingAMemberHealsTheLegacyColumnsFromThePerson() {
-        memberRepository.save(memberRepository.findById(abebe.getId()).orElseThrow());
-        assertThat(jdbc.queryForList(PersonDriftQuery.SQL)).hasSize(1);
-
-        memberRepository.save(memberRepository.findById(zed.getId()).orElseThrow());
-        assertThat(jdbc.queryForList(PersonDriftQuery.SQL)).isEmpty();
-        assertThat(jdbc.queryForMap("SELECT name, email FROM member WHERE id = ?", abebe.getId()))
-            .containsEntry("NAME", "Abebe Kebede").containsEntry("EMAIL", "abebe@example.org");
-    }
-
-    @Test
-    void theDriftQueryStillSeesTheAlteredLegacyColumns() {
-        assertThat(jdbc.queryForList(PersonDriftQuery.SQL)).hasSize(2)
-            .allSatisfy(row -> assertThat(row).containsEntry("PROBLEM", "DRIFT"));
     }
 
     @Test

@@ -80,9 +80,8 @@ public class MemberDbRepository implements MemberRepository {
     }
 
     /**
-     * DUAL-WRITE, remove at plan step 12: name, email and phone go to the legacy member columns (toEntity) and to the
-     * linked person row. A new member creates its person; an edit updates the person it already has. Reads use the
-     * person only (step 9), so saving also heals a legacy column that drifted. One transaction, so a member never exists without its person.
+     * Name, email and phone go to the linked person row. A new member creates its person; an edit updates the person
+     * it already has. One transaction, so a member never exists without its person.
      */
     @Override
     @Transactional
@@ -94,7 +93,7 @@ public class MemberDbRepository implements MemberRepository {
         if (!isStored) {
             person = entity.getPerson();
         }
-        MemberPersistenceMapper.copyToPerson(member, person);
+        MemberPersistenceMapper.writeToPerson(member, person);
         person.setHousehold(resolveHousehold(member.getHouseholdId(), isStored ? person.getHousehold() : null));
         entity.setPerson(person);
         return MemberPersistenceMapper.toDomain(memberJpaRepository.save(entity));

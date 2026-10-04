@@ -111,10 +111,10 @@ public class MemberController {
     public Member createMember(@Valid @RequestBody MemberRequest request) {
         if (request.getHouseholdId() != null) {
             return saveMemberUseCase.invoke(request.getName(), request.getEmail(), request.getPhone(),
-                    request.getJoinDate(), request.statusForCreate(), request.getHouseholdId());
+                    request.getJoinDate(), request.getStatus(), request.getHouseholdId());
         }
         return saveMemberUseCase.invoke(request.getName(), request.getEmail(), request.getPhone(), request.getJoinDate(),
-                request.statusForCreate());
+                request.getStatus());
     }
 
     @PutMapping("/{id}")
@@ -126,9 +126,9 @@ public class MemberController {
         }
         Optional<Member> updated = request.isHouseholdIdSet()
                 ? updateMemberUseCase.invoke(id, request.getName(), request.getEmail(), request.getPhone(),
-                        request.getJoinDate(), request.getStatus(), request.getActive(), true, request.getHouseholdId())
+                        request.getJoinDate(), request.getStatus(), true, request.getHouseholdId())
                 : updateMemberUseCase.invoke(id, request.getName(), request.getEmail(), request.getPhone(),
-                        request.getJoinDate(), request.getStatus(), request.getActive());
+                        request.getJoinDate(), request.getStatus());
         return updated
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -186,15 +186,14 @@ public class MemberController {
     }
 
     private ResponseEntity<byte[]> csvResponse(List<Member> members) {
-        StringBuilder csv = new StringBuilder("id,name,email,phone,joinDate,active,consecutiveMonthsMissed,status\n");
+        StringBuilder csv = new StringBuilder("ID,Name,Email,Phone,Join date,Months behind,Status\n");
         for (Member member : members) {
-            csv.append(String.format("%s,%s,%s,%s,%s,%s,%d,%s%n",
+            csv.append(String.format("%s,%s,%s,%s,%s,%d,%s%n",
                 member.getId() != null ? member.getId() : "0",
                 CsvUtils.escapeCsv(member.getName()),
                 CsvUtils.escapeCsv(member.getEmail()),
                 CsvUtils.escapeCsv(member.getPhone()),
                 member.getJoinDate() != null ? member.getJoinDate().format(DateTimeFormatter.ISO_LOCAL_DATE) : "",
-                member.isActive(),
                 member.getConsecutiveMonthsMissed(),
                 member.getStatus()));
         }

@@ -50,14 +50,14 @@ class UpdateMemberUseCaseTest {
 
     @Test
     void unknownIdReturnsEmptyAndSavesNothing() {
-        assertThat(useCase.invoke(42L, "N", "n@example.com", null, null, null, null)).isEmpty();
+        assertThat(useCase.invoke(42L, "N", "n@example.com", null, null, null)).isEmpty();
         verify(memberRepository, never()).save(any());
         verifyNoInteractions(recordActivity);
     }
 
     @Test
     void anEmailAnotherMemberHasIsAllowed() {
-        Member result = useCase.invoke(1L, "New", "OTHER@example.com", "+390622222222", null, null, null).orElseThrow();
+        Member result = useCase.invoke(1L, "New", "OTHER@example.com", "+390622222222", null, null).orElseThrow();
 
         assertThat(result.getName()).isEqualTo("New");
         assertThat(result.getEmail()).isEqualTo("OTHER@example.com");
@@ -67,7 +67,7 @@ class UpdateMemberUseCaseTest {
 
     @Test
     void theEmailCanBeRemoved() {
-        Member result = useCase.invoke(1L, "Old", null, null, null, null, null).orElseThrow();
+        Member result = useCase.invoke(1L, "Old", null, null, null, null).orElseThrow();
 
         assertThat(result.getEmail()).isNull();
         verify(memberRepository).save(stored);
@@ -75,7 +75,7 @@ class UpdateMemberUseCaseTest {
 
     @Test
     void systemManagedFieldsArePreserved() {
-        Member result = useCase.invoke(1L, "New", "new@example.com", null, null, null, null).orElseThrow();
+        Member result = useCase.invoke(1L, "New", "new@example.com", null, null, null).orElseThrow();
 
         assertThat(result.getConsecutiveMonthsMissed()).isEqualTo(4);
         assertThat(result.getLastPaymentDate()).isEqualTo(LocalDate.of(2026, 5, 10));
@@ -87,24 +87,24 @@ class UpdateMemberUseCaseTest {
     void reactivatingGoesThroughTheDomainAndResetsTheCounter() {
         stored.setStatus(MemberStatus.INACTIVE);
 
-        Member result = useCase.invoke(1L, "Old", "old@example.com", null, null, null, true).orElseThrow();
+        Member result = useCase.invoke(1L, "Old", "old@example.com", null, null, MemberStatus.MEMBER).orElseThrow();
 
-        assertThat(result.isActive()).isTrue();
+        assertThat(result.getStatus().countsForDues()).isTrue();
         assertThat(result.getConsecutiveMonthsMissed()).isZero();
         assertThat(result.getLastPaymentDate()).isEqualTo(LocalDate.of(2026, 5, 10));
     }
 
     @Test
     void deactivatingAnActiveMember() {
-        Member result = useCase.invoke(1L, "Old", "old@example.com", null, null, null, false).orElseThrow();
+        Member result = useCase.invoke(1L, "Old", "old@example.com", null, null, MemberStatus.INACTIVE).orElseThrow();
 
-        assertThat(result.isActive()).isFalse();
+        assertThat(result.getStatus().countsForDues()).isFalse();
         assertThat(result.getConsecutiveMonthsMissed()).isEqualTo(4);
     }
 
     @Test
     void anEditRecordsOneUpdateEntryAndNoStatusEntry() {
-        useCase.invoke(1L, "New", "new@example.com", null, null, null, null);
+        useCase.invoke(1L, "New", "new@example.com", null, null, null);
 
         verify(recordActivity).record(ActivityType.MEMBER_UPDATED, "Member New was updated", "MEMBER", 1L);
         verifyNoMoreInteractions(recordActivity);
@@ -112,7 +112,7 @@ class UpdateMemberUseCaseTest {
 
     @Test
     void deactivatingRecordsOnlyTheTypedEntry() {
-        useCase.invoke(1L, "Old", "old@example.com", null, null, null, false);
+        useCase.invoke(1L, "Old", "old@example.com", null, null, MemberStatus.INACTIVE);
 
         verify(recordActivity).record(ActivityType.MEMBER_DEACTIVATED, "Member Old was deactivated", "MEMBER", 1L);
         verifyNoMoreInteractions(recordActivity);
@@ -122,14 +122,14 @@ class UpdateMemberUseCaseTest {
     void reactivatingAlsoRecordsTheStatusChange() {
         stored.setStatus(MemberStatus.INACTIVE);
 
-        useCase.invoke(1L, "Old", "old@example.com", null, null, null, true);
+        useCase.invoke(1L, "Old", "old@example.com", null, null, MemberStatus.MEMBER);
 
         verify(recordActivity).record(ActivityType.MEMBER_ACTIVATED, "Member Old was activated", "MEMBER", 1L);
     }
 
     @Test
     void anUnchangedStatusRecordsNoStatusEntry() {
-        useCase.invoke(1L, "Old", "old@example.com", null, null, null, true);
+        useCase.invoke(1L, "Old", "old@example.com", null, null, MemberStatus.MEMBER);
 
         verify(recordActivity, never()).record(eq(ActivityType.MEMBER_ACTIVATED), any(), any(), any());
         verify(recordActivity, never()).record(eq(ActivityType.MEMBER_DEACTIVATED), any(), any(), any());
@@ -137,36 +137,27 @@ class UpdateMemberUseCaseTest {
 
     @Test
     void sameOrAbsentActiveStateDoesNotThrowOrChangeAnything() {
-        assertThatCode(() -> useCase.invoke(1L, "Old", "old@example.com", null, null, null, true)).doesNotThrowAnyException();
+        assertThatCode(() -> useCase.invoke(1L, "Old", "old@example.com", null, null, MemberStatus.MEMBER)).doesNotThrowAnyException();
         assertThat(stored.getConsecutiveMonthsMissed()).isEqualTo(4);
 
         stored.setStatus(MemberStatus.INACTIVE);
-        assertThatCode(() -> useCase.invoke(1L, "Old", "old@example.com", null, null, null, false)).doesNotThrowAnyException();
-        assertThatCode(() -> useCase.invoke(1L, "Old", "old@example.com", null, null, null, null)).doesNotThrowAnyException();
-        assertThat(stored.isActive()).isFalse();
+        assertThatCode(() -> useCase.invoke(1L, "Old", "old@example.com", null, null, MemberStatus.INACTIVE)).doesNotThrowAnyException();
+        assertThatCode(() -> useCase.invoke(1L, "Old", "old@example.com", null, null, null)).doesNotThrowAnyException();
+        assertThat(stored.getStatus().countsForDues()).isFalse();
     }
 
     @Test
     void joinDateChangesOnlyWhenGiven() {
-        useCase.invoke(1L, "Old", "old@example.com", null, null, null, null);
+        useCase.invoke(1L, "Old", "old@example.com", null, null, null);
         assertThat(stored.getJoinDate()).isEqualTo(JOINED);
 
-        useCase.invoke(1L, "Old", "old@example.com", null, LocalDate.of(2025, 2, 2), null, null);
+        useCase.invoke(1L, "Old", "old@example.com", null, LocalDate.of(2025, 2, 2), null);
         assertThat(stored.getJoinDate()).isEqualTo(LocalDate.of(2025, 2, 2));
     }
 
     @Test
-    void aStatusInTheRequestWinsOverActive() {
-        Member result = useCase.invoke(1L, "Old", "old@example.com", null, null, MemberStatus.TRANSFERRED, true).orElseThrow();
-
-        assertThat(result.getStatus()).isEqualTo(MemberStatus.TRANSFERRED);
-        assertThat(result.isActive()).isFalse();
-        assertThat(result.getConsecutiveMonthsMissed()).isEqualTo(4);
-    }
-
-    @Test
     void markingAMemberDeceasedFreezesTheCounterAndRecordsDeactivationAndTheNewStatus() {
-        Member result = useCase.invoke(1L, "Old", "old@example.com", null, null, MemberStatus.DECEASED, null).orElseThrow();
+        Member result = useCase.invoke(1L, "Old", "old@example.com", null, null, MemberStatus.DECEASED).orElseThrow();
 
         assertThat(result.getStatus()).isEqualTo(MemberStatus.DECEASED);
         assertThat(result.getConsecutiveMonthsMissed()).isEqualTo(4);
@@ -180,7 +171,7 @@ class UpdateMemberUseCaseTest {
             stored.setStatus(from);
             stored.setConsecutiveMonthsMissed(4);
 
-            Member result = useCase.invoke(1L, "Old", "old@example.com", null, null, MemberStatus.MEMBER, null).orElseThrow();
+            Member result = useCase.invoke(1L, "Old", "old@example.com", null, null, MemberStatus.MEMBER).orElseThrow();
 
             assertThat(result.getStatus()).as("from %s", from).isEqualTo(MemberStatus.MEMBER);
             assertThat(result.getConsecutiveMonthsMissed()).as("from %s", from).isZero();
@@ -193,7 +184,7 @@ class UpdateMemberUseCaseTest {
     void movingBetweenTwoStatusesThatDoNotCountForDuesWritesNoActivationEntry() {
         stored.setStatus(MemberStatus.INACTIVE);
 
-        useCase.invoke(1L, "Old", "old@example.com", null, null, MemberStatus.TRANSFERRED, null);
+        useCase.invoke(1L, "Old", "old@example.com", null, null, MemberStatus.TRANSFERRED);
 
         verify(recordActivity).record(ActivityType.MEMBER_UPDATED, "Member Old was updated, status is now transferred", "MEMBER", 1L);
         verify(recordActivity, never()).record(eq(ActivityType.MEMBER_ACTIVATED), any(), any(), any());
@@ -201,28 +192,8 @@ class UpdateMemberUseCaseTest {
     }
 
     @Test
-    void anOldClientSendingActiveFalseDoesNotTurnADeceasedPersonIntoInactive() {
-        stored.setStatus(MemberStatus.DECEASED);
-
-        Member result = useCase.invoke(1L, "New name", "old@example.com", null, null, null, false).orElseThrow();
-
-        assertThat(result.getStatus()).isEqualTo(MemberStatus.DECEASED);
-        assertThat(result.getName()).isEqualTo("New name");
-    }
-
-    @Test
-    void anOldClientSendingActiveTrueReactivatesAnyNonMember() {
-        stored.setStatus(MemberStatus.TRANSFERRED);
-
-        Member result = useCase.invoke(1L, "Old", "old@example.com", null, null, null, true).orElseThrow();
-
-        assertThat(result.getStatus()).isEqualTo(MemberStatus.MEMBER);
-        assertThat(result.getConsecutiveMonthsMissed()).isZero();
-    }
-
-    @Test
     void archivedIsRefusedWithAFieldErrorAndNothingIsSaved() {
-        assertThatThrownBy(() -> useCase.invoke(1L, "Old", "old@example.com", null, null, MemberStatus.ARCHIVED, null))
+        assertThatThrownBy(() -> useCase.invoke(1L, "Old", "old@example.com", null, null, MemberStatus.ARCHIVED))
             .isInstanceOf(MemberDomainException.class)
             .hasMessage("A member cannot be archived here.")
             .satisfies(e -> {
@@ -240,7 +211,7 @@ class UpdateMemberUseCaseTest {
     void anArchivedMemberCanBeRestoredToMemberWhichClearsTheArchiveTimeAndResetsTheCounter() {
         stored.archive(java.time.LocalDateTime.of(2026, 9, 1, 12, 0));
 
-        Member result = useCase.invoke(1L, "Old", "old@example.com", null, null, MemberStatus.MEMBER, null).orElseThrow();
+        Member result = useCase.invoke(1L, "Old", "old@example.com", null, null, MemberStatus.MEMBER).orElseThrow();
 
         assertThat(result.getStatus()).isEqualTo(MemberStatus.MEMBER);
         assertThat(result.getArchivedAt()).isNull();
@@ -251,7 +222,7 @@ class UpdateMemberUseCaseTest {
     void anArchivedMemberCanBeRestoredToInactiveKeepingTheCounter() {
         stored.archive(java.time.LocalDateTime.of(2026, 9, 1, 12, 0));
 
-        Member result = useCase.invoke(1L, "Old", "old@example.com", null, null, MemberStatus.INACTIVE, null).orElseThrow();
+        Member result = useCase.invoke(1L, "Old", "old@example.com", null, null, MemberStatus.INACTIVE).orElseThrow();
 
         assertThat(result.getStatus()).isEqualTo(MemberStatus.INACTIVE);
         assertThat(result.getArchivedAt()).isNull();
@@ -263,7 +234,7 @@ class UpdateMemberUseCaseTest {
         stored.archive(java.time.LocalDateTime.of(2026, 9, 1, 12, 0));
 
         for (MemberStatus target : new MemberStatus[] {MemberStatus.DECEASED, MemberStatus.TRANSFERRED}) {
-            assertThatThrownBy(() -> useCase.invoke(1L, "Old", "old@example.com", null, null, target, null))
+            assertThatThrownBy(() -> useCase.invoke(1L, "Old", "old@example.com", null, null, target))
                 .isInstanceOf(MemberDomainException.class)
                 .extracting("errorCode").isEqualTo(MemberDomainException.STATUS_NOT_ALLOWED);
         }

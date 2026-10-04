@@ -12,7 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Through the real repository and database: the status is stored, and the legacy active column follows it. */
+/** Through the real repository and database: the status is stored and read back. */
 @SpringBootTest(
     properties = {
         "spring.datasource.url=jdbc:h2:mem:memberstatus;MODE=MySQL;DB_CLOSE_DELAY=-1",
@@ -34,7 +34,7 @@ class MemberStatusPersistenceTest {
     }
 
     @Test
-    void everyStatusIsStoredAndActiveIsKeptInStep() {
+    void everyStatusIsStored() {
         for (MemberStatus status : MemberStatus.values()) {
             Member member = new Member("Status " + status, null, null);
             member.setStatus(status);
@@ -43,7 +43,6 @@ class MemberStatusPersistenceTest {
 
             MemberEntity row = memberJpaRepository.findById(saved.getId()).orElseThrow();
             assertThat(row.getStatus()).as(status.name()).isEqualTo(status.name());
-            assertThat(row.isActive()).as(status.name()).isEqualTo(status.countsForDues());
             assertThat(memberRepository.findById(saved.getId()).orElseThrow().getStatus()).isEqualTo(status);
         }
     }
@@ -68,15 +67,15 @@ class MemberStatusPersistenceTest {
     }
 
     @Test
-    void changingTheStatusMovesTheLegacyColumnToo() {
+    void changingTheStatusIsStored() {
         Member saved = memberRepository.save(new Member("Moving", null, null));
 
         saved.setStatus(MemberStatus.TRANSFERRED);
         memberRepository.save(saved);
-        assertThat(memberJpaRepository.findById(saved.getId()).orElseThrow().isActive()).isFalse();
+        assertThat(memberJpaRepository.findById(saved.getId()).orElseThrow().getStatus()).isEqualTo("TRANSFERRED");
 
         saved.activate();
         memberRepository.save(saved);
-        assertThat(memberJpaRepository.findById(saved.getId()).orElseThrow().isActive()).isTrue();
+        assertThat(memberJpaRepository.findById(saved.getId()).orElseThrow().getStatus()).isEqualTo("MEMBER");
     }
 }

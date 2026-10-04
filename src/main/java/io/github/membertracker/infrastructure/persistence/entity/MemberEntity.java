@@ -22,18 +22,12 @@ public class MemberEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String name;
-    private String email;
-    private String phone;
     private LocalDate joinDate;
     private LocalDate lastPaymentDate;
     private int consecutiveMonthsMissed;
 
     @Column(name = "last_missed_count_month", length = 7)
     private String lastMissedCountMonth;
-
-    /** Kept equal to {@code status == MEMBER} by MemberPersistenceMapper, its only writer, until the contract step. */
-    private boolean active;
 
     @Column(name = "status", nullable = false, length = 20)
     private String status = "MEMBER";
@@ -42,24 +36,14 @@ public class MemberEntity {
     private LocalDateTime archivedAt;
 
     /**
-     * The person behind this membership (person_id, NOT NULL, unique). Written beside the legacy name/email/phone
-     * columns by MemberDbRepository.save until step 12; null only on the detached references the payment and
-     * delivery repositories build, which are never saved.
+     * The person behind this membership (person_id, NOT NULL, unique), the only home of name, email and phone.
+     * Null only on the detached references the payment and delivery repositories build, which are never saved.
      */
     @OneToOne(optional = false, cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinColumn(name = "person_id", nullable = false, unique = true)
     private PersonEntity person;
 
     public MemberEntity() {
-    }
-
-    public MemberEntity(String name, String email, String phone) {
-        this.name = name;
-        this.email = email;
-        this.phone = phone;
-        this.joinDate = LocalDate.now();
-        this.active = true;
-        this.consecutiveMonthsMissed = 0;
     }
 
     // Getters and Setters
@@ -69,30 +53,6 @@ public class MemberEntity {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
     }
 
     public LocalDate getJoinDate() {
@@ -125,14 +85,6 @@ public class MemberEntity {
 
     public void setLastMissedCountMonth(String lastMissedCountMonth) {
         this.lastMissedCountMonth = lastMissedCountMonth;
-    }
-
-    public boolean isActive() {
-        return active;
-    }
-
-    public void setActive(boolean active) {
-        this.active = active;
     }
 
     public String getStatus() {

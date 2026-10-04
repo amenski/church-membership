@@ -23,7 +23,6 @@ import io.github.membertracker.usecase.SaveMemberUseCase;
 import jakarta.persistence.EntityManagerFactory;
 import java.time.YearMonth;
 import java.util.List;
-import java.util.Map;
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.AfterEach;
@@ -39,7 +38,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 /**
  * Step 10 through the real controllers, use cases, repositories and an in-memory H2 database: create a household,
  * assign and unassign people through the member API, the delete rule, who sees archived members, the activity log,
- * and the drift query staying empty. Real persistence, no mocks.
+ * and the audit trail. Real persistence, no mocks.
  */
 @SpringBootTest(
     properties = {
@@ -97,10 +96,6 @@ class HouseholdFlowIntegrationTest {
 
     private String member(long id) throws Exception {
         return send(get("/api/members/" + id), VOLUNTEER, 200);
-    }
-
-    private List<Map<String, Object>> drift() {
-        return jdbc.queryForList(PersonDriftQuery.SQL);
     }
 
     private List<String> activityTypes() {
@@ -163,7 +158,6 @@ class HouseholdFlowIntegrationTest {
         assertThat(activityTypes()).contains("HOUSEHOLD_CREATED", "MEMBER_HOUSEHOLD_CHANGED", "HOUSEHOLD_DELETED");
         assertThat(jdbc.queryForList("SELECT description FROM activity_log", String.class))
             .noneMatch(d -> d.contains("gate code") || d.contains("Roma"));
-        assertThat(drift()).isEmpty();
     }
 
     @Test
@@ -185,7 +179,6 @@ class HouseholdFlowIntegrationTest {
         String list = send(get("/api/households"), VOLUNTEER, 200);
         assertThat(JsonPath.<List<String>>read(list, "$[*].name")).containsExactly("First family", "Second family");
         assertThat(JsonPath.<List<Integer>>read(list, "$[*].memberCount")).containsExactly(0, 1);
-        assertThat(drift()).isEmpty();
     }
 
     @Test
@@ -228,7 +221,6 @@ class HouseholdFlowIntegrationTest {
         // an archived person still counts as a person: the household cannot be deleted from under them
         putMember(abebe, ",\"householdId\":null", 200);
         send(delete("/api/households/" + householdId), ADMIN, 409);
-        assertThat(drift()).isEmpty();
     }
 
     @Test

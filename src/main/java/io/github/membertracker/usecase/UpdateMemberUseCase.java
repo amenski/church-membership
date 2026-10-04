@@ -29,13 +29,10 @@ public class UpdateMemberUseCase {
      * @param status the new status, or null to leave it; ARCHIVED is refused as a target (archiving is
      *               {@link ArchiveMemberUseCase}). An ARCHIVED member may be moved back to MEMBER or INACTIVE, which
      *               clears {@code archivedAt}: this is the restore
-     * @param active legacy on/off form, used only when {@code status} is null: true makes a member of anyone
-     *               who is not one, false makes INACTIVE of a member; it never changes a deceased or
-     *               transferred person who is already off
      */
     public Optional<Member> invoke(Long id, String name, String email, String phone,
-                                   LocalDate joinDate, MemberStatus status, Boolean active) {
-        return invoke(id, name, email, phone, joinDate, status, active, false, null);
+                                   LocalDate joinDate, MemberStatus status) {
+        return invoke(id, name, email, phone, joinDate, status, false, null);
     }
 
     /**
@@ -46,7 +43,7 @@ public class UpdateMemberUseCase {
      *                     refused when the member is saved (HouseholdDomainException, 400)
      */
     public Optional<Member> invoke(Long id, String name, String email, String phone,
-                                   LocalDate joinDate, MemberStatus status, Boolean active,
+                                   LocalDate joinDate, MemberStatus status,
                                    boolean setHousehold, Long householdId) {
         if (status == MemberStatus.ARCHIVED) {
             throw MemberDomainException.statusNotAllowed("A member cannot be archived here.");
@@ -64,7 +61,7 @@ public class UpdateMemberUseCase {
             if (setHousehold) {
                 member.setHouseholdId(householdId);
             }
-            MemberStatus target = status != null ? status : fromActive(member, active);
+            MemberStatus target = status;
             if (before == MemberStatus.ARCHIVED && (target == MemberStatus.DECEASED || target == MemberStatus.TRANSFERRED)) {
                 throw MemberDomainException.statusNotAllowed("An archived member can only be restored to MEMBER or INACTIVE.");
             }
@@ -100,19 +97,6 @@ public class UpdateMemberUseCase {
         return before == null
                 ? who + " was added to household " + saved.getHouseholdName()
                 : who + " was moved to household " + saved.getHouseholdName();
-    }
-
-    private static MemberStatus fromActive(Member member, Boolean active) {
-        if (active == null) {
-            return null;
-        }
-        if (active && !member.isActive()) {
-            return MemberStatus.MEMBER;
-        }
-        if (!active && member.isActive()) {
-            return MemberStatus.INACTIVE;
-        }
-        return null;
     }
 
     private static void changeStatus(Member member, MemberStatus target) {

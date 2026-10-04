@@ -87,7 +87,7 @@ class MemberExportTest {
         assertThat(response.getContentType()).isEqualTo("text/csv;charset=UTF-8");
         assertThat(response.getHeader("Content-Disposition")).isEqualTo("attachment; filename=members.csv");
         assertThat(lines).hasSize(3);
-        assertThat(lines[0]).isEqualTo("id,name,email,phone,joinDate,active,consecutiveMonthsMissed,status");
+        assertThat(lines[0]).isEqualTo("ID,Name,Email,Phone,Join date,Months behind,Status");
         assertThat(lines[1]).startsWith("1,Abel,");
         assertThat(lines[2]).startsWith("2,\"'=HYPERLINK(\"\"x\"\")\",");
         assertThat(csv).doesNotContain("Selam");
@@ -107,7 +107,7 @@ class MemberExportTest {
         assertThat(response.getHeader("Content-Disposition")).isEqualTo("attachment; filename=members.csv");
         String[] lines = csv.substring(BOM.length()).strip().split("\\R");
         assertThat(lines).hasSize(3);
-        assertThat(lines[0]).isEqualTo("id,name,email,phone,joinDate,active,consecutiveMonthsMissed,status");
+        assertThat(lines[0]).isEqualTo("ID,Name,Email,Phone,Join date,Months behind,Status");
         assertThat(lines[1]).startsWith("1,ፈለገ ሰላም,");
         assertThat(lines[2]).startsWith("2,Abel,");
     }
@@ -127,14 +127,14 @@ class MemberExportTest {
         String[] lines = csv.substring(BOM.length()).strip().split("\\R");
 
         assertThat(lines).hasSize(2);
-        assertThat(lines[1]).startsWith("5,Gone,").endsWith(",false,0,DECEASED");
+        assertThat(lines[1]).startsWith("5,Gone,").endsWith(",0,DECEASED");
 
         MvcResult adminResult = mockMvc.perform(post("/api/members/export").with(csrf())
                 .with(user("a@example.com").roles("ADMIN"))
                 .contentType(MediaType.APPLICATION_JSON).content("{\"ids\":[5,99,4]}")).andReturn();
         String[] adminLines = body(adminResult.getResponse()).substring(BOM.length()).strip().split("\\R");
         assertThat(adminLines).hasSize(3);
-        assertThat(adminLines[1]).startsWith("4,Old,").endsWith(",false,0,ARCHIVED");
+        assertThat(adminLines[1]).startsWith("4,Old,").endsWith(",0,ARCHIVED");
         assertThat(adminLines[2]).startsWith("5,Gone,");
     }
 
@@ -144,7 +144,7 @@ class MemberExportTest {
 
         String csv = body(export(get("/api/members/export")));
 
-        assertThat(csv).doesNotContain("Old").contains(",true,0,MEMBER");
+        assertThat(csv).doesNotContain("Old").contains(",0,MEMBER");
         verify(getArchivedMembersUseCase, never()).invoke();
     }
 

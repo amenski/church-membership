@@ -224,7 +224,7 @@ class RecordPaymentUseCaseTest {
         verify(memberRepository).save(saved.capture());
         assertThat(saved.getValue()).isSameAs(stored);
         assertThat(saved.getValue().getName()).isEqualTo("Stored Name");
-        assertThat(saved.getValue().isActive()).isTrue();
+        assertThat(saved.getValue().getStatus().countsForDues()).isTrue();
     }
 
     @Test

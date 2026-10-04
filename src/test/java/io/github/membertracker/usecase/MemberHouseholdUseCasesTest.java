@@ -74,7 +74,7 @@ class MemberHouseholdUseCasesTest {
 
         assertThatThrownBy(() -> new SaveMemberUseCase(repo, recordActivity).invoke("Abebe", null, null, null, null, 99L))
             .isInstanceOf(HouseholdDomainException.class);
-        assertThatThrownBy(() -> update().invoke(1L, "Abebe", null, null, null, null, null, true, 99L))
+        assertThatThrownBy(() -> update().invoke(1L, "Abebe", null, null, null, null, true, 99L))
             .isInstanceOf(HouseholdDomainException.class);
 
         verify(recordActivity, never()).record(any(), any(), any(), any());
@@ -82,7 +82,7 @@ class MemberHouseholdUseCasesTest {
 
     @Test
     void updateAssignsAHouseholdToAMemberWithNone() {
-        update().invoke(1L, "Abebe", "abebe@example.com", "+390611111111", null, null, null, true, 5L).orElseThrow();
+        update().invoke(1L, "Abebe", "abebe@example.com", "+390611111111", null, null, true, 5L).orElseThrow();
 
         assertThat(stored.getHouseholdId()).isEqualTo(5L);
         verify(recordActivity).record(ActivityType.MEMBER_UPDATED, "Member Abebe was updated", "MEMBER", 1L);
@@ -95,7 +95,7 @@ class MemberHouseholdUseCasesTest {
         stored.setHouseholdId(5L);
         stored.setHouseholdName("House 5");
 
-        update().invoke(1L, "Abebe", null, null, null, null, null, true, 6L).orElseThrow();
+        update().invoke(1L, "Abebe", null, null, null, null, true, 6L).orElseThrow();
 
         assertThat(stored.getHouseholdId()).isEqualTo(6L);
         verify(recordActivity).record(ActivityType.MEMBER_HOUSEHOLD_CHANGED, "Member Abebe was moved to household House 6",
@@ -107,7 +107,7 @@ class MemberHouseholdUseCasesTest {
         stored.setHouseholdId(5L);
         stored.setHouseholdName("House 5");
 
-        update().invoke(1L, "Abebe", null, null, null, null, null, true, null).orElseThrow();
+        update().invoke(1L, "Abebe", null, null, null, null, true, null).orElseThrow();
 
         assertThat(stored.getHouseholdId()).isNull();
         verify(recordActivity).record(ActivityType.MEMBER_HOUSEHOLD_CHANGED, "Member Abebe was removed from household House 5",
@@ -119,7 +119,7 @@ class MemberHouseholdUseCasesTest {
         stored.setHouseholdId(5L);
         stored.setHouseholdName("House 5");
 
-        update().invoke(1L, "Abebe", null, null, null, null, null).orElseThrow();
+        update().invoke(1L, "Abebe", null, null, null, null).orElseThrow();
 
         assertThat(stored.getHouseholdId()).isEqualTo(5L);
         verify(recordActivity, never()).record(eq(ActivityType.MEMBER_HOUSEHOLD_CHANGED), any(), any(), any());
@@ -130,7 +130,7 @@ class MemberHouseholdUseCasesTest {
         stored.setHouseholdId(5L);
         stored.setHouseholdName("House 5");
 
-        update().invoke(1L, "Abebe", null, null, null, null, null, true, 5L).orElseThrow();
+        update().invoke(1L, "Abebe", null, null, null, null, true, 5L).orElseThrow();
 
         verify(recordActivity, never()).record(eq(ActivityType.MEMBER_HOUSEHOLD_CHANGED), any(), any(), any());
     }

@@ -43,7 +43,6 @@ class MemberPersistenceMapperTest {
         MemberEntity entity = MemberPersistenceMapper.toEntity(fullMember());
 
         assertThat(entity.getLastMissedCountMonth()).isEqualTo("2026-09");
-        assertThat(entity.isActive()).isFalse();
         assertThat(entity.getStatus()).isEqualTo("INACTIVE");
     }
 
@@ -56,14 +55,14 @@ class MemberPersistenceMapperTest {
         MemberEntity entity = MemberPersistenceMapper.toEntity(original);
         Member back = MemberPersistenceMapper.toDomain(entity);
 
-        assertThat(entity.getEmail()).isNull();
+        assertThat(entity.getPerson().getEmail()).isNull();
         assertThat(entity.getLastMissedCountMonth()).isNull();
         assertThat(back.getEmail()).isNull();
         assertThat(back.getLastMissedCountMonth()).isNull();
     }
 
     @Test
-    void recipientSummaryCarriesOnlyIdNameEmailPhoneAndActive() {
+    void recipientSummaryCarriesOnlyIdNameEmailPhoneAndStatus() {
         MemberEntity entity = MemberPersistenceMapper.toEntity(fullMember());
 
         Member recipient = MemberPersistenceMapper.toRecipient(entity);
@@ -72,7 +71,7 @@ class MemberPersistenceMapperTest {
         assertThat(recipient.getName()).isEqualTo("Abebe Kebede");
         assertThat(recipient.getEmail()).isEqualTo("abebe@example.com");
         assertThat(recipient.getPhone()).isEqualTo("+251911234567");
-        assertThat(recipient.isActive()).isFalse();
+        assertThat(recipient.getStatus()).isEqualTo(MemberStatus.INACTIVE);
         assertThat(recipient.getJoinDate()).isNull();
         assertThat(recipient.getLastPaymentDate()).isNull();
         assertThat(recipient.getConsecutiveMonthsMissed()).isZero();
@@ -80,7 +79,7 @@ class MemberPersistenceMapperTest {
     }
 
     @Test
-    void activeIsWrittenAsTheStatusImpliesForAllFiveStatusesAndTheTwoNeverDisagree() {
+    void everyStatusSurvivesTheRoundTripAndTheRecipientSummary() {
         for (MemberStatus status : MemberStatus.values()) {
             Member member = fullMember();
             member.setStatus(status);
@@ -88,32 +87,14 @@ class MemberPersistenceMapperTest {
             MemberEntity entity = MemberPersistenceMapper.toEntity(member);
 
             assertThat(entity.getStatus()).as(status.name()).isEqualTo(status.name());
-            assertThat(entity.isActive()).as(status.name()).isEqualTo(status.countsForDues());
-            Member back = MemberPersistenceMapper.toDomain(entity);
-            assertThat(back.getStatus()).as(status.name()).isEqualTo(status);
-            assertThat(back.isActive()).as(status.name()).isEqualTo(entity.isActive());
-            assertThat(MemberPersistenceMapper.toRecipient(entity).isActive()).as(status.name()).isEqualTo(status.countsForDues());
+            assertThat(MemberPersistenceMapper.toDomain(entity).getStatus()).as(status.name()).isEqualTo(status);
+            assertThat(MemberPersistenceMapper.toRecipient(entity).getStatus()).as(status.name()).isEqualTo(status);
         }
     }
 
     @Test
-    void theStatusColumnWinsWhenTheLegacyActiveColumnIsStale() {
+    void toDomainAndToRecipientReadNameEmailAndPhoneFromThePerson() {
         MemberEntity entity = MemberPersistenceMapper.toEntity(fullMember());
-        entity.setStatus("DECEASED");
-        entity.setActive(true);
-
-        Member member = MemberPersistenceMapper.toDomain(entity);
-
-        assertThat(member.getStatus()).isEqualTo(MemberStatus.DECEASED);
-        assertThat(member.isActive()).isFalse();
-    }
-
-    @Test
-    void toDomainAndToRecipientReadNameEmailAndPhoneFromThePersonNotTheLegacyColumns() {
-        MemberEntity entity = MemberPersistenceMapper.toEntity(fullMember());
-        entity.setName("LEGACY");
-        entity.setEmail("legacy@example.com");
-        entity.setPhone("000");
 
         Member member = MemberPersistenceMapper.toDomain(entity);
         Member recipient = MemberPersistenceMapper.toRecipient(entity);
@@ -126,28 +107,27 @@ class MemberPersistenceMapperTest {
     }
 
     @Test
-    void toEntityStillWritesTheLegacyColumnsBesideThePerson() {
+    void toEntityCarriesNameEmailAndPhoneOnAPerson() {
         MemberEntity entity = MemberPersistenceMapper.toEntity(fullMember());
 
-        assertThat(entity.getName()).isEqualTo("Abebe Kebede");
-        assertThat(entity.getEmail()).isEqualTo("abebe@example.com");
-        assertThat(entity.getPhone()).isEqualTo("+251911234567");
         assertThat(entity.getPerson().getName()).isEqualTo("Abebe Kebede");
+        assertThat(entity.getPerson().getEmail()).isEqualTo("abebe@example.com");
+        assertThat(entity.getPerson().getPhone()).isEqualTo("+251911234567");
     }
 
     @Test
-    void copyToPersonWritesNameEmailAndPhoneIncludingNulls() {
+    void writeToPersonWritesNameEmailAndPhoneIncludingNulls() {
         PersonEntity person = new PersonEntity();
         Member member = fullMember();
 
-        MemberPersistenceMapper.copyToPerson(member, person);
+        MemberPersistenceMapper.writeToPerson(member, person);
         assertThat(person.getName()).isEqualTo("Abebe Kebede");
         assertThat(person.getEmail()).isEqualTo("abebe@example.com");
         assertThat(person.getPhone()).isEqualTo("+251911234567");
 
         member.setEmail(null);
         member.setPhone(null);
-        MemberPersistenceMapper.copyToPerson(member, person);
+        MemberPersistenceMapper.writeToPerson(member, person);
         assertThat(person.getEmail()).isNull();
         assertThat(person.getPhone()).isNull();
     }

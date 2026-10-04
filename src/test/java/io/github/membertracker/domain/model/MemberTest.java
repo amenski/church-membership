@@ -24,7 +24,7 @@ class MemberTest {
     @Test
     void newMemberIsActiveWithNoMissedPayments() {
         Member m = newMember();
-        assertThat(m.isActive()).isTrue();
+        assertThat(m.getStatus().countsForDues()).isTrue();
         assertThat(m.getConsecutiveMonthsMissed()).isZero();
         assertThat(m.getJoinDate()).isEqualTo(LocalDate.now());
     }
@@ -95,11 +95,11 @@ class MemberTest {
         Member m = newMember();
         m.setConsecutiveMonthsMissed(1);
         m.deactivate();
-        assertThat(m.isActive()).isFalse();
+        assertThat(m.getStatus().countsForDues()).isFalse();
 
         m.activate();
 
-        assertThat(m.isActive()).isTrue();
+        assertThat(m.getStatus().countsForDues()).isTrue();
         assertThat(m.getConsecutiveMonthsMissed()).isZero();
     }
 
@@ -165,7 +165,7 @@ class MemberTest {
         Member m = newMember();
         for (MemberStatus status : MemberStatus.values()) {
             m.setStatus(status);
-            assertThat(m.isActive()).as(status.name()).isEqualTo(status == MemberStatus.MEMBER);
+            assertThat(m.getStatus().countsForDues()).as(status.name()).isEqualTo(status == MemberStatus.MEMBER);
         }
     }
 

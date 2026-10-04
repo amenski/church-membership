@@ -176,11 +176,6 @@ public class Member {
         this.lastMissedCountMonth = lastMissedCountMonth;
     }
 
-    /** Derived from the status: true only for a member whose dues count. There is no setter. */
-    public boolean isActive() {
-        return status.countsForDues();
-    }
-
     public MemberStatus getStatus() {
         return status;
     }

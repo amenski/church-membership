@@ -10,10 +10,9 @@ import java.time.YearMonth;
 
 /**
  * The one place a {@link MemberEntity} and a {@link Member} are converted into each other.
- * The domain reads the status and ignores the legacy {@code active} column; the entity gets both, written here.
- * Name, email and phone are read from the linked {@link PersonEntity} (plan step 9); the legacy member columns are
- * only written, until step 12. The household (id and name) is read from the person too; the delivery summary
- * ({@link #toRecipient}) leaves it out.
+ * Name, email and phone live on the linked {@link PersonEntity} only (the legacy member columns were dropped in plan
+ * step 12). The household (id and name) is read from the person too; the delivery summary ({@link #toRecipient})
+ * leaves it out.
  */
 public final class MemberPersistenceMapper {
 
@@ -38,9 +37,6 @@ public final class MemberPersistenceMapper {
     public static MemberEntity toEntity(Member member) {
         MemberEntity entity = new MemberEntity();
         entity.setId(member.getId());
-        entity.setName(member.getName());
-        entity.setEmail(member.getEmail());
-        entity.setPhone(member.getPhone());
         entity.setJoinDate(member.getJoinDate());
         entity.setLastPaymentDate(member.getLastPaymentDate());
         entity.setConsecutiveMonthsMissed(member.getConsecutiveMonthsMissed());
@@ -48,12 +44,10 @@ public final class MemberPersistenceMapper {
                 ? null : member.getLastMissedCountMonth().toString());
         entity.setStatus(member.getStatus().name());
         entity.setArchivedAt(member.getArchivedAt());
-        // The only writer of the legacy column: it follows the status, so the two never disagree.
-        entity.setActive(member.getStatus().countsForDues());
         // A transient person carrying the same three values, so an entity built here reads back like the member
         // (payment and delivery references). MemberDbRepository.save swaps in the stored person before it saves.
         PersonEntity person = new PersonEntity();
-        copyToPerson(member, person);
+        writeToPerson(member, person);
         if (member.getHouseholdId() != null) {
             // A reference with the id and the name only, never saved: MemberDbRepository.save resolves the real household.
             HouseholdEntity household = new HouseholdEntity();
@@ -77,28 +71,15 @@ public final class MemberPersistenceMapper {
         member.setHouseholdName(household == null ? null : household.getName());
     }
 
-    /**
-     * DUAL-WRITE, remove at plan step 12: copies the three fields that live in both tables onto the person row, so
-     * the legacy member columns and the person never disagree. The person is the one read back (step 9). MemberDbRepository.save is the only caller.
-     */
-    public static void copyToPerson(Member member, PersonEntity person) {
+    /** Writes the member's name, email and phone onto the person row; MemberDbRepository.save is the only caller. */
+    public static void writeToPerson(Member member, PersonEntity person) {
         person.setName(member.getName());
         person.setEmail(member.getEmail());
         person.setPhone(member.getPhone());
     }
 
     /**
-     * DUAL-WRITE, remove at plan step 12: the other direction of {@link #copyToPerson}. A person edited on its own
-     * (PersonDbRepository.save) rewrites the legacy columns of its membership from the person's values.
-     */
-    public static void copyToLegacyColumns(PersonEntity person, MemberEntity member) {
-        member.setName(person.getName());
-        member.setEmail(person.getEmail());
-        member.setPhone(person.getPhone());
-    }
-
-    /**
-     * The short form kept on a message delivery: id, name, email, phone and status (so {@code active}) only,
+     * The short form kept on a message delivery: id, name, email, phone and status only,
      * so the delivery JSON carries no join date or counters.
      */
     public static Member toRecipient(MemberEntity entity) {

@@ -32,11 +32,8 @@ public class MemberRequest {
     @PastOrPresent(message = "Join date cannot be in the future")
     private LocalDate joinDate;
 
-    /** Optional. Absent means a new member is MEMBER and an edit leaves the status alone. Wins over {@code active}. */
+    /** Optional. Absent means a new member is MEMBER and an edit leaves the status alone. */
     private MemberStatus status;
-
-    /** Legacy on/off form of the status, kept until the frontend sends {@code status}: true is MEMBER, false is INACTIVE. */
-    private Boolean active;
 
     /**
      * Optional household of the person. Absent leaves it unchanged on update; an explicit null removes the person from
@@ -88,14 +85,6 @@ public class MemberRequest {
         this.status = status;
     }
 
-    /** The status a new member is created with: {@code status}, else the legacy {@code active}, else null (MEMBER). */
-    public MemberStatus statusForCreate() {
-        if (status != null || active == null) {
-            return status;
-        }
-        return active ? MemberStatus.MEMBER : MemberStatus.INACTIVE;
-    }
-
     public Long getHouseholdId() {
         return householdId;
     }
@@ -108,13 +97,5 @@ public class MemberRequest {
     /** True when the body mentioned {@code householdId}, even as null. */
     public boolean isHouseholdIdSet() {
         return householdIdSet;
-    }
-
-    public Boolean getActive() {
-        return active;
-    }
-
-    public void setActive(Boolean active) {
-        this.active = active;
     }
 }

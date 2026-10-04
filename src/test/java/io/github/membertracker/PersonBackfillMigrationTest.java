@@ -19,7 +19,7 @@ import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 /**
  * Runs the real migration files on in-memory H2 (MySQL mode) up to 012, adds members the seed does not have (no email,
  * a shared email, an archived one), then runs 013 and proves the backfill: one person per member with the same id and
- * the same values, every member linked, the constraints in place, the drift query empty.
+ * the same values, every member linked, the constraints in place. The legacy columns still exist at this point (they are dropped by 014).
  */
 class PersonBackfillMigrationTest {
 
@@ -93,22 +93,10 @@ class PersonBackfillMigrationTest {
     }
 
     @Test
-    void driftQueryIsEmptyAfterTheBackfill() throws SQLException {
-        assertThat(strings("SELECT problem FROM (" + PersonDriftQuery.SQL + ") d")).isEmpty();
-    }
-
-    @Test
-    void driftQueryCatchesADriftedMemberAndIgnoresAPersonWithoutAMember() throws SQLException {
-        try (Statement st = connection.createStatement()) {
-            st.executeUpdate("UPDATE person SET phone = '000' WHERE id = 1");
-            st.executeUpdate("INSERT INTO person (name) VALUES ('Orphan person')");
-            // A person without a member row is legitimate since step 11 (a dependent), so only the drift shows.
-            assertThat(strings("SELECT problem FROM (" + PersonDriftQuery.SQL + ") d ORDER BY problem"))
-                .containsExactly("DRIFT");
-            st.executeUpdate("DELETE FROM person WHERE name = 'Orphan person'");
-            st.executeUpdate("UPDATE person SET phone = (SELECT phone FROM member WHERE id = 1) WHERE id = 1");
-        }
-        assertThat(strings("SELECT problem FROM (" + PersonDriftQuery.SQL + ") d")).isEmpty();
+    void personValuesEqualTheMemberValuesAfterTheBackfill() throws SQLException {
+        assertThat(count("SELECT COUNT(*) FROM member m JOIN person p ON p.id = m.person_id "
+            + "WHERE NOT (m.name = p.name AND (m.email = p.email OR (m.email IS NULL AND p.email IS NULL)) "
+            + "AND (m.phone = p.phone OR (m.phone IS NULL AND p.phone IS NULL)))")).isZero();
     }
 
     @Test

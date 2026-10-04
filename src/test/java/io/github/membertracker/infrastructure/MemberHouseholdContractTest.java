@@ -89,35 +89,35 @@ class MemberHouseholdContractTest {
 
     @Test
     void anAbsentHouseholdIdOnUpdateLeavesTheHouseholdAlone() throws Exception {
-        when(updateMemberUseCase.invoke(any(), any(), any(), any(), any(), any(), any())).thenReturn(Optional.of(new Member()));
+        when(updateMemberUseCase.invoke(any(), any(), any(), any(), any(), any())).thenReturn(Optional.of(new Member()));
 
         putMember("{" + BASE + ", \"status\": \"INACTIVE\"}");
 
         verify(updateMemberUseCase).invoke(eq(1L), eq("Test Member"), isNull(), isNull(), eq(JOIN),
-            eq(io.github.membertracker.domain.enumeration.MemberStatus.INACTIVE), isNull());
-        verify(updateMemberUseCase, never()).invoke(any(), any(), any(), any(), any(), any(), any(),
+            eq(io.github.membertracker.domain.enumeration.MemberStatus.INACTIVE));
+        verify(updateMemberUseCase, never()).invoke(any(), any(), any(), any(), any(), any(),
             org.mockito.ArgumentMatchers.anyBoolean(), any());
     }
 
     @Test
     void anExplicitNullHouseholdIdOnUpdateClearsIt() throws Exception {
-        when(updateMemberUseCase.invoke(any(), any(), any(), any(), any(), any(), any(), org.mockito.ArgumentMatchers.anyBoolean(), any()))
+        when(updateMemberUseCase.invoke(any(), any(), any(), any(), any(), any(), org.mockito.ArgumentMatchers.anyBoolean(), any()))
             .thenReturn(Optional.of(new Member()));
 
         putMember("{" + BASE + ", \"householdId\": null}");
 
-        verify(updateMemberUseCase).invoke(eq(1L), eq("Test Member"), isNull(), isNull(), eq(JOIN), isNull(), isNull(),
+        verify(updateMemberUseCase).invoke(eq(1L), eq("Test Member"), isNull(), isNull(), eq(JOIN), isNull(),
             eq(true), isNull());
     }
 
     @Test
     void aHouseholdIdOnUpdateAssignsIt() throws Exception {
-        when(updateMemberUseCase.invoke(any(), any(), any(), any(), any(), any(), any(), org.mockito.ArgumentMatchers.anyBoolean(), any()))
+        when(updateMemberUseCase.invoke(any(), any(), any(), any(), any(), any(), org.mockito.ArgumentMatchers.anyBoolean(), any()))
             .thenReturn(Optional.of(new Member()));
 
         putMember("{" + BASE + ", \"householdId\": 5}");
 
-        verify(updateMemberUseCase).invoke(eq(1L), eq("Test Member"), isNull(), isNull(), eq(JOIN), isNull(), isNull(),
+        verify(updateMemberUseCase).invoke(eq(1L), eq("Test Member"), isNull(), isNull(), eq(JOIN), isNull(),
             eq(true), eq(5L));
     }
 
