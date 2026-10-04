@@ -62,7 +62,7 @@ All in `frontend/src/utils/memberFilters.js`; all filters are ANDed.
   1. Nothing on screen: warning toast "Nothing to export", no request.
   2. Otherwise `exportIds(filtered, all)`: returns `[]` when the visible count equals the full count, else the visible ids.
   3. `api.exportMembers(ids)`: no ids -> `GET /members/export`; ids -> `POST /members/export {ids}`.
-  4. Download via `downloadBlob`. File name `members_<date>.csv`, or `members_filtered_<date>.csv` when any filter is set.
+  4. The file has the header row `ID,Name,Email,Phone,Join date,Months behind,Status` (no `active` column since the contract step; the screen never read it). Download via `downloadBlob`. File name `members_<date>.csv`, or `members_filtered_<date>.csv` when any filter is set.
 
 ## Empty and error states
 - No members at all: "No members yet. Add the first member." with an "Add member" button (STAFF+).

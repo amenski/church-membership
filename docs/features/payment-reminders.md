@@ -27,7 +27,7 @@ There is no screen to start, stop or inspect the jobs. Role details of the scree
 7. Threshold: `app.payment.reminder.months-threshold`, 3 by default, 2 under the `dev` profile (`src/main/resources/application.properties:27`, `src/main/resources/application-dev.properties:26`).
 8. If nobody qualifies, nothing is sent and nothing is stored (`SendPaymentRemindersUseCase.java:34-43`).
 9. Otherwise one message titled "Payment Reminder", type REMINDER, is created for all of them: "Dear {{member_name}}, this is a friendly reminder that your membership payment is overdue. Please contact us at your earliest convenience." (`SendPaymentRemindersUseCase.java:35-40`). Each email carries the member's own name ([communications.md](communications.md#what-happens-after-send)).
-10. Sending, retries, statuses and the 100 ms pause between emails are the same as for manual sends ([communications.md](communications.md#what-happens-after-send)). Mail settings: [../email.md](../email.md).
+10. Sending, retries, statuses and the 100 ms pause between emails are the same as for manual sends ([communications.md](communications.md#what-happens-after-send)). The members are read by status (MEMBER) and their address comes from the linked person row; the old `member.active` column no longer exists (step 12). Mail settings: [../email.md](../email.md).
 
 Example with the default threshold 3, for a member who paid through September and then stops: 1 Nov counter 1 (October missed), 1 Dec counter 2, 1 Jan counter 3 and the first reminder at 09:00; the reminder repeats every 1st until they pay.
 

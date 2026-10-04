@@ -162,7 +162,7 @@ Rollback in this repo means: run the `--rollback` statements by hand on the targ
 | 9 | Read name/email/phone from person | medium | ~6 files, ~120 lines | none | done in code (the live demo is not running it yet: a human restart applies 013 and this build together) |
 | 10 | Households (API and UI) | medium | ~12 files, ~450 lines | a | backend done (API in `docs/features/households.md`, no migration needed); frontend pending |
 | 11 | People without a membership | medium | ~10 files, ~350 lines | f | backend done (API in `docs/features/people.md`, no migration needed); frontend pending |
-| 12 | Contract: drop legacy columns | high | 1 migration + ~8 files | verification | todo |
+| 12 | Contract: drop legacy columns | high | 1 migration + ~8 files | verification | done in code (migration 014, drift query retired; the demo database is migrated by the owner, after the section 6 dry run) |
 
 Order: steps 1 to 6 need no new tables and already deliver C10 and C9. Steps 7 to 9 are the structural move and are invisible to users. Steps 10 and 11 are the new features. Step 12 is the only destructive one, last.
 
@@ -324,6 +324,8 @@ Preconditions, all true: drift query = 0 for at least one full release; a fresh 
   (one DROP per changeset when running for real). The rollback restores the values from `person`, so nothing is lost; only the NOT NULL on `name` is not restored.
 - Backend: remove the dual-write and `active` from `MemberEntity`; remove `Member.active` from JSON and the CSV `active` column (`MemberExportTest.java:82,101` update); remove `MemberRequest.active`.
 - Docs: `architecture.md`, `members.md`, `member-controller.md`, `members-view.md`, `communications.md`, `payment-reminders.md`, a decision row in `architecture.md`.
+- Built (4 October 2026): `014.drop-legacy-member-columns.sql` has one changeset per DROP (the `idx_member_email_lookup` index first, then `name`, `email`, `phone`, `active`). Each `--rollback` re-adds its own column and restores the values from `person` (`UPDATE member m JOIN person p ON p.id = m.person_id SET ...`, with `m.updated_at = m.updated_at` so no row is touched; `active` is rebuilt from `status`; only `name` gets its `NOT NULL` back, after the values), so a partial `rollback-count` is safe and Liquibase's bottom-to-top order re-adds the email column before the index. No foreign key uses these columns, so MySQL error 1553 does not apply. H2 runs the forward statements (`MemberLegacyColumnsMigrationTest`); the `UPDATE ... JOIN` rollback is MySQL only and was not run.
+- Built, code: `MemberEntity` lost `name`, `email`, `phone`, `active`; `MemberPersistenceMapper.copyToLegacyColumns` and the dual-write were removed (`copyToPerson` stays as `writeToPerson`, the only write path to the person); `Member.isActive()`, `MemberRequest.active` (and `statusForCreate`), the `active` argument of `UpdateMemberUseCase` and the CSV `active` column are gone; the CSV headers are now `ID,Name,Email,Phone,Join date,Months behind,Status`. `PersonDualWriteTest` and `PersonDriftQuery` were deleted, `PersonReadSwitchTest` no longer alters legacy columns, `PersonBackfillMigrationTest` checks equality inline (it still runs to 013). The frontend needed no change: nothing in `frontend/src` read `active` since step 6.
 - Rollback: hand-run the rollback, or restore the dump. Risk high; size small.
 
 ## 6. Data migration and verification
@@ -357,7 +359,8 @@ SELECT COUNT(*) FROM message_delivery d LEFT JOIN member m ON m.id = d.recipient
 -- ids preserved
 SELECT COUNT(*) FROM member WHERE person_id <> id;                       -- only valid for backfilled rows; ignore for rows added after step 8
 -- drift between legacy columns and person (steps 8 to 11) and a member with no person: must return NO rows
--- (the same SQL is PersonDriftQuery in the tests). A person with no member is legitimate since step 11 (a dependent),
+-- (RETIRED at step 12: the test class PersonDriftQuery was deleted because the columns it compares no longer exist; run this
+-- only on a copy that is still at migration 013). A person with no member is legitimate since step 11 (a dependent),
 -- so it is no longer a problem and is not checked here.
 SELECT m.id AS member_id, m.person_id AS person_id, 'DRIFT' AS problem
   FROM member m JOIN person p ON p.id = m.person_id
@@ -369,7 +372,7 @@ SELECT m.id, m.person_id, 'NO_PERSON' FROM member m LEFT JOIN person p ON p.id =
 -- MySQL's default collation ignores case, so the query above cannot see a case-only difference; the stricter check is
 -- SELECT COUNT(*) FROM member m JOIN person p ON p.id = m.person_id
 --  WHERE NOT (BINARY m.name <=> BINARY p.name AND BINARY m.email <=> BINARY p.email AND BINARY m.phone <=> BINARY p.phone);
--- status derived from active (steps 3 to 11)
+-- status derived from active (steps 3 to 11; RETIRED at step 12, `active` is gone after 014)
 SELECT status, active, COUNT(*) FROM member GROUP BY status, active;     -- MEMBER/1 and INACTIVE/0 only
 -- auto-increment moved past the backfill
 SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE TABLE_SCHEMA='felege_selam_dry' AND TABLE_NAME='person';   -- > MAX(member.id)

@@ -47,7 +47,7 @@ Role view of the screen (the buttons are hidden, not disabled, for roles that ca
 ### Add a member
 1. Click "Add member" and fill the name (required), optionally email and phone, and "Joined on" (default today, not in the future); a Status select offers only Member (default) and Inactive, as the server enforces (`MembersView.vue`).
 2. "Add member" in the dialog sends `{name, email?, phone?, joinDate?, status}` to `POST /api/members` (`MembersView.vue:387-408`, `frontend/src/utils/memberPayload.js`). The name is checked on the screen first, and the email only when filled (format).
-3. The server creates the member with the status MEMBER (or INACTIVE when the request asks for it: `status`, or the legacy `active: false`) and the counters at zero; it uses the join date sent, or today (`src/main/java/io/github/membertracker/usecase/SaveMemberUseCase.java`). The screen sends `status` (the legacy `active` is still accepted by the API but no longer sent). DECEASED, TRANSFERRED and ARCHIVED are refused on create (400, field error on `status`).
+3. The server creates the member with the status MEMBER (or INACTIVE when the request asks for it with `status`) and the counters at zero; it uses the join date sent, or today (`src/main/java/io/github/membertracker/usecase/SaveMemberUseCase.java`). The screen sends `status`. DECEASED, TRANSFERRED and ARCHIVED are refused on create (400, field error on `status`).
 4. Success: the dialog closes, the row appears and a toast "Member added" names the member. The email may be left empty, and two members may share one address: there is no duplicate check. A child added without an email counts as a member who owes dues unless they are added as Inactive: the dialog's hint says "choose Inactive".
 5. Other failures (validation, 403): field errors from the server show under their fields; anything else shows in a banner at the top of the dialog plus an error toast "Could not save member" (no toast for 403); the dialog stays open (`MembersView.vue:369-386`).
 
@@ -80,7 +80,7 @@ Choose "Archived" in the Status filter, open the row menu and choose "Restore": 
 1. Click "Export CSV" (STAFF+). If the filters leave zero rows, a "Nothing to export" toast shows and no request is made (`MembersView.vue:445-454`).
 2. With no filter (or a filter matching everyone) the screen calls `GET /api/members/export`; with a narrowed list it calls `POST /api/members/export` with the visible ids (`memberFilters.js:62-67`, `frontend/src/services/api.js:358-363`).
 3. The file downloads as `members_<date>.csv`, or `members_filtered_<date>.csv` when any filter is set (`MembersView.vue:459-460`).
-4. Columns: id, name, email (empty when the member has none), phone, joinDate, active, consecutiveMonthsMissed (`MemberController.java:161-174`). The file is UTF-8 with a byte order mark so Excel reads non-Latin names correctly. Cells starting with a formula character are neutralised ([member-controller.md](member-controller.md)).
+4. Columns: ID, Name, Email (empty when the member has none), Phone, Join date, Months behind, Status (`MemberController.java`; plain headers and no `active` column since the contract step). The file is UTF-8 with a byte order mark so Excel reads non-Latin names correctly. Cells starting with a formula character are neutralised ([member-controller.md](member-controller.md)).
 5. Failure: error toast "Export failed" (`MembersView.vue:461-469`).
 
 ## Fields
@@ -93,13 +93,12 @@ Stored in the `member` table (migrations `001`, `005`, `009`, `010`; `011` makes
 | `email` | Optional, not unique, may be shared | `MemberRequest` |
 | `phone` | Optional | `MemberRequest` |
 | `joinDate` | Today unless sent | `MemberRequest` |
-| `status` | `MEMBER`, `INACTIVE`, `DECEASED`, `TRANSFERRED` or `ARCHIVED` (migration `010`). Only `MEMBER` counts for dues, reminders, messages and payments. The backfill turned every `active = false` into `INACTIVE`; re-label deceased or transferred people by hand | `MemberRequest.status`, or the legacy `active` |
-| `active` | Legacy on/off, read-only in the JSON: true only when `status` is `MEMBER`. The `active` column is kept equal to it by `MemberPersistenceMapper` until the contract step | derived |
+| `status` | `MEMBER`, `INACTIVE`, `DECEASED`, `TRANSFERRED` or `ARCHIVED` (migration `010`). Only `MEMBER` counts for dues, reminders, messages and payments. The backfill turned every `active = false` into `INACTIVE`; re-label deceased or transferred people by hand | `MemberRequest.status` |
 | `archivedAt` | Null until the member is archived; set to the archive time, cleared on restore | system |
 | `householdId`, `householdName` | The household of the person behind the membership, or null; the name is read-only. Set with the optional `householdId` of the request (absent keeps it, null clears it, an unknown id is a 400 `HOUSEHOLD_001`): see [households.md](households.md) | `MemberRequest.householdId` |
 | `consecutiveMonthsMissed`, `lastPaymentDate`, `lastMissedCountMonth` | Dues counters | system only |
 
-Changing `status` through `PUT`: see [member-controller.md](member-controller.md). The screens read `status` only (the JSON `active` is no longer used by the frontend).
+Changing `status` through `PUT`: see [member-controller.md](member-controller.md). The screens read `status` only. The old `active` flag is gone from the JSON, the request, the CSV and the database (migration `014`); `name`, `email` and `phone` are stored on the linked person (`person` table), not on `member`.
 
 ## Rules
 - Status rules (the tests of `MemberStatus` are this table). Only MEMBER counts for dues, reminders, messages and payments:
@@ -113,7 +112,7 @@ Changing `status` through `PUT`: see [member-controller.md](member-controller.md
 | ARCHIVED | frozen | no | no | no: only `GET /api/members?archived=true` (ADMIN) | no |
 
 - An ARCHIVED member is visible to ADMIN only on every read path (by id, id-based export, payments of the member, send to one member; embedded in payments and deliveries, email and phone are blanked for others): see [../authentication.md](../authentication.md).
-- Reads go by status, not by the legacy `active`: `findAll` (the list, the full export, the "inactive" list and the Overview total) leaves out ARCHIVED, "dues paying" is status MEMBER, and `findByConsecutiveMonthsMissedGreaterThanEqual` returns MEMBER-status members only.
+- Reads go by status: `findAll` (the list, the full export, the "inactive" list and the Overview total) leaves out ARCHIVED, "dues paying" is status MEMBER, and `findByConsecutiveMonthsMissedGreaterThanEqual` returns MEMBER-status members only.
 - Request shape `MemberRequest` (`src/main/java/io/github/membertracker/infrastructure/dto/MemberRequest.java:15`): name required (max 100), email optional (trimmed, blank becomes null) and well-formed when present (max 100), phone optional (blank becomes null) but if present must match `^\+?[0-9\s\-\(\)]{10,}$`, join date optional and not in the future, `active` optional. Failures return 400 with a field list. `id`, counters, last payment date and the monthly-job marker are not part of it and are ignored if sent.
 - Email is optional and not unique. Migration `009.make-member-email-optional.sql` dropped the unique index, made the column nullable and added a plain lookup index `idx_member_email_lookup`. Messages and reminders reach only members with an email, and members sharing an address get one message between them (the one with the lowest id; the others have no delivery row for that message): see [communications.md](communications.md). The activity log never records an email.
 - A child added without an email counts as a member until the status step of the [person/membership plan](../person-membership-plan.md): they appear behind on dues unless marked inactive.
