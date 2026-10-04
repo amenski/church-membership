@@ -39,11 +39,11 @@ export const SQUARES = {
 
 const pad = (n) => String(n).padStart(2, '0')
 
-/** The twelve "yyyy-MM" keys ending with currentMonth, oldest first. */
-export function stripMonths(currentMonth) {
+/** The `count` (12 by default) "yyyy-MM" keys ending with currentMonth, oldest first. */
+export function stripMonths(currentMonth, count = 12) {
   const [year, month] = currentMonth.split('-').map(Number)
   const months = []
-  for (let back = 11; back >= 0; back--) {
+  for (let back = count - 1; back >= 0; back--) {
     const index = year * 12 + (month - 1) - back
     months.push(`${Math.floor(index / 12)}-${pad((index % 12) + 1)}`)
   }
@@ -69,11 +69,12 @@ export function stripRangeLabel(currentMonth) {
  * @param {Set<string>} args.paidMonths the periods of the member's payments
  * @param {number} args.monthsMissed the server's consecutiveMonthsMissed
  * @param {boolean} args.countsForDues status is MEMBER
- * @returns {{ month: string, state: string, label: string, initial: string, name: string }[]}
+ * @param {number} [args.count] how many months, 12 by default (the member's page shows 24)
+ * @returns {{ month: string, state: string, label: string, initial: string, short: string, name: string }[]}
  */
-export function stripCells({ currentMonth, joinDate, paidMonths, monthsMissed, countsForDues }) {
+export function stripCells({ currentMonth, joinDate, paidMonths, monthsMissed, countsForDues, count = 12 }) {
   const joinMonth = joinDate ? joinDate.slice(0, 7) : ''
-  const months = stripMonths(currentMonth)
+  const months = stripMonths(currentMonth, count)
   const states = months.map((month) => {
     if (paidMonths.has(month)) return 'paid'
     if (!countsForDues || month < joinMonth) return 'none'
@@ -94,6 +95,7 @@ export function stripCells({ currentMonth, joinDate, paidMonths, monthsMissed, c
       state: states[i],
       label: STRIP_LABELS[states[i]],
       initial: monthName[0],
+      short: monthName,
       name: `${monthName} ${month.slice(0, 4)}`
     }
   })

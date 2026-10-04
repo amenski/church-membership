@@ -1,5 +1,18 @@
 <template>
-  <div role="group" :aria-label="label" :class="['flex', ledger ? 'gap-1' : large ? 'gap-[3px]' : 'gap-0.5']">
+  <!-- detail: the member's page, rows of 12 big squares with the month name above each, a caption over every row -->
+  <div v-if="detail" role="group" :aria-label="label" class="flex flex-col gap-4">
+    <div v-for="row in rows" :key="row[0].month">
+      <div v-if="rows.length > 1" class="mb-1.5 text-sm font-medium text-ink" aria-hidden="true">{{ row[0].name }} to {{ row[row.length - 1].name }}</div>
+      <div class="flex flex-wrap gap-1">
+        <div v-for="cell in row" :key="cell.month" class="flex w-11 flex-col items-center gap-1">
+          <span class="text-xs leading-none text-muted" aria-hidden="true">{{ cell.short }}</span>
+          <span :class="[BOX, 'h-9 w-11 rounded-sm', (muted ? MUTED_SQUARES : SQUARES)[cell.state]]" aria-hidden="true"></span>
+          <span class="sr-only">{{ cell.name }}: {{ cell.label }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div v-else role="group" :aria-label="label" :class="['flex', ledger ? 'gap-1' : large ? 'gap-[3px]' : 'gap-0.5']">
     <div v-for="cell in cells" :key="cell.month" :class="['flex flex-col items-center', large && 'gap-[3px]']">
       <span :class="[BOX, ledger ? 'size-7 rounded-sm' : large ? 'h-[26px] w-5 rounded-[3px]' : 'h-[18px] w-2.5 rounded-[2px]', (muted ? MUTED_SQUARES : SQUARES)[cell.state]]" aria-hidden="true"></span>
       <span v-if="large" class="text-xs leading-none text-muted" aria-hidden="true">{{ cell.initial }}</span>
@@ -24,13 +37,16 @@ export default {
     monthsMissed: { type: Number, default: 0 },
     countsForDues: { type: Boolean, default: true },
     muted: { type: Boolean, default: false },
-    size: { type: String, default: 'compact', validator: value => ['compact', 'large', 'ledger'].includes(value) },
+    size: { type: String, default: 'compact', validator: value => ['compact', 'large', 'ledger', 'detail'].includes(value) },
+    // how many months, ending with currentMonth; the detail size draws them 12 to a row
+    months: { type: Number, default: 12 },
     label: { type: String, default: 'Dues, last 12 months' }
   },
   data() {
     return { BOX, SQUARES, MUTED_SQUARES }
   },
   computed: {
+    // 'detail' is 44x36px squares with the month name above, 12 to a row (a member's page: 24 months, two rows)
     // 'large' is 20x26px squares with the month initial under each; 'ledger' is 28px squares, the month names
     // come from a header row the parent draws above the column (the Overview's "Dues by month" grid)
     large() {
@@ -39,13 +55,22 @@ export default {
     ledger() {
       return this.size === 'ledger'
     },
+    detail() {
+      return this.size === 'detail'
+    },
+    rows() {
+      const rows = []
+      for (let i = 0; i < this.cells.length; i += 12) rows.push(this.cells.slice(i, i + 12))
+      return rows
+    },
     cells() {
       return stripCells({
         currentMonth: this.currentMonth,
         joinDate: this.joinDate,
         paidMonths: this.paidMonths,
         monthsMissed: this.monthsMissed,
-        countsForDues: this.countsForDues
+        countsForDues: this.countsForDues,
+        count: this.months
       })
     }
   }
