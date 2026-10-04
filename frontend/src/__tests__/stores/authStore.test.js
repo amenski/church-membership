@@ -25,6 +25,19 @@ describe('authStore', () => {
     store = useAuthStore()
   })
 
+  describe('checkAuth', () => {
+    it('concurrent callers share one /users/me probe', async () => {
+      apiService.getCurrentUser.mockReset()
+      apiService.getCurrentUser.mockResolvedValue({ role: 'MEMBER' })
+
+      const [a, b] = await Promise.all([store.checkAuth(), store.checkAuth()])
+
+      expect(apiService.getCurrentUser).toHaveBeenCalledTimes(1)
+      expect(a).toEqual(b)
+      expect(store.isAuthenticated).toBe(true)
+    })
+  })
+
   describe('hasRole', () => {
     for (const userRole of ROLES) {
       for (const minRole of ROLES) {

@@ -120,9 +120,16 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function checkAuth() {
-    if (authChecked.value) return isAuthenticated.value ? user.value : null
+  // The router guard and App both ask on first load: share one probe
+  let pendingCheck = null
 
+  function checkAuth() {
+    if (authChecked.value) return Promise.resolve(isAuthenticated.value ? user.value : null)
+    if (!pendingCheck) pendingCheck = probeAuth().finally(() => { pendingCheck = null })
+    return pendingCheck
+  }
+
+  async function probeAuth() {
     try {
       const userData = await apiService.getCurrentUser()
 
