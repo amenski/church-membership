@@ -47,6 +47,12 @@ const routes = [
     meta: { requiresAuth: true, requiresRole: 'ADMIN', title: 'Activity' }
   },
   {
+    path: '/more',
+    name: 'more',
+    component: () => import('../views/MoreView.vue'),
+    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER', title: 'More' }
+  },
+  {
     path: '/profile',
     name: 'profile',
     component: () => import('../views/ProfileView.vue'),

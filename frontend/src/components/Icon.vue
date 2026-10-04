@@ -38,6 +38,9 @@ const ICONS = {
   'message-square': ['M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'],
   clock: ['M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0', 'M12 7v5l3 2'],
   'log-out': ['M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4', 'M16 17l5-5-5-5', 'M21 12H9'],
+  'chevron-left': ['M15 6l-6 6 6 6'],
+  'chevron-right': ['M9 6l6 6-6 6'],
+  'layout-grid': ['M3 3h7v7H3z', 'M14 3h7v7h-7z', 'M3 14h7v7H3z', 'M14 14h7v7h-7z'],
   'chevron-up': ['M6 15l6-6 6 6'],
   'chevron-down': ['M6 9l6 6 6-6'],
   'chevrons-up-down': ['M7 15l5 5 5-5', 'M7 9l5-5 5 5']
