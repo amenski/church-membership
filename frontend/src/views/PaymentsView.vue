@@ -104,21 +104,27 @@
     </template>
 
     <!-- Record payment (STAFF and above) -->
-    <BaseModal v-if="authStore.isStaff" v-model="recordOpen" title="Record payment" size="md">
+    <BaseModal v-if="authStore.isStaff" v-model="recordOpen" title="Record payment" size="md" sheet>
       <AlertBanner v-if="formError">{{ formError }}</AlertBanner>
       <EmptyNote v-if="!activeMembers.length">There are no active members to record a payment for. Add or reactivate a member first.</EmptyNote>
       <form v-else id="payment-form" class="flex flex-col gap-4" novalidate @submit.prevent="recordPayment">
-        <BaseSelect id="payment-member" v-model="form.memberId" label="Member" :error="formErrors.memberId">
+        <BaseSelect id="payment-member" v-model="form.memberId" label="Member" class="max-lg:min-h-12" :error="formErrors.memberId">
           <option value="" disabled>Choose a member</option>
           <option v-for="member in activeMembers" :key="member.id" :value="String(member.id)">{{ member.name }}</option>
         </BaseSelect>
+        <!-- Phone sheet only: what the chosen member owes, from the same year strip as the Members list -->
+        <section v-if="selectedMember" :aria-label="`${selectedMember.name}, dues`" class="flex flex-col gap-2.5 rounded-lg border border-rule bg-paper px-4 py-3.5 lg:hidden">
+          <div class="text-xl font-medium [overflow-wrap:anywhere]">{{ selectedMember.name }}</div>
+          <YearStrip size="large" v-bind="stripProps(selectedMember)" />
+          <p class="m-0 text-lg leading-snug">{{ owed.sentence }}</p>
+        </section>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <BaseInput id="payment-period" v-model="form.period" label="Month covered" type="month" :max="currentPeriod" :error="formErrors.period" />
-          <BaseInput id="payment-date" v-model="form.paymentDate" label="Paid on" type="date" :max="today" hint="Change this when you enter an older payment." :error="formErrors.paymentDate" />
+          <BaseInput id="payment-period" v-model="form.period" label="Month covered" type="month" class="max-lg:min-h-12" :max="currentPeriod" :hint="periodHint" :error="formErrors.period" />
+          <BaseInput id="payment-date" v-model="form.paymentDate" label="Paid on" type="date" class="max-lg:min-h-12" :max="today" hint="Change this when you enter an older payment." :error="formErrors.paymentDate" />
         </div>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <BaseInput id="payment-amount" v-model="form.amount" label="Amount" type="number" min="0.01" step="0.01" inputmode="decimal" :error="formErrors.amount" />
-          <BaseSelect id="payment-method" v-model="form.paymentMethod" label="Payment method" :error="formErrors.paymentMethod">
+          <BaseInput id="payment-amount" v-model="form.amount" label="Amount" type="number" class="max-lg:min-h-12" min="0.01" step="0.01" inputmode="decimal" :error="formErrors.amount" />
+          <BaseSelect id="payment-method" v-model="form.paymentMethod" label="Payment method" class="max-lg:min-h-12" :error="formErrors.paymentMethod">
             <option v-for="method in PAYMENT_METHODS" :key="method.value" :value="method.value">{{ method.label }}</option>
           </BaseSelect>
         </div>
@@ -174,6 +180,8 @@ import { downloadBlob, formatDate, formatMoney, localISODate } from '@/utils'
 import { buildPaymentRequest, PAYMENT_METHODS } from '@/utils/paymentPayload'
 import { filterPayments, methodLabel, paymentsSummary, periodLabel, receiptNumber, sortPayments } from '@/utils/paymentHistory'
 import { countsForDues } from '@/utils/memberStatus'
+import { longMonth, owedSummary } from '@/utils/dues'
+import { paidMonthsByMember, stripCells } from '@/utils/yearStrip'
 import AlertBanner from '@/components/AlertBanner.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import BaseInput from '@/components/BaseInput.vue'
@@ -185,12 +193,15 @@ import Icon from '@/components/Icon.vue'
 import StatTile from '@/components/StatTile.vue'
 import PageHead from '@/components/PageHead.vue'
 import TextButton from '@/components/TextButton.vue'
+import YearStrip from '@/components/YearStrip.vue'
 
 import { CONTROL, FIGURE, LABEL, TABLE, TABLE_TH as TH, TABLE_TD as TD } from '@/ui/classes'
 
 const NOTES_MAX = 500
 const EMPTY_ERRORS = { memberId: '', period: '', paymentDate: '', amount: '', paymentMethod: '', notes: '' }
 const EMPTY_FILTERS = { search: '', method: 'ALL' }
+// Same breakpoint as the shell (lg): below it the dialog is a full-screen sheet
+const WIDE = '(min-width: 62rem)'
 
 // Month and date default to now each time the dialog opens
 const emptyForm = () => ({
@@ -204,7 +215,7 @@ const emptyForm = () => ({
 
 export default {
   name: 'PaymentsView',
-  components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, BaseTextarea, EmptyNote, Icon, PageHead, StatTile, TextButton },
+  components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, BaseTextarea, EmptyNote, Icon, PageHead, StatTile, TextButton, YearStrip },
   setup() {
     return {
       appStore: useAppStore(),
@@ -239,12 +250,27 @@ export default {
       today: localISODate(),
       selectedPayment: null,
       receiptOpen: false,
-      downloading: false
+      downloading: false,
+      wide: true
     }
   },
   computed: {
     currentPeriod() {
       return this.today.slice(0, 7)
+    },
+    selectedMember() {
+      return this.members.find(member => String(member.id) === this.form.memberId) || null
+    },
+    paidByMember() {
+      return paidMonthsByMember(this.payments)
+    },
+    // The member's year strip cells and what they owe (the step 1 rule: yearStrip.js)
+    owed() {
+      const member = this.selectedMember
+      return member ? owedSummary(stripCells(this.stripArgs(member))) : { oldest: '', sentence: '' }
+    },
+    periodHint() {
+      return !this.wide && this.owed.oldest && this.form.period === this.owed.oldest ? `${longMonth(this.owed.oldest)}, the oldest month not paid.` : ''
     },
     activeMembers() {
       return this.members.filter(countsForDues).sort((a, b) => a.name.localeCompare(b.name))
@@ -267,11 +293,38 @@ export default {
       ]
     }
   },
+  watch: {
+    // On the phone sheet the month covered starts at the oldest month the member has not paid
+    'form.memberId'() {
+      if (!this.wide && this.owed.oldest) this.form.period = this.owed.oldest
+    }
+  },
   async created() {
+    this.wideQuery = window.matchMedia?.(WIDE)
+    this.wide = this.wideQuery ? this.wideQuery.matches : true
+    this.wideQuery?.addEventListener('change', this.onWide)
     await this.loadData()
     this.openForQueryMember()
   },
+  beforeUnmount() {
+    this.wideQuery?.removeEventListener('change', this.onWide)
+  },
   methods: {
+    onWide(event) {
+      this.wide = event.matches
+    },
+    stripArgs(member) {
+      return {
+        currentMonth: this.currentPeriod,
+        joinDate: member.joinDate || '',
+        paidMonths: this.paidByMember.get(member.id) || new Set(),
+        monthsMissed: member.consecutiveMonthsMissed || 0,
+        countsForDues: countsForDues(member)
+      }
+    },
+    stripProps(member) {
+      return { ...this.stripArgs(member), label: `Dues for ${member.name}, last 12 months` }
+    },
     // Members are only needed to record a payment (STAFF and above); the history carries each member's name
     async loadData() {
       try {

@@ -8,7 +8,7 @@
     >
       <div
         v-if="modelValue"
-        class="fixed inset-0 z-[1200] flex items-center justify-center bg-ink/40 p-4"
+        :class="['fixed inset-0 z-[1200] flex items-center justify-center bg-ink/40 p-4', sheet && 'max-lg:p-0']"
         data-modal-backdrop
         @mousedown.self="pressedOnBackdrop = true"
         @click.self="onBackdropClick"
@@ -21,24 +21,30 @@
           tabindex="-1"
           :class="[
             'flex max-h-[calc(100dvh-2rem)] w-full flex-col rounded-md border border-rule bg-paper text-ink shadow-modal',
-            WIDTH[size] || WIDTH.md
+            WIDTH[size] || WIDTH.md,
+            sheet && 'max-lg:h-dvh max-lg:max-h-none max-lg:max-w-none max-lg:rounded-none max-lg:border-0 max-lg:bg-mist max-lg:shadow-none'
           ]"
         >
-          <div class="flex items-start justify-between gap-4 border-b border-rule px-4 py-3">
-            <h2 :id="titleId" class="m-0 text-lg leading-tight font-semibold text-ink">{{ title }}</h2>
+          <!-- A sheet below lg: a dark top bar with Back on the left; from lg the usual title and close X -->
+          <div :class="['flex items-start justify-between gap-4 border-b border-rule px-4 py-3', sheet && 'max-lg:min-h-14 max-lg:shrink-0 max-lg:items-center max-lg:justify-start max-lg:gap-2 max-lg:border-b-0 max-lg:bg-rail max-lg:px-2 max-lg:py-0 max-lg:pt-[env(safe-area-inset-top)]']">
+            <h2 :id="titleId" :class="['m-0 text-lg leading-tight font-semibold text-ink', sheet && 'max-lg:order-2 max-lg:text-xl max-lg:text-paper']">{{ title }}</h2>
             <button
               type="button"
-              class="-mr-2 -mt-1 flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-muted hover:text-ink"
+              :class="[
+                '-mr-2 -mt-1 flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-muted hover:text-ink',
+                sheet && 'max-lg:order-1 max-lg:m-0 max-lg:size-11 max-lg:text-paper max-lg:hover:text-paper max-lg:focus-visible:outline-paper'
+              ]"
               aria-label="Close"
               @click="close"
             >
-              <Icon name="x" :size="16" />
+              <Icon v-if="sheet" name="chevron-left" :size="22" class="lg:hidden" />
+              <Icon name="x" :size="16" :class="sheet && 'max-lg:hidden'" />
             </button>
           </div>
-          <div class="overflow-y-auto p-4">
+          <div :class="['overflow-y-auto p-4', sheet && 'max-lg:flex-1']">
             <slot />
           </div>
-          <div v-if="$slots.footer" class="flex flex-wrap justify-end gap-2 border-t border-rule px-4 py-3">
+          <div v-if="$slots.footer" :class="['flex flex-wrap justify-end gap-2 border-t border-rule px-4 py-3', sheet && 'max-lg:shrink-0 max-lg:flex-col-reverse max-lg:flex-nowrap max-lg:bg-paper max-lg:pb-[calc(1rem+env(safe-area-inset-bottom))] max-lg:[&>*]:min-h-12! max-lg:[&>*]:w-full']">
             <slot name="footer" />
           </div>
         </div>
@@ -62,7 +68,9 @@ export default {
   props: {
     modelValue: { type: Boolean, default: false },
     title: { type: String, required: true },
-    size: { type: String, default: 'md', validator: value => ['sm', 'md', 'lg'].includes(value) }
+    size: { type: String, default: 'md', validator: value => ['sm', 'md', 'lg'].includes(value) },
+    // below lg the dialog is a full-screen sheet (back arrow, pinned footer with full-width buttons)
+    sheet: { type: Boolean, default: false }
   },
   emits: ['update:modelValue'],
   data() {
