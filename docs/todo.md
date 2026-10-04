@@ -8,10 +8,9 @@ Done and removed from this list (October 2026): auth hardening (token types, ref
 
 ## (a) Next structural work
 
-[person-membership-plan.md](person-membership-plan.md), Phase 4: steps 1 to 8 are done in code; steps 9 to 12 are open and run in this order.
+[person-membership-plan.md](person-membership-plan.md), Phase 4: steps 1 to 9 are done in code; steps 10 to 12 are open and run in this order.
 
-- [ ] Restart the demo backend on the new build so migration 013 runs on `felege_selam` (take a dump first, then run the drift query from plan section 6)
-- [ ] Step 9: read name, email and phone from `person`
+- [ ] Restart the demo backend on the new build so migration 013 runs on `felege_selam` and step 9 starts reading `person` (take a dump first, then run the drift query from plan section 6; it must be 0 before step 12)
 - [ ] Step 10: households (API and UI)
 - [ ] Step 11: people without a membership (children, dependents)
 - [ ] Step 12: contract, the destructive step that drops the legacy columns (`name`, `email`, `phone`, `active` on `member`)
@@ -28,6 +27,7 @@ Done and removed from this list (October 2026): auth hardening (token types, ref
 
 ## (c) Needs a decision or an account
 
+- [ ] API timestamps (`createdDate`, `archivedAt`, etc.) are server-local `LocalDateTime` while MySQL stores UTC (JDBC `serverTimezone=UTC`), so they look 2 hours apart in CEST; decide on UTC everywhere or `Instant`, and check the monthly counter job's month boundary
 - [ ] SMS and WhatsApp (a provider account such as Twilio; today those channels are stubs that mark every delivery failed)
 - [ ] Calendar integration
 - [ ] Online payment gateway

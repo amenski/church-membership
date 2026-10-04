@@ -159,7 +159,7 @@ Rollback in this repo means: run the `--rollback` statements by hand on the targ
 | 6 | Frontend speaks `status` | low | 8 files, ~150 lines | c | done |
 | 7 | Create `person` and `household` tables, unused | low | 1 migration | a, b | done |
 | 8 | Backfill person, dual-write | high | ~8 files, ~300 lines | g | done (code and migration 013 proven on a MySQL copy; the live demo database is not migrated yet, a human restart applies 013) |
-| 9 | Read name/email/phone from person | medium | ~6 files, ~120 lines | none | todo |
+| 9 | Read name/email/phone from person | medium | ~6 files, ~120 lines | none | done in code (the live demo is not running it yet: a human restart applies 013 and this build together) |
 | 10 | Households (API and UI) | medium | ~12 files, ~450 lines | a | todo |
 | 11 | People without a membership | medium | ~10 files, ~350 lines | f | todo |
 | 12 | Contract: drop legacy columns | high | 1 migration + ~8 files | verification | todo |
@@ -289,6 +289,8 @@ Order: steps 1 to 6 need no new tables and already deliver C10 and C9. Steps 7 t
 - Goal: `person` is the source of truth; `member.name/email/phone` are only still written.
 - Backend: mapper `toDomain` reads name/email/phone from `person`; sort `...OrderByConsecutiveMonthsMissedDescNameAscIdAsc` (`MemberJpaRepository.java:18`) becomes `...PersonNameAscIdAsc`; `toRecipient` reads person. No JSON change.
 - Proof: the drift query returns 0 on the dry-run copy and on the real database for at least one release before step 12; all existing tests pass unchanged (they only see `Member`).
+- Built: `MemberPersistenceMapper.toDomain` and `toRecipient` read the linked person; `toEntity` still writes the legacy columns and also builds a transient person with the same values, so the member references that payment and delivery saves build read back like the member (`MemberDbRepository.save` swaps in the stored person first). The overdue sort is `...ConsecutiveMonthsMissedDescPersonNameAscIdAsc`. No JPQL or native query filtered or sorted by member name or email (step 2 removed the email lookups), and nothing outside the mapper reads the `MemberEntity.getName/getEmail/getPhone` getters; step 12 can delete them with the columns. List reads stay one joined statement: `@EntityGraph` on the member list queries, on `PaymentJpaRepository.findAll`, `findAll(Pageable)` and `findByMember`, and on `MessageDeliveryJpaRepository.findByCommunicationId`. Proven by `PersonReadSwitchTest` (legacy columns altered with `UPDATE member`, the API still returns the person values for members, overdue order, export, a payment's member and a delivery's recipient; Hibernate statistics assert one statement per list) and two cases in `MemberPersistenceMapperTest`.
+- After this step a divergence is visible to users: a member whose legacy column differs from its person now shows the person's value, so the drift query (section 6) must return 0 before step 12 (it still sees the legacy columns; `PersonDriftQuery` is unchanged). Any save of a member rewrites the legacy columns from the person, which heals a drifted row.
 - Rollback: revert (the legacy columns are still current). Risk medium.
 
 ### Step 10: households **GATE a**
