@@ -111,11 +111,11 @@ class UpdateMemberUseCaseTest {
     }
 
     @Test
-    void deactivatingAlsoRecordsTheStatusChange() {
+    void deactivatingRecordsOnlyTheTypedEntry() {
         useCase.invoke(1L, "Old", "old@example.com", null, null, null, false);
 
-        verify(recordActivity).record(ActivityType.MEMBER_UPDATED, "Member Old was updated, status is now INACTIVE", "MEMBER", 1L);
         verify(recordActivity).record(ActivityType.MEMBER_DEACTIVATED, "Member Old was deactivated", "MEMBER", 1L);
+        verifyNoMoreInteractions(recordActivity);
     }
 
     @Test
@@ -170,8 +170,8 @@ class UpdateMemberUseCaseTest {
 
         assertThat(result.getStatus()).isEqualTo(MemberStatus.DECEASED);
         assertThat(result.getConsecutiveMonthsMissed()).isEqualTo(4);
-        verify(recordActivity).record(ActivityType.MEMBER_UPDATED, "Member Old was updated, status is now DECEASED", "MEMBER", 1L);
-        verify(recordActivity).record(ActivityType.MEMBER_DEACTIVATED, "Member Old was deactivated", "MEMBER", 1L);
+        verify(recordActivity).record(ActivityType.MEMBER_DEACTIVATED, "Member Old was deactivated, status is now deceased", "MEMBER", 1L);
+        verifyNoMoreInteractions(recordActivity);
     }
 
     @Test
@@ -195,7 +195,7 @@ class UpdateMemberUseCaseTest {
 
         useCase.invoke(1L, "Old", "old@example.com", null, null, MemberStatus.TRANSFERRED, null);
 
-        verify(recordActivity).record(ActivityType.MEMBER_UPDATED, "Member Old was updated, status is now TRANSFERRED", "MEMBER", 1L);
+        verify(recordActivity).record(ActivityType.MEMBER_UPDATED, "Member Old was updated, status is now transferred", "MEMBER", 1L);
         verify(recordActivity, never()).record(eq(ActivityType.MEMBER_ACTIVATED), any(), any(), any());
         verify(recordActivity, never()).record(eq(ActivityType.MEMBER_DEACTIVATED), any(), any(), any());
     }

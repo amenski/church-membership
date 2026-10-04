@@ -7,6 +7,7 @@ import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.repository.MemberRepository;
 
 import java.time.LocalDate;
+import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -53,15 +54,16 @@ public class UpdateMemberUseCase {
             }
             Member saved = memberRepository.save(member);
             MemberStatus after = saved.getStatus();
-            String updated = "Member " + saved.getName() + " was updated";
-            if (after != before) {
-                updated += ", status is now " + after;
-            }
-            recordActivity.record(ActivityType.MEMBER_UPDATED, updated, "MEMBER", saved.getId());
+            String statusNote = after != before ? ", status is now " + after.name().toLowerCase(Locale.ROOT) : "";
             if (before.countsForDues() != after.countsForDues()) {
                 ActivityType type = after.countsForDues() ? ActivityType.MEMBER_ACTIVATED : ActivityType.MEMBER_DEACTIVATED;
                 String what = after.countsForDues() ? "activated" : "deactivated";
-                recordActivity.record(type, "Member " + saved.getName() + " was " + what, "MEMBER", saved.getId());
+                // The typed entry already says it; only a status beyond plain member / inactive needs naming
+                String note = after == MemberStatus.MEMBER || after == MemberStatus.INACTIVE ? "" : statusNote;
+                recordActivity.record(type, "Member " + saved.getName() + " was " + what + note, "MEMBER", saved.getId());
+            } else {
+                recordActivity.record(ActivityType.MEMBER_UPDATED,
+                        "Member " + saved.getName() + " was updated" + statusNote, "MEMBER", saved.getId());
             }
             return saved;
         });
