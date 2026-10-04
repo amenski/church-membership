@@ -3,20 +3,20 @@
     <PageHead title="Messages" lead="Email members and see what was delivered." />
 
     <AlertBanner v-if="loadError">
-      <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3">
+      <div class="flex flex-wrap items-center justify-between gap-3">
         <span>The messages did not load. Check your connection and try again.</span>
         <BaseButton variant="secondary" size="sm" @click="loadData">Try again</BaseButton>
       </div>
     </AlertBanner>
 
     <!-- One reading column for the form and the history -->
-    <div class="tw:max-w-176">
+    <div class="max-w-176">
       <!-- Compose (STAFF and above) -->
       <section v-if="authStore.isStaff" :class="CARD" aria-labelledby="compose-title">
         <SectionTitle id="compose-title">New message</SectionTitle>
         <AlertBanner v-if="sendError">{{ sendError }}</AlertBanner>
-        <form class="tw:flex tw:flex-col tw:gap-4" novalidate @submit.prevent="askToSend">
-          <div class="tw:grid tw:grid-cols-1 tw:gap-4 tw:sm:grid-cols-2">
+        <form class="flex flex-col gap-4" novalidate @submit.prevent="askToSend">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <BaseSelect id="message-audience" v-model="form.recipientType" label="Send to">
               <option value="ALL">All active members</option>
               <option value="OVERDUE">Members behind on dues</option>
@@ -49,7 +49,7 @@
             :error="formErrors.message"
           />
           <div>
-            <BaseButton type="submit" :disabled="sending" :aria-busy="sending ? 'true' : undefined" class="tw:max-sm:w-full">
+            <BaseButton type="submit" :disabled="sending" :aria-busy="sending ? 'true' : undefined" class="max-sm:w-full">
               {{ sending ? 'Sending...' : 'Send message' }}
             </BaseButton>
           </div>
@@ -60,28 +60,28 @@
       <section aria-labelledby="history-title">
         <SectionTitle id="history-title">Sent messages</SectionTitle>
 
-        <p v-if="!loaded" class="tw:m-0 tw:py-4 tw:text-(length:--text-body) tw:text-muted" role="status">Loading messages...</p>
+        <p v-if="!loaded" class="m-0 py-4 text-(length:--text-body) text-muted" role="status">Loading messages...</p>
 
         <template v-else-if="!loadError">
           <div v-if="!messages.length">
             <EmptyNote>No messages yet.<template v-if="authStore.isStaff"> Use the form above to send the first one.</template></EmptyNote>
           </div>
 
-          <ul v-else class="tw:m-0 tw:list-none tw:border-t tw:border-rule tw:p-0">
-            <li v-for="message in messages" :key="message.id" class="tw:flex tw:items-start tw:justify-between tw:gap-4 tw:border-b tw:border-rule tw:py-3 tw:text-(length:--text-body) tw:max-sm:flex-col tw:max-sm:gap-0">
-              <div class="tw:min-w-0">
-                <div class="tw:font-sans tw:font-bold tw:text-ink tw:[overflow-wrap:anywhere]">{{ message.title }}</div>
-                <div class="tw:text-sm tw:text-muted tw:tabular-nums">
+          <ul v-else class="m-0 list-none border-t border-rule p-0">
+            <li v-for="message in messages" :key="message.id" class="flex items-start justify-between gap-4 border-b border-rule py-3 text-(length:--text-body) max-sm:flex-col max-sm:gap-0">
+              <div class="min-w-0">
+                <div class="font-sans font-bold text-ink [overflow-wrap:anywhere]">{{ message.title }}</div>
+                <div class="text-sm text-muted tabular-nums">
                   {{ sentAt(message) }} &middot; {{ typeLabel(message.type) }} &middot;
                   <template v-if="message.recipientCount > 0">{{ message.recipientCount }} {{ message.recipientCount === 1 ? 'recipient' : 'recipients' }}</template>
                   <template v-else>No deliveries recorded</template>
                 </div>
-                <div v-if="summaryParts(message).length" class="tw:mt-1 tw:flex tw:flex-wrap tw:gap-x-4">
+                <div v-if="summaryParts(message).length" class="mt-1 flex flex-wrap gap-x-4">
                   <StatusLabel v-for="part in summaryParts(message)" :key="part.key" :tone="part.tone">{{ part.text }}</StatusLabel>
                 </div>
               </div>
-              <TextButton class="tw:shrink-0 tw:max-sm:text-left" @click="openDeliveries(message)">
-                View deliveries<span class="tw:sr-only"> for {{ message.title }}</span>
+              <TextButton class="shrink-0 max-sm:text-left" @click="openDeliveries(message)">
+                View deliveries<span class="sr-only"> for {{ message.title }}</span>
               </TextButton>
             </li>
           </ul>
@@ -101,40 +101,40 @@
 
     <!-- Deliveries -->
     <BaseModal v-model="deliveriesOpen" :title="selectedMessage ? `Deliveries: ${selectedMessage.title}` : 'Deliveries'" size="lg">
-      <p v-if="selectedMessage" class="tw:mt-0 tw:mb-3 tw:text-base tw:text-muted tw:tabular-nums">Sent {{ sentAt(selectedMessage) }}</p>
-      <p v-if="deliveriesLoading" class="tw:m-0 tw:py-4 tw:text-muted" role="status">Loading deliveries...</p>
+      <p v-if="selectedMessage" class="mt-0 mb-3 text-base text-muted tabular-nums">Sent {{ sentAt(selectedMessage) }}</p>
+      <p v-if="deliveriesLoading" class="m-0 py-4 text-muted" role="status">Loading deliveries...</p>
       <AlertBanner v-else-if="deliveriesError">
-        <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
           <span>The deliveries did not load. Check your connection and try again.</span>
           <BaseButton variant="secondary" size="sm" @click="loadDeliveries">Try again</BaseButton>
         </div>
       </AlertBanner>
       <EmptyNote v-else-if="!deliveries.length">No deliveries were recorded for this message.</EmptyNote>
       <template v-else>
-        <div class="tw:mb-3 tw:flex tw:flex-wrap tw:gap-x-4" aria-label="Delivery totals" role="group">
+        <div class="mb-3 flex flex-wrap gap-x-4" aria-label="Delivery totals" role="group">
           <StatusLabel v-for="part in deliveryTotals" :key="part.key" :tone="part.tone">{{ part.text }}</StatusLabel>
         </div>
-        <ul class="tw:m-0 tw:list-none tw:border-t tw:border-rule tw:p-0">
-          <li v-for="delivery in deliveries" :key="delivery.id" class="tw:flex tw:items-start tw:justify-between tw:gap-3 tw:border-b tw:border-rule tw:py-3">
-            <div class="tw:min-w-0">
-              <div class="tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-4">
-                <span class="tw:font-medium tw:[overflow-wrap:anywhere]">{{ delivery.recipient?.name || 'Unknown' }}</span>
+        <ul class="m-0 list-none border-t border-rule p-0">
+          <li v-for="delivery in deliveries" :key="delivery.id" class="flex items-start justify-between gap-3 border-b border-rule py-3">
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-baseline gap-x-4">
+                <span class="font-medium [overflow-wrap:anywhere]">{{ delivery.recipient?.name || 'Unknown' }}</span>
                 <StatusLabel :tone="statusOf(delivery).tone">{{ statusOf(delivery).label }}</StatusLabel>
-                <span v-if="delivery.deliveryTime" class="tw:text-sm tw:text-muted tw:tabular-nums">{{ formatDate(delivery.deliveryTime, 'MMM d, yyyy, h:mm a') }}</span>
+                <span v-if="delivery.deliveryTime" class="text-sm text-muted tabular-nums">{{ formatDate(delivery.deliveryTime, 'MMM d, yyyy, h:mm a') }}</span>
               </div>
-              <div class="tw:text-sm tw:text-muted tw:[overflow-wrap:anywhere]">{{ delivery.recipient?.email }}</div>
-              <div v-if="delivery.responseNotes" class="tw:text-sm tw:text-muted tw:[overflow-wrap:anywhere]">{{ delivery.responseNotes }}</div>
+              <div class="text-sm text-muted [overflow-wrap:anywhere]">{{ delivery.recipient?.email }}</div>
+              <div v-if="delivery.responseNotes" class="text-sm text-muted [overflow-wrap:anywhere]">{{ delivery.responseNotes }}</div>
             </div>
             <BaseButton
               v-if="canRetry(delivery)"
               variant="secondary"
               size="sm"
-              class="tw:shrink-0"
+              class="shrink-0"
               :disabled="retryingIds.includes(delivery.id)"
               :aria-busy="retryingIds.includes(delivery.id) ? 'true' : undefined"
               @click="retryDelivery(delivery)"
             >
-              {{ retryingIds.includes(delivery.id) ? 'Retrying...' : 'Retry' }}<span class="tw:sr-only"> for {{ delivery.recipient?.name }}</span>
+              {{ retryingIds.includes(delivery.id) ? 'Retrying...' : 'Retry' }}<span class="sr-only"> for {{ delivery.recipient?.name }}</span>
             </BaseButton>
           </li>
         </ul>
@@ -167,7 +167,7 @@ import SectionTitle from '@/components/SectionTitle.vue'
 import StatusLabel from '@/components/StatusLabel.vue'
 import TextButton from '@/components/TextButton.vue'
 
-const CARD = 'tw:mb-10 tw:rounded-md tw:border tw:border-rule tw:bg-paper tw:p-(--card-pad)'
+const CARD = 'mb-10 rounded-md border border-rule bg-paper p-(--card-pad)'
 const MESSAGE_MAX = 5000
 const SUBJECT_MAX = 200
 const EMPTY_ERRORS = { monthsOverdue: '', memberId: '', subject: '', message: '' }

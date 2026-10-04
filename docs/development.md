@@ -57,6 +57,11 @@ CSRF protection is on: "Try it out" on POST, PUT and DELETE needs the `X-XSRF-TO
 
 The raw spec is at `/v3/api-docs`. Swagger and the spec are off in every other profile on purpose (the paths return 404).
 
+### Frontend notes
+
+- Styling is Tailwind CSS v4 only (`frontend/src/assets/styles/tailwind.css`); there is no Bootstrap. The build and dev commands are unchanged (`npm run dev`, `npm run build`, `npm test`).
+- Fonts (`@fontsource/*`) and icons (`bootstrap-icons`) are npm packages bundled by Vite, so the app loads nothing from a CDN or any third-party host.
+
 ### Frontend environment variables
 
 From `frontend/.env.example`:
@@ -206,7 +211,7 @@ volumes:
 - [ ] HTTPS via Caddy (see [HTTPS](#https-caddy-reverse-proxy)), app bound to 127.0.0.1 (`SERVER_ADDRESS`, the default) and `COOKIE_SECURE` left at its default `true`
 - [ ] Port 8080 is never published to an untrusted network (the app trusts `X-Forwarded-For` only from `TRUSTED_PROXIES`)
 - [ ] `JWT_SECRET` set to a random value, for example `openssl rand -base64 48`. At least 32 characters is enforced (the default profile has no default and will not start without it). If an old build with the published default secret ever ran in production, rotate the secret now: the old default is in the git history
-- [ ] `deploy/Caddyfile` in use: it sends HSTS, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` (no camera, microphone or geolocation) and a 1 MB request body limit. `Content-Security-Policy-Report-Only` is report-only because the frontend still loads fonts and icons from CDNs; enforce it (rename to `Content-Security-Policy`) once they are self-hosted
+- [ ] `deploy/Caddyfile` in use: it sends HSTS, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` (no camera, microphone or geolocation) and a 1 MB request body limit. `Content-Security-Policy-Report-Only` is report-only from the time the frontend loaded fonts and icons from CDNs; they are now npm packages served from the app itself, so the policy can be enforced (rename to `Content-Security-Policy`) after a check that no page logs a violation
 - [ ] `DB_USERNAME` and `DB_PASSWORD` set from the environment (not `root/password`); the default JDBC URL has no `useSSL=false`
 - [ ] CORS origins changed in **both** `SecurityConfig` and `WebMvcConfig`. They are hard-coded to localhost.
 - [ ] SQL logging stays off: `spring.jpa.show-sql=false` in the default profile (only `dev` turns it on)

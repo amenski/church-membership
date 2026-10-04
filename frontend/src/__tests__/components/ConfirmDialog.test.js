@@ -69,6 +69,6 @@ describe('ConfirmDialog', () => {
 
   it('uses the danger style when asked', () => {
     mountDialog({ danger: true })
-    expect(byText('Send to 8 members').className).toContain('tw:bg-clay')
+    expect(byText('Send to 8 members').className).toContain('bg-clay')
   })
 })

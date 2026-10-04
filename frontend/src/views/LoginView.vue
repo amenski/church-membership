@@ -1,21 +1,21 @@
 <template>
-  <div data-density="comfortable" class="tw:flex tw:min-h-screen tw:flex-col tw:items-center tw:justify-center tw:gap-6 tw:bg-mist tw:px-4 tw:py-6">
-    <router-link to="/" class="tw:flex tw:flex-col tw:items-center tw:no-underline" aria-label="Felege Selam home">
-      <span class="tw:font-ethiopic tw:text-2xl tw:leading-[1.3] tw:font-bold tw:text-teal">ፈለገ ሰላም</span>
-      <span class="tw:font-display tw:text-lg tw:font-bold tw:text-ink">Felege Selam</span>
+  <div data-density="comfortable" class="flex min-h-screen flex-col items-center justify-center gap-6 bg-mist px-4 py-6">
+    <router-link to="/" class="flex flex-col items-center no-underline" aria-label="Felege Selam home">
+      <span class="font-ethiopic text-2xl leading-[1.3] font-bold text-teal">ፈለገ ሰላም</span>
+      <span class="font-display text-lg font-bold text-ink">Felege Selam</span>
     </router-link>
 
-    <div class="tw:w-full tw:max-w-[400px] tw:overflow-hidden tw:rounded-md tw:border tw:border-rule tw:bg-paper">
+    <div class="w-full max-w-[400px] overflow-hidden rounded-md border border-rule bg-paper">
       <WovenBand :height="8" />
-      <div class="tw:p-6">
-        <h1 class="tw:mt-0 tw:mb-6 tw:font-display tw:text-2xl tw:leading-[1.2] tw:font-bold tw:text-ink">Sign in</h1>
+      <div class="p-6">
+        <h1 class="mt-0 mb-6 font-display text-2xl leading-[1.2] font-bold text-ink">Sign in</h1>
 
         <form @submit.prevent="handleLogin">
           <!-- Error Alert -->
           <AlertBanner v-if="authError">{{ authError }}</AlertBanner>
 
           <!-- Email Field -->
-          <div class="tw:mb-4">
+          <div class="mb-4">
             <BaseInput
               id="email"
               v-model="form.email"
@@ -29,7 +29,7 @@
           </div>
 
           <!-- Password Field -->
-          <div class="tw:mb-6">
+          <div class="mb-6">
             <BaseInput
               id="password"
               v-model="form.password"
@@ -43,10 +43,10 @@
           </div>
 
           <!-- Submit Button -->
-          <BaseButton type="submit" class="tw:w-full" :disabled="isAuthLoading || !isFormValid">
+          <BaseButton type="submit" class="w-full" :disabled="isAuthLoading || !isFormValid">
             <span
               v-if="isAuthLoading"
-              class="tw:mr-2 tw:inline-block tw:size-4 tw:rounded-full tw:border-2 tw:border-current tw:border-r-transparent tw:align-[-0.125em] tw:motion-safe:animate-spin"
+              class="mr-2 inline-block size-4 rounded-full border-2 border-current border-r-transparent align-[-0.125em] motion-safe:animate-spin"
               aria-hidden="true"
             ></span>
             {{ isAuthLoading ? 'Signing in...' : 'Sign in' }}
@@ -56,7 +56,7 @@
     </div>
 
     <!-- Registration is disabled: accounts are created by the church office -->
-    <p class="tw:m-0 tw:text-center tw:text-sm tw:text-muted">Accounts are set up by the church office.</p>
+    <p class="m-0 text-center text-sm text-muted">Accounts are set up by the church office.</p>
   </div>
 </template>
 

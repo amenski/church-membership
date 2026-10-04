@@ -3,28 +3,28 @@
     <PageHead title="Members" lead="Everyone on the register: who is paid up and who is behind.">
       <template v-if="authStore.isStaff" #actions>
         <BaseButton variant="secondary" @click="exportMembers">
-          <i class="bi bi-download tw:mr-2" aria-hidden="true"></i>Export CSV
+          <i class="bi bi-download mr-2" aria-hidden="true"></i>Export CSV
         </BaseButton>
         <BaseButton @click="showAddModal">
-          <i class="bi bi-plus-lg tw:mr-2" aria-hidden="true"></i>Add member
+          <i class="bi bi-plus-lg mr-2" aria-hidden="true"></i>Add member
         </BaseButton>
       </template>
     </PageHead>
 
     <AlertBanner v-if="loadError">
-      <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3">
+      <div class="flex flex-wrap items-center justify-between gap-3">
         <span>The member list did not load. Check your connection and try again.</span>
         <BaseButton variant="secondary" size="sm" @click="loadMembers">Try again</BaseButton>
       </div>
     </AlertBanner>
 
     <!-- Filters: one compact row from md up; the date pair folds away on a phone -->
-    <form v-if="members.length" class="tw:mb-6 tw:grid tw:grid-cols-2 tw:gap-3 tw:md:flex tw:md:flex-wrap tw:md:items-end" role="search" aria-label="Filter members" @submit.prevent>
-      <div class="tw:col-span-2 tw:md:col-span-1 tw:md:min-w-60 tw:md:flex-1">
+    <form v-if="members.length" class="mb-6 grid grid-cols-2 gap-3 md:flex md:flex-wrap md:items-end" role="search" aria-label="Filter members" @submit.prevent>
+      <div class="col-span-2 md:col-span-1 md:min-w-60 md:flex-1">
         <label for="filter-search" :class="LABEL">Search</label>
         <input id="filter-search" v-model="filters.search" type="search" placeholder="Search name, email or phone" autocomplete="off" :class="CONTROL">
       </div>
-      <div class="tw:md:w-40">
+      <div class="md:w-40">
         <label for="filter-status" :class="LABEL">Status</label>
         <select id="filter-status" v-model="filters.status" :class="CONTROL">
           <option value="ALL">All members</option>
@@ -32,7 +32,7 @@
           <option value="INACTIVE">Inactive</option>
         </select>
       </div>
-      <div class="tw:md:w-40">
+      <div class="md:w-40">
         <label for="filter-dues" :class="LABEL">Dues</label>
         <select id="filter-dues" v-model="filters.paymentStatus" :class="CONTROL">
           <option value="ALL">All</option>
@@ -42,7 +42,7 @@
       </div>
       <button
         type="button"
-        class="tw:col-span-2 tw:flex tw:min-h-11 tw:cursor-pointer tw:items-center tw:gap-2 tw:border-0 tw:bg-transparent tw:p-0 tw:text-left tw:font-medium tw:text-teal tw:hover:text-teal-hover tw:md:hidden"
+        class="col-span-2 flex min-h-11 cursor-pointer items-center gap-2 border-0 bg-transparent p-0 text-left font-medium text-teal hover:text-teal-hover md:hidden"
         aria-controls="filter-dates"
         :aria-expanded="datesOpen ? 'true' : 'false'"
         @click="datesOpen = !datesOpen"
@@ -50,39 +50,39 @@
         <i :class="['bi', datesOpen ? 'bi-chevron-up' : 'bi-chevron-down']" aria-hidden="true"></i>
         {{ datesOpen ? 'Fewer filters' : 'More filters' }}<template v-if="!datesOpen && dateFilterCount"> ({{ dateFilterCount }} set)</template>
       </button>
-      <div id="filter-dates" :class="datesOpen ? 'tw:contents' : 'tw:hidden tw:md:contents'">
-        <div class="tw:md:w-40">
+      <div id="filter-dates" :class="datesOpen ? 'contents' : 'hidden md:contents'">
+        <div class="md:w-40">
           <label for="filter-from" :class="LABEL">Joined from</label>
           <input id="filter-from" v-model="filters.joinedFrom" type="date" :class="CONTROL">
         </div>
-        <div class="tw:md:w-40">
+        <div class="md:w-40">
           <label for="filter-to" :class="LABEL">Joined to</label>
           <input id="filter-to" v-model="filters.joinedTo" type="date" :class="CONTROL">
         </div>
       </div>
-      <TextButton v-if="hasActiveFilters && filteredMembers.length" class="tw:col-span-2 tw:text-left tw:md:col-span-1 tw:md:py-1.5" @click="clearFilters">Clear filters</TextButton>
+      <TextButton v-if="hasActiveFilters && filteredMembers.length" class="col-span-2 text-left md:col-span-1 md:py-1.5" @click="clearFilters">Clear filters</TextButton>
     </form>
 
     <!-- Empty states -->
     <div v-if="loaded && !loadError && !members.length">
       <EmptyNote>No members yet. Add the first member.</EmptyNote>
-      <BaseButton v-if="authStore.isStaff" class="tw:mt-2" @click="showAddModal">Add member</BaseButton>
+      <BaseButton v-if="authStore.isStaff" class="mt-2" @click="showAddModal">Add member</BaseButton>
     </div>
     <div v-else-if="members.length && !filteredMembers.length">
       <EmptyNote>No members match these filters.</EmptyNote>
-      <BaseButton variant="secondary" class="tw:mt-2" @click="clearFilters">Clear filters</BaseButton>
+      <BaseButton variant="secondary" class="mt-2" @click="clearFilters">Clear filters</BaseButton>
     </div>
 
     <template v-if="filteredMembers.length">
-      <p class="tw:mt-0 tw:mb-2 tw:text-sm tw:text-muted" aria-live="polite">
+      <p class="mt-0 mb-2 text-sm text-muted" aria-live="polite">
         {{ hasActiveFilters ? `${filteredMembers.length} of ${members.length} members` : `${members.length} ${members.length === 1 ? 'member' : 'members'}` }}
       </p>
 
       <!-- md and up: ruled table -->
-      <table class="tw:hidden tw:w-full tw:border-collapse tw:text-left tw:text-(length:--text-body) tw:tabular-nums tw:md:table">
-        <caption class="tw:sr-only">Members</caption>
+      <table class="hidden w-full border-collapse text-left text-(length:--text-body) tabular-nums md:table">
+        <caption class="sr-only">Members</caption>
         <thead>
-          <tr class="tw:border-b tw:border-rule">
+          <tr class="border-b border-rule">
             <th v-for="column in columns" :key="column.label" scope="col" :aria-sort="ariaSort(column.sortKey)" :class="[TH, column.class]">
               <button v-if="column.sortKey" type="button" :class="SORT_BUTTON" @click="setSort(column.sortKey)">
                 {{ column.label }}
@@ -90,30 +90,30 @@
               </button>
               <template v-else>{{ column.label }}</template>
             </th>
-            <th v-if="authStore.isStaff" scope="col" :class="[TH, 'tw:w-14']"><span class="tw:sr-only">Actions</span></th>
+            <th v-if="authStore.isStaff" scope="col" :class="[TH, 'w-14']"><span class="sr-only">Actions</span></th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="member in filteredMembers" :key="member.id" class="tw:h-(--row-h) tw:border-b tw:border-rule">
-            <td :class="[TD, 'tw:max-w-0 tw:w-[34%]']">
+          <tr v-for="member in filteredMembers" :key="member.id" class="h-(--row-h) border-b border-rule">
+            <td :class="[TD, 'max-w-0 w-[34%]']">
               <div :class="NAME">{{ member.name }}</div>
-              <div class="tw:text-sm tw:text-muted tw:[overflow-wrap:anywhere]">{{ member.email }}</div>
+              <div class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
             </td>
-            <td :class="[TD, 'tw:whitespace-nowrap']">
+            <td :class="[TD, 'whitespace-nowrap']">
               <template v-if="member.phone">{{ member.phone }}</template>
-              <span v-else class="tw:text-muted"><span aria-hidden="true">&ndash;</span><span class="tw:sr-only">No phone</span></span>
+              <span v-else class="text-muted"><span aria-hidden="true">&ndash;</span><span class="sr-only">No phone</span></span>
             </td>
-            <td :class="[TD, 'tw:whitespace-nowrap']">{{ formatMemberDate(member.joinDate) }}</td>
-            <td :class="[TD, 'tw:whitespace-nowrap']">
+            <td :class="[TD, 'whitespace-nowrap']">{{ formatMemberDate(member.joinDate) }}</td>
+            <td :class="[TD, 'whitespace-nowrap']">
               <StatusLabel :tone="member.active ? 'paid' : 'inactive'">{{ member.active ? 'Active' : 'Inactive' }}</StatusLabel>
             </td>
-            <td :class="[TD, 'tw:whitespace-nowrap']">
+            <td :class="[TD, 'whitespace-nowrap']">
               <span :class="duesClass(member)">
                 <template v-if="member.active">{{ duesText(member) }}</template>
-                <template v-else><span aria-hidden="true">&ndash;</span><span class="tw:sr-only">Not tracked while inactive</span></template>
+                <template v-else><span aria-hidden="true">&ndash;</span><span class="sr-only">Not tracked while inactive</span></template>
               </span>
             </td>
-            <td v-if="authStore.isStaff" :class="[TD, 'tw:text-right']">
+            <td v-if="authStore.isStaff" :class="[TD, 'text-right']">
               <ActionMenu :label="`More actions for ${member.name}`" :items="menuItems(member)" @select="key => onMenuSelect(key, member)" />
             </td>
           </tr>
@@ -121,16 +121,16 @@
       </table>
 
       <!-- Below md: the same rows, stacked -->
-      <ul class="tw:m-0 tw:list-none tw:border-t tw:border-rule tw:p-0 tw:md:hidden">
-        <li v-for="member in filteredMembers" :key="member.id" class="tw:flex tw:items-start tw:justify-between tw:gap-2 tw:border-b tw:border-rule tw:py-3">
-          <div class="tw:min-w-0 tw:flex-1">
+      <ul class="m-0 list-none border-t border-rule p-0 md:hidden">
+        <li v-for="member in filteredMembers" :key="member.id" class="flex items-start justify-between gap-2 border-b border-rule py-3">
+          <div class="min-w-0 flex-1">
             <div :class="NAME">{{ member.name }}</div>
-            <div class="tw:text-sm tw:text-muted tw:[overflow-wrap:anywhere]">{{ member.email }}</div>
-            <div class="tw:mt-1 tw:flex tw:flex-wrap tw:items-center tw:gap-x-4">
+            <div class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
+            <div class="mt-1 flex flex-wrap items-center gap-x-4">
               <StatusLabel :tone="member.active ? 'paid' : 'inactive'">{{ member.active ? 'Active' : 'Inactive' }}</StatusLabel>
               <span v-if="member.active" :class="duesClass(member)">{{ duesText(member) }}</span>
             </div>
-            <div class="tw:mt-1 tw:text-sm tw:text-muted tw:tabular-nums">
+            <div class="mt-1 text-sm text-muted tabular-nums">
               <template v-if="member.phone">{{ member.phone }} &middot; </template>Joined {{ formatMemberDate(member.joinDate) }}
             </div>
           </div>
@@ -142,21 +142,21 @@
     <!-- Add and edit -->
     <BaseModal v-model="formOpen" :title="editingMember ? 'Edit member' : 'Add member'" size="md">
       <AlertBanner v-if="formError">{{ formError }}</AlertBanner>
-      <form id="member-form" class="tw:flex tw:flex-col tw:gap-4" novalidate @submit.prevent="saveMember">
+      <form id="member-form" class="flex flex-col gap-4" novalidate @submit.prevent="saveMember">
         <BaseInput id="member-name" v-model="memberForm.name" label="Name" autocomplete="off" :error="formErrors.name" />
         <BaseInput id="member-email" v-model="memberForm.email" label="Email" type="email" autocomplete="off" :error="formErrors.email" />
         <BaseInput id="member-phone" v-model="memberForm.phone" label="Phone" type="tel" autocomplete="off" hint="Optional. 10 digits or more." :error="formErrors.phone" />
         <BaseInput id="member-joined" v-model="memberForm.joinDate" label="Joined on" type="date" :max="today" :error="formErrors.joinDate" />
         <div v-if="editingMember">
-          <label class="tw:flex tw:min-h-11 tw:cursor-pointer tw:items-center tw:gap-3">
-            <input v-model="memberForm.active" type="checkbox" role="switch" class="tw:peer tw:sr-only">
+          <label class="flex min-h-11 cursor-pointer items-center gap-3">
+            <input v-model="memberForm.active" type="checkbox" role="switch" class="peer sr-only">
             <span
-              class="tw:relative tw:h-6 tw:w-11 tw:shrink-0 tw:rounded-full tw:border tw:border-field tw:bg-paper tw:transition-colors tw:after:absolute tw:after:top-0.5 tw:after:left-0.5 tw:after:size-4 tw:after:rounded-full tw:after:bg-field tw:after:transition-transform tw:peer-checked:border-teal tw:peer-checked:bg-teal tw:peer-checked:after:translate-x-5 tw:peer-checked:after:bg-paper tw:peer-focus-visible:outline-2 tw:peer-focus-visible:outline-offset-2 tw:peer-focus-visible:outline-teal tw:motion-reduce:transition-none tw:motion-reduce:after:transition-none"
+              class="relative h-6 w-11 shrink-0 rounded-full border border-field bg-paper transition-colors after:absolute after:top-0.5 after:left-0.5 after:size-4 after:rounded-full after:bg-field after:transition-transform peer-checked:border-teal peer-checked:bg-teal peer-checked:after:translate-x-5 peer-checked:after:bg-paper peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-teal motion-reduce:transition-none motion-reduce:after:transition-none"
               aria-hidden="true"
             ></span>
-            <span class="tw:text-base tw:font-medium tw:text-ink">Active</span>
+            <span class="text-base font-medium text-ink">Active</span>
           </label>
-          <p class="tw:mt-1 tw:mb-0 tw:text-[0.9375rem] tw:text-muted">Inactive members stay on the register but do not count as behind. Turning this back on resets the months behind.</p>
+          <p class="mt-1 mb-0 text-[0.9375rem] text-muted">Inactive members stay on the register but do not count as behind. Turning this back on resets the months behind.</p>
         </div>
       </form>
       <template #footer>
@@ -170,7 +170,7 @@
     <!-- Delete (ADMIN only) -->
     <BaseModal v-model="deleteOpen" :title="`Delete ${selectedMember?.name || 'member'}?`" size="sm">
       <AlertBanner v-if="deleteError">{{ deleteError }}</AlertBanner>
-      <p class="tw:m-0 tw:text-base">This permanently deletes the member together with their payments and message history. This cannot be undone.</p>
+      <p class="m-0 text-base">This permanently deletes the member together with their payments and message history. This cannot be undone.</p>
       <template #footer>
         <BaseButton variant="secondary" :disabled="deleting" @click="deleteOpen = false">Cancel</BaseButton>
         <BaseButton variant="danger" :disabled="deleting" :aria-busy="deleting ? 'true' : undefined" @click="deleteMember">
@@ -199,12 +199,12 @@ import PageHead from '@/components/PageHead.vue'
 import StatusLabel from '@/components/StatusLabel.vue'
 import TextButton from '@/components/TextButton.vue'
 
-const LABEL = 'tw:mb-1 tw:block tw:text-(length:--text-label) tw:leading-(--lh-label) tw:font-medium tw:text-muted'
-const CONTROL = 'tw:block tw:h-(--control-h) tw:w-full tw:rounded-md tw:border tw:border-field tw:bg-paper tw:px-3 tw:text-(length:--text-body) tw:text-ink tw:placeholder:text-muted tw:placeholder:opacity-80 tw:focus:border-teal tw:focus:outline-2 tw:focus:outline-offset-1 tw:focus:outline-teal'
-const TH = 'tw:px-3 tw:py-2 tw:text-[0.9375rem] tw:font-medium tw:text-muted tw:first:pl-0 tw:last:pr-0'
-const TD = 'tw:px-3 tw:py-2 tw:align-middle tw:first:pl-0 tw:last:pr-0'
-const SORT_BUTTON = 'tw:-mx-1 tw:inline-flex tw:cursor-pointer tw:items-center tw:gap-1 tw:rounded-md tw:border-0 tw:bg-transparent tw:px-1 tw:py-1 tw:font-sans tw:text-[0.9375rem] tw:font-medium tw:text-muted tw:hover:text-ink'
-const NAME = 'tw:font-sans tw:font-medium tw:text-ink tw:[overflow-wrap:anywhere]'
+const LABEL = 'mb-1 block text-(length:--text-label) leading-(--lh-label) font-medium text-muted'
+const CONTROL = 'block h-(--control-h) w-full rounded-md border border-field bg-paper px-3 text-(length:--text-body) text-ink placeholder:text-muted placeholder:opacity-80 focus:border-teal focus:outline-2 focus:outline-offset-1 focus:outline-teal'
+const TH = 'px-3 py-2 text-[0.9375rem] font-medium text-muted first:pl-0 last:pr-0'
+const TD = 'px-3 py-2 align-middle first:pl-0 last:pr-0'
+const SORT_BUTTON = '-mx-1 inline-flex cursor-pointer items-center gap-1 rounded-md border-0 bg-transparent px-1 py-1 font-sans text-[0.9375rem] font-medium text-muted hover:text-ink'
+const NAME = 'font-sans font-medium text-ink [overflow-wrap:anywhere]'
 
 const EMPTY_FILTERS = { search: '', status: 'ALL', paymentStatus: 'ALL', joinedFrom: '', joinedTo: '' }
 const EMPTY_ERRORS = { name: '', email: '', phone: '', joinDate: '' }
@@ -298,8 +298,8 @@ export default {
       return this.sort.direction === 'asc' ? 'ascending' : 'descending'
     },
     sortIcon(key) {
-      if (this.sort.key !== key) return 'bi bi-chevron-expand tw:text-[0.75rem]'
-      return `bi tw:text-[0.75rem] tw:text-ink ${this.sort.direction === 'asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill'}`
+      if (this.sort.key !== key) return 'bi bi-chevron-expand text-[0.75rem]'
+      return `bi text-[0.75rem] text-ink ${this.sort.direction === 'asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill'}`
     },
     clearFilters() {
       this.filters = { ...EMPTY_FILTERS }
@@ -312,8 +312,8 @@ export default {
       return member.consecutiveMonthsMissed > 0 ? monthsBehind(member.consecutiveMonthsMissed) : 'Paid up'
     },
     duesClass(member) {
-      if (!member.active) return 'tw:text-muted'
-      return ['tw:font-medium', member.consecutiveMonthsMissed > 0 ? 'tw:text-ochre-text' : 'tw:text-fern-text']
+      if (!member.active) return 'text-muted'
+      return ['font-medium', member.consecutiveMonthsMissed > 0 ? 'text-ochre-text' : 'text-fern-text']
     },
     menuItems(member) {
       const items = [

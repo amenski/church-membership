@@ -1,5 +1,5 @@
 <template>
-  <ul class="tw:m-0 tw:list-none tw:border-t tw:border-rule tw:p-0"><slot /></ul>
+  <ul class="m-0 list-none border-t border-rule p-0"><slot /></ul>
 </template>
 
 <script>

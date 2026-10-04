@@ -2,10 +2,10 @@
   <router-link
     :to="to"
     aria-label="Felege Selam home"
-    :class="['tw:flex tw:no-underline', inline ? 'tw:flex-row tw:items-baseline tw:gap-3' : 'tw:flex-col']"
+    :class="['flex no-underline', inline ? 'flex-row items-baseline gap-3' : 'flex-col']"
   >
-    <span :class="['tw:font-ethiopic tw:font-bold tw:leading-[1.3] tw:text-teal', inline ? 'tw:text-lg' : 'tw:text-xl']">ፈለገ ሰላም</span>
-    <span class="tw:font-display tw:text-lg tw:leading-[1.2] tw:font-bold tw:text-ink">Felege Selam</span>
+    <span :class="['font-ethiopic font-bold leading-[1.3] text-teal', inline ? 'text-lg' : 'text-xl']">ፈለገ ሰላም</span>
+    <span class="font-display text-lg leading-[1.2] font-bold text-ink">Felege Selam</span>
   </router-link>
 </template>
 

@@ -1,6 +1,6 @@
 <template>
   <svg
-    class="tw:block"
+    class="block"
     width="100%"
     :height="height"
     aria-hidden="true"

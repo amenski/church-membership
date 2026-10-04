@@ -1,8 +1,8 @@
 <template>
-  <div id="app" class="tw:min-h-screen" :data-density="density">
+  <div id="app" class="min-h-screen" :data-density="density">
     <!-- Signed in: slim top bar below lg, left rail from lg up (a drawer below lg) -->
     <template v-if="isAuthenticated">
-      <header class="tw:sticky tw:top-0 tw:z-[1020] tw:flex tw:items-center tw:justify-between tw:border-b tw:border-rule tw:bg-paper tw:px-4 tw:py-2 tw:lg:hidden">
+      <header class="sticky top-0 z-[1020] flex items-center justify-between border-b border-rule bg-paper px-4 py-2 lg:hidden">
         <BrandMark :to="homePath" inline />
         <BaseButton
           ref="menuButton"
@@ -12,18 +12,18 @@
           aria-label="Open menu"
           @click="openRail"
         >
-          <i class="bi bi-list tw:text-[1.25rem] tw:leading-none" aria-hidden="true"></i>
+          <i class="bi bi-list text-[1.25rem] leading-none" aria-hidden="true"></i>
           Menu
         </BaseButton>
       </header>
 
       <Transition
-        enter-active-class="tw:motion-safe:transition-opacity tw:motion-safe:duration-200"
-        enter-from-class="tw:opacity-0"
-        leave-active-class="tw:motion-safe:transition-opacity tw:motion-safe:duration-200"
-        leave-to-class="tw:opacity-0"
+        enter-active-class="motion-safe:transition-opacity motion-safe:duration-200"
+        enter-from-class="opacity-0"
+        leave-active-class="motion-safe:transition-opacity motion-safe:duration-200"
+        leave-to-class="opacity-0"
       >
-        <div v-if="railOpen" class="tw:fixed tw:inset-0 tw:z-[1040] tw:bg-ink/40 tw:lg:hidden" aria-hidden="true" @click="closeRail"></div>
+        <div v-if="railOpen" class="fixed inset-0 z-[1040] bg-ink/40 lg:hidden" aria-hidden="true" @click="closeRail"></div>
       </Transition>
 
       <aside
@@ -32,17 +32,17 @@
         aria-label="Main navigation"
         :inert="!isWide && !railOpen"
         :class="[
-          'tw:fixed tw:inset-y-0 tw:left-0 tw:z-[1045] tw:flex tw:w-[280px] tw:flex-col tw:overflow-y-auto tw:border-r tw:border-rule tw:bg-paper tw:lg:w-[248px] tw:lg:translate-x-0',
-          'tw:motion-safe:transition-transform tw:motion-safe:duration-200',
-          railOpen ? 'tw:translate-x-0' : 'tw:max-lg:-translate-x-full'
+          'fixed inset-y-0 left-0 z-[1045] flex w-[280px] flex-col overflow-y-auto border-r border-rule bg-paper lg:w-[248px] lg:translate-x-0',
+          'motion-safe:transition-transform motion-safe:duration-200',
+          railOpen ? 'translate-x-0' : 'max-lg:-translate-x-full'
         ]"
       >
         <WovenBand :height="8" />
-        <div class="tw:flex tw:items-start tw:justify-between tw:px-6 tw:pt-6 tw:pb-4">
+        <div class="flex items-start justify-between px-6 pt-6 pb-4">
           <BrandMark :to="homePath" />
           <button
             type="button"
-            class="tw:-mt-1 tw:-mr-2 tw:flex tw:size-9 tw:shrink-0 tw:cursor-pointer tw:items-center tw:justify-center tw:rounded-md tw:border-0 tw:bg-transparent tw:text-muted tw:hover:text-ink tw:lg:hidden"
+            class="-mt-1 -mr-2 flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-muted hover:text-ink lg:hidden"
             aria-label="Close menu"
             @click="closeRail"
           >
@@ -52,7 +52,7 @@
           </button>
         </div>
 
-        <nav class="tw:flex tw:flex-1 tw:flex-col tw:gap-[2px] tw:py-2" aria-label="Sections">
+        <nav class="flex flex-1 flex-col gap-[2px] py-2" aria-label="Sections">
           <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/dashboard" icon="bi-house-door">Overview</RailLink>
           <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/members" icon="bi-people">Members</RailLink>
           <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/payments" icon="bi-cash-coin">Payments</RailLink>
@@ -60,10 +60,10 @@
           <RailLink to="/profile" icon="bi-person">Profile</RailLink>
         </nav>
 
-        <div class="tw:border-t tw:border-rule tw:px-6 tw:pt-4 tw:pb-6">
-          <div class="tw:text-base tw:font-bold tw:[overflow-wrap:anywhere]">{{ displayName }}</div>
-          <div v-if="displayName !== currentUser?.email && currentUser?.email" class="tw:text-sm tw:text-muted tw:[overflow-wrap:anywhere]">{{ currentUser.email }}</div>
-          <BaseButton variant="secondary" size="sm" class="tw:mt-3" @click="handleLogout">
+        <div class="border-t border-rule px-6 pt-4 pb-6">
+          <div class="text-base font-bold [overflow-wrap:anywhere]">{{ displayName }}</div>
+          <div v-if="displayName !== currentUser?.email && currentUser?.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ currentUser.email }}</div>
+          <BaseButton variant="secondary" size="sm" class="mt-3" @click="handleLogout">
             <i class="bi bi-box-arrow-right" aria-hidden="true"></i>Sign out
           </BaseButton>
         </div>
@@ -71,7 +71,7 @@
     </template>
 
     <!-- Main Content: content centred at 1100px, beside the rail from lg up -->
-    <main :class="isAuthenticated ? 'tw:lg:ml-[248px] tw:[&>*]:mx-auto tw:[&>*]:max-w-[1100px] tw:[&>*]:p-10 tw:max-sm:[&>*]:px-4 tw:max-sm:[&>*]:py-6' : ''">
+    <main :class="isAuthenticated ? 'lg:ml-[248px] [&>*]:mx-auto [&>*]:max-w-[1100px] [&>*]:p-10 max-sm:[&>*]:px-4 max-sm:[&>*]:py-6' : ''">
       <router-view/>
     </main>
 

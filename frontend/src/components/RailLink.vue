@@ -4,14 +4,14 @@
       :href="href"
       :aria-current="isActive ? 'page' : undefined"
       :class="[
-        'tw:group tw:relative tw:flex tw:items-center tw:gap-3 tw:px-6 tw:py-[10px] tw:text-lg tw:no-underline tw:transition-colors tw:duration-[120ms] tw:hover:text-teal',
-        isActive ? 'tw:font-bold tw:text-teal' : 'tw:font-medium tw:text-ink'
+        'group relative flex items-center gap-3 px-6 py-[10px] text-lg no-underline transition-colors duration-[120ms] hover:text-teal',
+        isActive ? 'font-bold text-teal' : 'font-medium text-ink'
       ]"
       @click="navigate"
     >
-      <span v-if="isActive" class="tw:absolute tw:inset-y-[6px] tw:left-0 tw:w-[3px] tw:bg-teal" aria-hidden="true"></span>
+      <span v-if="isActive" class="absolute inset-y-[6px] left-0 w-[3px] bg-teal" aria-hidden="true"></span>
       <i
-        :class="['bi', icon, 'tw:text-lg tw:transition-colors tw:duration-[120ms] tw:group-hover:text-teal', isActive ? 'tw:text-teal' : 'tw:text-muted']"
+        :class="['bi', icon, 'text-lg transition-colors duration-[120ms] group-hover:text-teal', isActive ? 'text-teal' : 'text-muted']"
         aria-hidden="true"
       ></i>
       <slot />

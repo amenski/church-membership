@@ -1,27 +1,12 @@
 /*
-  Tailwind v4, CSS-first. Tokens live in @theme below (names and hex values from
-  docs/design.md). No preflight until phase T4 removes Bootstrap.
-
-  Coexistence with Bootstrap until T4:
-  1. Unlayered CSS beats every layer, so Bootstrap and the legacy theme.css share one low
-     layer ("legacy"; one layer so their !important rules keep fighting in file order).
-     A Tailwind utility then beats a Bootstrap element rule (h1, a, body) on migrated
-     screens. Component <style> blocks stay unlayered.
-  2. Bootstrap's own utility classes (p-3, gap-3, border, m-0, text-end ...) are !important
-     and share names with Tailwind's, with different values: no cascade order can satisfy
-     both the migrated and the unmigrated screens. So every Tailwind class carries a
-     prefix: write `tw:flex tw:gap-3 tw:md:flex`, never `flex`. T4 removes Bootstrap, the
-     legacy layer and the prefix (a mechanical search and replace of `tw:`).
+  Tailwind v4, CSS-first, and the only stylesheet of the app (icons and fonts are npm
+  packages imported in main.js). Tokens live in @theme below (names and hex values from
+  docs/design.md); `@import "tailwindcss"` brings the reset (preflight), the theme and the
+  utilities. No prefix, no @apply, no <style> blocks: shared patterns are Vue components.
 */
-@layer legacy, theme, base, components, utilities;
+@import "tailwindcss";
 
-@import "bootstrap/dist/css/bootstrap.min.css" layer(legacy);
-@import "./theme.css" layer(legacy);
-@import "tailwindcss/theme.css" layer(theme) prefix(tw);
-@import "tailwindcss/utilities.css" layer(utilities) prefix(tw);
-
-/* static: emit every token as a variable, used or not (focus ring, own CSS read them) */
-@theme static {
+@theme {
   /* Only the design's colours: nothing else in Tailwind's default palette exists */
   --color-*: initial;
   --color-mist: #F2F5F2;
@@ -70,7 +55,7 @@
   --shadow-*: initial;
   --shadow-modal: 0 4px 16px rgb(20 50 58 / 0.08);
 
-  /* Bootstrap's breakpoints, so migrated and unmigrated screens switch layout together */
+  /* 576 / 768 / 992 / 1200 / 1400 px (the values every screen was laid out with) */
   --breakpoint-*: initial;
   --breakpoint-sm: 36rem;
   --breakpoint-md: 48rem;
@@ -85,17 +70,48 @@
   }
 }
 
+/* What the reset takes away and the screens still rely on: tokens only */
 @layer base {
+  body {
+    background-color: var(--color-mist);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 1.125rem; /* 18px: Alegreya Sans runs small */
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  a { text-underline-offset: 3px; }
+  /* Date inputs: the browser pads the separators and fields, which widened the text */
+  ::-webkit-datetime-edit-text,
+  ::-webkit-datetime-edit-day-field,
+  ::-webkit-datetime-edit-month-field,
+  ::-webkit-datetime-edit-year-field { padding-inline: 0; }
+  button:not(:disabled) { cursor: pointer; }
+  ::selection {
+    background: var(--color-teal);
+    color: var(--color-paper);
+  }
   :focus-visible {
-    outline: 2px solid var(--tw-color-teal);
+    outline: 2px solid var(--color-teal);
     outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
 /*
   Two densities, set by a data-density attribute at runtime (so plain custom properties,
-  not @theme). Read in utilities as tw:h-(--control-h), tw:min-h-(--row-h), tw:p-(--card-pad),
-  tw:text-(length:--text-body). See "Density" in docs/design.md.
+  not @theme). Read in utilities as h-(--control-h), min-h-(--row-h), p-(--card-pad),
+  text-(length:--text-body). See "Density" in docs/design.md.
 */
 @layer base {
   :root, [data-density="dense"] {

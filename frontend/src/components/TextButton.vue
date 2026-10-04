@@ -1,7 +1,7 @@
 <template>
   <button
     type="button"
-    class="tw:cursor-pointer tw:border-0 tw:bg-transparent tw:px-0 tw:py-2 tw:font-medium tw:whitespace-nowrap tw:text-teal tw:underline tw:underline-offset-[3px] tw:hover:text-teal-hover tw:disabled:cursor-default tw:disabled:text-muted tw:disabled:no-underline"
+    class="cursor-pointer border-0 bg-transparent px-0 py-2 font-medium normal-nums whitespace-nowrap text-teal underline underline-offset-[3px] hover:text-teal-hover disabled:cursor-default disabled:text-muted disabled:no-underline"
   >
     <slot />
   </button>

@@ -1,15 +1,15 @@
 <template>
-  <div :class="['tw:mb-4 tw:rounded-md tw:border tw:px-4 tw:py-3 tw:text-base', TONES[tone]]" role="alert">
+  <div :class="['mb-4 rounded-md border px-4 py-3 text-base', TONES[tone]]" role="alert">
     <slot />
   </div>
 </template>
 
 <script>
 const TONES = {
-  danger: 'tw:border-clay-line tw:bg-clay-tint tw:text-clay',
-  success: 'tw:border-fern-line tw:bg-fern-tint tw:text-fern-text',
-  warning: 'tw:border-ochre-line tw:bg-ochre-tint tw:text-ochre-text',
-  info: 'tw:border-teal-line tw:bg-teal-tint tw:text-teal'
+  danger: 'border-clay-line bg-clay-tint text-clay',
+  success: 'border-fern-line bg-fern-tint text-fern-text',
+  warning: 'border-ochre-line bg-ochre-tint text-ochre-text',
+  info: 'border-teal-line bg-teal-tint text-teal'
 }
 
 export default {

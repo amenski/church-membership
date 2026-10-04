@@ -164,6 +164,7 @@ This document tracks missing features, improvements, and technical debt in the M
 
 - [ ] **Frontend Performance**
   - [x] html2pdf.js loaded on demand (PaymentsView chunk 990.63 kB → 8.14 kB)
+  - [x] Bootstrap removed (`refactor(ui): remove Bootstrap, turn the Tailwind reset on, drop the class prefix`): main CSS 344.77 kB → 107.87 kB (gzip 52.68 → 21.06 kB), main JS 300.77 kB → 218.11 kB (gzip 105.70 → 81.21 kB); `html2pdf` (982.64 kB) is still the one chunk over 500 kB and loads only on the receipt PDF
   - Implement lazy loading for large datasets
   - Optimize bundle size (tree shaking)
   - Add frontend caching strategies

@@ -1,14 +1,14 @@
 <template>
   <Teleport to="body">
     <Transition
-      enter-active-class="tw:motion-safe:transition tw:motion-safe:duration-150 tw:motion-safe:ease-out"
-      enter-from-class="tw:opacity-0"
-      leave-active-class="tw:motion-safe:transition tw:motion-safe:duration-100 tw:motion-safe:ease-in"
-      leave-to-class="tw:opacity-0"
+      enter-active-class="motion-safe:transition motion-safe:duration-150 motion-safe:ease-out"
+      enter-from-class="opacity-0"
+      leave-active-class="motion-safe:transition motion-safe:duration-100 motion-safe:ease-in"
+      leave-to-class="opacity-0"
     >
       <div
         v-if="modelValue"
-        class="tw:fixed tw:inset-0 tw:z-[1200] tw:flex tw:items-center tw:justify-center tw:bg-ink/40 tw:p-4"
+        class="fixed inset-0 z-[1200] flex items-center justify-center bg-ink/40 p-4"
         data-modal-backdrop
         @mousedown.self="pressedOnBackdrop = true"
         @click.self="onBackdropClick"
@@ -20,16 +20,16 @@
           :aria-labelledby="titleId"
           tabindex="-1"
           :class="[
-            'tw:flex tw:max-h-[calc(100dvh-2rem)] tw:w-full tw:flex-col tw:rounded-md tw:border tw:border-rule tw:bg-paper tw:text-ink tw:shadow-modal',
+            'flex max-h-[calc(100dvh-2rem)] w-full flex-col rounded-md border border-rule bg-paper text-ink shadow-modal',
             WIDTH[size] || WIDTH.md
           ]"
           @keydown="onKeydown"
         >
-          <div class="tw:flex tw:items-start tw:justify-between tw:gap-4 tw:border-b tw:border-rule tw:px-6 tw:py-4">
-            <h2 :id="titleId" class="tw:m-0 tw:font-display tw:text-xl tw:leading-tight tw:font-bold tw:text-ink">{{ title }}</h2>
+          <div class="flex items-start justify-between gap-4 border-b border-rule px-6 py-4">
+            <h2 :id="titleId" class="m-0 font-display text-xl leading-tight font-bold text-ink">{{ title }}</h2>
             <button
               type="button"
-              class="tw:-mr-2 tw:-mt-1 tw:flex tw:size-9 tw:shrink-0 tw:cursor-pointer tw:items-center tw:justify-center tw:rounded-md tw:border-0 tw:bg-transparent tw:text-muted tw:hover:text-ink"
+              class="-mr-2 -mt-1 flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-muted hover:text-ink"
               aria-label="Close"
               @click="close"
             >
@@ -38,10 +38,10 @@
               </svg>
             </button>
           </div>
-          <div class="tw:overflow-y-auto tw:p-6">
+          <div class="overflow-y-auto p-6">
             <slot />
           </div>
-          <div v-if="$slots.footer" class="tw:flex tw:flex-wrap tw:justify-end tw:gap-2 tw:border-t tw:border-rule tw:px-6 tw:py-3">
+          <div v-if="$slots.footer" class="flex flex-wrap justify-end gap-2 border-t border-rule px-6 py-3">
             <slot name="footer" />
           </div>
         </div>
@@ -51,7 +51,7 @@
 </template>
 
 <script>
-const WIDTH = { sm: 'tw:max-w-sm', md: 'tw:max-w-lg', lg: 'tw:max-w-3xl' }
+const WIDTH = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-3xl' }
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 let nextId = 0
 

@@ -7,12 +7,12 @@
     </AlertBanner>
 
     <!-- The thesis: who needs a call -->
-    <section class="tw:pb-6" aria-labelledby="hero-title">
+    <section class="pb-6" aria-labelledby="hero-title">
       <SectionTitle id="hero-title">Who needs a call</SectionTitle>
 
       <template v-if="loaded">
         <template v-if="activeCount > 0">
-          <p class="tw:mt-0 tw:mb-6 tw:font-display tw:text-3xl tw:leading-[1.15] tw:text-balance tw:max-sm:text-2xl">
+          <p class="mt-0 mb-6 font-display text-3xl leading-[1.15] text-balance max-sm:text-2xl">
             <span :class="FIGURE">{{ paidCount }}</span> of
             <span :class="FIGURE">{{ activeCount }}</span> active members are paid up
           </p>
@@ -20,17 +20,17 @@
         </template>
         <EmptyNote v-else>No active members yet. Add the first one under Members.</EmptyNote>
 
-        <RuledList v-if="behindMembers.length" class="tw:mt-6">
+        <RuledList v-if="behindMembers.length" class="mt-6">
           <RuledRow v-for="member in behindMembers" :key="member.id">
-            <span class="tw:min-w-0 tw:flex-auto tw:[overflow-wrap:anywhere] tw:max-sm:basis-full">{{ member.name }}</span>
-            <StatusLabel tone="behind" class="tw:min-w-42 tw:max-sm:min-w-0 tw:max-sm:flex-auto">{{ monthsBehind(member.consecutiveMonthsMissed) }}</StatusLabel>
+            <span class="min-w-0 flex-auto [overflow-wrap:anywhere] max-sm:basis-full">{{ member.name }}</span>
+            <StatusLabel tone="behind" class="min-w-42 max-sm:min-w-0 max-sm:flex-auto">{{ monthsBehind(member.consecutiveMonthsMissed) }}</StatusLabel>
             <TextButton
               v-if="authStore.isStaff"
               :disabled="remindingIds.includes(member.id)"
               @click="sendReminder(member)"
             >
               Send reminder
-              <span class="tw:sr-only">to {{ member.name }}</span>
+              <span class="sr-only">to {{ member.name }}</span>
             </TextButton>
           </RuledRow>
         </RuledList>
@@ -39,36 +39,36 @@
     </section>
 
     <!-- Quiet secondary figures -->
-    <dl class="tw:mt-6 tw:mb-10 tw:flex tw:border-y tw:border-rule tw:py-4">
-      <div class="tw:flex-1 tw:px-6 tw:first:pl-0 tw:not-first:border-l tw:not-first:border-rule tw:max-sm:px-3 tw:max-sm:first:pl-0">
-        <dt class="tw:text-base tw:font-medium tw:text-muted">This month's payments</dt>
-        <dd :class="[FIGURE, 'tw:m-0 tw:text-2xl tw:leading-[1.3]']">{{ formatMoney(stats.monthlyRevenue) }}</dd>
+    <dl class="mt-6 mb-10 flex border-y border-rule py-4">
+      <div class="flex-1 px-6 first:pl-0 not-first:border-l not-first:border-rule max-sm:px-3 max-sm:first:pl-0">
+        <dt class="text-base font-medium text-muted">This month's payments</dt>
+        <dd :class="[FIGURE, 'm-0 text-2xl leading-[1.3]']">{{ formatMoney(stats.monthlyRevenue) }}</dd>
       </div>
-      <div class="tw:flex-1 tw:px-6 tw:first:pl-0 tw:not-first:border-l tw:not-first:border-rule tw:max-sm:px-3 tw:max-sm:first:pl-0">
-        <dt class="tw:text-base tw:font-medium tw:text-muted">Active members</dt>
-        <dd :class="[FIGURE, 'tw:m-0 tw:text-2xl tw:leading-[1.3]']">{{ stats.activeMembers }}</dd>
+      <div class="flex-1 px-6 first:pl-0 not-first:border-l not-first:border-rule max-sm:px-3 max-sm:first:pl-0">
+        <dt class="text-base font-medium text-muted">Active members</dt>
+        <dd :class="[FIGURE, 'm-0 text-2xl leading-[1.3]']">{{ stats.activeMembers }}</dd>
       </div>
     </dl>
 
-    <div class="tw:grid tw:grid-cols-1 tw:gap-12 tw:lg:grid-cols-2">
-      <section class="tw:min-w-0" aria-labelledby="payments-title">
+    <div class="grid grid-cols-1 gap-12 lg:grid-cols-2">
+      <section class="min-w-0" aria-labelledby="payments-title">
         <SectionTitle id="payments-title">Recent payments</SectionTitle>
         <RuledList v-if="recentPayments.length">
           <RuledRow v-for="payment in recentPayments" :key="payment.id">
-            <span class="tw:shrink-0 tw:grow-0 tw:basis-22 tw:text-base tw:text-muted tw:max-sm:basis-full">{{ formatDate(payment.paymentDate) }}</span>
-            <span class="tw:min-w-0 tw:flex-auto tw:[overflow-wrap:anywhere]">{{ payment.member?.name || 'Unknown' }}</span>
-            <span class="tw:text-right tw:font-medium">{{ formatMoney(payment.amount) }}</span>
+            <span class="shrink-0 grow-0 basis-22 text-base text-muted max-sm:basis-full">{{ formatDate(payment.paymentDate) }}</span>
+            <span class="min-w-0 flex-auto [overflow-wrap:anywhere]">{{ payment.member?.name || 'Unknown' }}</span>
+            <span class="text-right font-medium">{{ formatMoney(payment.amount) }}</span>
           </RuledRow>
         </RuledList>
         <EmptyNote v-else-if="loaded">No payments recorded yet. Record the first one under Payments.</EmptyNote>
       </section>
 
-      <section class="tw:min-w-0" aria-labelledby="activity-title">
+      <section class="min-w-0" aria-labelledby="activity-title">
         <SectionTitle id="activity-title">Recent activity</SectionTitle>
         <RuledList v-if="activities.length">
           <RuledRow v-for="activity in activities" :key="activity.id">
-            <span class="tw:shrink-0 tw:grow-0 tw:basis-22 tw:text-base tw:text-muted tw:max-sm:basis-full">{{ formatDate(activity.date) }}</span>
-            <span class="tw:min-w-0 tw:flex-auto tw:[overflow-wrap:anywhere]">{{ activity.description }}</span>
+            <span class="shrink-0 grow-0 basis-22 text-base text-muted max-sm:basis-full">{{ formatDate(activity.date) }}</span>
+            <span class="min-w-0 flex-auto [overflow-wrap:anywhere]">{{ activity.description }}</span>
           </RuledRow>
         </RuledList>
         <EmptyNote v-else-if="loaded">Nothing has happened yet. Payments and messages will show up here.</EmptyNote>
@@ -95,7 +95,7 @@ import { formatMoney } from '@/utils'
 import { monthsBehind } from '@/utils/dashboardMeter'
 
 // Big figures: Alegreya, tabular and lining so numbers line up
-const FIGURE = 'tw:font-display tw:font-bold tw:tabular-nums tw:lining-nums'
+const FIGURE = 'font-display font-bold tabular-nums lining-nums'
 
 export default {
   name: 'DashboardView',

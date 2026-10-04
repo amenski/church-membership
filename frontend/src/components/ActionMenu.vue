@@ -1,5 +1,5 @@
 <template>
-  <span class="tw:inline-flex">
+  <span class="inline-flex">
     <button
       ref="trigger"
       type="button"
@@ -7,12 +7,12 @@
       :aria-expanded="open ? 'true' : 'false'"
       :aria-controls="open ? menuId : undefined"
       :aria-label="label"
-      class="tw:flex tw:size-11 tw:cursor-pointer tw:items-center tw:justify-center tw:rounded-md tw:border tw:border-transparent tw:bg-transparent tw:text-muted tw:hover:border-field tw:hover:bg-teal-tint tw:hover:text-ink tw:md:size-(--control-h)"
-      :class="open ? 'tw:border-field tw:bg-teal-tint tw:text-ink' : ''"
+      class="flex size-11 cursor-pointer items-center justify-center rounded-md border border-transparent bg-transparent text-muted hover:border-field hover:bg-teal-tint hover:text-ink md:size-(--control-h)"
+      :class="open ? 'border-field bg-teal-tint text-ink' : ''"
       @click="toggle"
       @keydown="onTriggerKeydown"
     >
-      <i class="bi bi-three-dots tw:text-[1.25rem] tw:leading-none" aria-hidden="true"></i>
+      <i class="bi bi-three-dots text-[1.25rem] leading-none" aria-hidden="true"></i>
     </button>
 
     <Teleport to="body">
@@ -22,19 +22,19 @@
         ref="menu"
         role="menu"
         :aria-label="label"
-        class="tw:fixed tw:z-[1100] tw:m-0 tw:min-w-44 tw:list-none tw:rounded-md tw:border tw:border-rule tw:bg-paper tw:p-0 tw:text-ink tw:shadow-modal"
+        class="fixed z-[1100] m-0 min-w-44 list-none rounded-md border border-rule bg-paper p-0 text-ink shadow-modal"
         :style="position"
         @keydown="onMenuKeydown"
       >
-        <li v-for="item in items" :key="item.key" role="none" class="tw:border-b tw:border-rule tw:last:border-b-0">
+        <li v-for="item in items" :key="item.key" role="none" class="border-b border-rule last:border-b-0">
           <button
             type="button"
             role="menuitem"
             tabindex="-1"
             :disabled="item.disabled"
             :class="[
-              'tw:flex tw:min-h-11 tw:w-full tw:cursor-pointer tw:items-center tw:border-0 tw:bg-transparent tw:px-4 tw:py-2 tw:text-left tw:font-sans tw:text-base tw:font-medium tw:hover:bg-teal-tint tw:focus:bg-teal-tint tw:focus-visible:outline-offset-[-2px] tw:disabled:cursor-default tw:disabled:text-muted tw:disabled:hover:bg-transparent',
-              item.danger ? 'tw:text-clay' : 'tw:text-ink'
+              'flex min-h-11 w-full cursor-pointer items-center border-0 bg-transparent px-4 py-2 text-left font-sans text-base font-medium hover:bg-teal-tint focus:bg-teal-tint focus-visible:outline-offset-[-2px] disabled:cursor-default disabled:text-muted disabled:hover:bg-transparent',
+              item.danger ? 'text-clay' : 'text-ink'
             ]"
             @click="choose(item)"
           >

@@ -1,5 +1,5 @@
 <template>
-  <p class="tw:m-0 tw:py-4 tw:text-muted"><slot /></p>
+  <p class="m-0 py-4 text-muted"><slot /></p>
 </template>
 
 <script>

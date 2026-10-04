@@ -7,7 +7,7 @@ How the code is organised, where new logic belongs, and the design decisions mad
 ## Stack
 
 - **Backend:** Java 17, Spring Boot 3.4.5, Spring Security, Spring Data JPA, Liquibase, MySQL
-- **Frontend:** Vue 3, Vite 5, Vue Router 4, Pinia, Axios, Bootstrap 5, date-fns, vue-i18n
+- **Frontend:** Vue 3, Vite 5, Vue Router 4, Pinia, Axios, Tailwind CSS v4 (no Bootstrap), date-fns, vue-i18n
 - **Build:** Gradle. `bootJar` packages the built frontend into the backend JAR.
 
 ## Backend layers
@@ -104,6 +104,7 @@ frontend/src/
 
 - Shared state goes in `stores/`. There is no `composables/` folder: it was removed in a dead-code cleanup.
 - All HTTP calls go through `services/api.js`.
+- Styling is Tailwind utilities written in the templates (no class prefix, no `<style>` blocks); tokens and base rules are in `assets/styles/tailwind.css`, shared patterns are components. See [design.md](design.md#styling-system).
 - Notifications use `appStore.addNotification({ message, type, duration })`.
 
 ## Decisions

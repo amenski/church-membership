@@ -5,32 +5,32 @@ app has one job: show who needs a call, record payments, reach members kindly.
 Users are the treasurer and volunteers who open it weekly after services (dense,
 repeat use), and members who only see their own profile.
 
-Code: `frontend/src/assets/styles/tailwind.css` (Tailwind tokens, see Styling system), `frontend/src/assets/styles/theme.css` (legacy Bootstrap overrides, removed in T4),
+Code: `frontend/src/assets/styles/tailwind.css` (the only stylesheet: tokens and base rules, see Styling system),
 `frontend/src/components/WovenBand.vue`, `frontend/src/components/DuesMeter.vue`,
 `frontend/src/utils/dashboardMeter.js`.
 
 ## Tokens
 
-All are CSS custom properties on `:root` (theme.css). Ratios are WCAG 2.x,
+Each is a `--color-*` variable in the `@theme` block of `tailwind.css` (`--color-mist` is `bg-mist`, `text-mist`, `border-mist`). Ratios are WCAG 2.x,
 computed by a script (`/private/tmp/claude-502/design/contrast.mjs`, not in the repo).
 
 | Token | Hex | Use | Contrast on usual background |
 |---|---|---|---|
-| `--felege-mist` | `#F2F5F2` | page background | ink on mist 12.36 |
-| `--felege-paper` | `#FFFFFF` | surfaces: cards, rail, tables, modals | ink on paper 13.57 |
-| `--felege-ink` | `#14323A` | body text, headings | see above |
-| `--felege-muted` | `#4F6870` | secondary text, table headers | 5.92 on paper, 5.39 on mist |
-| `--felege-rule` | `#D9E0DC` | 1px rules, card borders (decorative) | n/a |
-| `--felege-field` | `#6F8680` | form-control borders (added: rule is too faint for a control edge) | 3.89 on paper (needs 3.0) |
-| `--felege-teal` | `#0E6B6E` | primary, links, active nav, focus ring | 6.27 on paper, 5.71 on mist; white on teal 6.27 |
-| `--felege-teal-hover` | `#0A5457` | hover and pressed | white on it 8.68 |
-| `--felege-ochre` | `#C98A1B` | FILLS and bars only, never text | 2.94 on paper (graphic only, so never the sole carrier of meaning) |
-| `--felege-ochre-edge` | `#B87A0E` | outline of empty meter segments, warning button border (added: ochre is 2.94, below the 3.0 graphics minimum) | 3.60 on paper, 3.28 on mist |
-| `--felege-ochre-text` | `#7A4F00` | "behind" text, warning button text | 7.13 on paper, 6.49 on mist, 6.08 on ochre tint |
-| `--felege-fern` | `#3F7A4B` | paid fill, success buttons | 5.13 on paper |
-| `--felege-fern-text` | `#2F5E39` | "paid" text | 7.55 on paper, 6.36 on fern tint |
-| `--felege-clay` | `#A8412F` | danger, inactive | 6.07 on paper, 5.52 on mist, 5.02 on clay tint |
-| `clay-hover` (Tailwind only, theme.css writes it inline) | `#8A3324` | danger button hover and pressed | white on it 8.14 |
+| `--color-mist` | `#F2F5F2` | page background | ink on mist 12.36 |
+| `--color-paper` | `#FFFFFF` | surfaces: cards, rail, tables, modals | ink on paper 13.57 |
+| `--color-ink` | `#14323A` | body text, headings | see above |
+| `--color-muted` | `#4F6870` | secondary text, table headers | 5.92 on paper, 5.39 on mist |
+| `--color-rule` | `#D9E0DC` | 1px rules, card borders (decorative) | n/a |
+| `--color-field` | `#6F8680` | form-control borders (added: rule is too faint for a control edge) | 3.89 on paper (needs 3.0) |
+| `--color-teal` | `#0E6B6E` | primary, links, active nav, focus ring | 6.27 on paper, 5.71 on mist; white on teal 6.27 |
+| `--color-teal-hover` | `#0A5457` | hover and pressed | white on it 8.68 |
+| `--color-ochre` | `#C98A1B` | FILLS and bars only, never text | 2.94 on paper (graphic only, so never the sole carrier of meaning) |
+| `--color-ochre-edge` | `#B87A0E` | outline of empty meter segments, warning button border (added: ochre is 2.94, below the 3.0 graphics minimum) | 3.60 on paper, 3.28 on mist |
+| `--color-ochre-text` | `#7A4F00` | "behind" text, warning button text | 7.13 on paper, 6.49 on mist, 6.08 on ochre tint |
+| `--color-fern` | `#3F7A4B` | paid fill, success buttons | 5.13 on paper |
+| `--color-fern-text` | `#2F5E39` | "paid" text | 7.55 on paper, 6.36 on fern tint |
+| `--color-clay` | `#A8412F` | danger, inactive | 6.07 on paper, 5.52 on mist, 5.02 on clay tint |
+| `--color-clay-hover` | `#8A3324` | danger button hover and pressed | white on it 8.14 |
 | alert lines | teal `#B8D5D4`, fern `#BFD8C4`, ochre `#E4CC93`, clay `#E7C4BC` (Tailwind `teal-line` etc.) | 1px outline of an alert, decorative | n/a |
 | tints | teal `#E3EFEE`, ochre `#F7ECD4`, fern `#E2EFE4`, clay `#F7E6E2` | badge and alert backgrounds | text on each tint is at least 5.0 |
 
@@ -52,7 +52,7 @@ Self-hosted through npm (`@fontsource/*`, imported in `main.js`), no CDN.
 The wordmark on the landing page is a logo, outside the scale (40 to 64px, fluid). Scale: 14 / 16 / 18 / 22 / 28 / 40 px. Body is 18, labels and buttons 16, small
 print 14, modal titles and h3 22, page titles 28, hero sentence 40. Headings are
 sentence case. Table headers are 15px, medium weight, muted: no uppercase, no tracking.
-Spacing scale: 4 / 8 / 12 / 16 / 24 / 40 / 64 (`--space-1` to `--space-7`). Radius 6px.
+Spacing: Tailwind's 4px step (`p-1` is 4px, `gap-4` 16px; the screens use 4 / 8 / 12 / 16 / 24 / 40 / 64). Radius 6px.
 Table rows are 52px minimum with 1px rules.
 
 ## Signature: the woven band
@@ -113,12 +113,11 @@ Shared patterns are small Vue components in `frontend/src/components/`, built fr
 - The popup is teleported to `body` with fixed positioning (right edge aligned to the trigger, flipped above when there is no room below), so a menu in the last row is never clipped. It closes on scroll and resize rather than chasing the trigger. Items are 44px tall, so it works by thumb.
 - Do not put more than five items in it. If a menu needs more, the screen needs a detail view.
 
-Members, Profile, Payments and Messages are all on Tailwind; the remaining Bootstrap is listed under "T4 (remove Bootstrap)" below.
 
 ## Accessibility rules
 
 - Every text pair at least 4.5:1 (large text 3:1); controls' edges at least 3:1.
-- `:focus-visible { outline: 2px solid var(--felege-teal); outline-offset: 2px }` on everything.
+- `:focus-visible { outline: 2px solid var(--color-teal); outline-offset: 2px }` on everything.
 - `prefers-reduced-motion`: transitions shortened, meter sweep off.
 - Colour is never the only signal: status is a dot plus a word; the meter has a text sentence.
 - Responsive to 360px; the rail becomes a drawer below `lg` (a Vue-state drawer: overlay, Escape and overlay click close it, focus moves to its first link and back to the menu button, `aria-expanded` and `aria-controls` on the button, closes on navigation).
@@ -169,21 +168,23 @@ Tried and removed, so nobody puts them back:
 - [x] Empty states: every list gets a plain sentence that invites the next action. Done on the Overview, Members, Payments and Messages.
 - [x] Register view: unreachable (registration is disabled), deleted in `chore(ui): remove dead frontend code`.
 
-**Phase B is complete: Members, Profile, Payments and Messages are done (T2 and T3).** What is left is T4, the removal of Bootstrap.
+**Phase B is complete: Members, Profile, Payments and Messages are done (T2 and T3), and Bootstrap is gone (T4).**
 
 ## Styling system
 
-Tailwind CSS v4, CSS-first (`@tailwindcss/vite` in `vite.config.js`, no `tailwind.config.js`, no PostCSS config).
+Tailwind only. Tailwind CSS v4, CSS-first (`@tailwindcss/vite` in `vite.config.js`, no `tailwind.config.js`, no PostCSS config). `frontend/src/assets/styles/tailwind.css` is the one stylesheet and starts with `@import "tailwindcss"` (theme, the reset called preflight, utilities). There is no Bootstrap: neither its CSS nor its JavaScript. Fonts (`@fontsource/*`) and icons (`bootstrap-icons`, the `bi bi-*` font) are npm packages imported in `main.js`, so the app loads nothing from a CDN.
 
-- **Tokens live in `frontend/src/assets/styles/tailwind.css`, inside `@theme static`.** Colours (`mist paper ink muted rule field teal teal-hover teal-tint ochre ochre-edge ochre-text ochre-tint fern fern-text fern-tint clay clay-tint`), fonts (`font-display`, `font-sans`, `font-ethiopic`), the type scale (`text-sm` 14, `base` 16, `lg` 18, `xl` 22, `2xl` 28, `3xl` 40), `rounded-md` (6px), `shadow-modal`, Bootstrap's breakpoints and the `animate-weave` meter sweep. Each family starts with `--x-*: initial`, so Tailwind's default palette and scale do not exist: only token colours can be used, by accident or otherwise. The hex values are the ones in the table above; `theme.css` keeps its own copies until T4.
-- **No `@apply`, no `<style scoped>`** except where Tailwind cannot say it. Shared patterns are small Vue components (or a JS constant in the component), never a custom CSS class. Use the animation as `motion-safe:animate-weave`.
-- **Every Tailwind class has the prefix `tw:`** (`tw:flex tw:gap-3 tw:md:flex tw:motion-safe:animate-weave`; the prefix comes before any variant). Reason: Bootstrap's own utility classes (`p-3`, `gap-3`, `border`, `m-0`, `text-end`) are `!important` and share names with Tailwind's but not values, and no cascade order can serve both the migrated and the unmigrated screens. Theme variables carry it too (`var(--tw-color-teal)`), which is why the theme is `@theme static` (all tokens are always emitted). The density variables are not Tailwind's and have no prefix (`tw:h-(--control-h)`). T4 removes the prefix with a mechanical search and replace of `tw:`.
-- **Bootstrap stays until T4.** No routed screen uses a Bootstrap class or its JavaScript any more (the unrouted `RegisterView.vue` was deleted); the CSS stays only because T4 has not removed it yet. Bootstrap's CSS and `theme.css` are imported by `tailwind.css` into one `legacy` cascade layer (one layer, so their `!important` rules keep fighting in file order), below Tailwind's `utilities` layer. This is needed because unlayered CSS beats every layer: a Bootstrap `h1` or `a` rule would otherwise beat a utility on a migrated screen. Tailwind runs WITHOUT its global reset (`preflight`) so the legacy layer keeps the page as it was; T4 adds it, and drops the `legacy` layer.
-- **Migration order:** T1 Tailwind foundation, toast and dialog components, shell, Overview, landing, sign-in (done). T2 Members and Profile (done). T3 Payments, Messages, the Overview leftovers (done). T4 remove Bootstrap (CSS, JS, `theme.css`, the `legacy` layer) and add preflight (next).
+- **Tokens live in the `@theme` block.** Colours (`mist paper ink muted rule field teal teal-hover teal-tint ochre ochre-edge ochre-text ochre-tint fern fern-text fern-tint clay clay-hover clay-tint` and the `*-line` alert outlines), fonts (`font-display`, `font-sans`, `font-ethiopic`), the type scale (`text-sm` 14, `base` 16, `lg` 18, `xl` 22, `2xl` 28, `3xl` 40), `rounded-md` (6px), `shadow-modal`, the breakpoints (576 / 768 / 992 / 1200 / 1400 px) and the `animate-weave` meter sweep. Each family starts with `--x-*: initial`, so Tailwind's default palette and scale do not exist: only token colours can be used, by accident or otherwise. Spacing keeps Tailwind's default 4px step. The hex values are the ones in the table above.
+- **No class prefix.** Write `flex gap-3 md:flex motion-safe:animate-weave`. Raw CSS and `style=` read tokens as `var(--color-teal)`.
+- **Base rules** (`@layer base` in `tailwind.css`, tokens only): body font, 18px size, colour and background; heading font, weight and line height; link underline offset; pointer cursor on enabled buttons; selection colour; the global focus ring (`:focus-visible`, 2px teal, 2px offset); zero padding inside date inputs; the `prefers-reduced-motion` rule that shortens transitions and animations. Preflight zeroes everything else: headings and paragraphs have no margin or size, lists have no bullets, borders are `currentColor` unless a `border-*` colour class is given, so a border always names its colour (`border border-rule`).
+- **No `@apply`, no `<style>` blocks.** Shared patterns are small Vue components (or a JS constant in the component), never a custom CSS class. Use the animation as `motion-safe:animate-weave`.
+- **Components:** the list under "Components" above. Anything repeated on two screens becomes one of them.
+- **Density variables** are plain custom properties, not tokens: see Density.
+- **Phases, all done:** T1 foundation, toast and dialog components, shell, Overview, landing and sign-in. T2 Members and Profile. T3 Payments, Messages and the Overview leftovers. T4 dead code removed, Bootstrap, `theme.css` and the `tw:` prefix removed, preflight on.
 
 ## Density
 
-Two densities share one palette and one type family. They are plain CSS custom properties in `tailwind.css`, switched by a `data-density` attribute (not `@theme`: they change at runtime). Utilities read them with `tw:h-(--control-h)`, `tw:min-h-(--row-h)`, `tw:p-(--card-pad)`, `tw:text-(length:--text-body)`.
+Two densities share one palette and one type family. They are plain CSS custom properties in `tailwind.css`, switched by a `data-density` attribute (not `@theme`: they change at runtime). Utilities read them with `h-(--control-h)`, `min-h-(--row-h)`, `p-(--card-pad)`, `text-(length:--text-body)`.
 
 | Property | dense (default) | comfortable |
 |---|---|---|
@@ -200,32 +201,11 @@ Two densities share one palette and one type family. They are plain CSS custom p
 - `App.vue` sets `data-density` on the shell root: `comfortable` when signed out or when the role is MEMBER, otherwise `dense`. `LandingView` and `LoginView` render outside the rail shell and set `data-density="comfortable"` on their own root.
 - Inputs never go below 16px text (iOS zooms the page on smaller). The primary action on a comfortable screen is 48px and full width on mobile.
 - Status, as before, is a dot plus a word, never plain coloured text. Every list has an empty state that names the next step. A switch's whole row is the click target (wrap it in a label). Disabled means a light fill, muted text and the real `disabled` attribute.
-- T1 defined and plumbed the tokens. The Overview keeps its own sizes (it must look exactly as before); Members, Payments and Messages consume them (`tw:h-(--control-h)` for the filter controls, `tw:min-h-(--row-h)` for table rows, `tw:text-(length:--text-body)`). Dialogs are teleported to `body`, outside `data-density`, so their controls keep fixed sizes (`BaseInput`, `BaseSelect`, `BaseTextarea`).
+- T1 defined and plumbed the tokens. The Overview keeps its own sizes (it must look exactly as before); Members, Payments and Messages consume them (`h-(--control-h)` for the filter controls, `min-h-(--row-h)` for table rows, `text-(length:--text-body)`). Dialogs are teleported to `body`, outside `data-density`, so their controls keep fixed sizes (`BaseInput`, `BaseSelect`, `BaseTextarea`).
 
 ## Dialog rules
 
-- Every dialog is a `BaseModal`: Alegreya 22 title, the close button, one primary action in the footer, `Cancel` beside it. Never `window.confirm`, `alert` or Bootstrap's `Modal`.
+- Every dialog is a `BaseModal`: Alegreya 22 title, the close button, one primary action in the footer, `Cancel` beside it. Never `window.confirm` or `alert`.
 - **`ConfirmDialog` is for an action that cannot be taken back or that reaches other people** (sending email to members, deleting). Props: `v-model`, `title` (a question that names the amount: "Send to 8 members?"), `message` (what happens, and that it cannot be undone), `confirmLabel` (the same verb phrase as the question: "Send to 8 members"), `danger` (clay button, only for destroying data), `busy` (disables both buttons while the parent works). It emits `confirm`; the parent does the work and closes it with `v-model` when done. Focus lands on Cancel, so a stray Enter never confirms.
 - An action that is easy to undo does not get a dialog: it acts at once and toasts ("Member deactivated").
 - Forms in a dialog show field errors under their field and any other server message in an `AlertBanner` at the top; a failed save keeps the dialog open; success closes it, resets the form and toasts with the same name as the button ("Record payment" gives "Payment recorded").
-
-## T4 (remove Bootstrap)
-
-Phase B is finished, so what is left is mechanical. What still uses Bootstrap:
-
-| Where | What |
-|---|---|
-| `frontend/src/main.js` | `import 'bootstrap'` (the JavaScript, nothing calls it any more); `bootstrap-icons` stays: icons are `bi bi-*` |
-| `frontend/package.json` | the `bootstrap` dependency (keep `bootstrap-icons`); `@popperjs/core` was only Bootstrap's peer: check and drop it too |
-| `frontend/src/assets/styles/tailwind.css` | `@layer legacy`, `@import "bootstrap/dist/css/bootstrap.min.css" layer(legacy)` and `@import "./theme.css" layer(legacy)`; no preflight yet |
-| `frontend/src/assets/styles/theme.css` | the legacy overrides (about 417 lines). Port four things before deleting it: the `body` rule (Alegreya Sans, 18px, mist background, ink text, `-webkit-font-smoothing: antialiased`), the heading rule (Alegreya 700, line height 1.2, sizes 40/28/22/18), `a { text-underline-offset: 3px }` and `::selection` (teal on paper). Components already carry their own sizes and colours |
-| leftovers | `grep -rnE '(class|:class)=' src` for Bootstrap names (`btn`, `card`, `form-*`, `row`, `col-*`, `d-flex`, `me-*`, `badge`, `alert`, `modal`, `table`, `spinner-border`, `text-muted`) and for `data-bs-` |
-
-Plan to drop the `tw:` prefix and Bootstrap, in this order, one commit each, `npm test` and `npm run build` after every step:
-
-1. (`RegisterView.vue`, `themeClass` and `showToast` are gone, see `chore(ui): remove dead frontend code`.) Remove `import 'bootstrap'`, then `npm uninstall bootstrap`. Check no screen changed: the legacy layer is still there.
-2. Port the four base rules above into `@layer base` in `tailwind.css`, remove the `theme.css` import, delete `theme.css`, drop the Bootstrap CSS import and `@layer legacy`. Switch the header to `@layer theme, base, components, utilities;` and import the whole of Tailwind with preflight (`@import "tailwindcss";`) while the prefix is still on. Walk every screen at 1280 and 390: preflight resets margins, list styles, heading sizes and borders, so look for a lost margin or a border that fell back to `currentColor`.
-3. Drop the prefix: remove `prefix(tw)` from the imports; run a search and replace over `frontend/src` for the literal `tw:` in `.vue` and `.js` files (it only ever appears at the start of a class or after a space or quote: `tw:flex`, `tw:md:gap-3`, `tw:[overflow-wrap:anywhere]`, `tw:h-(--control-h)`; the prefix always comes before the variants, so deleting it leaves valid classes). Also change `var(--tw-color-teal)` in `tailwind.css` to `var(--color-teal)` (theme variables lose the prefix; this is the only `var(--tw-...)` in the source today). Update the one test that asserts a class name (`frontend/src/__tests__/components/ConfirmDialog.test.js`, `tw:bg-clay`). Search the docs for examples that show `tw:` (this file and the feature docs).
-4. Re-run the full walk (Overview, Members with the row menu and dialogs, Payments with the record and receipt dialogs and the PDF, Messages with the confirm and deliveries dialogs, Profile and its dialog, landing, sign-in) at 1280 and 390, plus the keyboard checks, and compare with the T3 screenshots.
-5. Update this file: remove the Bootstrap notes under "Styling system", the `tw:` rule, and this section.
-

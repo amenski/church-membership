@@ -1,11 +1,11 @@
 <template>
   <!-- Bottom of the screen on every size: below the mobile top bar, within thumb reach -->
-  <div class="tw:pointer-events-none tw:fixed tw:inset-x-0 tw:bottom-0 tw:z-[1300] tw:flex tw:flex-col tw:gap-3 tw:p-4 tw:sm:left-auto tw:sm:w-[26rem]">
+  <div class="pointer-events-none fixed inset-x-0 bottom-0 z-[1300] flex flex-col gap-3 p-4 sm:left-auto sm:w-[26rem]">
     <TransitionGroup
-      enter-active-class="tw:motion-safe:transition tw:motion-safe:duration-200 tw:motion-safe:ease-out"
-      enter-from-class="tw:opacity-0 tw:motion-safe:translate-y-2"
-      leave-active-class="tw:motion-safe:transition tw:motion-safe:duration-150 tw:motion-safe:ease-in"
-      leave-to-class="tw:opacity-0 tw:motion-safe:translate-y-2"
+      enter-active-class="motion-safe:transition motion-safe:duration-200 motion-safe:ease-out"
+      enter-from-class="opacity-0 motion-safe:translate-y-2"
+      leave-active-class="motion-safe:transition motion-safe:duration-150 motion-safe:ease-in"
+      leave-to-class="opacity-0 motion-safe:translate-y-2"
     >
       <div
         v-for="toast in toasts"
@@ -15,7 +15,7 @@
         :aria-live="toast.type === 'error' ? 'assertive' : 'polite'"
         aria-atomic="true"
         :class="[
-          'tw:pointer-events-auto tw:flex tw:items-start tw:gap-3 tw:rounded-md tw:border tw:border-l-4 tw:border-rule tw:bg-paper tw:py-3 tw:pl-4 tw:pr-2 tw:text-base tw:text-ink',
+          'pointer-events-auto flex items-start gap-3 rounded-md border border-l-4 border-rule bg-paper py-3 pl-4 pr-2 text-base text-ink',
           EDGE[toast.type] || EDGE.info
         ]"
         @mouseenter="setHover(toast.key, true)"
@@ -23,13 +23,13 @@
         @focusin="setFocus(toast.key, true)"
         @focusout="setFocus(toast.key, false)"
       >
-        <div class="tw:min-w-0 tw:flex-1">
-          <p v-if="toast.title" class="tw:m-0 tw:font-bold">{{ toast.title }}</p>
-          <p class="tw:m-0 tw:[overflow-wrap:anywhere]">{{ toast.message }}</p>
+        <div class="min-w-0 flex-1">
+          <p v-if="toast.title" class="m-0 font-bold">{{ toast.title }}</p>
+          <p class="m-0 [overflow-wrap:anywhere]">{{ toast.message }}</p>
         </div>
         <button
           type="button"
-          class="tw:-mt-1 tw:flex tw:size-9 tw:shrink-0 tw:cursor-pointer tw:items-center tw:justify-center tw:rounded-md tw:border-0 tw:bg-transparent tw:text-muted tw:hover:text-ink"
+          class="-mt-1 flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-muted hover:text-ink"
           aria-label="Dismiss notification"
           @click="dismiss(toast.key)"
         >
@@ -47,10 +47,10 @@ import { onBeforeUnmount, ref, toRaw, watch } from 'vue'
 import { useAppStore } from '@/stores/appStore'
 
 const EDGE = {
-  success: 'tw:border-l-fern',
-  error: 'tw:border-l-clay',
-  warning: 'tw:border-l-ochre',
-  info: 'tw:border-l-teal'
+  success: 'border-l-fern',
+  error: 'border-l-clay',
+  warning: 'border-l-ochre',
+  info: 'border-l-teal'
 }
 
 const appStore = useAppStore()

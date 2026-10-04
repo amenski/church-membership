@@ -1,6 +1,6 @@
 <template>
   <div>
-    <label :for="id" class="tw:mb-1 tw:inline-block tw:text-base tw:font-medium tw:text-ink">{{ label }}</label>
+    <label :for="id" class="mb-1 inline-block text-base font-medium text-ink">{{ label }}</label>
     <select
       v-bind="$attrs"
       :id="id"
@@ -8,16 +8,16 @@
       :aria-invalid="error ? 'true' : undefined"
       :aria-describedby="describedBy"
       :class="[
-        'tw:block tw:w-full tw:rounded-md tw:border tw:bg-paper tw:px-3 tw:py-2 tw:text-lg tw:leading-normal tw:text-ink',
-        'tw:focus:border-teal tw:focus:outline-2 tw:focus:outline-offset-1 tw:focus:outline-teal',
-        error ? 'tw:border-clay' : 'tw:border-field'
+        'block w-full rounded-md border bg-paper px-3 py-2 text-lg leading-normal text-ink',
+        'focus:border-teal focus:outline-2 focus:outline-offset-1 focus:outline-teal',
+        error ? 'border-clay' : 'border-field'
       ]"
       @change="$emit('update:modelValue', $event.target.value)"
     >
       <slot />
     </select>
-    <p v-if="hint" :id="`${id}-hint`" class="tw:mt-1 tw:mb-0 tw:text-[0.9375rem] tw:text-muted">{{ hint }}</p>
-    <p v-if="error" :id="`${id}-error`" class="tw:mt-1 tw:mb-0 tw:text-[0.9375rem] tw:text-clay">{{ error }}</p>
+    <p v-if="hint" :id="`${id}-hint`" class="mt-1 mb-0 text-[0.9375rem] text-muted">{{ hint }}</p>
+    <p v-if="error" :id="`${id}-error`" class="mt-1 mb-0 text-[0.9375rem] text-clay">{{ error }}</p>
   </div>
 </template>
 

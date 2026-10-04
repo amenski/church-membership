@@ -2,11 +2,11 @@
   <div>
     <PageHead title="Profile" lead="Your details and password." />
 
-    <div class="tw:max-w-160">
-      <p v-if="loading" class="tw:m-0 tw:py-4 tw:text-(length:--text-body) tw:text-muted" role="status">Loading profile...</p>
+    <div class="max-w-160">
+      <p v-if="loading" class="m-0 py-4 text-(length:--text-body) text-muted" role="status">Loading profile...</p>
 
       <AlertBanner v-else-if="error">
-        <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
           <span>{{ error }}. Check your connection and try again.</span>
           <BaseButton variant="secondary" size="sm" @click="loadProfile">Try again</BaseButton>
         </div>
@@ -16,19 +16,19 @@
         <section :class="CARD" aria-labelledby="details-title">
           <SectionTitle id="details-title">Your details</SectionTitle>
 
-          <dl class="tw:m-0 tw:mb-1 tw:grid tw:grid-cols-[auto_1fr] tw:gap-x-6 tw:gap-y-1 tw:text-(length:--text-body) tw:leading-(--lh-body)">
-            <dt class="tw:font-normal tw:text-muted">Email</dt>
-            <dd class="tw:m-0 tw:min-w-0 tw:[overflow-wrap:anywhere]">{{ user.email }}</dd>
-            <dt class="tw:font-normal tw:text-muted">Role</dt>
-            <dd class="tw:m-0 tw:font-medium">{{ roleLabel }}</dd>
+          <dl class="m-0 mb-1 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-(length:--text-body) leading-(--lh-body)">
+            <dt class="font-normal text-muted">Email</dt>
+            <dd class="m-0 min-w-0 [overflow-wrap:anywhere]">{{ user.email }}</dd>
+            <dt class="font-normal text-muted">Role</dt>
+            <dd class="m-0 font-medium">{{ roleLabel }}</dd>
           </dl>
-          <p class="tw:mt-0 tw:mb-6 tw:text-(length:--text-label) tw:leading-(--lh-label) tw:text-muted">Your email cannot be changed here.</p>
+          <p class="mt-0 mb-6 text-(length:--text-label) leading-(--lh-label) text-muted">Your email cannot be changed here.</p>
 
           <AlertBanner v-if="successMessage" tone="success">{{ successMessage }}</AlertBanner>
           <AlertBanner v-if="saveError">{{ saveError }}</AlertBanner>
 
-          <form class="tw:flex tw:flex-col tw:gap-4" novalidate @submit.prevent="handleSubmit">
-            <div class="tw:grid tw:grid-cols-1 tw:gap-4 tw:sm:grid-cols-2">
+          <form class="flex flex-col gap-4" novalidate @submit.prevent="handleSubmit">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <BaseInput id="firstName" v-model="form.firstName" label="First name" maxlength="50" autocomplete="given-name" :error="formErrors.firstName" />
               <BaseInput id="lastName" v-model="form.lastName" label="Last name" maxlength="50" autocomplete="family-name" :error="formErrors.lastName" />
             </div>
@@ -42,19 +42,19 @@
                 :aria-invalid="formErrors.bio ? 'true' : undefined"
                 aria-describedby="bio-count bio-error"
                 :class="[
-                  'tw:block tw:w-full tw:resize-y tw:rounded-md tw:border tw:bg-paper tw:px-3 tw:py-2 tw:text-lg tw:leading-normal tw:text-ink',
-                  'tw:focus:border-teal tw:focus:outline-2 tw:focus:outline-offset-1 tw:focus:outline-teal',
-                  formErrors.bio ? 'tw:border-clay' : 'tw:border-field'
+                  'block w-full resize-y rounded-md border bg-paper px-3 py-2 text-lg leading-normal text-ink',
+                  'focus:border-teal focus:outline-2 focus:outline-offset-1 focus:outline-teal',
+                  formErrors.bio ? 'border-clay' : 'border-field'
                 ]"
               ></textarea>
-              <div class="tw:mt-1 tw:flex tw:justify-between tw:gap-4 tw:text-[0.9375rem]">
-                <p v-if="formErrors.bio" id="bio-error" class="tw:m-0 tw:text-clay">{{ formErrors.bio }}</p>
+              <div class="mt-1 flex justify-between gap-4 text-[0.9375rem]">
+                <p v-if="formErrors.bio" id="bio-error" class="m-0 text-clay">{{ formErrors.bio }}</p>
                 <span v-else id="bio-error"></span>
-                <span id="bio-count" :class="['tw:tabular-nums', form.bio.length > BIO_MAX ? 'tw:text-clay' : 'tw:text-muted']">{{ form.bio.length }} of {{ BIO_MAX }}</span>
+                <span id="bio-count" :class="['tabular-nums', form.bio.length > BIO_MAX ? 'text-clay' : 'text-muted']">{{ form.bio.length }} of {{ BIO_MAX }}</span>
               </div>
             </div>
             <div>
-              <BaseButton type="submit" :disabled="saving" :aria-busy="saving ? 'true' : undefined" class="tw:min-h-(--control-primary-h) tw:max-sm:w-full">
+              <BaseButton type="submit" :disabled="saving" :aria-busy="saving ? 'true' : undefined" class="min-h-(--control-primary-h) max-sm:w-full">
                 {{ saving ? 'Saving...' : 'Save changes' }}
               </BaseButton>
             </div>
@@ -63,15 +63,15 @@
 
         <section :class="CARD" aria-labelledby="password-title">
           <SectionTitle id="password-title">Password</SectionTitle>
-          <p class="tw:mt-0 tw:mb-4 tw:text-(length:--text-body) tw:leading-(--lh-body)">Use at least 8 characters with an uppercase letter, a lowercase letter, a number and a special character.</p>
-          <BaseButton variant="secondary" class="tw:min-h-(--control-h) tw:max-sm:w-full" @click="openPasswordDialog">Change password</BaseButton>
+          <p class="mt-0 mb-4 text-(length:--text-body) leading-(--lh-body)">Use at least 8 characters with an uppercase letter, a lowercase letter, a number and a special character.</p>
+          <BaseButton variant="secondary" class="min-h-(--control-h) max-sm:w-full" @click="openPasswordDialog">Change password</BaseButton>
         </section>
       </template>
     </div>
 
     <BaseModal v-model="passwordOpen" title="Change password" size="md">
       <AlertBanner v-if="passwordServerError">{{ passwordServerError }}</AlertBanner>
-      <form id="password-form" class="tw:flex tw:flex-col tw:gap-4" novalidate @submit.prevent="handlePasswordChange">
+      <form id="password-form" class="flex flex-col gap-4" novalidate @submit.prevent="handlePasswordChange">
         <BaseInput id="currentPassword" v-model="passwordForm.currentPassword" label="Current password" type="password" autocomplete="current-password" :error="passwordErrors.currentPassword" />
         <BaseInput
           id="newPassword"
@@ -108,8 +108,8 @@ import PageHead from '@/components/PageHead.vue'
 import SectionTitle from '@/components/SectionTitle.vue'
 
 const BIO_MAX = 500
-const CARD = 'tw:mb-6 tw:rounded-md tw:border tw:border-rule tw:bg-paper tw:p-(--card-pad)'
-const LABEL = 'tw:mb-1 tw:inline-block tw:text-base tw:font-medium tw:text-ink'
+const CARD = 'mb-6 rounded-md border border-rule bg-paper p-(--card-pad)'
+const LABEL = 'mb-1 inline-block text-base font-medium text-ink'
 
 export default {
   name: 'ProfileView',
