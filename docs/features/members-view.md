@@ -46,6 +46,7 @@ All in `frontend/src/utils/memberFilters.js`; all filters are ANDed.
 - Below md the table becomes a stacked list of the same rows (name, email, status, dues, phone and join date, More menu). For a member who is not MEMBER the dues word is left out there.
 - Dates use `formatDate(date, 'MMM d, yyyy')`; a `YYYY-MM-DD` string is read as a local day, so it never shifts by a day west of UTC (`frontend/src/utils/index.js`).
 - No sort control exists below md (the headers are gone with the table).
+- A member with a household shows its name under the name (house icon, `householdName`); the add and edit dialog has a "Household" select that sends `householdId` only once touched (see [households](households.md#screen)).
 
 ## Actions
 - `loadMembers` -> `api.getMembers()`, sets `members`, sets `loadError` on failure. Runs in `created`, after every save, archive or toggle, and from "Try again".

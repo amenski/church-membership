@@ -1,6 +1,6 @@
 # Households
 
-A household groups the people of one family or one address: a name, an optional address and free notes. A member points to a household through their person (`person.household_id`); a household never owns dues (they stay per membership, decision f of the [person plan](../person-membership-plan.md)) and has no head of household (decision a). This page covers the API (step 10, backend); the screens come with the frontend half of the step.
+A household groups the people of one family or one address: a name, an optional address and free notes. A member points to a household through their person (`person.household_id`); a household never owns dues (they stay per membership, decision f of the [person plan](../person-membership-plan.md)) and has no head of household (decision a). This page covers the API and the screens (step 10).
 
 ## Who can do what
 Roles from `@PreAuthorize`; hierarchy ADMIN > STAFF > VOLUNTEER > MEMBER.
@@ -83,9 +83,21 @@ New types (`activity_log.activity_type` is a plain `VARCHAR(50)`, so no migratio
 - Notes are visible to every role that can read households (VOLUNTEER and up): do not store anything sensitive in them.
 - Reads join the household with the person in the same statement as the member, payment and delivery lists (explicit `join fetch`; an entity graph three levels deep did not join it).
 
+## Screen
+Code: `frontend/src/views/HouseholdsView.vue` (route `/households`, minimum role VOLUNTEER, a MEMBER is sent to their profile; "Households" sits in the rail and the mobile drawer between Members and Payments).
+- Page head "Households" with "Add household" for STAFF and up. A search box ("Search by household name", client side) appears once any household exists.
+- md and up: a ruled table with Name (a button that opens the household), City and Members (the `memberCount`). Below md: stacked rows with name, city and "N members".
+- Empty: "No households yet. Add the first household, then choose it when you add or edit a member." with an "Add household" button (a VOLUNTEER sees "A staff member can add the first one."). A search with no hit offers "Clear search". A load failure shows a banner with "Try again".
+- The detail dialog loads `GET /api/households/{id}` and shows the address, the notes (only when set) and the members, each a link to Members filtered by that name (`/members?search=...`) with their status label. Footer: Close for everyone, "Edit household" for STAFF and up, "Delete household" for ADMIN.
+- Add and edit use one form (name, address, address line 2, city, postal code, notes with a counter). Edit sends every field, so a field cleared in the form is cleared on the server. Field errors from the server appear under their field.
+- Delete asks first (`ConfirmDialog`, danger). While anyone is assigned, the server's 409 text ("This household still has people. Move them to another household or remove them from it first.") appears in the detail dialog and as a toast; nothing changes. An archived member still counts, so unassign them first.
+- Members screen: the add and edit dialog has a "Household" select (None plus every household, loaded when the dialog opens). It sends `householdId` only after the user changes it (`householdTouched` in `buildMemberRequest`): choosing None on an edit sends `null`, so "Mark inactive", "Reactivate" and "Change status..." never clear the household. The household name shows under the member's name in the table and the stacked list (icon plus name, hidden when none).
+- Activity: the four new types read "Household added", "Household edited", "Household deleted" and "Member household changed".
+
 ## Known issues
 - The household queries ran only on H2 (MySQL mode), not on MySQL and not in a browser.
-- The screens (household select on the member form, household column) are the frontend half of step 10 and are not built yet; `ActivityView` has no label for the new types yet.
+- The screens were checked by hand in a browser (admin, staff, volunteer, member; 1280 and 390 wide) but have no automated test.
+- A member's household cannot be changed from the Households screen: open the member and use the Household select.
 
 ## Related
 - [members.md](members.md): the `householdId` field of a member
