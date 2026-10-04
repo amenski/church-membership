@@ -5,6 +5,7 @@ import io.github.membertracker.domain.model.Payment;
 import io.github.membertracker.domain.repository.PaymentRepository;
 import io.github.membertracker.infrastructure.persistence.entity.MemberEntity;
 import io.github.membertracker.infrastructure.persistence.entity.PaymentEntity;
+import io.github.membertracker.infrastructure.persistence.mapper.MemberPersistenceMapper;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
@@ -40,7 +41,7 @@ public class PaymentDbRepository implements PaymentRepository {
 
     @Override
     public List<Payment> findByMember(Member member) {
-        MemberEntity memberEntity = mapToMemberEntity(member);
+        MemberEntity memberEntity = MemberPersistenceMapper.toEntity(member);
         return paymentJpaRepository.findByMember(memberEntity).stream()
                 .map(this::mapToPayment)
                 .collect(Collectors.toList());
@@ -48,7 +49,7 @@ public class PaymentDbRepository implements PaymentRepository {
 
     @Override
     public boolean existsByMemberAndPeriod(Member member, YearMonth period) {
-        MemberEntity memberEntity = mapToMemberEntity(member);
+        MemberEntity memberEntity = MemberPersistenceMapper.toEntity(member);
         return paymentJpaRepository.existsByMemberAndPeriod(memberEntity, period);
     }
 
@@ -74,7 +75,7 @@ public class PaymentDbRepository implements PaymentRepository {
     private Payment mapToPayment(PaymentEntity entity) {
         Payment payment = new Payment();
         payment.setId(entity.getId());
-        payment.setMember(mapToMember(entity.getMember()));
+        payment.setMember(MemberPersistenceMapper.toDomain(entity.getMember()));
         payment.setPeriod(entity.getPeriod());
         payment.setPaymentDate(entity.getPaymentDate());
         payment.setAmount(entity.getAmount());
@@ -86,42 +87,12 @@ public class PaymentDbRepository implements PaymentRepository {
     private PaymentEntity mapToEntity(Payment payment) {
         PaymentEntity entity = new PaymentEntity();
         entity.setId(payment.getId());
-        entity.setMember(mapToMemberEntity(payment.getMember()));
+        entity.setMember(MemberPersistenceMapper.toEntity(payment.getMember()));
         entity.setPeriod(payment.getPeriod());
         entity.setPaymentDate(payment.getPaymentDate());
         entity.setAmount(payment.getAmount());
         entity.setPaymentMethod(payment.getPaymentMethod().name());
         entity.setNotes(payment.getNotes());
-        return entity;
-    }
-
-    private Member mapToMember(MemberEntity entity) {
-        Member member = new Member();
-        member.setId(entity.getId());
-        member.setName(entity.getName());
-        member.setEmail(entity.getEmail());
-        member.setPhone(entity.getPhone());
-        member.setJoinDate(entity.getJoinDate());
-        member.setLastPaymentDate(entity.getLastPaymentDate());
-        member.setConsecutiveMonthsMissed(entity.getConsecutiveMonthsMissed());
-        member.setLastMissedCountMonth(entity.getLastMissedCountMonth() == null
-                ? null : YearMonth.parse(entity.getLastMissedCountMonth()));
-        member.setActive(entity.isActive());
-        return member;
-    }
-
-    private MemberEntity mapToMemberEntity(Member member) {
-        MemberEntity entity = new MemberEntity();
-        entity.setId(member.getId());
-        entity.setName(member.getName());
-        entity.setEmail(member.getEmail());
-        entity.setPhone(member.getPhone());
-        entity.setJoinDate(member.getJoinDate());
-        entity.setLastPaymentDate(member.getLastPaymentDate());
-        entity.setConsecutiveMonthsMissed(member.getConsecutiveMonthsMissed());
-        entity.setLastMissedCountMonth(member.getLastMissedCountMonth() == null
-                ? null : member.getLastMissedCountMonth().toString());
-        entity.setActive(member.isActive());
         return entity;
     }
 }

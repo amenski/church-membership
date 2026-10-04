@@ -30,7 +30,7 @@ src/main/java/io/github/membertracker/
 │   ├── dto/            Request and response DTOs
 │   ├── filter/         JwtAuthenticationFilter
 │   ├── handler/        GlobalExceptionHandler
-│   ├── persistence/    JPA entities and repository implementations
+│   ├── persistence/    JPA entities, repository implementations, and mapper/ (MemberPersistenceMapper: the one place a member entity and a Member are converted)
 │   ├── security/       LoginAttemptLimiter, SecurityContextCurrentActor
 │   └── service/        EmailService
 ├── scheduler/          PaymentReminderScheduler (monthly, enabled by SchedulingConfig)

@@ -7,7 +7,7 @@ import io.github.membertracker.domain.repository.MessageDeliveryRepository;
 import io.github.membertracker.infrastructure.persistence.entity.CommunicationEntity;
 import io.github.membertracker.infrastructure.persistence.entity.MemberEntity;
 import io.github.membertracker.infrastructure.persistence.entity.MessageDeliveryEntity;
-import io.github.membertracker.infrastructure.persistence.repository.MemberJpaRepository;
+import io.github.membertracker.infrastructure.persistence.mapper.MemberPersistenceMapper;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -69,12 +69,7 @@ public class MessageDeliveryDbRepository implements MessageDeliveryRepository {
 
         // Map recipient
         if (entity.getRecipient() != null) {
-            Member member = new Member();
-            member.setId(entity.getRecipient().getId());
-            member.setName(entity.getRecipient().getName());
-            member.setEmail(entity.getRecipient().getEmail());
-            member.setPhone(entity.getRecipient().getPhone());
-            member.setActive(entity.getRecipient().isActive());
+            Member member = MemberPersistenceMapper.toRecipient(entity.getRecipient());
             delivery.setRecipient(member);
         }
 
