@@ -272,6 +272,10 @@ export default {
     // On the phone sheet the month covered starts at the oldest month the member has not paid
     'form.memberId'() {
       if (!this.wide && this.owed.oldest) this.form.period = this.owed.oldest
+    },
+    // a link to /payments?search= while this screen is already open
+    '$route.query.search'(search) {
+      if (typeof search === 'string') this.filters.search = search
     }
   },
   async created() {

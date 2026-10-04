@@ -492,6 +492,10 @@ export default {
   watch: {
     'filters.status'(status) {
       if (status === 'ARCHIVED' && this.authStore.isAdmin) this.loadArchived()
+    },
+    // the top bar search pushes /members?search= while this screen is already open
+    '$route.query.search'(search) {
+      if (typeof search === 'string') this.filters.search = search
     }
   },
   async created() {
