@@ -153,7 +153,7 @@
             <a v-if="member.phone" :href="`tel:${member.phone.replace(/[^+\d]/g, '')}`" :class="[PHONE_ACTION, 'flex-1 border border-field bg-paper text-ink hover:border-teal hover:bg-teal-tint']">
               <Icon name="phone" :size="18" />Call<span class="sr-only"> {{ member.name }}</span>
             </a>
-            <router-link v-if="authStore.isStaff && countsForDues(member)" to="/payments" :class="[PHONE_ACTION, 'flex-[1.4] border border-teal bg-teal text-paper hover:bg-teal-hover']">
+            <router-link v-if="authStore.isStaff && countsForDues(member)" :to="{ path: '/payments', query: { memberId: member.id } }" :class="[PHONE_ACTION, 'flex-[1.4] border border-teal bg-teal text-paper hover:bg-teal-hover']">
               Record payment<span class="sr-only"> for {{ member.name }}</span>
             </router-link>
           </div>

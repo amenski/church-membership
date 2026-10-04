@@ -269,6 +269,7 @@ export default {
   },
   async created() {
     await this.loadData()
+    this.openForQueryMember()
   },
   methods: {
     // Members are only needed to record a payment (STAFF and above); the history carries each member's name
@@ -292,6 +293,16 @@ export default {
     },
     clearFilters() {
       this.filters = { ...EMPTY_FILTERS }
+    },
+    // /payments?memberId=<id> (the Members phone card) opens the dialog with that member chosen (STAFF and above);
+    // the parameter is dropped so a reload or a close does not bring the dialog back
+    openForQueryMember() {
+      const memberId = this.$route?.query?.memberId
+      if (memberId === undefined) return
+      this.$router.replace({ query: { ...this.$route.query, memberId: undefined } })
+      if (!this.authStore.isStaff || !this.loaded || this.loadError) return
+      this.openRecord()
+      if (this.activeMembers.some(member => String(member.id) === String(memberId))) this.form.memberId = String(memberId)
     },
     openRecord() {
       this.form = emptyForm()
