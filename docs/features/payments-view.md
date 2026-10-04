@@ -12,11 +12,17 @@ Payments page, built on Tailwind and the shared components: a "Record payment" d
 - Empty states: no payments "No payments yet. Record the first one." (with a "Record payment" button for STAFF and above); filters match nothing "No payments match these filters." with "Clear filters"; a load failure shows a banner "The payments did not load. Check your connection and try again." with "Try again".
 
 ## Record payment dialog
-`BaseModal` md, STAFF and above only. Fields: Member (select of ACTIVE members only, sorted by name; with no active members the dialog shows an `EmptyNote` and the submit button is disabled), Month covered (`type="month"`, default and `max` the current month), Paid on (`type="date"`, default and `max` today, hint "Change this when you enter an older payment."), Amount (`min` 0.01, step 0.01), Payment method (7 methods, default Cash), Notes (optional, 500 characters, counter).
+`BaseModal` md (a full-screen sheet below `lg`, see below), STAFF and above only. Fields: Member (select of ACTIVE members only, sorted by name; with no active members the dialog shows an `EmptyNote` and the submit button is disabled), Month covered (`type="month"`, default and `max` the current month), Paid on (`type="date"`, default and `max` today, hint "Change this when you enter an older payment."), Amount (`min` 0.01, step 0.01), Payment method (7 methods, default Cash), Notes (optional, 500 characters, counter).
 - The body is built only by `buildPaymentRequest(form)` -> `{ memberId: Number, amount: Number, paymentMethod, period, paymentDate?, notes? }`; `paymentDate` and `notes` are left out when blank (`frontend/src/utils/paymentPayload.js:13-23`).
 - Client checks (`validateForm`): member chosen, month not in the future, date not in the future, amount at least 0.01, notes at most 500.
 - Server errors (`showSaveError`): `error.fieldErrors` `[{ field, message }]` go under their fields; a 400 without a field goes into an `AlertBanner` at the top of the dialog and an error toast "Could not record payment" (no toast for 403, the shared API handler already shows one). The dialog stays open on failure.
 - Success closes the dialog, resets the form (month and date back to the defaults), reloads the history and shows the toast "Payment recorded" ("Jane Smith, Mar 2024: $50.00").
+
+## Record payment on a phone
+Below `lg` the same `BaseModal` is a full-screen sheet (`sheet` prop, see [../design.md](../design.md#layout)): Back and the title in a dark top bar, the form scrolling, and a pinned bottom bar with "Record payment" (48px, primary) over "Cancel". Controls are 48px high and 16px text, so iOS does not zoom. The desktop dialog is unchanged.
+- Once a member is chosen a card under the Member select shows the name, the large year strip and one sentence from `owedSummary` (`frontend/src/utils/dues.js`), built from the same `stripCells` rule as the Members list: "Owes July, August and September 2026. October is due now." (months the server counts as missed, then the current month if unpaid); "Paid up to last month. October is due now."; or "Paid up. Nothing is owed for October 2026." when nothing is owed. The strip uses the payments the view already loaded.
+- Choosing a member sets Month covered to the oldest month not paid (the oldest missed month, else the current month) and shows the hint "July 2026, the oldest month not paid." while the field still holds that month. Both happen below `lg` only; on desktop the month stays the current one and there is no hint. Months older than the strip's 12-month window are not counted.
+- Unlike the mockup the Member select stays (the Payments tab opens the sheet with no member); the deep link below fills it.
 
 ## Deep link
 `/payments?memberId=<id>` (the Members phone card's Record payment link) opens the Record payment dialog with that member chosen. After the first load `openForQueryMember` removes the parameter from the URL (`router.replace`), so a reload or closing the dialog does not reopen it, then, for STAFF and above only, opens the dialog and sets `form.memberId` when the id is an active member (a member who does not owe dues leaves the select on "Choose a member"). A VOLUNTEER, or a failed load, just gets the plain screen. The rest of the screen is unchanged by the redesign: the dark-teal rail only changes the frame around it.
@@ -44,7 +50,7 @@ Pure helpers in `frontend/src/utils/paymentHistory.js` (tested in `frontend/src/
 ## Collaborators
 - `frontend/src/services/api.js` (default import)
 - `useAppStore().addNotification` for toasts, `useAuthStore().isStaff` for the buttons and the dialog
-- Components: `PageHead`, `AlertBanner`, `BaseButton`, `BaseInput`, `BaseSelect`, `BaseTextarea`, `BaseModal`, `EmptyNote`, `TextButton`
+- Components: `PageHead`, `AlertBanner`, `BaseButton`, `BaseInput`, `BaseSelect`, `BaseTextarea`, `BaseModal`, `EmptyNote`, `TextButton`, `YearStrip`
 - The unused `paymentStore` was removed in `chore(ui): remove dead frontend code`; the view calls `api.js` directly.
 
 ## Side effects

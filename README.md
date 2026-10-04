@@ -32,6 +32,7 @@ Overviews explain a feature to people (who can do what, how it works, rules, kno
 | Feature | Overview | Backend | Frontend |
 |---------|----------|---------|----------|
 | Sign-in and sessions | [sign-in](docs/features/sign-in.md) | [auth-controller](docs/features/auth-controller.md) | [login-view](docs/features/login-view.md) |
+| More (phone menu) | [more-view](docs/features/more-view.md) | none | [more-view](docs/features/more-view.md) |
 | Profile and password | [profile](docs/features/profile.md) | [user-controller](docs/features/user-controller.md) | [profile-view](docs/features/profile-view.md) |
 | Members | [members](docs/features/members.md) | [member-controller](docs/features/member-controller.md) | [members-view](docs/features/members-view.md) |
 | Households | [households](docs/features/households.md) | same page | same page (Screen) |

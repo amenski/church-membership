@@ -91,17 +91,30 @@ Utilities read them with `h-(--control-h)`, `min-h-(--row-h)`, `p-(--card-pad)`,
 ## Layout
 
 - **Top bar** (`App.vue`): sticky, 48px, a breadcrumb on the left (each route declares
-  `meta.title`; it falls back to nothing). Below `lg` the same bar carries the brand, the menu
-  button that opens the rail, and the account plus Sign out on the right.
-- **Rail**: deep teal (`rail` tokens), fixed, 232px, below the top bar from `lg` up; a drawer below
-  `lg` with a focus trap, an inert rail when closed, Escape to close and close-on-navigate. Top: the
-  congregation name in Amharic (white, Noto Sans Ethiopic) over "Felege Selam", linking home. Then
-  the role-based items (Activity is ADMIN only); the active one is a solid `teal` fill with white text
-  (5.47), hover is `rail-hover`. Bottom: the signed-in name linking to Profile, the email, and Sign
-  out. Focus rings on the rail are white (`outline-paper`, 14.52 on rail) because the teal ring would
-  nearly vanish on the dark ground. From `lg` the top bar shows only the breadcrumb; below `lg` it
-  keeps the name and Sign out as before. There is no separate Profile item: the name is the link.
+  `meta.title`; it falls back to nothing). Below `lg` the same bar carries the brand; a signed-in
+  user without the tab bar (a MEMBER) also gets the name (linking to Profile) and Sign out on the
+  right, staff find both in More.
+- **Rail**: deep teal (`rail` tokens), fixed, 232px, below the top bar, from `lg` up only (below `lg`
+  it is `display: none`; there is no drawer). Top: the congregation name in Amharic (white, Noto Sans
+  Ethiopic) over "Felege Selam", linking home. Then the role-based items (Activity is ADMIN only); the
+  active one is a solid `teal` fill with white text (5.47), hover is `rail-hover`. Bottom: the signed-in
+  name linking to Profile, the email, and Sign out. Focus rings on the rail are white (`outline-paper`,
+  14.52 on rail) because the teal ring would nearly vanish on the dark ground. There is no separate
+  Profile item: the name is the link.
+- **Bottom tab bar** (`components/BottomTabs.vue`, below `lg` only, VOLUNTEER and above): fixed, 60px
+  plus the bottom safe-area inset (`viewport-fit=cover` in `index.html`), `paper` with a `rule` top
+  border, `z-[1030]`. Five equal tabs: Overview, Members, Payments, Messages, More, each an icon over a
+  12px label, 60px high. The active tab has a 3px `teal` top border and `teal` text and
+  `aria-current="page"`; More is also lit (`aria-current="true"`) on Households, Activity and Profile,
+  the pages it opens. `main` gets `60px + safe area` bottom padding so the bar never covers the last
+  row. Staff see the same five at every role; More lists only what the role may open
+  (see [features/more-view.md](features/more-view.md)).
 - **Content**: offset by the rail, centred, `max-w-[1400px]`, 24px padding.
+- **Full-screen sheet** (`BaseModal sheet`): below `lg` the dialog fills the screen: a `rail` top bar
+  (56px plus the top safe area) with a Back chevron (the same Close button, 44px) and the title in white,
+  a scrolling `mist` body, and a pinned `paper` footer with the buttons stacked full width at 48px, the
+  primary on top (the footer slot order is Cancel then primary; it is reversed by `flex-col-reverse`).
+  From `lg` it is the normal centred dialog. The Record payment dialog is the first user.
 - **Page header**: `PageHead` (title, optional lead, action slot) with a rule under it.
 - Tables repeat the same shape: `ui/classes.js` `TABLE` / `TABLE_TH` / `TABLE_TD`, rows at
   `--row-h`, with a stacked card list below `md` for the four list screens.
