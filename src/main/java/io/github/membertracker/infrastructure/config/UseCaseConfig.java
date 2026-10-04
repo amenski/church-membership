@@ -6,6 +6,7 @@ import io.github.membertracker.domain.repository.HouseholdRepository;
 import io.github.membertracker.domain.repository.MessageDeliveryRepository;
 import io.github.membertracker.domain.repository.MemberRepository;
 import io.github.membertracker.domain.repository.PaymentRepository;
+import io.github.membertracker.domain.repository.PersonRepository;
 import io.github.membertracker.domain.repository.UserRepository;
 import io.github.membertracker.domain.service.CurrentActor;
 import io.github.membertracker.infrastructure.service.EmailService;
@@ -15,7 +16,13 @@ import io.github.membertracker.usecase.RecordActivityUseCase;
 import io.github.membertracker.usecase.ChangePasswordUseCase;
 import io.github.membertracker.usecase.ArchiveMemberUseCase;
 import io.github.membertracker.usecase.CreateHouseholdUseCase;
+import io.github.membertracker.usecase.CreatePersonUseCase;
 import io.github.membertracker.usecase.DeleteHouseholdUseCase;
+import io.github.membertracker.usecase.DeletePersonUseCase;
+import io.github.membertracker.usecase.GetPeopleUseCase;
+import io.github.membertracker.usecase.GetPersonByIdUseCase;
+import io.github.membertracker.usecase.StartMembershipUseCase;
+import io.github.membertracker.usecase.UpdatePersonUseCase;
 import io.github.membertracker.usecase.GetAllHouseholdsUseCase;
 import io.github.membertracker.usecase.GetHouseholdByIdUseCase;
 import io.github.membertracker.usecase.UpdateHouseholdUseCase;
@@ -166,6 +173,42 @@ public class UseCaseConfig {
     public DeleteHouseholdUseCase deleteHouseholdUseCase(HouseholdRepository householdRepository,
                                                          RecordActivityUseCase recordActivityUseCase) {
         return new DeleteHouseholdUseCase(householdRepository, recordActivityUseCase);
+    }
+
+    // People (members and dependents without a membership)
+    @Bean
+    public GetPeopleUseCase getPeopleUseCase(PersonRepository personRepository) {
+        return new GetPeopleUseCase(personRepository);
+    }
+
+    @Bean
+    public GetPersonByIdUseCase getPersonByIdUseCase(PersonRepository personRepository) {
+        return new GetPersonByIdUseCase(personRepository);
+    }
+
+    @Bean
+    public CreatePersonUseCase createPersonUseCase(PersonRepository personRepository,
+                                                   RecordActivityUseCase recordActivityUseCase) {
+        return new CreatePersonUseCase(personRepository, recordActivityUseCase);
+    }
+
+    @Bean
+    public UpdatePersonUseCase updatePersonUseCase(PersonRepository personRepository,
+                                                   RecordActivityUseCase recordActivityUseCase) {
+        return new UpdatePersonUseCase(personRepository, recordActivityUseCase);
+    }
+
+    @Bean
+    public DeletePersonUseCase deletePersonUseCase(PersonRepository personRepository,
+                                                   RecordActivityUseCase recordActivityUseCase) {
+        return new DeletePersonUseCase(personRepository, recordActivityUseCase);
+    }
+
+    @Bean
+    public StartMembershipUseCase startMembershipUseCase(PersonRepository personRepository,
+                                                         MemberRepository memberRepository,
+                                                         RecordActivityUseCase recordActivityUseCase) {
+        return new StartMembershipUseCase(personRepository, memberRepository, recordActivityUseCase);
     }
 
     @Bean
