@@ -37,30 +37,12 @@ function getCsrfToken() {
 // Request interceptor
 api.interceptors.request.use(
   (config) => {
-    // Add timestamp to avoid caching issues
-    if (config.method === 'get') {
-      config.params = {
-        ...config.params,
-        _t: Date.now()
-      }
-    }
-
     // Add CSRF token for non-GET requests
     if (config.method && ['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())) {
       const csrfToken = getCsrfToken()
       if (csrfToken) {
         config.headers['X-XSRF-TOKEN'] = csrfToken
       }
-    }
-
-    // Update activity timestamp on each request
-    try {
-      const authStore = useAuthStore()
-      if (authStore && authStore.updateActivity) {
-        authStore.updateActivity()
-      }
-    } catch (error) {
-      // Store may not be available during initialization
     }
 
     // Log request in development
@@ -450,15 +432,6 @@ const apiService = {
 
   async getCurrentUser() {
     const response = await api.get('/users/me')
-    // Update activity timestamp on successful user data fetch
-    try {
-      const authStore = useAuthStore()
-      if (authStore && authStore.updateActivity) {
-        authStore.updateActivity()
-      }
-    } catch (error) {
-      // Store may not be available
-    }
     return response.data
   },
 
