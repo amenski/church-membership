@@ -157,6 +157,7 @@ import { formatDate } from '@/utils'
 import { audienceCount } from '@/utils/audienceCount'
 import { buildCommunicationRequest } from '@/utils/communicationPayload'
 import { attemptsLabel, countDeliveries, deliveryStatus, deliverySummaryParts, sortMessages, typeLabel } from '@/utils/messageHistory'
+import { countsForDues } from '@/utils/memberStatus'
 import AlertBanner from '@/components/AlertBanner.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import BaseInput from '@/components/BaseInput.vue'
@@ -215,7 +216,7 @@ export default {
   },
   computed: {
     activeMembers() {
-      return this.members.filter(member => member.active).sort((a, b) => a.name.localeCompare(b.name))
+      return this.members.filter(countsForDues).sort((a, b) => a.name.localeCompare(b.name))
     },
     messages() {
       return sortMessages(this.communications)

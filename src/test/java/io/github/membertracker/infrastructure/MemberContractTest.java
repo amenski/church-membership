@@ -92,7 +92,7 @@ class MemberContractTest {
             .andExpect(status().isOk());
 
         verify(updateMemberUseCase).invoke(eq(1L), eq("Test Member"), eq("member@example.com"),
-            eq("+39 333 1234567"), eq(JOIN), isNull(), eq(true));
+            eq("+39 333 1234567"), eq(JOIN), eq(MemberStatus.MEMBER), isNull());
     }
 
     @Test
@@ -120,7 +120,7 @@ class MemberContractTest {
 
         // the use case has no parameter for these fields, and the id comes from the path only
         verify(updateMemberUseCase).invoke(eq(1L), eq("Test Member"), eq("member@example.com"),
-            eq("+39 333 1234567"), eq(JOIN), isNull(), eq(true));
+            eq("+39 333 1234567"), eq(JOIN), eq(MemberStatus.MEMBER), isNull());
 
         when(saveMemberUseCase.invoke(any(), any(), any(), any(), any())).thenReturn(new Member());
         mockMvc.perform(post("/api/members").with(csrf())
@@ -191,23 +191,39 @@ class MemberContractTest {
             .andExpect(status().isOk());
 
         verify(updateMemberUseCase).invoke(eq(1L), eq("Test Member"), eq(null),
-            eq("+39 333 1234567"), eq(JOIN), isNull(), eq(true));
+            eq("+39 333 1234567"), eq(JOIN), eq(MemberStatus.MEMBER), isNull());
         verify(updateMemberUseCase).invoke(eq(2L), eq("Test Member"), eq("member@example.com"),
-            eq("+39 333 1234567"), eq(JOIN), isNull(), eq(true));
+            eq("+39 333 1234567"), eq(JOIN), eq(MemberStatus.MEMBER), isNull());
     }
 
     @Test
-    void theStatusInTheBodyReachesTheUseCaseAndActiveIsStillAccepted() throws Exception {
+    void theStatusInTheBodyReachesTheUseCase() throws Exception {
         when(updateMemberUseCase.invoke(any(), any(), any(), any(), any(), any(), any())).thenReturn(Optional.of(new Member()));
 
         mockMvc.perform(put("/api/members/1").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(fixture().replace("\"active\": true", "\"status\": \"TRANSFERRED\"")))
+                .content(fixture().replace("\"status\": \"MEMBER\"", "\"status\": \"TRANSFERRED\"")))
             .andExpect(status().isOk());
 
         verify(updateMemberUseCase).invoke(eq(1L), eq("Test Member"), eq("member@example.com"),
             eq("+39 333 1234567"), eq(JOIN), eq(MemberStatus.TRANSFERRED), isNull());
+    }
+
+    @Test
+    void theLegacyActiveFlagIsStillAcceptedOnUpdateWithAnInlineBody() throws Exception {
+        when(updateMemberUseCase.invoke(any(), any(), any(), any(), any(), any(), any())).thenReturn(Optional.of(new Member()));
+        String legacy = "{\"name\": \"Test Member\", \"email\": \"member@example.com\", \"phone\": \"+39 333 1234567\","
+            + " \"joinDate\": \"2025-01-15\", \"active\": true}";
+
+        mockMvc.perform(put("/api/members/1").with(csrf())
+                .with(user("s@example.com").roles("STAFF"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(legacy))
+            .andExpect(status().isOk());
+
+        verify(updateMemberUseCase).invoke(eq(1L), eq("Test Member"), eq("member@example.com"),
+            eq("+39 333 1234567"), eq(JOIN), isNull(), eq(true));
     }
 
     @Test
@@ -217,12 +233,12 @@ class MemberContractTest {
         mockMvc.perform(post("/api/members").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(fixture().replace("\"active\": true", "\"active\": false")))
+                .content(fixture().replace("\"status\": \"MEMBER\"", "\"active\": false")))
             .andExpect(status().isOk());
         mockMvc.perform(post("/api/members").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(fixture().replace("\"active\": true", "\"active\": true, \"status\": \"INACTIVE\"")))
+                .content(fixture().replace("\"status\": \"MEMBER\"", "\"active\": true, \"status\": \"INACTIVE\"")))
             .andExpect(status().isOk());
 
         verify(saveMemberUseCase, org.mockito.Mockito.times(2))
@@ -234,7 +250,7 @@ class MemberContractTest {
         mockMvc.perform(post("/api/members").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(fixture().replace("\"active\": true", "\"status\": \"RETIRED\"")))
+                .content(fixture().replace("\"status\": \"MEMBER\"", "\"status\": \"RETIRED\"")))
             .andExpect(status().isBadRequest());
 
         verify(saveMemberUseCase, never()).invoke(any(), any(), any(), any(), any());
@@ -248,7 +264,7 @@ class MemberContractTest {
         mockMvc.perform(post("/api/members").with(csrf())
                 .with(user("s@example.com").roles("STAFF"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(fixture().replace("\"active\": true", "\"status\": \"ARCHIVED\"")))
+                .content(fixture().replace("\"status\": \"MEMBER\"", "\"status\": \"ARCHIVED\"")))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.code").value("MEMBER_009"))
             .andExpect(jsonPath("$.errors[0].field").value("status"))

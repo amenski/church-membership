@@ -86,7 +86,7 @@ Shared patterns are small Vue components in `frontend/src/components/`, built fr
 
 | Component | Meaning |
 |---|---|
-| `StatusLabel` (`tone` paid, behind, inactive) | small dot plus the word, in fern-text, ochre-text, clay. Not a pill chip |
+| `StatusLabel` (`tone` paid, behind, inactive, muted) | small dot plus the word, in fern-text, ochre-text, clay, muted. Not a pill chip. Member statuses (`utils/memberStatus.js`): Member = paid; Inactive = inactive (clay); Deceased, Transferred, Archived = muted |
 | `PageHead` (`title`, `lead`, slot `actions`) | page title (Alegreya 28/700) with a one-line plain description beneath; the `actions` slot holds the screen's buttons at the right (wrapping under the title on a phone) |
 | `SectionTitle` | Alegreya 22/700 heading for a list or block |
 | `RuledList`, `RuledRow` | rows on 1px rules, 56px tall, no boxes |
@@ -108,7 +108,7 @@ Screens built only from these components (no component of their own): Overview, 
 
 ## ActionMenu rules
 
-- One `ActionMenu` per row replaces a row of icon buttons. Put the common action first (Edit), the reversible state change next (Deactivate or Reactivate), the destructive one last, in clay, and only for the role that may use it (Delete is ADMIN only). A role with no allowed action sees no menu at all, not a disabled one.
+- One `ActionMenu` per row replaces a row of icon buttons. Put the common action first (Edit), the reversible state change next (Mark inactive or Mark active, then Change status...), the destructive one last, in clay, and only for the role that may use it (Archive is ADMIN only; a record is never deleted from the screen). A role with no allowed action sees no menu at all, not a disabled one.
 - The trigger's `label` names the row: "More actions for Sarah Brown". Items are verbs in sentence case and the same word as the toast ("Deactivate" gives "Member deactivated").
 - A state change that is easy to undo acts at once and toasts; an irreversible one opens a `BaseModal` that says what is lost, with the destructive button named after the action ("Delete member").
 - Keyboard: Enter, Space or ArrowDown on the trigger opens and focuses the first item (ArrowUp the last); ArrowUp and ArrowDown move and wrap, Home and End jump; Escape closes and returns focus to the trigger; Tab closes; a press outside closes. Disabled items are skipped.

@@ -93,6 +93,7 @@ import { useAppStore } from '../stores/appStore'
 import { buildReminderRequest } from '@/utils/communicationPayload'
 import { formatMoney } from '@/utils'
 import { monthsBehind } from '@/utils/dashboardMeter'
+import { countsForDues } from '@/utils/memberStatus'
 
 // Big figures: Alegreya, tabular and lining so numbers line up
 const FIGURE = 'font-display font-bold tabular-nums lining-nums'
@@ -132,7 +133,7 @@ export default {
     // Worst first: the longest-overdue members are the first calls to make
     behindMembers() {
       return this.overdueMembers
-        .filter(member => member.active)
+        .filter(countsForDues)
         .sort((a, b) => b.consecutiveMonthsMissed - a.consecutiveMonthsMissed)
     },
     paidCount() {

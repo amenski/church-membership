@@ -15,7 +15,8 @@ describe('buildMemberRequest', () => {
       email: 'member@example.com ',
       phone: '+39 333 1234567',
       joinDate: '2025-01-15',
-      active: true,
+      status: 'MEMBER',
+      active: false,
       id: 5,
       consecutiveMonthsMissed: 3,
       lastPaymentDate: '2020-01-01',
@@ -25,21 +26,27 @@ describe('buildMemberRequest', () => {
   })
 
   it('omits a blank phone', () => {
-    const r = buildMemberRequest({ name: 'A', email: 'a@example.com', phone: '   ', active: true })
+    const r = buildMemberRequest({ name: 'A', email: 'a@example.com', phone: '   ', status: 'MEMBER' })
     expect(r).not.toHaveProperty('phone')
   })
 
   it('omits a blank or missing email', () => {
-    expect(buildMemberRequest({ name: 'A', email: '  ', active: true })).not.toHaveProperty('email')
-    expect(buildMemberRequest({ name: 'A', active: true })).not.toHaveProperty('email')
+    expect(buildMemberRequest({ name: 'A', email: '  ', status: 'MEMBER' })).not.toHaveProperty('email')
+    expect(buildMemberRequest({ name: 'A', status: 'MEMBER' })).not.toHaveProperty('email')
   })
 
   it('omits joinDate when not set', () => {
-    const r = buildMemberRequest({ name: 'A', email: 'a@example.com', joinDate: null, active: true })
+    const r = buildMemberRequest({ name: 'A', email: 'a@example.com', joinDate: null, status: 'MEMBER' })
     expect(r).not.toHaveProperty('joinDate')
   })
 
-  it('coerces active to a boolean', () => {
-    expect(buildMemberRequest({ name: 'A', email: 'a@example.com' }).active).toBe(false)
+  it('sends the status and never the legacy active flag', () => {
+    const r = buildMemberRequest({ name: 'A', email: 'a@example.com', status: 'TRANSFERRED', active: true })
+    expect(r.status).toBe('TRANSFERRED')
+    expect(r).not.toHaveProperty('active')
+  })
+
+  it('defaults to MEMBER when the form has no status', () => {
+    expect(buildMemberRequest({ name: 'A', email: 'a@example.com' }).status).toBe('MEMBER')
   })
 })

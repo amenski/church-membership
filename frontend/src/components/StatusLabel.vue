@@ -10,7 +10,8 @@
 const TONES = {
   paid: 'text-fern-text',
   behind: 'text-ochre-text',
-  inactive: 'text-clay'
+  inactive: 'text-clay',
+  muted: 'text-muted'
 }
 
 export default {

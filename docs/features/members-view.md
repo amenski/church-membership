@@ -8,7 +8,7 @@ Members screen ("Members": "Everyone on the register: who is paid up and who is 
 | Role | Sees |
 |------|------|
 | VOLUNTEER | Read-only list, filters, no "Add member" / "Export CSV" buttons, no actions column |
-| STAFF | Plus "Add member", "Export CSV", and a More menu per row: Edit, Deactivate/Reactivate |
+| STAFF | Plus "Add member", "Export CSV", and a More menu per row: Edit, Mark inactive/Mark active, Change status... |
 | ADMIN | Plus Archive in the row menu |
 
 Gating uses `authStore.isStaff` and `authStore.isAdmin`; the backend enforces the same roles (403 otherwise).
@@ -20,10 +20,10 @@ Options API component; local `data()`, not the Pinia store.
 |-------|---------|
 | `members` | Full list from `GET /members`; `[]` on load error |
 | `loaded`, `loadError` | First load finished; the last load failed (shows an `AlertBanner` with "Try again") |
-| `filters` | `search`, `status` (ALL/ACTIVE/INACTIVE), `paymentStatus` (ALL/CURRENT/OVERDUE, shown as "Dues": All / Paid up / Behind), `joinedFrom`, `joinedTo` |
+| `filters` | `search`, `status` (ALL, MEMBER, INACTIVE, DECEASED, TRANSFERRED, ARCHIVED), `paymentStatus` (ALL/CURRENT/OVERDUE, shown as "Dues": All / Paid up / Behind), `joinedFrom`, `joinedTo` |
 | `datesOpen` | Below md the date pair sits under a "More filters" disclosure (`aria-expanded`); from md up it is always visible |
 | `sort` | `{key, direction}`; `key` null = server order |
-| `memberForm`, `editingMember`, `formOpen`, `saving`, `formError`, `formErrors` | Add/edit dialog: `name`, `email`, `phone`, `joinDate`, `active`; `editingMember` null = add mode (the Active switch is shown only when editing: a new member is always active, the server ignores `active` on create); `formErrors` holds per-field messages, `formError` the banner message |
+| `memberForm`, `editingMember`, `formOpen`, `saving`, `formError`, `formErrors` | Add/edit dialog: `name`, `email`, `phone`, `joinDate`, `status`; `editingMember` null = add mode (the Status select then offers only Member and Inactive, as the server enforces); `formErrors` holds per-field messages, `formError` the banner message |
 | `selectedMember`, `deleteOpen`, `deleting`, `deleteError` | Archive dialog (the `delete*` names are kept) |
 | `filteredMembers` | `filterMembers` then `sortMembers` |
 | `hasActiveFilters` | Any filter differs from its default; shows "Clear filters" |
@@ -34,27 +34,28 @@ All in `frontend/src/utils/memberFilters.js`; all filters are ANDed.
 | Aspect | Behaviour |
 |--------|-----------|
 | Search | Trimmed, case-insensitive substring on `name`, `email`, `phone`; also digits-only match on phone when the term has 3+ digits |
-| Status | ACTIVE = `active`, INACTIVE = `!active` |
-| Dues | Applies to ACTIVE members only. "Behind" = active and `consecutiveMonthsMissed > 0`; "Paid up" = active and `=== 0`. An inactive member never matches either (it still matches "All"): the server stops counting months for inactive members, so the stored number is stale |
+| Status | ALL = every listed member; any other value equals `member.status`. ARCHIVED (ADMIN only) switches the list to `archivedMembers`, loaded from `GET /api/members?archived=true` |
+| Dues | Applies to members with status MEMBER only (`countsForDues`). "Behind" = MEMBER and `consecutiveMonthsMissed > 0`; "Paid up" = MEMBER and `=== 0`. Any other status never matches either (it still matches "All"): the server stops counting months for them, so the stored number is stale |
 | Join date | Inclusive `YYYY-MM-DD` string compare on `joinDate`; members without a join date are excluded once either bound is set |
-| Sort keys | `name` (locale, case-insensitive), `joinDate`, `consecutiveMonthsMissed` (the "Dues" column). Empty values sort last in both directions; inactive members also sort last by dues in both directions |
+| Sort keys | `name` (locale, case-insensitive), `joinDate`, `consecutiveMonthsMissed` (the "Dues" column). Empty values sort last in both directions; members who are not MEMBER also sort last by dues in both directions |
 | Sort toggle | Same key flips asc/desc; new key starts asc. Headers are buttons with `aria-sort` and a caret |
 
 ## Table and list
-- From md up: a `<table>` with columns Name (name with the email beneath), Phone, Joined, Status (`StatusLabel`: dot plus "Active" in fern or "Inactive" in clay), Dues and, for STAFF+, a final actions cell.
-- Dues: "Paid up" (fern text) or "N months behind" (ochre text, `monthsBehind`, so "1 month behind"). For an INACTIVE member the cell shows a muted en dash (screen readers get "Not tracked while inactive"); no "Paid up" or "N months behind".
-- Below md the table becomes a stacked list of the same rows (name, email, status, dues, phone and join date, More menu). For an inactive member the dues word is left out there.
+- From md up: a `<table>` with columns Name (name with the email beneath), Phone, Joined, Status (`StatusLabel` from `status`: "Member" fern, "Inactive" clay, "Deceased", "Transferred", "Archived" muted), Dues and, for STAFF+, a final actions cell.
+- Dues: "Paid up" (fern text) or "N months behind" (ochre text, `monthsBehind`, so "1 month behind"). For any other status the cell shows a muted en dash (screen readers get "Not tracked while inactive", "while deceased" ...); no "Paid up" or "N months behind".
+- Below md the table becomes a stacked list of the same rows (name, email, status, dues, phone and join date, More menu). For a member who is not MEMBER the dues word is left out there.
 - Dates use `formatDate(date, 'MMM d, yyyy')`; a `YYYY-MM-DD` string is read as a local day, so it never shifts by a day west of UTC (`frontend/src/utils/index.js`).
 - No sort control exists below md (the headers are gone with the table).
 
 ## Actions
 - `loadMembers` -> `api.getMembers()`, sets `members`, sets `loadError` on failure. Runs in `created`, after every save, archive or toggle, and from "Try again".
-- Row menu (`ActionMenu`, trigger label "More actions for <name>"): Edit, Deactivate or Reactivate, Archive (ADMIN only, in clay).
+- Row menu (`ActionMenu`, trigger label "More actions for <name>"): Edit, Mark inactive (Member) or Mark active (Inactive), Change status... (opens Edit with the Status select focused), Archive (ADMIN only, in clay). An archived row (ADMIN only) has "Restore" alone.
 - `saveMember`: client checks (name required; the email is optional and checked with `isValidEmail` only when filled) show under the fields without a request. Then `buildMemberRequest(form)` (`frontend/src/utils/memberPayload.js`, sends `joinDate` when set) and `api.updateMember(id, request)` or `api.createMember(request)`, reload, close the dialog, toast "Member saved" / "Member added". The primary button shows "Saving..." and is disabled while the request runs.
   - Add mode defaults "Joined on" to today (local date, `max` today); edit mode shows the stored date.
   - Failure keeps the dialog open: each `error.fieldErrors` entry (`{field, message}`, set by the API interceptor) goes under the matching field (`name`, `email`, `phone`, `joinDate`); a field-less 400 and anything else goes in an `AlertBanner` at the top of the dialog plus an error toast "Could not save member" (no toast for 403: the shared handler already shows "Access denied").
 - Archive: dialog "Archive <name>?" ("This hides <name> from the lists. Their payments and messages are kept."), buttons "Archive member" (danger) and "Cancel". Success: reload, close, toast "Member archived". Failure: banner in the dialog and toast "Could not archive member" (not for 403). `api.deleteMember` calls `DELETE /api/members/{id}`, which archives.
-- `toggleStatus`: no dialog. `api.updateMember(id, buildMemberRequest({...member, active: !active}))`, reload, toast "Member deactivated" / "Member reactivated". Failure toast "Could not deactivate member" / "Could not reactivate member". Reactivating resets the months behind (the dialog's Active switch says so).
+- `toggleStatus`: no dialog. `api.updateMember(id, buildMemberRequest({...member, status: INACTIVE or MEMBER}))`, reload, toast "Member deactivated" / "Member reactivated". Failure toast "Could not deactivate member" / "Could not reactivate member". Reactivating resets the months behind.
+- `restoreMember` (ADMIN, archived rows): `updateMember` with `status: MEMBER`, reload both lists, toast "Member restored" / "Could not restore member".
 - `clearFilters` resets `filters`; filters are not persisted.
 - `exportMembers` (STAFF+ only):
   1. Nothing on screen: warning toast "Nothing to export", no request.

@@ -13,53 +13,56 @@ Roles from `@PreAuthorize` and route meta; hierarchy ADMIN > STAFF > VOLUNTEER >
 | Export filtered members to CSV | STAFF | same button, `POST /api/members/export` (`MemberController.java:143-159`) |
 | Add a member | STAFF | "Add member" button, `POST /api/members` (`MemberController.java:100-105`) |
 | Edit a member | STAFF | "Edit" in the row menu, `PUT /api/members/{id}` (`MemberController.java:107-115`) |
-| Deactivate / reactivate | STAFF | "Deactivate" or "Reactivate" in the row menu, same `PUT` (`frontend/src/views/MembersView.vue:426-436`) |
+| Mark inactive / active, change status | STAFF | "Mark inactive", "Mark active" or "Change status..." in the row menu, same `PUT` with `status` |
 | Archive a member | ADMIN | "Archive" in the row menu, `DELETE /api/members/{id}` (archives, nothing is deleted) |
-| Restore an archived member | ADMIN | `PUT /api/members/{id}` with `status` MEMBER or INACTIVE (the screen's Restore comes with the status UI) |
+| Restore an archived member | ADMIN | `PUT /api/members/{id}` with `status` MEMBER or INACTIVE ("Restore" on an archived row) |
 | Delete a member for good | ADMIN | `DELETE /api/members/{id}/permanent`: API only, refused (409) when the member has payments or messages |
 
 Role view of the screen (the buttons are hidden, not disabled, for roles that cannot use them):
 - VOLUNTEER sees the whole table, the search and the filters. There is no "Add member" or "Export CSV" button and no actions column (`MembersView.vue:4`, `:116`).
-- STAFF also sees "Add member", "Export CSV" and a More menu on every row with "Edit" and "Deactivate" or "Reactivate".
-- ADMIN also sees "Archive" (in clay) at the end of the row menu.
+- STAFF also sees "Add member", "Export CSV" and a More menu on every row with "Edit", "Mark inactive" (a Member) or "Mark active" (an Inactive one) and "Change status..." (opens Edit with the Status select focused).
+- ADMIN also sees "Archive" (in clay) at the end of the row menu, "Archived" in the Status filter (it loads `GET /api/members?archived=true`) and, on an archived row, a menu with "Restore" only.
 - The server enforces the same roles; a 403 shows the shared "Access denied" toast and nothing else changes.
 
 ## How it works
 ### Browse members
 1. The screen loads the full member list once on open and again after every save, archive or toggle (`MembersView.vue:270-287`).
 2. From `md` up a ruled table shows Name (with the email beneath), Phone, Joined, Status and Dues (`MembersView.vue:82-121`); below `md` the same rows are a stacked list (`MembersView.vue:124-139`).
-3. Status is a dot plus a word: "Active" in fern or "Inactive" in clay.
-4. Dues apply to active members only. An active member shows "Paid up" or "N months behind" ("1 month behind"). An inactive member shows a muted dash (screen readers hear "Not tracked while inactive"): the server stops counting months for them, so the stored number is stale (`MembersView.vue:107-115`, `:311-317`).
+3. Status is a dot plus a word from `status`: "Member" in fern, "Inactive" in clay, "Deceased", "Transferred" and "Archived" muted (`utils/memberStatus.js`).
+4. Dues apply to members with status MEMBER only (`countsForDues`, the one rule for every screen). A Member shows "Paid up" or "N months behind" ("1 month behind"). Every other status shows a muted dash (screen readers hear "Not tracked while inactive", "while deceased" and so on): the server stops counting months for them, so the stored number is stale (`MembersView.vue:107-115`, `:311-317`).
 5. On a load failure a banner says "The member list did not load. Check your connection and try again." with a "Try again" button (`MembersView.vue:14-19`). With no members: "No members yet. Add the first member." and an "Add member" button for STAFF and above.
 
 ### Search and filter
 1. Type in the search box: matches name, email or phone, case-insensitive. A term with 3+ digits also matches phone numbers ignoring spaces and dashes (`frontend/src/utils/memberFilters.js:10-14`).
-2. Pick Status (All members / Active / Inactive) and Dues (All / Paid up / Behind). "Behind" means active and `consecutiveMonthsMissed > 0`; "Paid up" means active and 0. The Dues filter applies to active members only: an inactive member matches neither, only "All" (`memberFilters.js:20-25`).
+2. Pick Status (All members / Member / Inactive / Deceased / Transferred, plus Archived for ADMIN) and Dues (All / Paid up / Behind). "All members" is everyone listed (not archived); the others are exactly that status. "Behind" means a Member with `consecutiveMonthsMissed > 0`; "Paid up" means a Member and 0. The Dues filter applies to Members only: any other status matches neither, only "All" (`memberFilters.js:20-25`).
 3. Set "Joined from" / "Joined to" (inclusive dates; members with no join date drop out once either is set) (`memberFilters.js:27-33`). Below `md` the two dates sit behind a "More filters" button.
 4. All filters combine with AND. "Clear filters" appears when any is set; when nothing matches the screen says "No members match these filters." with a "Clear filters" button (`MembersView.vue:63`, `:71-74`).
 - Filtering happens in the browser on the loaded list, by design ([../architecture.md](../architecture.md), revisit above ~2,000 members). Filters are not remembered between visits.
 
 ### Sort columns
 1. From `md` up, click the Name, Joined or Dues header (`MembersView.vue:260-268`). Headers are buttons with `aria-sort`.
-2. First click sorts ascending, a second click on the same header flips it (`MembersView.vue:288-294`). Empty values always sort last, and so do inactive members when sorting by Dues (`memberFilters.js:39-60`).
+2. First click sorts ascending, a second click on the same header flips it (`MembersView.vue:288-294`). Empty values always sort last, and so do members who are not MEMBER when sorting by Dues (`memberFilters.js:39-60`).
 - There is no sort control below `md`.
 
 ### Add a member
-1. Click "Add member" and fill the name (required), optionally email and phone, and "Joined on" (default today, not in the future); the dialog has no "Active" switch because a new member is always active (`MembersView.vue:143-168`).
-2. "Add member" in the dialog sends `{name, email, phone?, joinDate?, active}` to `POST /api/members` (`MembersView.vue:387-408`, `frontend/src/utils/memberPayload.js`). The name is checked on the screen first, and the email only when filled (format).
-3. The server creates the member with the status MEMBER (or INACTIVE when the request asks for it: `status`, or the legacy `active: false`) and the counters at zero; it uses the join date sent, or today (`src/main/java/io/github/membertracker/usecase/SaveMemberUseCase.java`). The screen still sends `active: true`, so a new member is a MEMBER. DECEASED, TRANSFERRED and ARCHIVED are refused on create (400, field error on `status`).
-4. Success: the dialog closes, the row appears and a toast "Member added" names the member. The email may be left empty, and two members may share one address: there is no duplicate check. A child added without an email counts as a member until the status step of the [person/membership plan](../person-membership-plan.md): they appear behind on dues unless marked inactive. The dialog's hint says so.
+1. Click "Add member" and fill the name (required), optionally email and phone, and "Joined on" (default today, not in the future); a Status select offers only Member (default) and Inactive, as the server enforces (`MembersView.vue`).
+2. "Add member" in the dialog sends `{name, email?, phone?, joinDate?, status}` to `POST /api/members` (`MembersView.vue:387-408`, `frontend/src/utils/memberPayload.js`). The name is checked on the screen first, and the email only when filled (format).
+3. The server creates the member with the status MEMBER (or INACTIVE when the request asks for it: `status`, or the legacy `active: false`) and the counters at zero; it uses the join date sent, or today (`src/main/java/io/github/membertracker/usecase/SaveMemberUseCase.java`). The screen sends `status` (the legacy `active` is still accepted by the API but no longer sent). DECEASED, TRANSFERRED and ARCHIVED are refused on create (400, field error on `status`).
+4. Success: the dialog closes, the row appears and a toast "Member added" names the member. The email may be left empty, and two members may share one address: there is no duplicate check. A child added without an email counts as a member who owes dues unless they are added as Inactive: the dialog's hint says "choose Inactive".
 5. Other failures (validation, 403): field errors from the server show under their fields; anything else shows in a banner at the top of the dialog plus an error toast "Could not save member" (no toast for 403); the dialog stays open (`MembersView.vue:369-386`).
 
 ### Edit a member
 1. Choose "Edit" in the row menu; the dialog is pre-filled from the row (`MembersView.vue:342-354`) (STAFF+).
-2. "Save changes" sends the form to `PUT /api/members/{id}` as a `MemberRequest` (`MemberController.java:107-115`). The server loads the stored member and applies name, email, phone, join date (when sent) and `active`; the missed-months counter, last payment date and monthly-job marker are never taken from the client (`src/main/java/io/github/membertracker/usecase/UpdateMemberUseCase.java:25-60`).
+2. "Save changes" sends the form to `PUT /api/members/{id}` as a `MemberRequest` (`MemberController.java:107-115`). The server loads the stored member and applies name, email, phone, join date (when sent) and `status`; the missed-months counter, last payment date and monthly-job marker are never taken from the client (`src/main/java/io/github/membertracker/usecase/UpdateMemberUseCase.java:25-60`).
 3. Unknown id returns an empty 404 (`MemberController.java:114`). Any email is accepted, including one another member has, or none. Otherwise the dialog closes, the table reloads and a toast "Member saved" appears.
-- The "Active" switch is shown only when editing a member (`v-if="editingMember"`, `MembersView.vue:150`), and is honoured there; changing it goes through `Member.activate()` / `deactivate()`. Its help text says inactive members do not count as behind and that turning it back on resets the months behind.
+- The Status select offers Member, Inactive, Deceased and Transferred when editing (never Archived: that is the menu action); a change goes through `Member.activate()` / `deactivate()` or sets DECEASED / TRANSFERRED directly. Its hint says only a Member owes dues and gets messages and that moving someone back to Member resets the months behind. "Change status..." in the row menu opens this dialog with the select focused.
 
-### Deactivate or reactivate
-1. Choose "Deactivate" or "Reactivate" in the row menu (STAFF+). There is no dialog: the change is easy to undo, so it acts at once.
-2. The screen sends the member's name, email, phone, join date and `active` flipped as a `MemberRequest` (`MembersView.vue:426-436`). Toast "Member deactivated" or "Member reactivated"; on failure "Could not deactivate member" or "Could not reactivate member".
+### Mark inactive or active
+1. Choose "Mark inactive" (a Member) or "Mark active" (an Inactive member) in the row menu (STAFF+); other statuses only have "Change status...". There is no dialog: the change is easy to undo, so it acts at once.
+2. The screen sends the member's name, email, phone, join date and `status` INACTIVE or MEMBER as a `MemberRequest`. Toast "Member deactivated" or "Member reactivated"; on failure "Could not deactivate member" or "Could not reactivate member".
+
+### Restore an archived member (ADMIN)
+Choose "Archived" in the Status filter, open the row menu and choose "Restore": the screen sends `status` MEMBER (the months behind reset), the member returns to the main list, toast "Member restored"; failure toast "Could not restore member".
 - Reactivating goes through `Member.activate()`, which resets the overdue counter to 0 (`Member.java:75-81`, called from `UpdateMemberUseCase.java:41-49`). Deactivating calls `deactivate()`; sending the state the member already has changes nothing.
 - Automatic deactivation after 3 missed months does not exist (see Rules).
 
@@ -95,7 +98,7 @@ Stored in the `member` table (migrations `001`, `005`, `009`, `010`; `011` makes
 | `archivedAt` | Null until the member is archived; set to the archive time, cleared on restore | system |
 | `consecutiveMonthsMissed`, `lastPaymentDate`, `lastMissedCountMonth` | Dues counters | system only |
 
-Changing `status` through `PUT`: see [member-controller.md](member-controller.md). The screens still show only Active and Inactive, driven by `active`; a person marked DECEASED or TRANSFERRED through the API appears as Inactive there until the frontend speaks `status`.
+Changing `status` through `PUT`: see [member-controller.md](member-controller.md). The screens read `status` only (the JSON `active` is no longer used by the frontend).
 
 ## Rules
 - Status rules (the tests of `MemberStatus` are this table). Only MEMBER counts for dues, reminders, messages and payments:

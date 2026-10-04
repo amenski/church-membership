@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest'
 import { filterMembers, sortMembers, exportIds } from '@/utils/memberFilters'
 
 const members = [
-  { id: 1, name: 'Alice Smith', email: 'alice@example.com', phone: '(06) 12-34', active: true, joinDate: '2023-01-10', consecutiveMonthsMissed: 0 },
-  { id: 2, name: 'bob Jones', email: 'bob@test.org', phone: '555-9999', active: false, joinDate: '2024-05-20', consecutiveMonthsMissed: 3 },
-  { id: 3, name: 'Carol White', email: null, phone: null, active: true, joinDate: null, consecutiveMonthsMissed: 1 }
+  { id: 1, name: 'Alice Smith', email: 'alice@example.com', phone: '(06) 12-34', status: 'MEMBER', joinDate: '2023-01-10', consecutiveMonthsMissed: 0 },
+  { id: 2, name: 'bob Jones', email: 'bob@test.org', phone: '555-9999', status: 'INACTIVE', joinDate: '2024-05-20', consecutiveMonthsMissed: 3 },
+  { id: 3, name: 'Carol White', email: null, phone: null, status: 'MEMBER', joinDate: null, consecutiveMonthsMissed: 1 }
 ]
 const none = { search: '', status: 'ALL', paymentStatus: 'ALL', joinedFrom: '', joinedTo: '' }
 const ids = (list) => list.map(m => m.id)
@@ -21,10 +21,23 @@ describe('filterMembers', () => {
   })
   it('does not digit-match with fewer than 3 digits', () => expect(run({ search: '61' })).toEqual([]))
   it('filters by status', () => {
-    expect(run({ status: 'ACTIVE' })).toEqual([1, 3])
+    expect(run({ status: 'MEMBER' })).toEqual([1, 3])
     expect(run({ status: 'INACTIVE' })).toEqual([2])
+    expect(run({ status: 'DECEASED' })).toEqual([])
   })
-  it('filters by dues for active members only', () => {
+  it('filters each of the five statuses exactly', () => {
+    const all = ['MEMBER', 'INACTIVE', 'DECEASED', 'TRANSFERRED', 'ARCHIVED'].map((status, i) => ({ id: i + 1, name: status, status }))
+    for (const status of ['MEMBER', 'INACTIVE', 'DECEASED', 'TRANSFERRED', 'ARCHIVED']) {
+      expect(ids(filterMembers(all, { ...none, status }))).toEqual([all.findIndex(m => m.status === status) + 1])
+    }
+    expect(ids(filterMembers(all, none))).toEqual([1, 2, 3, 4, 5])
+  })
+  it('never matches a deceased or transferred member to Behind or Paid up', () => {
+    const list = ['DECEASED', 'TRANSFERRED'].map((status, i) => ({ id: i + 1, name: status, status, consecutiveMonthsMissed: i }))
+    expect(ids(filterMembers(list, { ...none, paymentStatus: 'OVERDUE' }))).toEqual([])
+    expect(ids(filterMembers(list, { ...none, paymentStatus: 'CURRENT' }))).toEqual([])
+  })
+  it('filters by dues for MEMBER-status members only', () => {
     expect(run({ paymentStatus: 'OVERDUE' })).toEqual([3])
     expect(run({ paymentStatus: 'CURRENT' })).toEqual([1])
   })
@@ -32,7 +45,7 @@ describe('filterMembers', () => {
     expect(run({ paymentStatus: 'OVERDUE' })).not.toContain(2)
   })
   it('never matches an inactive member to Paid up, even with zero months missed', () => {
-    const list = [{ id: 9, name: 'Dan', active: false, consecutiveMonthsMissed: 0 }]
+    const list = [{ id: 9, name: 'Dan', status: 'INACTIVE', consecutiveMonthsMissed: 0 }]
     expect(ids(filterMembers(list, { ...none, paymentStatus: 'CURRENT' }))).toEqual([])
     expect(ids(filterMembers(list, none))).toEqual([9])
   })
@@ -47,8 +60,8 @@ describe('filterMembers', () => {
   })
   it('is null-safe for missing email and phone', () => expect(run({ search: 'carol' })).toEqual([3]))
   it('combines filters', () => {
-    expect(run({ status: 'ACTIVE', paymentStatus: 'OVERDUE', search: 'carol' })).toEqual([3])
-    expect(run({ status: 'ACTIVE', joinedFrom: '2024-01-01' })).toEqual([])
+    expect(run({ status: 'MEMBER', paymentStatus: 'OVERDUE', search: 'carol' })).toEqual([3])
+    expect(run({ status: 'MEMBER', joinedFrom: '2024-01-01' })).toEqual([])
   })
 })
 
@@ -71,7 +84,7 @@ describe('sortMembers', () => {
     expect(ids(sortMembers(members, 'consecutiveMonthsMissed', 'desc')).at(-1)).toBe(2)
   })
   it('puts null months missed last', () => {
-    const list = [{ id: 1, consecutiveMonthsMissed: null }, { id: 2, consecutiveMonthsMissed: 2 }]
+    const list = [{ id: 1, status: 'MEMBER', consecutiveMonthsMissed: null }, { id: 2, status: 'MEMBER', consecutiveMonthsMissed: 2 }]
     expect(ids(sortMembers(list, 'consecutiveMonthsMissed', 'desc'))).toEqual([2, 1])
   })
   it('returns a new array and does not mutate', () => {

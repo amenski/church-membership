@@ -1,0 +1,49 @@
+import { describe, it, expect } from 'vitest'
+import {
+  NEW_MEMBER_STATUS_OPTIONS, STATUS_LABELS, STATUS_OPTIONS, countsForDues, isArchived, statusLabel, statusTone
+} from '@/utils/memberStatus'
+
+const ALL = ['MEMBER', 'INACTIVE', 'DECEASED', 'TRANSFERRED', 'ARCHIVED']
+
+describe('countsForDues', () => {
+  it('is true only for status MEMBER', () => {
+    for (const status of ALL) expect(countsForDues({ status })).toBe(status === 'MEMBER')
+  })
+  it('is false for a missing member, a missing status and the legacy flag alone', () => {
+    expect(countsForDues(null)).toBe(false)
+    expect(countsForDues(undefined)).toBe(false)
+    expect(countsForDues({})).toBe(false)
+    expect(countsForDues({ active: true })).toBe(false)
+  })
+})
+
+describe('labels and tones', () => {
+  it('has the five words', () => {
+    expect(ALL.map(statusLabel)).toEqual(['Member', 'Inactive', 'Deceased', 'Transferred', 'Archived'])
+    expect(Object.keys(STATUS_LABELS)).toEqual(ALL)
+  })
+  it('shows an unknown status as it came and nothing for none', () => {
+    expect(statusLabel('SOMETHING')).toBe('SOMETHING')
+    expect(statusLabel(undefined)).toBe('')
+  })
+  it('uses the paid tone for Member, the old clay for Inactive and muted for the rest', () => {
+    expect(statusTone('MEMBER')).toBe('paid')
+    expect(statusTone('INACTIVE')).toBe('inactive')
+    expect(['DECEASED', 'TRANSFERRED', 'ARCHIVED', 'UNKNOWN'].map(statusTone)).toEqual(['muted', 'muted', 'muted', 'muted'])
+  })
+})
+
+describe('options', () => {
+  it('offers four statuses when editing and never Archived (that is the menu action)', () => {
+    expect(STATUS_OPTIONS.map(o => o.value)).toEqual(['MEMBER', 'INACTIVE', 'DECEASED', 'TRANSFERRED'])
+    expect(STATUS_OPTIONS.map(o => o.label)).toEqual(['Member', 'Inactive', 'Deceased', 'Transferred'])
+  })
+  it('offers only Member and Inactive for a new member, as the server enforces', () => {
+    expect(NEW_MEMBER_STATUS_OPTIONS.map(o => o.value)).toEqual(['MEMBER', 'INACTIVE'])
+  })
+  it('knows an archived member', () => {
+    expect(isArchived({ status: 'ARCHIVED' })).toBe(true)
+    expect(isArchived({ status: 'MEMBER' })).toBe(false)
+    expect(isArchived(null)).toBe(false)
+  })
+})

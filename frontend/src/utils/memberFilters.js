@@ -1,3 +1,5 @@
+import { countsForDues } from '@/utils/memberStatus'
+
 const digitsOf = (value) => (value || '').replace(/\D/g, '')
 const dayOf = (value) => (value ? String(value).slice(0, 10) : '')
 
@@ -13,14 +15,13 @@ export function filterMembers(members, filters = {}) {
       (member.phone || '').toLowerCase().includes(term) ||
       (termDigits.length >= 3 && digitsOf(member.phone).includes(termDigits))
 
-    const matchesStatus = status === 'ALL' ||
-      (status === 'ACTIVE' && member.active) ||
-      (status === 'INACTIVE' && !member.active)
+    // ALL is every listed member; any other value is exactly that status
+    const matchesStatus = status === 'ALL' || member.status === status
 
-    // Behind and paid up only mean something for ACTIVE members: the server stops counting
-    // months for an inactive one, so its stored number is stale. It matches "All" only.
+    // Behind and paid up only mean something for a MEMBER: the server stops counting
+    // months for any other status, so the stored number is stale. Those match "All" only.
     const matchesPayment = paymentStatus === 'ALL' ||
-      (member.active &&
+      (countsForDues(member) &&
         ((paymentStatus === 'OVERDUE' && member.consecutiveMonthsMissed > 0) ||
          (paymentStatus === 'CURRENT' && member.consecutiveMonthsMissed === 0)))
 
@@ -39,8 +40,8 @@ export function filterMembers(members, filters = {}) {
 export function sortMembers(members, key, direction = 'asc') {
   const sign = direction === 'desc' ? -1 : 1
   const valueOf = (member) => {
-    // an inactive member has no dues figure, so it sorts last either way
-    if (key === 'consecutiveMonthsMissed' && member.active === false) return null
+    // a member who is not a MEMBER has no dues figure, so it sorts last either way
+    if (key === 'consecutiveMonthsMissed' && !countsForDues(member)) return null
     const value = member[key]
     if (value === null || value === undefined || value === '') return null
     return key === 'name' ? String(value) : value

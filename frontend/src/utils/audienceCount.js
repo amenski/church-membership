@@ -1,3 +1,5 @@
+import { countsForDues } from '@/utils/memberStatus'
+
 // Messages go by email address: members without one are skipped and members who share an
 // address get one message between them (case and spaces ignored), as the server does.
 function distinctAddresses(members) {
@@ -10,12 +12,12 @@ function distinctAddresses(members) {
 }
 
 /**
- * How many messages go out, as the server will count them. Only ACTIVE members get messages:
- * ALL is every active member, OVERDUE is active members who are at least `months` months
+ * How many messages go out, as the server will count them. Only members with status MEMBER get messages:
+ * ALL is every such member, OVERDUE is those who are at least `months` months
  * behind, SPECIFIC is the one chosen member. ALL and OVERDUE count distinct non-empty addresses.
  */
 export function audienceCount(members, audience, months) {
-  const active = (Array.isArray(members) ? members : []).filter(member => member.active)
+  const active = (Array.isArray(members) ? members : []).filter(countsForDues)
   if (audience === 'ALL') return distinctAddresses(active)
   if (audience === 'OVERDUE') {
     const threshold = Number(months)

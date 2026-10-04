@@ -180,6 +180,7 @@ import { useAuthStore } from '../stores/authStore'
 import { downloadBlob, formatDate, formatMoney, localISODate } from '@/utils'
 import { buildPaymentRequest, PAYMENT_METHODS } from '@/utils/paymentPayload'
 import { filterPayments, methodLabel, paymentsSummary, periodLabel, receiptNumber, sortPayments } from '@/utils/paymentHistory'
+import { countsForDues } from '@/utils/memberStatus'
 import AlertBanner from '@/components/AlertBanner.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import BaseInput from '@/components/BaseInput.vue'
@@ -255,7 +256,7 @@ export default {
       return this.today.slice(0, 7)
     },
     activeMembers() {
-      return this.members.filter(member => member.active).sort((a, b) => a.name.localeCompare(b.name))
+      return this.members.filter(countsForDues).sort((a, b) => a.name.localeCompare(b.name))
     },
     sortedPayments() {
       return sortPayments(this.payments)

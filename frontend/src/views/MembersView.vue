@@ -19,7 +19,7 @@
     </AlertBanner>
 
     <!-- Filters: one compact row from md up; the date pair folds away on a phone -->
-    <form v-if="members.length" class="mb-6 grid grid-cols-2 gap-3 md:flex md:flex-wrap md:items-end" role="search" aria-label="Filter members" @submit.prevent>
+    <form v-if="members.length || showingArchived" class="mb-6 grid grid-cols-2 gap-3 md:flex md:flex-wrap md:items-end" role="search" aria-label="Filter members" @submit.prevent>
       <div class="col-span-2 md:col-span-1 md:min-w-60 md:flex-1">
         <label for="filter-search" :class="LABEL">Search</label>
         <input id="filter-search" v-model="filters.search" type="search" placeholder="Search name, email or phone" autocomplete="off" :class="CONTROL">
@@ -28,8 +28,8 @@
         <label for="filter-status" :class="LABEL">Status</label>
         <select id="filter-status" v-model="filters.status" :class="CONTROL">
           <option value="ALL">All members</option>
-          <option value="ACTIVE">Active</option>
-          <option value="INACTIVE">Inactive</option>
+          <option v-for="option in STATUS_OPTIONS" :key="option.value" :value="option.value">{{ option.label }}</option>
+          <option v-if="authStore.isAdmin" value="ARCHIVED">Archived</option>
         </select>
       </div>
       <div class="md:w-40">
@@ -64,18 +64,22 @@
     </form>
 
     <!-- Empty states -->
-    <div v-if="loaded && !loadError && !members.length">
+    <div v-if="showingArchived && !source.length">
+      <EmptyNote>{{ archivedLoaded ? 'No archived members.' : 'Loading archived members...' }}</EmptyNote>
+      <BaseButton variant="secondary" class="mt-2" @click="clearFilters">Back to all members</BaseButton>
+    </div>
+    <div v-else-if="loaded && !loadError && !members.length">
       <EmptyNote>No members yet. Add the first member.</EmptyNote>
       <BaseButton v-if="authStore.isStaff" class="mt-2" @click="showAddModal">Add member</BaseButton>
     </div>
-    <div v-else-if="members.length && !filteredMembers.length">
+    <div v-else-if="source.length && !filteredMembers.length">
       <EmptyNote>No members match these filters.</EmptyNote>
       <BaseButton variant="secondary" class="mt-2" @click="clearFilters">Clear filters</BaseButton>
     </div>
 
     <template v-if="filteredMembers.length">
       <p class="mt-0 mb-2 text-sm text-muted" aria-live="polite">
-        {{ hasActiveFilters ? `${filteredMembers.length} of ${members.length} members` : `${members.length} ${members.length === 1 ? 'member' : 'members'}` }}
+        {{ filteredMembers.length !== source.length ? `${filteredMembers.length} of ${source.length} members` : `${source.length} ${source.length === 1 ? 'member' : 'members'}` }}
       </p>
 
       <!-- md and up: ruled table -->
@@ -105,12 +109,12 @@
             </td>
             <td :class="[TD, 'whitespace-nowrap']">{{ formatMemberDate(member.joinDate) }}</td>
             <td :class="[TD, 'whitespace-nowrap']">
-              <StatusLabel :tone="member.active ? 'paid' : 'inactive'">{{ member.active ? 'Active' : 'Inactive' }}</StatusLabel>
+              <StatusLabel :tone="statusTone(member.status)">{{ statusLabel(member.status) }}</StatusLabel>
             </td>
             <td :class="[TD, 'whitespace-nowrap']">
               <span :class="duesClass(member)">
-                <template v-if="member.active">{{ duesText(member) }}</template>
-                <template v-else><span aria-hidden="true">&ndash;</span><span class="sr-only">Not tracked while inactive</span></template>
+                <template v-if="countsForDues(member)">{{ duesText(member) }}</template>
+                <template v-else><span aria-hidden="true">&ndash;</span><span class="sr-only">Not tracked while {{ statusLabel(member.status).toLowerCase() }}</span></template>
               </span>
             </td>
             <td v-if="authStore.isStaff" :class="[TD, 'text-right']">
@@ -127,8 +131,8 @@
             <div :class="NAME">{{ member.name }}</div>
             <div class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
             <div class="mt-1 flex flex-wrap items-center gap-x-4">
-              <StatusLabel :tone="member.active ? 'paid' : 'inactive'">{{ member.active ? 'Active' : 'Inactive' }}</StatusLabel>
-              <span v-if="member.active" :class="duesClass(member)">{{ duesText(member) }}</span>
+              <StatusLabel :tone="statusTone(member.status)">{{ statusLabel(member.status) }}</StatusLabel>
+              <span v-if="countsForDues(member)" :class="duesClass(member)">{{ duesText(member) }}</span>
             </div>
             <div class="mt-1 text-sm text-muted tabular-nums">
               <template v-if="member.phone">{{ member.phone }} &middot; </template>Joined {{ formatMemberDate(member.joinDate) }}
@@ -144,20 +148,12 @@
       <AlertBanner v-if="formError">{{ formError }}</AlertBanner>
       <form id="member-form" class="flex flex-col gap-4" novalidate @submit.prevent="saveMember">
         <BaseInput id="member-name" v-model="memberForm.name" label="Name" autocomplete="off" :error="formErrors.name" />
-        <BaseInput id="member-email" v-model="memberForm.email" label="Email" type="email" autocomplete="off" hint="Optional. Two members can share one address and get one message. Someone without an email gets no messages, and still counts as a member who owes dues until marked inactive." :error="formErrors.email" />
+        <BaseInput id="member-email" v-model="memberForm.email" label="Email" type="email" autocomplete="off" hint="Optional. Two members can share one address and get one message. Someone without an email gets no messages: for a child without one, choose Inactive below so they are not counted as owing dues." :error="formErrors.email" />
         <BaseInput id="member-phone" v-model="memberForm.phone" label="Phone" type="tel" autocomplete="off" hint="Optional. 10 digits or more." :error="formErrors.phone" />
         <BaseInput id="member-joined" v-model="memberForm.joinDate" label="Joined on" type="date" :max="today" :error="formErrors.joinDate" />
-        <div v-if="editingMember">
-          <label class="flex min-h-11 cursor-pointer items-center gap-3">
-            <input v-model="memberForm.active" type="checkbox" role="switch" class="peer sr-only">
-            <span
-              class="relative h-6 w-11 shrink-0 rounded-full border border-field bg-paper transition-colors after:absolute after:top-0.5 after:left-0.5 after:size-4 after:rounded-full after:bg-field after:transition-transform peer-checked:border-teal peer-checked:bg-teal peer-checked:after:translate-x-5 peer-checked:after:bg-paper peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-teal motion-reduce:transition-none motion-reduce:after:transition-none"
-              aria-hidden="true"
-            ></span>
-            <span class="text-base font-medium text-ink">Active</span>
-          </label>
-          <p class="mt-1 mb-0 text-[0.9375rem] text-muted">Inactive members stay on the register but do not count as behind. Turning this back on resets the months behind.</p>
-        </div>
+        <BaseSelect id="member-status" v-model="memberForm.status" label="Status" :hint="statusHint">
+          <option v-for="option in statusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+        </BaseSelect>
       </form>
       <template #footer>
         <BaseButton variant="secondary" :disabled="saving" @click="formOpen = false">Cancel</BaseButton>
@@ -189,11 +185,13 @@ import { downloadBlob, formatDate, isValidEmail, localISODate } from '@/utils'
 import { monthsBehind } from '@/utils/dashboardMeter'
 import { filterMembers, sortMembers, exportIds } from '@/utils/memberFilters'
 import { buildMemberRequest } from '@/utils/memberPayload'
+import { NEW_MEMBER_STATUS_OPTIONS, STATUS_OPTIONS, countsForDues, isArchived, statusLabel, statusTone } from '@/utils/memberStatus'
 import ActionMenu from '@/components/ActionMenu.vue'
 import AlertBanner from '@/components/AlertBanner.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import BaseInput from '@/components/BaseInput.vue'
 import BaseModal from '@/components/BaseModal.vue'
+import BaseSelect from '@/components/BaseSelect.vue'
 import EmptyNote from '@/components/EmptyNote.vue'
 import PageHead from '@/components/PageHead.vue'
 import StatusLabel from '@/components/StatusLabel.vue'
@@ -211,7 +209,7 @@ const EMPTY_ERRORS = { name: '', email: '', phone: '', joinDate: '' }
 
 export default {
   name: 'MembersView',
-  components: { ActionMenu, AlertBanner, BaseButton, BaseInput, BaseModal, EmptyNote, PageHead, StatusLabel, TextButton },
+  components: { ActionMenu, AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, EmptyNote, PageHead, StatusLabel, TextButton },
   setup() {
     return {
       appStore: useAppStore(),
@@ -221,12 +219,14 @@ export default {
   data() {
     return {
       members: [],
+      archivedMembers: [],
+      archivedLoaded: false,
       loaded: false,
       loadError: false,
       filters: { ...EMPTY_FILTERS },
       datesOpen: false,
       sort: { key: null, direction: 'asc' },
-      memberForm: { name: '', email: '', phone: '', joinDate: '', active: true },
+      memberForm: { name: '', email: '', phone: '', joinDate: '', status: 'MEMBER' },
       formOpen: false,
       saving: false,
       formError: '',
@@ -242,12 +242,31 @@ export default {
       TH,
       TD,
       SORT_BUTTON,
-      NAME
+      NAME,
+      STATUS_OPTIONS,
+      countsForDues,
+      statusLabel,
+      statusTone
     }
   },
   computed: {
+    showingArchived() {
+      return this.filters.status === 'ARCHIVED' && this.authStore.isAdmin
+    },
+    // the list on screen: the archived list (ADMIN, loaded on demand) or the normal one
+    source() {
+      return this.showingArchived ? this.archivedMembers : this.members
+    },
+    statusOptions() {
+      return this.editingMember ? STATUS_OPTIONS : NEW_MEMBER_STATUS_OPTIONS
+    },
+    statusHint() {
+      return this.editingMember
+        ? 'Only a Member owes dues and gets messages. Moving someone back to Member resets the months behind.'
+        : 'Choose Inactive for someone who should not owe dues or get messages, such as a child.'
+    },
     filteredMembers() {
-      const filtered = filterMembers(this.members, this.filters)
+      const filtered = filterMembers(this.source, this.filters)
       return this.sort.key ? sortMembers(filtered, this.sort.key, this.sort.direction) : filtered
     },
     hasActiveFilters() {
@@ -267,6 +286,11 @@ export default {
       ]
     }
   },
+  watch: {
+    'filters.status'(status) {
+      if (status === 'ARCHIVED' && this.authStore.isAdmin) this.loadArchived()
+    }
+  },
   async created() {
     await this.loadMembers()
   },
@@ -284,6 +308,23 @@ export default {
       } finally {
         this.loaded = true
       }
+    },
+    async loadArchived() {
+      try {
+        const data = await api.getMembers({ archived: true })
+        this.archivedMembers = Array.isArray(data) ? data : []
+      } catch (error) {
+        console.error('Error loading archived members:', error)
+        this.archivedMembers = []
+        this.notifyFailure('Could not load archived members', error)
+      } finally {
+        this.archivedLoaded = true
+      }
+    },
+    // after a change: the normal list, and the archived one when it is on screen
+    async reloadLists() {
+      await this.loadMembers()
+      if (this.showingArchived) await this.loadArchived()
     },
     setSort(key) {
       if (this.sort.key === key) {
@@ -307,25 +348,29 @@ export default {
     formatMemberDate(date) {
       return date ? formatDate(date, 'MMM d, yyyy') : ''
     },
-    // Dues are tracked for active members only; an inactive member's stored figure is stale
+    // Dues are tracked for members with status MEMBER only; for any other status the stored figure is stale
     duesText(member) {
       return member.consecutiveMonthsMissed > 0 ? monthsBehind(member.consecutiveMonthsMissed) : 'Paid up'
     },
     duesClass(member) {
-      if (!member.active) return 'text-muted'
+      if (!countsForDues(member)) return 'text-muted'
       return ['font-medium', member.consecutiveMonthsMissed > 0 ? 'text-ochre-text' : 'text-fern-text']
     },
     menuItems(member) {
-      const items = [
-        { key: 'edit', label: 'Edit' },
-        { key: 'toggle', label: member.active ? 'Deactivate' : 'Reactivate' }
-      ]
+      // an archived member (only an ADMIN sees them) can only be restored
+      if (isArchived(member)) return [{ key: 'restore', label: 'Restore' }]
+      const items = [{ key: 'edit', label: 'Edit' }]
+      if (member.status === 'MEMBER') items.push({ key: 'toggle', label: 'Mark inactive' })
+      else if (member.status === 'INACTIVE') items.push({ key: 'toggle', label: 'Mark active' })
+      items.push({ key: 'status', label: 'Change status...' })
       if (this.authStore.isAdmin) items.push({ key: 'delete', label: 'Archive', danger: true })
       return items
     },
     onMenuSelect(key, member) {
       if (key === 'edit') this.showEditModal(member)
+      else if (key === 'status') this.showEditModal(member, true)
       else if (key === 'toggle') this.toggleStatus(member)
+      else if (key === 'restore') this.restoreMember(member)
       else if (key === 'delete') this.showDeleteModal(member)
     },
     resetFormErrors() {
@@ -334,23 +379,25 @@ export default {
     },
     showAddModal() {
       this.editingMember = null
-      this.memberForm = { name: '', email: '', phone: '', joinDate: localISODate(), active: true }
+      this.memberForm = { name: '', email: '', phone: '', joinDate: localISODate(), status: 'MEMBER' }
       this.today = localISODate()
       this.resetFormErrors()
       this.formOpen = true
     },
-    showEditModal(member) {
+    showEditModal(member, focusStatus = false) {
       this.editingMember = member
       this.memberForm = {
         name: member.name || '',
         email: member.email || '',
         phone: member.phone || '',
         joinDate: member.joinDate || '',
-        active: !!member.active
+        status: member.status || 'MEMBER'
       }
       this.today = localISODate()
       this.resetFormErrors()
       this.formOpen = true
+      // the dialog focuses the first field when it opens; "Change status..." wants the select instead
+      if (focusStatus) setTimeout(() => document.getElementById('member-status')?.focus(), 0)
     },
     showDeleteModal(member) {
       this.selectedMember = member
@@ -391,7 +438,7 @@ export default {
         } else {
           await api.createMember(request)
         }
-        await this.loadMembers()
+        await this.reloadLists()
         this.formOpen = false
         this.notify('success', editing ? 'Member saved' : 'Member added', request.name)
       } catch (error) {
@@ -407,7 +454,7 @@ export default {
       try {
         const { id, name } = this.selectedMember
         await api.deleteMember(id)
-        await this.loadMembers()
+        await this.reloadLists()
         this.deleteOpen = false
         this.notify('success', 'Member archived', name)
       } catch (error) {
@@ -419,14 +466,24 @@ export default {
       }
     },
     async toggleStatus(member) {
-      const reactivating = !member.active
+      const reactivating = member.status !== 'MEMBER'
       try {
-        await api.updateMember(member.id, buildMemberRequest({ ...member, active: reactivating }))
-        await this.loadMembers()
+        await api.updateMember(member.id, buildMemberRequest({ ...member, status: reactivating ? 'MEMBER' : 'INACTIVE' }))
+        await this.reloadLists()
         this.notify('success', reactivating ? 'Member reactivated' : 'Member deactivated', member.name)
       } catch (error) {
         console.error('Error toggling member status:', error)
         this.notifyFailure(reactivating ? 'Could not reactivate member' : 'Could not deactivate member', error)
+      }
+    },
+    async restoreMember(member) {
+      try {
+        await api.updateMember(member.id, buildMemberRequest({ ...member, status: 'MEMBER' }))
+        await this.reloadLists()
+        this.notify('success', 'Member restored', member.name)
+      } catch (error) {
+        console.error('Error restoring member:', error)
+        this.notifyFailure('Could not restore member', error)
       }
     },
     notify(type, title, message) {
@@ -448,7 +505,8 @@ export default {
         return
       }
       try {
-        const ids = exportIds(this.filteredMembers, this.members)
+        // the archived list is not the full list the endpoint exports, so it always goes by ids
+        const ids = this.showingArchived ? this.filteredMembers.map(member => member.id) : exportIds(this.filteredMembers, this.members)
         const response = await api.exportMembers(ids)
         // api.request() already returns response.data (the blob)
         const prefix = this.hasActiveFilters ? 'members_filtered' : 'members'
