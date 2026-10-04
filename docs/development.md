@@ -35,7 +35,7 @@ Open **http://localhost:3000**. Vite proxies `/api/*` to the backend (`frontend/
 
 **Sign in:** self-registration is disabled. Seed users are in `src/main/resources/db/sql/002.sample-data.sql`. The passwords given in its comments have not been checked against the hashes.
 
-> **Broken Gradle tasks:** `./gradlew :frontend:vueRunDev` runs `npm run serve`, and `:frontend:vueLint` runs `npm run lint`. Neither script exists in `package.json`, which has only `dev`, `build` and `preview`. Use the npm commands above.
+> `./gradlew :frontend:vueRunDev` runs `npm run dev`, the same as the npm command above. There is no lint script.
 
 ### Other commands
 
