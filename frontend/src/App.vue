@@ -13,7 +13,7 @@
           aria-label="Open menu"
           @click="openRail"
         >
-          <i class="bi bi-list text-[1.25rem] leading-none" aria-hidden="true"></i>
+          <Icon name="menu" :size="20" class="mr-1.5" />
           Menu
         </BaseButton>
       </header>
@@ -47,27 +47,25 @@
             aria-label="Close menu"
             @click="closeRail"
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-              <path d="M3 3l10 10M13 3L3 13" />
-            </svg>
+            <Icon name="x" :size="16" />
           </button>
         </div>
 
         <nav class="flex flex-1 flex-col gap-[2px] py-2" aria-label="Sections">
-          <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/dashboard" icon="bi-house-door">Overview</RailLink>
-          <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/members" icon="bi-people">Members</RailLink>
-          <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/households" icon="bi-house-heart">Households</RailLink>
-          <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/payments" icon="bi-cash-coin">Payments</RailLink>
-          <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/communications" icon="bi-chat-left-text">Messages</RailLink>
-          <RailLink v-if="authStore.hasRole('ADMIN')" to="/activity" icon="bi-clock-history">Activity</RailLink>
-          <RailLink to="/profile" icon="bi-person">Profile</RailLink>
+          <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/dashboard" name="home">Overview</RailLink>
+          <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/members" name="users">Members</RailLink>
+          <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/households" name="home">Households</RailLink>
+          <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/payments" name="banknote">Payments</RailLink>
+          <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/communications" name="message-square">Messages</RailLink>
+          <RailLink v-if="authStore.hasRole('ADMIN')" to="/activity" name="clock">Activity</RailLink>
+          <RailLink to="/profile" name="user">Profile</RailLink>
         </nav>
 
         <div class="border-t border-rule px-6 pt-4 pb-6">
           <div class="text-base font-bold [overflow-wrap:anywhere]">{{ displayName }}</div>
           <div v-if="displayName !== currentUser?.email && currentUser?.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ currentUser.email }}</div>
           <BaseButton variant="secondary" size="sm" class="mt-3" @click="handleLogout">
-            <i class="bi bi-box-arrow-right" aria-hidden="true"></i>Sign out
+            <Icon name="log-out" :size="16" class="mr-1.5" />Sign out
           </BaseButton>
         </div>
       </aside>
@@ -87,6 +85,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, watch, ref } from 'vue'
 import WovenBand from '@/components/WovenBand.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import BrandMark from '@/components/BrandMark.vue'
+import Icon from '@/components/Icon.vue'
 import RailLink from '@/components/RailLink.vue'
 import ToastHost from '@/components/ToastHost.vue'
 import { useI18n } from 'vue-i18n'

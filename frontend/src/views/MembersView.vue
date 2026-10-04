@@ -3,10 +3,10 @@
     <PageHead title="Members" lead="Everyone on the register: who is paid up and who is behind.">
       <template v-if="authStore.isStaff" #actions>
         <BaseButton variant="secondary" @click="exportMembers">
-          <i class="bi bi-download mr-2" aria-hidden="true"></i>Export CSV
+          <Icon name="download" :size="16" class="mr-1.5" />Export CSV
         </BaseButton>
         <BaseButton @click="showAddModal">
-          <i class="bi bi-plus-lg mr-2" aria-hidden="true"></i>Add member
+          <Icon name="plus" :size="16" class="mr-1.5" />Add member
         </BaseButton>
       </template>
     </PageHead>
@@ -47,7 +47,7 @@
         :aria-expanded="datesOpen ? 'true' : 'false'"
         @click="datesOpen = !datesOpen"
       >
-        <i :class="['bi', datesOpen ? 'bi-chevron-up' : 'bi-chevron-down']" aria-hidden="true"></i>
+        <Icon :name="datesOpen ? 'chevron-up' : 'chevron-down'" :size="16" />
         {{ datesOpen ? 'Fewer filters' : 'More filters' }}<template v-if="!datesOpen && dateFilterCount"> ({{ dateFilterCount }} set)</template>
       </button>
       <div id="filter-dates" :class="datesOpen ? 'contents' : 'hidden md:contents'">
@@ -91,7 +91,7 @@
             <th v-for="column in columns" :key="column.label" scope="col" :aria-sort="ariaSort(column.sortKey)" :class="[TH, column.class]">
               <button v-if="column.sortKey" type="button" :class="SORT_BUTTON" @click="setSort(column.sortKey)">
                 {{ column.label }}
-                <i :class="sortIcon(column.sortKey)" aria-hidden="true"></i>
+                <Icon :name="sortIcon(column.sortKey)" :size="12" :class="sort.key === column.sortKey ? 'text-ink' : 'text-muted'" />
               </button>
               <template v-else>{{ column.label }}</template>
             </th>
@@ -103,7 +103,7 @@
             <td :class="[TD, 'max-w-0 w-[34%]']">
               <div :class="NAME">{{ member.name }}</div>
               <div v-if="member.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
-              <div v-if="member.householdName" class="text-sm text-muted [overflow-wrap:anywhere]"><i class="bi bi-house mr-1" aria-hidden="true"></i><span class="sr-only">Household: </span>{{ member.householdName }}</div>
+              <div v-if="member.householdName" class="text-sm text-muted [overflow-wrap:anywhere]"><Icon name="home" :size="14" class="mr-1" /><span class="sr-only">Household: </span>{{ member.householdName }}</div>
             </td>
             <td :class="[TD, 'whitespace-nowrap']">
               <template v-if="member.phone">{{ member.phone }}</template>
@@ -132,7 +132,7 @@
           <div class="min-w-0 flex-1">
             <div :class="NAME">{{ member.name }}</div>
             <div v-if="member.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
-            <div v-if="member.householdName" class="text-sm text-muted [overflow-wrap:anywhere]"><i class="bi bi-house mr-1" aria-hidden="true"></i><span class="sr-only">Household: </span>{{ member.householdName }}</div>
+            <div v-if="member.householdName" class="text-sm text-muted [overflow-wrap:anywhere]"><Icon name="home" :size="14" class="mr-1" /><span class="sr-only">Household: </span>{{ member.householdName }}</div>
             <div class="mt-1 flex flex-wrap items-center gap-x-4">
               <StatusLabel :tone="statusTone(member.status)">{{ statusLabel(member.status) }}</StatusLabel>
               <span v-if="countsForDues(member)" :class="duesClass(member)">{{ duesText(member) }}</span>
@@ -208,6 +208,7 @@ import BaseInput from '@/components/BaseInput.vue'
 import BaseModal from '@/components/BaseModal.vue'
 import BaseSelect from '@/components/BaseSelect.vue'
 import EmptyNote from '@/components/EmptyNote.vue'
+import Icon from '@/components/Icon.vue'
 import PageHead from '@/components/PageHead.vue'
 import StatusLabel from '@/components/StatusLabel.vue'
 import TextButton from '@/components/TextButton.vue'
@@ -224,7 +225,7 @@ const EMPTY_ERRORS = { name: '', email: '', phone: '', joinDate: '', householdId
 
 export default {
   name: 'MembersView',
-  components: { ActionMenu, AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, EmptyNote, PageHead, StatusLabel, TextButton },
+  components: { ActionMenu, AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, EmptyNote, Icon, PageHead, StatusLabel, TextButton },
   setup() {
     return {
       appStore: useAppStore(),
@@ -367,8 +368,8 @@ export default {
       return this.sort.direction === 'asc' ? 'ascending' : 'descending'
     },
     sortIcon(key) {
-      if (this.sort.key !== key) return 'bi bi-chevron-expand text-[0.75rem]'
-      return `bi text-[0.75rem] text-ink ${this.sort.direction === 'asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill'}`
+      if (this.sort.key !== key) return 'chevrons-up-down'
+      return this.sort.direction === 'asc' ? 'caret-up' : 'caret-down'
     },
     clearFilters() {
       this.filters = { ...EMPTY_FILTERS }

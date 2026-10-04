@@ -3,7 +3,7 @@
     <PageHead title="Households" lead="Families and shared addresses, and who lives in each.">
       <template v-if="authStore.isStaff" #actions>
         <BaseButton @click="showAddModal">
-          <i class="bi bi-plus-lg mr-2" aria-hidden="true"></i>Add household
+          <Icon name="plus" :size="16" class="mr-1.5" />Add household
         </BaseButton>
       </template>
     </PageHead>
@@ -160,6 +160,7 @@ import BaseModal from '@/components/BaseModal.vue'
 import BaseTextarea from '@/components/BaseTextarea.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import EmptyNote from '@/components/EmptyNote.vue'
+import Icon from '@/components/Icon.vue'
 import PageHead from '@/components/PageHead.vue'
 import StatusLabel from '@/components/StatusLabel.vue'
 
@@ -177,7 +178,7 @@ const EMPTY_ERRORS = { ...EMPTY_FORM }
 
 export default {
   name: 'HouseholdsView',
-  components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseTextarea, ConfirmDialog, EmptyNote, PageHead, StatusLabel },
+  components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseTextarea, ConfirmDialog, EmptyNote, Icon, PageHead, StatusLabel },
   setup() {
     return {
       appStore: useAppStore(),

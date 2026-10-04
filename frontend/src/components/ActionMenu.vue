@@ -12,7 +12,7 @@
       @click="toggle"
       @keydown="onTriggerKeydown"
     >
-      <i class="bi bi-three-dots text-[1.25rem] leading-none" aria-hidden="true"></i>
+      <Icon name="more-horizontal" :size="18" />
     </button>
 
     <Teleport to="body">
@@ -47,10 +47,13 @@
 </template>
 
 <script>
+import Icon from '@/components/Icon.vue'
+
 let nextId = 0
 
 export default {
   name: 'ActionMenu',
+  components: { Icon },
   props: {
     // aria-label of the trigger, e.g. "More actions for Sarah Brown"
     label: { type: String, required: true },

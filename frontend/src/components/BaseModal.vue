@@ -32,9 +32,7 @@
               aria-label="Close"
               @click="close"
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-                <path d="M3 3l10 10M13 3L3 13" />
-              </svg>
+              <Icon name="x" :size="16" />
             </button>
           </div>
           <div class="overflow-y-auto p-6">
@@ -50,6 +48,8 @@
 </template>
 
 <script>
+import Icon from '@/components/Icon.vue'
+
 const WIDTH = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-3xl' }
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 let nextId = 0
@@ -58,6 +58,7 @@ const openModals = []
 
 export default {
   name: 'BaseModal',
+  components: { Icon },
   props: {
     modelValue: { type: Boolean, default: false },
     title: { type: String, required: true },

@@ -3,10 +3,10 @@
     <PageHead title="Payments" lead="Record what members paid and see the history.">
       <template v-if="authStore.isStaff" #actions>
         <BaseButton variant="secondary" @click="exportPayments">
-          <i class="bi bi-download mr-2" aria-hidden="true"></i>Export CSV
+          <Icon name="download" :size="16" class="mr-1.5" />Export CSV
         </BaseButton>
         <BaseButton @click="openRecord">
-          <i class="bi bi-plus-lg mr-2" aria-hidden="true"></i>Record payment
+          <Icon name="plus" :size="16" class="mr-1.5" />Record payment
         </BaseButton>
       </template>
     </PageHead>
@@ -166,7 +166,7 @@
       <template #footer>
         <BaseButton variant="secondary" @click="receiptOpen = false">Close</BaseButton>
         <BaseButton :disabled="downloading" :aria-busy="downloading ? 'true' : undefined" @click="downloadReceipt">
-          <i class="bi bi-download mr-2" aria-hidden="true"></i>{{ downloading ? 'Preparing...' : 'Download PDF' }}
+          <Icon name="download" :size="16" class="mr-1.5" />{{ downloading ? 'Preparing...' : 'Download PDF' }}
         </BaseButton>
       </template>
     </BaseModal>
@@ -188,6 +188,7 @@ import BaseModal from '@/components/BaseModal.vue'
 import BaseSelect from '@/components/BaseSelect.vue'
 import BaseTextarea from '@/components/BaseTextarea.vue'
 import EmptyNote from '@/components/EmptyNote.vue'
+import Icon from '@/components/Icon.vue'
 import PageHead from '@/components/PageHead.vue'
 import TextButton from '@/components/TextButton.vue'
 
@@ -214,7 +215,7 @@ const emptyForm = () => ({
 
 export default {
   name: 'PaymentsView',
-  components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, BaseTextarea, EmptyNote, PageHead, TextButton },
+  components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, BaseTextarea, EmptyNote, Icon, PageHead, TextButton },
   setup() {
     return {
       appStore: useAppStore(),

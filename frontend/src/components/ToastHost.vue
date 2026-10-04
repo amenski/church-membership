@@ -33,9 +33,7 @@
           aria-label="Dismiss notification"
           @click="dismiss(toast.key)"
         >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-            <path d="M3 3l10 10M13 3L3 13" />
-          </svg>
+          <Icon name="x" :size="16" />
         </button>
       </div>
     </TransitionGroup>
@@ -44,6 +42,7 @@
 
 <script setup>
 import { onBeforeUnmount, ref, toRaw, watch } from 'vue'
+import Icon from '@/components/Icon.vue'
 import { useAppStore } from '@/stores/appStore'
 
 const EDGE = {
