@@ -1,3 +1,5 @@
+import { formatDate } from '@/utils'
+
 const TYPE_LABELS = { REMINDER: 'Reminder', ANNOUNCEMENT: 'Announcement', PERSONAL: 'Personal' }
 
 /** A plain word for the message type; an unknown type shows as it came. */
@@ -46,4 +48,9 @@ export function countDeliveries(deliveries) {
 export function sortMessages(messages) {
   const when = message => String(message.sentDate || message.createdDate || '')
   return [...messages].sort((a, b) => when(b).localeCompare(when(a)) || b.id - a.id)
+}
+
+/** Delivery notes carry the server's raw ISO timestamp; show it as a readable time. */
+export function friendlyNotes(notes) {
+  return (notes || '').replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?/g, iso => formatDate(iso, 'MMM d, yyyy, h:mm a') || iso)
 }

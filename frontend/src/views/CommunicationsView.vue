@@ -124,7 +124,7 @@
               </div>
               <div class="text-sm text-muted [overflow-wrap:anywhere]">{{ delivery.recipient?.email }}</div>
               <div v-if="delivery.responseNotes || delivery.attempts > 0" class="text-sm text-muted [overflow-wrap:anywhere]">
-                <span v-if="delivery.responseNotes">{{ delivery.responseNotes }}</span>
+                <span v-if="delivery.responseNotes">{{ friendlyNotes(delivery.responseNotes) }}</span>
                 <span v-if="delivery.attempts > 0" class="tabular-nums"><template v-if="delivery.responseNotes"> &middot; </template>{{ attemptsLabel(delivery.attempts) }}</span>
               </div>
             </div>
@@ -156,7 +156,7 @@ import { useAppStore } from '../stores/appStore'
 import { formatDate } from '@/utils'
 import { audienceCount } from '@/utils/audienceCount'
 import { buildCommunicationRequest } from '@/utils/communicationPayload'
-import { attemptsLabel, countDeliveries, deliveryStatus, deliverySummaryParts, sortMessages, typeLabel } from '@/utils/messageHistory'
+import { attemptsLabel, friendlyNotes, countDeliveries, deliveryStatus, deliverySummaryParts, sortMessages, typeLabel } from '@/utils/messageHistory'
 import { countsForDues } from '@/utils/memberStatus'
 import AlertBanner from '@/components/AlertBanner.vue'
 import BaseButton from '@/components/BaseButton.vue'
@@ -191,6 +191,7 @@ export default {
       formatDate,
       typeLabel,
       attemptsLabel,
+      friendlyNotes,
       CARD,
       MESSAGE_MAX
     }

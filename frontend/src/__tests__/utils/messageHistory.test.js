@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { attemptsLabel, countDeliveries, deliveryStatus, deliverySummaryParts, sortMessages, typeLabel } from '@/utils/messageHistory'
+import { attemptsLabel, friendlyNotes, countDeliveries, deliveryStatus, deliverySummaryParts, sortMessages, typeLabel } from '@/utils/messageHistory'
 
 describe('deliverySummaryParts', () => {
   it('joins sent and delivered and tones each word', () => {
@@ -67,5 +67,16 @@ describe('sortMessages', () => {
     ]
     expect(sortMessages(list).map(m => m.id)).toEqual([2, 3, 1])
     expect(list.map(m => m.id)).toEqual([1, 2, 3])
+  })
+})
+
+describe('friendlyNotes', () => {
+  it('turns an ISO timestamp inside the note into a readable time', () => {
+    expect(friendlyNotes('Retry failed at 2026-10-04T05:29:05.240703')).toBe('Retry failed at Oct 4, 2026, 5:29 AM')
+  })
+
+  it('leaves text without a timestamp alone', () => {
+    expect(friendlyNotes('Mailbox full')).toBe('Mailbox full')
+    expect(friendlyNotes(null)).toBe('')
   })
 })
