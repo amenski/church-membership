@@ -8,6 +8,7 @@ Read-only summary figures (counts, revenue, recent payments, overdue members, ac
 | Method | Path | Auth | Request | Response |
 |--------|------|------|---------|----------|
 | GET | `/api/dashboard/stats` | VOLUNTEER+ | none | `{totalMembers, activeMembers, overdueMembers, monthlyRevenue}` |
+| GET | `/api/dashboard/collected-by-month` | VOLUNTEER+ | none | `{month, amount}[]`, 12 rows, oldest first; `month` is `yyyy-MM` |
 | GET | `/api/dashboard/recent-payments` | VOLUNTEER+ | none | `Payment[]`, max 10 |
 | GET | `/api/dashboard/overdue-members` | VOLUNTEER+ | none | `Member[]`, MEMBER-status members only, longest behind first |
 | GET | `/api/dashboard/recent-activities` | VOLUNTEER+ | none | `{id, date, type, description}[]`, max 10 |
@@ -26,6 +27,9 @@ Use case `GetDashboardStatsUseCase` (returns a `DashboardStats` record: four que
 
 - Revenue is by billing `period`, not `paymentDate`: a payment made today for last month is excluded; an advance payment for this month made earlier is included.
 - Overdue is a stored counter, not computed here; it is raised once per member per month by the monthly `UpdateMissingPaymentCountersUseCase` (`src/main/java/io/github/membertracker/usecase/UpdateMissingPaymentCountersUseCase.java`). A member who is behind but not dues-paying (inactive, deceased, transferred) or archived is not counted, so the stat tiles and the overdue list agree.
+
+## Collected by month
+- `GetCollectedByMonthUseCase.invoke(12)` lists the last 12 billing months ending with the current one, oldest first. Each row is `PaymentRepository.sumAmountByPeriod(month)`, the same rule as `monthlyRevenue`: the sum follows the payment's `period`, not the day it was recorded. A month with no payments is returned as 0, so there are no gaps.
 
 ## Recent payments
 - `GetRecentPaymentsUseCase.invoke(10)` -> `PaymentRepository.findRecent(10)`: newest `paymentDate` first, then newest id, limited in SQL.
@@ -53,6 +57,7 @@ Use case `GetDashboardStatsUseCase` (returns a `DashboardStats` record: four que
 | Endpoint | Queries |
 |----------|---------|
 | stats | 3 counts + 1 `SUM` |
+| collected-by-month | 12 `SUM` queries, one per month |
 | recent-payments | 1 query, `LIMIT 10` |
 | overdue-members | 1 query, MEMBER-status members only |
 | recent-activities | 2 queries, `LIMIT 5` each |

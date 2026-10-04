@@ -20,7 +20,7 @@ Done and removed from this list (October 2026): auth hardening (token types, ref
 
 - [ ] Signed-out load makes one 401 and one 400 probe. Kept on purpose: it is how an expired access cookie with a valid refresh cookie signs the user back in.
 - [ ] Members CSV has technical headers (`joinDate`, `consecutiveMonthsMissed`) and a redundant `active` column next to `status` (`MemberController.java:181`); moves to step 12
-- [ ] Dashboard revenue-by-month chart: there is no chart library and the dashboard shows one monthly figure only
+- [x] Dashboard revenue-by-month chart: there is no chart library and the dashboard shows one monthly figure only — added "Collected by month", 12 CSS bars from `GET /api/dashboard/collected-by-month`, documented in `docs/features/dashboard.md`
 - [x] Coverage reports: no JaCoCo in `build.gradle` and no coverage script for the frontend — added JaCoCo (`jacocoTestReport`, xml + html, no threshold) and `npm run coverage` (Vitest + `@vitest/coverage-v8`), documented in `docs/development.md`
 - [ ] Activity-log retention job: entries accumulate forever (see [features/activity.md](features/activity.md))
 - [ ] A durable send queue and an automatic later retry of FAILED deliveries (the cached thread pool loses unsent mail on a restart; only the manual Retry exists)

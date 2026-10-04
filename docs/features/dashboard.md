@@ -9,6 +9,7 @@ Roles from `@PreAuthorize` and route meta; hierarchy ADMIN > STAFF > VOLUNTEER >
 |------|--------------|-------------------|
 | Open the dashboard | VOLUNTEER | `/dashboard` (`frontend/src/router/index.js:12-17`, guard `:108-118`) |
 | Read the headline figures | VOLUNTEER | `GET /api/dashboard/stats` (`src/main/java/io/github/membertracker/infrastructure/DashboardController.java:56-61`) |
+| See the amount collected per month | VOLUNTEER | `GET /api/dashboard/collected-by-month` (`DashboardController.java`) |
 | See recent payments | VOLUNTEER | `GET /api/dashboard/recent-payments` (`DashboardController.java:63-68`) |
 | See overdue members | VOLUNTEER | `GET /api/dashboard/overdue-members` (`DashboardController.java:70-75`) |
 | See recent activity | VOLUNTEER | `GET /api/dashboard/recent-activities` (`DashboardController.java:77-103`) |
@@ -34,6 +35,12 @@ Role view of the screen:
 - Revenue follows the billing month, not the day the money was recorded: a payment made today for last month is not counted; a payment made earlier for this month is. The Payments screen's "This month" figure uses the same rule, so the two agree ([payments.md](payments.md)).
 - The screen leads with four `StatTile`s built from these: Active members, Paid up (active members minus the overdue members on the list), Behind (the overdue count) and This month's payments. With no active members the overdue list shows its empty state instead. Total members are not shown separately.
 - "This month's payments" and "Active members" are a quiet row below the list (`Dashboard.vue:42-51`). Amounts are formatted as US dollars with two decimals by the shared `formatMoney` (`frontend/src/utils/index.js:42`).
+
+### Collected by month
+1. Under the stat tiles, a "Collected by month" section draws 12 horizontal bars, oldest month at the top, from `GET /api/dashboard/collected-by-month` (`Dashboard.vue`, `collectedRows`). The month is the billing month (`period`), like "This month".
+2. Each row shows the month, a bar scaled to the largest month, and the amount at the end of the row as text (US dollars, `formatMoney`). The bars are decorative (`aria-hidden`); the text carries the numbers for screen readers. The bar is the theme's teal; no chart library.
+3. The last row is the current month: a lighter bar and "in progress", because it is still being collected.
+4. The chart loads after the other four requests. If it fails, only this section shows an error with "Try again" (`loadCollected`); the rest of the overview stays. With no payments in the 12 months it says so and points to Payments.
 
 ### Recent payments
 1. The server returns the 10 newest payments, newest payment date first, then newest id, limited in the query (`DashboardController.java:36`, `:63-68`).
