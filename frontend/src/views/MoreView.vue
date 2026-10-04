@@ -16,8 +16,8 @@
 
     <section aria-label="Signed in" class="mt-4 flex flex-col gap-3 rounded-lg border border-rule bg-paper px-4 py-3.5">
       <div>
-        <div class="text-lg font-semibold [overflow-wrap:anywhere]">{{ displayName }}</div>
-        <div v-if="email && email !== displayName" class="text-base text-muted [overflow-wrap:anywhere]">{{ email }}</div>
+        <div class="truncate text-lg font-semibold" :title="displayName">{{ displayName }}</div>
+        <div v-if="email && email !== displayName" class="truncate text-base text-muted" :title="email">{{ email }}</div>
       </div>
       <button
         type="button"

@@ -51,8 +51,9 @@
         <div class="mx-3 border-t border-rail-line px-2.5 pt-3.5 pb-4">
           <router-link
             to="/profile"
-            class="block rounded-sm text-base font-medium text-paper no-underline hover:underline focus-visible:outline-paper [overflow-wrap:anywhere]"
+            class="block rounded-sm text-base font-medium text-paper no-underline hover:underline focus-visible:outline-paper truncate"
             active-class="underline"
+            :title="displayName"
           >{{ displayName }}</router-link>
           <div v-if="displayName !== currentUser?.email && currentUser?.email" class="mt-0.5 truncate text-xs text-rail-muted" :title="currentUser.email">{{ currentUser.email }}</div>
           <button
