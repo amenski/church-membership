@@ -98,12 +98,13 @@ class PersonBackfillMigrationTest {
     }
 
     @Test
-    void driftQueryCatchesEachKindOfProblem() throws SQLException {
+    void driftQueryCatchesADriftedMemberAndIgnoresAPersonWithoutAMember() throws SQLException {
         try (Statement st = connection.createStatement()) {
             st.executeUpdate("UPDATE person SET phone = '000' WHERE id = 1");
             st.executeUpdate("INSERT INTO person (name) VALUES ('Orphan person')");
+            // A person without a member row is legitimate since step 11 (a dependent), so only the drift shows.
             assertThat(strings("SELECT problem FROM (" + PersonDriftQuery.SQL + ") d ORDER BY problem"))
-                .containsExactly("DRIFT", "NO_MEMBER");
+                .containsExactly("DRIFT");
             st.executeUpdate("DELETE FROM person WHERE name = 'Orphan person'");
             st.executeUpdate("UPDATE person SET phone = (SELECT phone FROM member WHERE id = 1) WHERE id = 1");
         }

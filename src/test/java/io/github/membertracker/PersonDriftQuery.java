@@ -3,8 +3,8 @@ package io.github.membertracker;
 /**
  * The drift check of the person/membership plan (section 6), as plain SQL both MySQL 8 and H2 accept. It returns one
  * row per problem and must return no rows: a member whose name, email or phone differs from its person's (DRIFT), a
- * member without a person row (NO_PERSON), a person without a member (NO_MEMBER). Null-safe by hand because H2 and
- * MySQL do not share a null-safe operator.
+ * member without a person row (NO_PERSON). A person without a member is legitimate since step 11 (a dependent), so it
+ * is no longer a problem. Null-safe by hand because H2 and MySQL do not share a null-safe operator.
  */
 final class PersonDriftQuery {
 
@@ -16,10 +16,7 @@ final class PersonDriftQuery {
                 AND (m.phone = p.phone OR (m.phone IS NULL AND p.phone IS NULL)))
         UNION ALL
         SELECT m.id, m.person_id, 'NO_PERSON'
-          FROM member m LEFT JOIN person p ON p.id = m.person_id WHERE p.id IS NULL
-        UNION ALL
-        SELECT NULL, p.id, 'NO_MEMBER'
-          FROM person p LEFT JOIN member m ON m.person_id = p.id WHERE m.id IS NULL""";
+          FROM member m LEFT JOIN person p ON p.id = m.person_id WHERE p.id IS NULL""";
 
     private PersonDriftQuery() {
     }
