@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { AxiosError } from 'axios'
+import { readFileSync } from 'node:fs'
 import apiService, { axiosInstance } from '@/services/api'
 import { useAuthStore, useAppStore } from '@/stores/index.js'
 
@@ -257,5 +258,35 @@ describe('api getActivityLog', () => {
     await apiService.getActivityLog()
 
     expect(sent.params).toMatchObject({ limit: 50 })
+  })
+})
+
+describe('api getOverdueMembers', () => {
+  let originalAdapter
+  let sent
+
+  beforeEach(() => {
+    originalAdapter = axiosInstance.defaults.adapter
+    axiosInstance.defaults.adapter = async (config) => {
+      sent = config
+      return { status: 200, data: [], headers: {}, config, statusText: 'OK' }
+    }
+  })
+
+  afterEach(() => {
+    axiosInstance.defaults.adapter = originalAdapter
+  })
+
+  it('reads the dashboard list, which is what the Overview uses', async () => {
+    await apiService.getOverdueMembers()
+
+    expect(sent.url).toBe('/dashboard/overdue-members')
+  })
+
+  it('defines no method twice (a later key silently replaces an earlier one)', () => {
+    const source = readFileSync('src/services/api.js', 'utf8')
+    const names = [...source.matchAll(/^ {2}(?:async )?(\w+)\(/gm)].map(m => m[1])
+    const dupes = names.filter((n, i) => names.indexOf(n) !== i)
+    expect(dupes).toEqual([])
   })
 })

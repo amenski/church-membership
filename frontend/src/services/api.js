@@ -336,10 +336,6 @@ const apiService = {
     return this.delete(`/members/${id}`)
   },
 
-  async getOverdueMembers(months) {
-    return this.get(`/members/overdue/${months}`)
-  },
-
   async exportMembers(ids = []) {
     if (ids.length > 0) {
       return this.post('/members/export', { ids }, { responseType: 'blob' })
