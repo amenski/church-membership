@@ -11,5 +11,8 @@ export function buildMemberRequest(form) {
   if (phone) request.phone = phone
   if (form.joinDate) request.joinDate = form.joinDate
   request.status = form.status || 'MEMBER'
+  // The household is sent only when the user touched that field (an explicit null leaves the household).
+  // Without it the server keeps the household, so "Mark inactive" never clears it.
+  if (form.householdTouched) request.householdId = form.householdId ? Number(form.householdId) : null
   return request
 }

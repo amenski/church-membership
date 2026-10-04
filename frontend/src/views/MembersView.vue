@@ -102,6 +102,7 @@
             <td :class="[TD, 'max-w-0 w-[34%]']">
               <div :class="NAME">{{ member.name }}</div>
               <div v-if="member.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
+              <div v-if="member.householdName" class="text-sm text-muted [overflow-wrap:anywhere]"><i class="bi bi-house mr-1" aria-hidden="true"></i><span class="sr-only">Household: </span>{{ member.householdName }}</div>
             </td>
             <td :class="[TD, 'whitespace-nowrap']">
               <template v-if="member.phone">{{ member.phone }}</template>
@@ -130,6 +131,7 @@
           <div class="min-w-0 flex-1">
             <div :class="NAME">{{ member.name }}</div>
             <div v-if="member.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
+            <div v-if="member.householdName" class="text-sm text-muted [overflow-wrap:anywhere]"><i class="bi bi-house mr-1" aria-hidden="true"></i><span class="sr-only">Household: </span>{{ member.householdName }}</div>
             <div class="mt-1 flex flex-wrap items-center gap-x-4">
               <StatusLabel :tone="statusTone(member.status)">{{ statusLabel(member.status) }}</StatusLabel>
               <span v-if="countsForDues(member)" :class="duesClass(member)">{{ duesText(member) }}</span>
@@ -151,6 +153,18 @@
         <BaseInput id="member-email" v-model="memberForm.email" label="Email" type="email" autocomplete="off" hint="Optional. Two members can share one address and get one message. Someone without an email gets no messages: for a child without one, choose Inactive below so they are not counted as owing dues." :error="formErrors.email" />
         <BaseInput id="member-phone" v-model="memberForm.phone" label="Phone" type="tel" autocomplete="off" hint="Optional. 10 digits or more." :error="formErrors.phone" />
         <BaseInput id="member-joined" v-model="memberForm.joinDate" label="Joined on" type="date" :max="today" :error="formErrors.joinDate" />
+        <BaseSelect
+          id="member-household"
+          label="Household"
+          :model-value="memberForm.householdId"
+          :disabled="householdsFailed"
+          :hint="householdsFailed ? 'The household list did not load. Close this window and try again to change the household.' : 'Optional. Members of one family or address share a household.'"
+          :error="formErrors.householdId"
+          @update:model-value="chooseHousehold"
+        >
+          <option value="">None</option>
+          <option v-for="household in householdOptions" :key="household.id" :value="String(household.id)">{{ household.name }}</option>
+        </BaseSelect>
         <BaseSelect id="member-status" v-model="memberForm.status" label="Status" :hint="statusHint">
           <option v-for="option in statusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
         </BaseSelect>
@@ -205,7 +219,7 @@ const SORT_BUTTON = '-mx-1 inline-flex cursor-pointer items-center gap-1 rounded
 const NAME = 'font-sans font-medium text-ink [overflow-wrap:anywhere]'
 
 const EMPTY_FILTERS = { search: '', status: 'ALL', paymentStatus: 'ALL', joinedFrom: '', joinedTo: '' }
-const EMPTY_ERRORS = { name: '', email: '', phone: '', joinDate: '' }
+const EMPTY_ERRORS = { name: '', email: '', phone: '', joinDate: '', householdId: '' }
 
 export default {
   name: 'MembersView',
@@ -226,7 +240,9 @@ export default {
       filters: { ...EMPTY_FILTERS },
       datesOpen: false,
       sort: { key: null, direction: 'asc' },
-      memberForm: { name: '', email: '', phone: '', joinDate: '', status: 'MEMBER' },
+      memberForm: { name: '', email: '', phone: '', joinDate: '', status: 'MEMBER', householdId: '', householdTouched: false },
+      households: [],
+      householdsFailed: false,
       formOpen: false,
       saving: false,
       formError: '',
@@ -260,6 +276,14 @@ export default {
     statusOptions() {
       return this.editingMember ? STATUS_OPTIONS : NEW_MEMBER_STATUS_OPTIONS
     },
+    // the loaded households, plus the member's current one when the list lacks it (so the select never shows a blank)
+    householdOptions() {
+      const current = this.editingMember
+      if (current?.householdId && !this.households.some(household => household.id === current.householdId)) {
+        return [...this.households, { id: current.householdId, name: current.householdName || 'Current household' }]
+      }
+      return this.households
+    },
     statusHint() {
       return this.editingMember
         ? 'Only a Member owes dues and gets messages. Moving someone back to Member resets the months behind.'
@@ -292,6 +316,9 @@ export default {
     }
   },
   async created() {
+    // /households links to a member's name: show that search
+    const search = this.$route?.query?.search
+    if (typeof search === 'string') this.filters.search = search
     await this.loadMembers()
   },
   methods: {
@@ -379,10 +406,11 @@ export default {
     },
     showAddModal() {
       this.editingMember = null
-      this.memberForm = { name: '', email: '', phone: '', joinDate: localISODate(), status: 'MEMBER' }
+      this.memberForm = { name: '', email: '', phone: '', joinDate: localISODate(), status: 'MEMBER', householdId: '', householdTouched: false }
       this.today = localISODate()
       this.resetFormErrors()
       this.formOpen = true
+      this.loadHouseholds()
     },
     showEditModal(member, focusStatus = false) {
       this.editingMember = member
@@ -391,13 +419,31 @@ export default {
         email: member.email || '',
         phone: member.phone || '',
         joinDate: member.joinDate || '',
-        status: member.status || 'MEMBER'
+        status: member.status || 'MEMBER',
+        householdId: member.householdId ? String(member.householdId) : '',
+        householdTouched: false
       }
       this.today = localISODate()
       this.resetFormErrors()
       this.formOpen = true
+      this.loadHouseholds()
       // the dialog focuses the first field when it opens; "Change status..." wants the select instead
       if (focusStatus) setTimeout(() => document.getElementById('member-status')?.focus(), 0)
+    },
+    // for the Household select; a failure only disables the select, the rest of the form still saves
+    async loadHouseholds() {
+      this.householdsFailed = false
+      try {
+        const data = await api.getHouseholds()
+        this.households = Array.isArray(data) ? data : []
+      } catch (error) {
+        console.error('Error loading households:', error)
+        this.householdsFailed = true
+      }
+    },
+    chooseHousehold(value) {
+      this.memberForm.householdId = value
+      this.memberForm.householdTouched = true
     },
     showDeleteModal(member) {
       this.selectedMember = member
@@ -433,6 +479,8 @@ export default {
       try {
         const request = buildMemberRequest(this.memberForm)
         const editing = !!this.editingMember
+        // a new member with no household sends nothing; only an edit sends null to leave one
+        if (!editing && request.householdId === null) delete request.householdId
         if (editing) {
           await api.updateMember(this.editingMember.id, request)
         } else {
