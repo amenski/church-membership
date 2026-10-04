@@ -37,6 +37,7 @@ Each is a `--color-*` variable in the `@theme` block of `tailwind.css` (`--color
 | `--color-rail-line` | `#1B4B4A` | the rule above the account block (decorative) | n/a |
 | `--color-rail-text` | `#CFE3E0` | rail item text and Sign out | see above |
 | `--color-rail-muted` | `#9FBFBB` | rail icons, the Latin name, the email | 7.36 on rail |
+| `--color-rail-accent` | `#2DB5A8` | a paid square on the rail colour (the sign-in brand strip); a graphic fill, never text | 5.73 on rail |
 | `--color-fern` | `#15803D` | paid fill / success button | 5.02 on paper |
 | `--color-fern-text` | `#166534` | "paid" text | 7.13 on paper, 6.81 on fern tint |
 | `--color-ochre` | `#D97706` | warning fills and bar segments only, never text | 3.19 on paper (graphic only) |
@@ -118,6 +119,12 @@ Utilities read them with `h-(--control-h)`, `min-h-(--row-h)`, `p-(--card-pad)`,
   a scrolling `mist` body, and a pinned `paper` footer with the buttons stacked full width at 48px, the
   primary on top (the footer slot order is Cancel then primary; it is reversed by `flex-col-reverse`).
   From `lg` it is the normal centred dialog. The Record payment dialog is the first user.
+- **Sign-in** (`views/LoginView.vue`, signed out, no shell): from `lg` a split screen, the left half `rail`
+  with the decorative year strip (ten `rail-accent` squares, one hatched, one outlined, `aria-hidden`) and
+  its caption at the top, the name in Amharic (56px, 72px from `xl`), "Felege Selam" and a line about the
+  church office at the bottom; the right half the form card centred, with the "Accounts are set up by the
+  church office." note under it. Below `lg`: a short `rail` header (Amharic name 36px, "Felege Selam"),
+  then the card; inputs and button 48px, inputs 16px. Text on the rail is `rail-text` (10.87) or white.
 - **Page header**: `PageHead` (title, optional lead, action slot) with a rule under it.
 - Tables repeat the same shape: `ui/classes.js` `TABLE` / `TABLE_TH` / `TABLE_TD`, rows at
   `--row-h`, with a stacked card list below `md` for the four list screens.

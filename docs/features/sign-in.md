@@ -59,6 +59,7 @@ The auth endpoints have no `@PreAuthorize`; `/api/auth/**` is public (`infrastru
 
 ### What a signed-out visitor sees
 1. `/` redirects to `/login`; a visitor who is already signed in is sent on to their role home by the guard. There is no Register button: registration is disabled and `/register` is not a route.
+2. The sign-in page is a split screen from `lg`: a deep-teal panel on the left (the year-strip mark, the congregation name in Amharic and "Felege Selam", one line on what the church office keeps here) and the form on the right with "Accounts are set up by the church office." under it. Below `lg` it is a short teal header with the name and the form card under it, with 48px controls. The messages (session expired, wrong password or locked, "Signing in...") sit inside the card as before. Layout details: [login-view.md](login-view.md).
 
 ## Rules
 - Roles rank MEMBER < VOLUNTEER < STAFF < ADMIN on the client (`authStore.js:20-29`); route `requiresRole` is a minimum (`router/index.js:109`).

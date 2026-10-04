@@ -22,7 +22,12 @@ Via `frontend/src/services/api.js` (`baseURL` `/api`, `:6`; `withCredentials`, `
 - `lastActivity`, `sessionTimeout` (1 h, `:18`): inactivity clock
 - `userRole`, `isAdmin`, `isStaff`, `isVolunteer`, `homePath` (`/dashboard` for VOLUNTEER+, else `/my-dues`)
 
-`LoginView.vue`: `form`, `errors` (per-field), `isFormValid` (`:104`). The page is a paper card on the mist background, with the Felege Selam wordmark above it and the note "Accounts are set up by the church office." below; there is no Sign up link. The fields are `BaseInput`, the alert is `AlertBanner`, the button is `BaseButton`, styled with Tailwind utilities; the page root sets `data-density="comfortable"`.
+`LoginView.vue`: `form`, `errors` (per-field), `isFormValid`. The page root sets `data-density="comfortable"` and is a split layout from `lg` (992px):
+- **Left half** (`rail` colour, white text): at the top a decorative year strip (`aria-hidden`: twelve squares, ten solid in `rail-accent`, one hatched, one outlined, reusing `SQUARES.missed` and `SQUARES.due` from `utils/yearStrip.js`) with the line "One square a month. Solid is paid, hatched is behind, an outline is due now."; at the bottom the congregation name in Amharic (56px, 72px from `xl`), "Felege Selam", and "The church office keeps members, dues, payments and messages in one place." Text is `rail-text` or white (10.87 and 14.52 on the rail). Nothing in the panel takes focus, so the focus order is still Email, Password, Sign in.
+- **Right half**: the form card (paper, `max-w-sm`) centred vertically, with "Accounts are set up by the church office." below it. There is no Sign up link.
+- **Below `lg`**: the panel shrinks to a short header (Amharic name 36px over "Felege Selam"; the strip and the two lines are hidden), then the card at the top of the mist ground. The two inputs and the button are 48px high (`max-lg:min-h-12`), inputs 16px so iOS does not zoom.
+
+The fields are `BaseInput`, the alert is `AlertBanner`, the button is `BaseButton`, styled with Tailwind utilities. The shell (rail, top bar) is not rendered while signed out, so the page owns the whole screen.
 
 ## Actions
 Store:
