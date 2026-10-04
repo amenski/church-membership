@@ -7,11 +7,11 @@ Membership-dues API: list, look up, record and export payments. Roles per endpoi
 ## Endpoints
 | Method | Path | Auth | Request | Response |
 |--------|------|------|---------|----------|
-| GET | `/api/payments` | VOLUNTEER+ (`PaymentController.java:56`) | none | `List<Payment>` |
-| GET | `/api/payments/{id}` | VOLUNTEER+ (`PaymentController.java:63`) | path `id` > 0 | `Payment`, or 404 with empty body |
-| GET | `/api/payments/member/{memberId}` | VOLUNTEER+ (`PaymentController.java:72`) | path `memberId` > 0 | `List<Payment>`, or 404 with empty body if the member does not exist |
-| POST | `/api/payments` | STAFF+ (`PaymentController.java:81`) | `RecordPaymentRequest` JSON, `@Valid` | 200 + saved `Payment` |
-| GET | `/api/payments/export` | STAFF+ (`PaymentController.java:86`) | none | `text/csv; charset=UTF-8` attachment `payments.csv`, UTF-8 with a byte order mark |
+| GET | `/api/payments` | VOLUNTEER+ (`PaymentController.java:60`) | none | `List<Payment>` |
+| GET | `/api/payments/{id}` | VOLUNTEER+ (`PaymentController.java:67`) | path `id` > 0 | `Payment`, or 404 with empty body |
+| GET | `/api/payments/member/{memberId}` | VOLUNTEER+ (`PaymentController.java:76`) | path `memberId` > 0 | `List<Payment>`, or 404 with empty body if the member does not exist |
+| POST | `/api/payments` | STAFF+ (`PaymentController.java:85`) | `RecordPaymentRequest` JSON, `@Valid` | 200 + saved `Payment` |
+| GET | `/api/payments/export` | STAFF+ (`PaymentController.java:90`) | none | `text/csv; charset=UTF-8` attachment `payments.csv`, UTF-8 with a byte order mark |
 
 Roles and hierarchy: [../authentication.md](../authentication.md).
 
@@ -27,34 +27,34 @@ Roles and hierarchy: [../authentication.md](../authentication.md).
 Example: `{"memberId": 1, "amount": 50.0, "paymentMethod": "CASH", "period": "2026-10"}`, shared with the frontend test as `src/test/resources/contracts/record-payment-request.json` (`PaymentContractTest`). The back-dated variant with `paymentDate` is `src/test/resources/contracts/record-payment-request-backfill.json` (`{"memberId": 1, "amount": 50.0, "paymentMethod": "CHECK", "period": "2024-03", "paymentDate": "2024-03-10"}`), also posted by `PaymentContractTest`.
 
 ### CSV columns
-`id,memberId,memberName,amount,paymentDate,period,method` (`PaymentController.java:90`). Member name goes through `CsvUtils.escapeCsv` (`PaymentController.java:95`), which prefixes formula-looking text with `'` and quotes fields containing `,` `"` or newlines (`src/main/java/io/github/membertracker/utils/CsvUtils.java:26-39`). The CSV is built in memory and returned as a plain `byte[]` response (`CsvUtils.attachment`) with a UTF-8 byte order mark so Excel reads non-Latin names correctly; `notes` is not exported.
+`id,memberId,memberName,amount,paymentDate,period,method` (`PaymentController.java:94`). Member name goes through `CsvUtils.escapeCsv` (`PaymentController.java:100`), which prefixes formula-looking text with `'` and quotes fields containing `,` `"` or newlines (`src/main/java/io/github/membertracker/utils/CsvUtils.java:26-39`). The CSV is built in memory and returned as a plain `byte[]` response (`CsvUtils.attachment`) with a UTF-8 byte order mark so Excel reads non-Latin names correctly; `notes` is not exported.
 
 ## Collaborators
 | Dependency | Used by | Ref |
 |------------|---------|-----|
 | `GetAllPaymentsUseCase` | list, export | `src/main/java/io/github/membertracker/usecase/GetAllPaymentsUseCase.java:21` (`findAll`) |
 | `GetPaymentByIdUseCase` | get by id | `src/main/java/io/github/membertracker/usecase/GetPaymentByIdUseCase.java:22` |
-| `GetMemberByIdUseCase` | member payments (existence check) | `PaymentController.java:75` |
+| `GetMemberByIdUseCase` | member payments (existence check) | `PaymentController.java:79` |
 | `GetPaymentsByMemberUseCase` | member payments | `src/main/java/io/github/membertracker/usecase/GetPaymentsByMemberUseCase.java:23` |
-| `RecordPaymentUseCase` | POST | `src/main/java/io/github/membertracker/usecase/RecordPaymentUseCase.java:22` |
+| `RecordPaymentUseCase` | POST | `src/main/java/io/github/membertracker/usecase/RecordPaymentUseCase.java:32` |
 | `RecordPaymentRequest` | POST body | see Request body |
 | `CsvUtils` | export | see above |
 
 ### Record flow
-`RecordPaymentUseCase.invoke(memberId, amount, paymentMethod, period, paymentDate, notes)` (`RecordPaymentUseCase.java:22-44`):
+`RecordPaymentUseCase.invoke(memberId, amount, paymentMethod, period, paymentDate, notes)` (`RecordPaymentUseCase.java:32-65`):
 0. Load the member with `memberRepository.findById`, else `MemberDomainException.memberNotFound`; an INACTIVE member is rejected with `MemberDomainException.memberInactive` (`MEMBER_008`); build the `Payment`, period defaulting to `YearMonth.now()` and payment date to today unless `paymentDate` was sent
 1. `validateAmount`, `validatePeriod`, `validatePaymentDate`
-2. Reject if the member already has a payment for that period (`RecordPaymentUseCase.java:33`)
+2. Reject if the member already has a payment for that period (`RecordPaymentUseCase.java:50`)
 3. `markAsProcessed` fills `paymentDate` with today only if still missing
 4. `member.recordPayment` sets `lastPaymentDate` to the later of its current value and the payment date (it never moves backwards); resets `consecutiveMonthsMissed` only when the period is the current month (`src/main/java/io/github/membertracker/domain/model/Member.java:46-57`)
-5. Save member, then payment (`RecordPaymentUseCase.java:42-43`)
+5. Save member, then payment (`RecordPaymentUseCase.java:59-60`)
 
 ### Domain rules
 - Amount > 0 (`Payment.java:45-49`), plus bean validation min 0.01 (`Payment.java:26`)
 - Period: any month up to and including the current one is accepted (history can be entered); a future month is rejected (`PAYMENT_007`); a month more than 10 years back is rejected as a probable typo (`Payment.MAX_YEARS_BACK`, `PAYMENT_002`, message "too far back")
 - Payment date: not in the future (`PAYMENT_008`; also `@PastOrPresent` on the request, which gives a field error)
 - Member must be active, else `MEMBER_008` "Member '<name>' is inactive. Reactivate the member before recording a payment."
-- One payment per member per period (`RecordPaymentUseCase.java:33`)
+- One payment per member per period (`RecordPaymentUseCase.java:50`)
 
 ## Errors
 All RFC 7807 ([../architecture.md](../architecture.md)); handler `src/main/java/io/github/membertracker/infrastructure/handler/GlobalExceptionHandler.java`.
@@ -67,11 +67,12 @@ All RFC 7807 ([../architecture.md](../architecture.md)); handler `src/main/java/
 | 400 | `DomainException`, `GlobalExceptionHandler.java:67` | amount, period (future / more than 10 years back), payment date in the future, inactive member or duplicate-period rule; `code` property: `PAYMENT_001`, `PAYMENT_002`, `PAYMENT_007`, `PAYMENT_008`, `MEMBER_004`, `MEMBER_006` for an unknown `memberId`, `MEMBER_008` for an inactive member (`src/main/java/io/github/membertracker/domain/exception/PaymentDomainException.java:12-18`, `src/main/java/io/github/membertracker/domain/exception/MemberDomainException.java:13`, `:15`) |
 | 403 | `AccessDeniedException`, `GlobalExceptionHandler.java:86` | role too low |
 | 401 | `GlobalExceptionHandler.java:93` | not authenticated |
-| 404 | `ResponseEntity.notFound()` in controller (`PaymentController.java:68`, `:77`) | unknown payment or member; empty body, not a ProblemDetail |
+| 404 | `ResponseEntity.notFound()` in controller (`PaymentController.java:72`, `:81`) | unknown payment or member; empty body, not a ProblemDetail |
 | 500 | `GlobalExceptionHandler.java:101` | anything else, including a failure while building the CSV |
 
 ## Side effects
-- POST updates the member row (`lastPaymentDate`, maybe `consecutiveMonthsMissed`) before saving the payment, in two `save` calls (`RecordPaymentUseCase.java:42-43`).
+- POST updates the member row (`lastPaymentDate`, maybe `consecutiveMonthsMissed`) before saving the payment, in two `save` calls (`RecordPaymentUseCase.java:59-60`).
+- A successful POST adds a `PAYMENT_RECORDED` entry to the activity log (`RecordPaymentUseCase.java:61-64`); the CSV export adds `PAYMENTS_EXPORTED` with the row count (`PaymentController.java:106`). Both are best effort, no emails or phones in them: [activity.md](activity.md).
 - No emails sent.
 
 ## Gotchas

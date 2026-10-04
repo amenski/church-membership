@@ -9,7 +9,7 @@ Roles per [../authentication.md](../authentication.md). All paths are under `/ap
 
 | Method | Path | Auth | Request | Response |
 |--------|------|------|---------|----------|
-| GET | `` (`MemberController.java:70`) | VOLUNTEER+ | - | `List<Member>` |
+| GET | `` (`MemberController.java:74`) | VOLUNTEER+ | - | `List<Member>` |
 | GET | `/{id}` (`:77`) | VOLUNTEER+ | - | `Member` or 404 |
 | GET | `/active` (`:86`) | VOLUNTEER+ | - | `List<Member>` (active = true) |
 | GET | `/inactive` (`:93`) | VOLUNTEER+ | - | `List<Member>` (active = false) |
@@ -30,9 +30,9 @@ CSV: a plain response built in memory (`byte[]`), `Content-Type: text/csv; chars
 | `GetActiveMembersUseCase` -> `findByActive(true)` | `/active` | `usecase/GetActiveMembersUseCase.java:22` |
 | `GetInactiveMembersUseCase` -> `findByActive(false)` | `/inactive` | `usecase/GetInactiveMembersUseCase.java:22` |
 | `GetMembersWithMissedPaymentsUseCase` -> `findActiveWithMissedAtLeastOrderByMissedDesc` | `/overdue/{months}` | `usecase/GetMembersWithMissedPaymentsUseCase.java` |
-| `SaveMemberUseCase` -> `invoke(name, email, phone, joinDate)` | POST | `usecase/SaveMemberUseCase.java:18` |
-| `UpdateMemberUseCase` -> `invoke(id, name, email, phone, joinDate, active)` | PUT | `usecase/UpdateMemberUseCase.java:22` |
-| `DeleteMemberUseCase` -> `deleteById` | DELETE | `usecase/DeleteMemberUseCase.java:18` |
+| `SaveMemberUseCase` -> `invoke(name, email, phone, joinDate)` | POST | `usecase/SaveMemberUseCase.java:21` |
+| `UpdateMemberUseCase` -> `invoke(id, name, email, phone, joinDate, active)` | PUT | `usecase/UpdateMemberUseCase.java:25` |
+| `DeleteMemberUseCase` -> `deleteById` | DELETE | `usecase/DeleteMemberUseCase.java:21` |
 | `CsvUtils.escapeCsv` | name, email, phone cells | `utils/CsvUtils.java:26` |
 | `MemberRequest` | POST, PUT body | `infrastructure/dto/MemberRequest.java:15` |
 | `ExportMembersRequest` | POST `/export` | `infrastructure/dto/ExportMembersRequest.java:9` |
@@ -41,8 +41,8 @@ CSV: a plain response built in memory (`byte[]`), `Content-Type: text/csv; chars
 - Validation on `MemberRequest`: name required, max 100; email required, email format, max 100; phone optional (blank becomes null) and, if present, `^\+?[0-9\s\-\(\)]{10,}$`; `joinDate` not in the future (`MemberRequest.java:17-31`, blank-phone setter `:59`).
 - `ExportMembersRequest.ids`: not empty, max 5000, each positive (`ExportMembersRequest.java:11-13`).
 - Business methods on `Member` (`recordPayment` `:46`, `activate` `:73`, `deactivate` `:81`) are not called by this controller directly. `recordPayment` is used by `RecordPaymentUseCase`, and `activate()`/`deactivate()` by `UpdateMemberUseCase`. The monthly job uses `markMissedFor` (`:64`). The unused `markPaymentMissed`, `isPaymentOverdue`, `isValid` and `getMembershipDurationInMonths` were removed in `chore: remove unused domain methods`: the member JSON no longer carries `valid`, `paymentOverdue` or `membershipDurationInMonths` (the frontend never read them).
-- `SaveMemberUseCase` (POST): rejects an email that exists in any case (400, `MEMBER_007`, "A member with this email already exists"), then builds a new `Member`: `joinDate` defaults to today, `active` is always `true`, counters zero (`SaveMemberUseCase.java:18-26`). `active` in the body is ignored.
-- `UpdateMemberUseCase` (PUT): loads the stored member (empty -> 404), rejects an email that belongs to a different member (the member's own email is fine), copies name, email and phone, copies `joinDate` only when sent, and applies `active` through the domain: false -> true calls `Member.activate()` (resets `consecutiveMonthsMissed` to 0), true -> false calls `deactivate()`, same state or absent changes nothing. It never touches `lastPaymentDate`, `consecutiveMonthsMissed` or `lastMissedCountMonth` (`UpdateMemberUseCase.java:22-47`).
+- `SaveMemberUseCase` (POST): rejects an email that exists in any case (400, `MEMBER_007`, "A member with this email already exists"), then builds a new `Member`: `joinDate` defaults to today, `active` is always `true`, counters zero (`SaveMemberUseCase.java:22-29`). `active` in the body is ignored.
+- `UpdateMemberUseCase` (PUT): loads the stored member (empty -> 404), rejects an email that belongs to a different member (the member's own email is fine), copies name, email and phone, copies `joinDate` only when sent, and applies `active` through the domain: false -> true calls `Member.activate()` (resets `consecutiveMonthsMissed` to 0), true -> false calls `deactivate()`, same state or absent changes nothing. It never touches `lastPaymentDate`, `consecutiveMonthsMissed` or `lastMissedCountMonth` (`UpdateMemberUseCase.java:25-61`).
 - `CsvUtils.escapeCsv`: null -> empty; a leading `= + - @ TAB CR` gets a `'` prefix unless the value looks like a phone number or plain number (`CsvUtils.java:31-34`); values with `,` `"` or newline are quoted (`:35-37`).
 
 ## Errors
@@ -57,18 +57,19 @@ All are RFC 7807 `ProblemDetail` ([../architecture.md](../architecture.md)), exc
 | 400 | Malformed JSON | `GlobalExceptionHandler.java:43` (Spring base class) |
 | 401 | Not authenticated | `GlobalExceptionHandler.java:102` |
 | 403 | Role too low (`@PreAuthorize`) | `GlobalExceptionHandler.java:95` |
-| 404 | Unknown id on GET `/{id}`, PUT, DELETE | `MemberController.java:83`, `:114`, `:125` |
+| 404 | Unknown id on GET `/{id}`, PUT, DELETE | `MemberController.java:87`, `:118`, `:129` |
 | 500 | Anything else, message "An unexpected error occurred" | `GlobalExceptionHandler.java:110` |
 
 ## Side effects
 - DELETE cascades to the member's payments and delivery history (`src/main/resources/db/sql/001.schema-creation.sql:31`, `:61`).
+- Create, edit (plus activate or deactivate when the status changed), delete and both CSV exports add entries to the activity log: `SaveMemberUseCase.java:30`, `UpdateMemberUseCase.java:51`, `:55`, `DeleteMemberUseCase.java:25`, `MemberController.java:156`. Names only, written best effort after the action: [activity.md](activity.md).
 - No emails, jobs or caches.
 
 ## Gotchas
-- Hard delete erases payments and delivery history (`MemberController.java:121-123`) (audit C9).
+- Hard delete erases payments and delivery history (`MemberController.java:125-127`) (audit C9).
 - Email is unique in the database (`001.schema-creation.sql:19`) and one email per member is a model limit (audit C10). The use cases check duplicates first; the unique index is the backstop (409).
-- 404 responses are empty bodies, not `ProblemDetail` (`MemberController.java:83`, `:114`, `:125`).
-- POST ignores `active: false`: new members are always active (`SaveMemberUseCase.java:22`). PUT applies `active` (reactivating resets the missed-months counter).
+- 404 responses are empty bodies, not `ProblemDetail` (`MemberController.java:87`, `:118`, `:129`).
+- POST ignores `active: false`: new members are always active (`SaveMemberUseCase.java:25`). PUT applies `active` (reactivating resets the missed-months counter).
 - The email lookup is `findByEmailIgnoreCase`/`existsByEmailIgnoreCase`; check-then-save is not atomic, hence the 409 safety net.
-- POST `/export` loads all members and filters in memory; ids that do not exist are silently skipped (`MemberController.java:143-147`).
+- POST `/export` loads all members and filters in memory; ids that do not exist are silently skipped (`MemberController.java:146-151`).
 - The CSV is fully built before the response starts, so a failure gives a normal 500 instead of a half-written file.

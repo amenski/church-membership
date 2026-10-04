@@ -44,6 +44,7 @@ class MemberContractTest {
     private MockMvc mockMvc;
 
     @MockitoBean private LoadUserByUsernameUseCase loadUserByUsernameUseCase;
+    @MockitoBean private RecordActivityUseCase recordActivityUseCase;
     @MockitoBean private GetAllMembersUseCase getAllMembersUseCase;
     @MockitoBean private GetMemberByIdUseCase getMemberByIdUseCase;
     @MockitoBean private GetActiveMembersUseCase getActiveMembersUseCase;

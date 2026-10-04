@@ -8,13 +8,13 @@ Roles from `@PreAuthorize` and route meta; hierarchy ADMIN > STAFF > VOLUNTEER >
 | Task | Minimum role | Screen / endpoint |
 |------|--------------|-------------------|
 | Open the Members screen | VOLUNTEER | `/members` (`frontend/src/router/index.js:18-23`) |
-| Browse, search, filter, sort | VOLUNTEER | `GET /api/members` (`src/main/java/io/github/membertracker/infrastructure/MemberController.java:66-71`) |
-| Export all members to CSV | STAFF | "Export CSV" button, `GET /api/members/export` (`MemberController.java:132-137`) |
-| Export filtered members to CSV | STAFF | same button, `POST /api/members/export` (`MemberController.java:139-148`) |
-| Add a member | STAFF | "Add member" button, `POST /api/members` (`MemberController.java:96-101`) |
-| Edit a member | STAFF | "Edit" in the row menu, `PUT /api/members/{id}` (`MemberController.java:103-111`) |
+| Browse, search, filter, sort | VOLUNTEER | `GET /api/members` (`src/main/java/io/github/membertracker/infrastructure/MemberController.java:70-75`) |
+| Export all members to CSV | STAFF | "Export CSV" button, `GET /api/members/export` (`MemberController.java:136-141`) |
+| Export filtered members to CSV | STAFF | same button, `POST /api/members/export` (`MemberController.java:143-159`) |
+| Add a member | STAFF | "Add member" button, `POST /api/members` (`MemberController.java:100-105`) |
+| Edit a member | STAFF | "Edit" in the row menu, `PUT /api/members/{id}` (`MemberController.java:107-115`) |
 | Deactivate / reactivate | STAFF | "Deactivate" or "Reactivate" in the row menu, same `PUT` (`frontend/src/views/MembersView.vue:426-436`) |
-| Delete a member | ADMIN | "Delete" in the row menu, `DELETE /api/members/{id}` (`MemberController.java:113-123`) |
+| Delete a member | ADMIN | "Delete" in the row menu, `DELETE /api/members/{id}` (`MemberController.java:117-127`) |
 
 Role view of the screen (the buttons are hidden, not disabled, for roles that cannot use them):
 - VOLUNTEER sees the whole table, the search and the filters. There is no "Add member" or "Export CSV" button and no actions column (`MembersView.vue:4`, `:116`).
@@ -45,25 +45,25 @@ Role view of the screen (the buttons are hidden, not disabled, for roles that ca
 ### Add a member
 1. Click "Add member" and fill name and email (required), optionally phone, and "Joined on" (default today, not in the future); the dialog has no "Active" switch because a new member is always active (`MembersView.vue:143-168`).
 2. "Add member" in the dialog sends `{name, email, phone?, joinDate?, active}` to `POST /api/members` (`MembersView.vue:387-408`, `frontend/src/utils/memberPayload.js`). Name and email are checked on the screen first.
-3. The server creates the member as active with the counters at zero; it uses the join date sent, or today (`src/main/java/io/github/membertracker/usecase/SaveMemberUseCase.java:18-27`, `src/main/java/io/github/membertracker/domain/model/Member.java:41-43`). It ignores `active` on create (the request still carries `active: true`).
+3. The server creates the member as active with the counters at zero; it uses the join date sent, or today (`src/main/java/io/github/membertracker/usecase/SaveMemberUseCase.java:21-33`, `src/main/java/io/github/membertracker/domain/model/Member.java:41-43`). It ignores `active` on create (the request still carries `active: true`).
 4. Success: the dialog closes, the row appears and a toast "Member added" names the member. A duplicate email (any letter case) returns 400 "A member with this email already exists" and shows under the Email field.
 5. Other failures (validation, 403): field errors from the server show under their fields; anything else shows in a banner at the top of the dialog plus an error toast "Could not save member" (no toast for 403); the dialog stays open (`MembersView.vue:369-386`).
 
 ### Edit a member
 1. Choose "Edit" in the row menu; the dialog is pre-filled from the row (`MembersView.vue:342-354`) (STAFF+).
-2. "Save changes" sends the form to `PUT /api/members/{id}` as a `MemberRequest` (`MemberController.java:103-111`). The server loads the stored member and applies name, email, phone, join date (when sent) and `active`; the missed-months counter, last payment date and monthly-job marker are never taken from the client (`src/main/java/io/github/membertracker/usecase/UpdateMemberUseCase.java:22-46`).
-3. Unknown id returns an empty 404 (`MemberController.java:110`). An email that belongs to another member returns 400 "A member with this email already exists". Otherwise the dialog closes, the table reloads and a toast "Member saved" appears.
+2. "Save changes" sends the form to `PUT /api/members/{id}` as a `MemberRequest` (`MemberController.java:107-115`). The server loads the stored member and applies name, email, phone, join date (when sent) and `active`; the missed-months counter, last payment date and monthly-job marker are never taken from the client (`src/main/java/io/github/membertracker/usecase/UpdateMemberUseCase.java:25-60`).
+3. Unknown id returns an empty 404 (`MemberController.java:114`). An email that belongs to another member returns 400 "A member with this email already exists". Otherwise the dialog closes, the table reloads and a toast "Member saved" appears.
 - The "Active" switch is shown only when editing a member (`v-if="editingMember"`, `MembersView.vue:150`), and is honoured there; changing it goes through `Member.activate()` / `deactivate()`. Its help text says inactive members do not count as behind and that turning it back on resets the months behind.
 
 ### Deactivate or reactivate
 1. Choose "Deactivate" or "Reactivate" in the row menu (STAFF+). There is no dialog: the change is easy to undo, so it acts at once.
 2. The screen sends the member's name, email, phone, join date and `active` flipped as a `MemberRequest` (`MembersView.vue:426-436`). Toast "Member deactivated" or "Member reactivated"; on failure "Could not deactivate member" or "Could not reactivate member".
-- Reactivating goes through `Member.activate()`, which resets the overdue counter to 0 (`Member.java:75-81`, called from `UpdateMemberUseCase.java:37-43`). Deactivating calls `deactivate()`; sending the state the member already has changes nothing.
+- Reactivating goes through `Member.activate()`, which resets the overdue counter to 0 (`Member.java:75-81`, called from `UpdateMemberUseCase.java:41-49`). Deactivating calls `deactivate()`; sending the state the member already has changes nothing.
 - Automatic deactivation after 3 missed months does not exist (see Rules).
 
 ### Delete a member
 1. Choose "Delete" in the row menu (ADMIN only). A dialog "Delete <name>?" says "This permanently deletes the member together with their payments and message history. This cannot be undone." (`MembersView.vue:171-180`).
-2. "Delete member" sends `DELETE /api/members/{id}` (`MembersView.vue:409-425`); unknown id returns 404 (`MemberController.java:121`).
+2. "Delete member" sends `DELETE /api/members/{id}` (`MembersView.vue:409-425`); unknown id returns 404 (`MemberController.java:125`).
 3. Permanently lost with the member: every payment and every message delivery record (`src/main/resources/db/sql/001.schema-creation.sql:31`, `:61`); the dialog says so.
 4. Success: a toast "Member deleted". Failure (403 for a non-admin): a banner in the dialog and the toast "Could not delete member" (not for 403), and the member stays.
 
@@ -71,16 +71,16 @@ Role view of the screen (the buttons are hidden, not disabled, for roles that ca
 1. Click "Export CSV" (STAFF+). If the filters leave zero rows, a "Nothing to export" toast shows and no request is made (`MembersView.vue:445-454`).
 2. With no filter (or a filter matching everyone) the screen calls `GET /api/members/export`; with a narrowed list it calls `POST /api/members/export` with the visible ids (`memberFilters.js:62-67`, `frontend/src/services/api.js:358-363`).
 3. The file downloads as `members_<date>.csv`, or `members_filtered_<date>.csv` when any filter is set (`MembersView.vue:459-460`).
-4. Columns: id, name, email, phone, joinDate, active, consecutiveMonthsMissed (`MemberController.java:150-163`). The file is UTF-8 with a byte order mark so Excel reads non-Latin names correctly. Cells starting with a formula character are neutralised ([member-controller.md](member-controller.md)).
+4. Columns: id, name, email, phone, joinDate, active, consecutiveMonthsMissed (`MemberController.java:161-174`). The file is UTF-8 with a byte order mark so Excel reads non-Latin names correctly. Cells starting with a formula character are neutralised ([member-controller.md](member-controller.md)).
 5. Failure: error toast "Export failed" (`MembersView.vue:461-469`).
 
 ## Rules
 - Request shape `MemberRequest` (`src/main/java/io/github/membertracker/infrastructure/dto/MemberRequest.java:15`): name required (max 100), email required, well-formed (max 100), phone optional (blank becomes null) but if present must match `^\+?[0-9\s\-\(\)]{10,}$`, join date optional and not in the future, `active` optional. Failures return 400 with a field list. `id`, counters, last payment date and the monthly-job marker are not part of it and are ignored if sent.
 - Email is unique, compared ignoring case (`001.schema-creation.sql:19`). A duplicate is a 400 from the use case; if two requests race past that check the database unique index answers 409 "The request conflicts with existing data" (`src/main/java/io/github/membertracker/infrastructure/handler/GlobalExceptionHandler.java:85-90`).
-- New members: join date defaults to today, `active` is forced true, counters zero (`SaveMemberUseCase.java:18-27`).
-- Export ids: not empty, at most 5000, each positive (`src/main/java/io/github/membertracker/infrastructure/dto/ExportMembersRequest.java:12-13`); unknown ids are skipped (`MemberController.java:143-146`).
+- New members: join date defaults to today, `active` is forced true, counters zero (`SaveMemberUseCase.java:21-33`).
+- Export ids: not empty, at most 5000, each positive (`src/main/java/io/github/membertracker/infrastructure/dto/ExportMembersRequest.java:12-13`); unknown ids are skipped (`MemberController.java:147-150`).
 - `consecutiveMonthsMissed`, `lastPaymentDate` and `lastMissedCountMonth` are system-managed (never client-settable since audit C8):
-  - A recorded payment sets `lastPaymentDate` to the later of the two dates, and resets the counter to 0 only if the payment's period is the current month (`Member.java:46-59`, called from `src/main/java/io/github/membertracker/usecase/RecordPaymentUseCase.java:52`).
+  - A recorded payment sets `lastPaymentDate` to the later of the two dates, and resets the counter to 0 only if the payment's period is the current month (`Member.java:46-59`, called from `src/main/java/io/github/membertracker/usecase/RecordPaymentUseCase.java:57`).
   - The monthly scheduler (1st, 06:00) adds 1 to the counter of active members with no payment for the previous month, once per member per month, through `Member.markMissedFor` and `lastMissedCountMonth` (`src/main/java/io/github/membertracker/usecase/UpdateMissingPaymentCountersUseCase.java:34-49`, `Member.java:66-73`); see [payment-reminder-scheduler.md](payment-reminder-scheduler.md).
 - "Behind" and "paid up" apply to active members only. An inactive member's counter is no longer raised or shown: the screens show a dash, the Dues filter and sort skip them, and the Overview, the overdue endpoints and the "behind on dues" messages leave them out.
 - Automatic deactivation: there is none. A membership policy (`shouldDeactivate`: 3 or more missed months) once existed but was only reachable through an unused use case; both were removed in `chore: remove unused use cases, the membership policy and PhoneNumber` and can be recovered from git history. Decide whether to build it for real.

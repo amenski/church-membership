@@ -1,5 +1,6 @@
 package io.github.membertracker.usecase;
 
+import io.github.membertracker.domain.enumeration.ActivityType;
 import io.github.membertracker.domain.exception.MemberDomainException;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.repository.MemberRepository;
@@ -14,9 +15,11 @@ import java.util.Optional;
 public class UpdateMemberUseCase {
 
     private final MemberRepository memberRepository;
+    private final RecordActivityUseCase recordActivity;
 
-    public UpdateMemberUseCase(MemberRepository memberRepository) {
+    public UpdateMemberUseCase(MemberRepository memberRepository, RecordActivityUseCase recordActivity) {
         this.memberRepository = memberRepository;
+        this.recordActivity = recordActivity;
     }
 
     public Optional<Member> invoke(Long id, String name, String email, String phone,
@@ -28,6 +31,7 @@ public class UpdateMemberUseCase {
                         throw MemberDomainException.emailAlreadyExists(email);
                     });
 
+            ActivityType statusChange = null;
             member.setName(name);
             member.setEmail(email);
             member.setPhone(phone);
@@ -37,11 +41,21 @@ public class UpdateMemberUseCase {
             if (active != null) {
                 if (active && !member.isActive()) {
                     member.activate();
+                    statusChange = ActivityType.MEMBER_ACTIVATED;
                 } else if (!active && member.isActive()) {
                     member.deactivate();
+                    statusChange = ActivityType.MEMBER_DEACTIVATED;
                 }
             }
-            return memberRepository.save(member);
+            Member saved = memberRepository.save(member);
+            recordActivity.record(ActivityType.MEMBER_UPDATED, "Member " + saved.getName() + " was updated",
+                    "MEMBER", saved.getId());
+            if (statusChange != null) {
+                String what = statusChange == ActivityType.MEMBER_ACTIVATED ? "activated" : "deactivated";
+                recordActivity.record(statusChange, "Member " + saved.getName() + " was " + what,
+                        "MEMBER", saved.getId());
+            }
+            return saved;
         });
     }
 }

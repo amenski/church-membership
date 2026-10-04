@@ -17,20 +17,21 @@ Clean architecture: dependencies point inwards, and the domain layer depends on 
 ```
 src/main/java/io/github/membertracker/
 ├── domain/
-│   ├── model/          Member, Payment, User, Communication, MessageDelivery
+│   ├── model/          Member, Payment, User, Communication, MessageDelivery, ActivityLogEntry
 │   ├── valueobject/    Email
-│   ├── enumeration/    PaymentMethod, UserRole, CommunicationType
+│   ├── enumeration/    PaymentMethod, UserRole, CommunicationType, ActivityType
 │   ├── exception/      DomainException + Member/Payment/User subclasses
-│   └── repository/     Repository interfaces
-├── usecase/            One class per operation (27), e.g. RecordPaymentUseCase
+│   ├── repository/     Repository interfaces (incl. ActivityLogRepository)
+│   └── service/        Ports: CurrentActor (who is acting, implemented in infrastructure/security)
+├── usecase/            One class per operation (31), e.g. RecordPaymentUseCase; RecordActivityUseCase writes the audit trail
 ├── infrastructure/
-│   ├── *Controller     REST controllers
+│   ├── *Controller     REST controllers (incl. ActivityLogController)
 │   ├── config/         SecurityConfig, WebMvcConfig, properties classes
 │   ├── dto/            Request and response DTOs
 │   ├── filter/         JwtAuthenticationFilter
 │   ├── handler/        GlobalExceptionHandler
 │   ├── persistence/    JPA entities and repository implementations
-│   ├── security/
+│   ├── security/       LoginAttemptLimiter, SecurityContextCurrentActor
 │   └── service/        EmailService
 ├── scheduler/          PaymentReminderScheduler (monthly, enabled by SchedulingConfig)
 └── utils/              CookieUtils, JwtUtils
@@ -77,7 +78,7 @@ public Payment invoke(Long memberId, Double amount, PaymentMethod paymentMethod,
 
 - **Domain models:** plain unit tests, no Spring.
 - **Use cases:** integration tests covering the whole workflow.
-- **Controllers:** MockMvc tests for every role against every endpoint group (`RoleAuthorizationTest`, 125 cases).
+- **Controllers:** MockMvc tests for every role against every endpoint group (`RoleAuthorizationTest`, 130 cases).
 
 Current coverage: `RoleAuthorizationTest` and `ApplicationTests`. `ApplicationTests` is disabled.
 
@@ -130,4 +131,5 @@ frontend/src/
 | 2026-10 | CSRF protection is on: token cookie + X-XSRF-TOKEN header, no exempt endpoints | Auth uses cookies, which browsers send automatically | In use |
 | 2026-10 | YearMonth is stored as YYYY-MM text through an attribute converter | The column is VARCHAR(7); without a converter Hibernate serialised the value as binary and failed on MySQL | In use |
 | 2026-10 | CSV exports are built in memory and returned as a plain response, UTF-8 with BOM | Streaming gained nothing at this size and hung behind the dev proxy; the BOM makes Excel read Amharic names | In use |
+| 2026-10 | Audit entries are written best-effort inside the use cases through a CurrentActor port | A failing audit write must not block the action; the domain stays free of Spring Security | In use |
 | 2026-10 | Roles ADMIN > STAFF > VOLUNTEER > MEMBER with `RoleHierarchy` | Replaces ADMIN/MANAGER/USER and the planned TREASURER/VIEWER | Done (3cf5d84; frontend routes in this change) |

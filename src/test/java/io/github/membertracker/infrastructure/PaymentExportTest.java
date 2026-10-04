@@ -1,5 +1,6 @@
 package io.github.membertracker.infrastructure;
 
+import io.github.membertracker.domain.enumeration.ActivityType;
 import io.github.membertracker.domain.enumeration.PaymentMethod;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.model.Payment;
@@ -19,6 +20,7 @@ import java.time.YearMonth;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -31,6 +33,7 @@ class PaymentExportTest {
     private MockMvc mockMvc;
 
     @MockitoBean private LoadUserByUsernameUseCase loadUserByUsernameUseCase;
+    @MockitoBean private RecordActivityUseCase recordActivityUseCase;
     @MockitoBean private GetMemberByIdUseCase getMemberByIdUseCase;
     @MockitoBean private GetAllPaymentsUseCase getAllPaymentsUseCase;
     @MockitoBean private GetPaymentByIdUseCase getPaymentByIdUseCase;
@@ -63,5 +66,6 @@ class PaymentExportTest {
         assertThat(lines[0]).isEqualTo("id,memberId,memberName,amount,paymentDate,period,method");
         assertThat(lines[1]).startsWith("1,7,ፈለገ ሰላም,50.00,").endsWith(",2026-10,CASH");
         assertThat(lines[2]).startsWith("2,8,'=SUM(A1),25.50,").endsWith(",2023-01,BANK_TRANSFER");
+        verify(recordActivityUseCase).record(ActivityType.PAYMENTS_EXPORTED, "Exported 2 payments", "PAYMENT", null);
     }
 }

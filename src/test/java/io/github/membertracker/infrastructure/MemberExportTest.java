@@ -1,5 +1,6 @@
 package io.github.membertracker.infrastructure;
 
+import io.github.membertracker.domain.enumeration.ActivityType;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.infrastructure.config.AuthProperties;
 import io.github.membertracker.infrastructure.config.SecurityConfig;
@@ -21,6 +22,7 @@ import java.util.List;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -35,6 +37,7 @@ class MemberExportTest {
     private MockMvc mockMvc;
 
     @MockitoBean private LoadUserByUsernameUseCase loadUserByUsernameUseCase;
+    @MockitoBean private RecordActivityUseCase recordActivityUseCase;
     @MockitoBean private GetAllMembersUseCase getAllMembersUseCase;
     @MockitoBean private GetMemberByIdUseCase getMemberByIdUseCase;
     @MockitoBean private GetActiveMembersUseCase getActiveMembersUseCase;
@@ -83,6 +86,7 @@ class MemberExportTest {
         assertThat(lines[1]).startsWith("1,Abel,");
         assertThat(lines[2]).startsWith("2,\"'=HYPERLINK(\"\"x\"\")\",");
         assertThat(csv).doesNotContain("Selam");
+        verify(recordActivityUseCase).record(ActivityType.MEMBERS_EXPORTED, "Exported 2 members", "MEMBER", null);
     }
 
     @Test

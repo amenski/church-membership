@@ -111,7 +111,7 @@ class SendPaymentRemindersUseCaseTest {
         when(memberRepository.findByConsecutiveMonthsMissedGreaterThanEqual(3)).thenReturn(List.of(alice));
         SendPaymentRemindersUseCase endToEnd = new SendPaymentRemindersUseCase(memberRepository,
                 new SendCommunicationToMembersUseCase(communicationRepository,
-                        mock(MessageDeliveryRepository.class), emailService));
+                        mock(MessageDeliveryRepository.class), emailService, mock(RecordActivityUseCase.class)));
 
         endToEnd.invoke(3);
 

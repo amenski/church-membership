@@ -9,7 +9,7 @@ All under `/api/auth`. No `@PreAuthorize`; `/api/auth/**` is `permitAll` (`infra
 
 | Method | Path | Auth | Request | Response |
 |--------|------|------|---------|----------|
-| POST | `/login` (`AuthController.java:52`) | public | `LoginRequest {email, password}` (`:172`) | 200 `{user: {email, role}}` + 2 `Set-Cookie`; role is the first authority minus `ROLE_` |
+| POST | `/login` (`AuthController.java:57`) | public | `LoginRequest {email, password}` (`:179`) | 200 `{user: {email, role}}` + 2 `Set-Cookie`; role is the first authority minus `ROLE_` |
 | POST | `/register` (`:92`) | public | `RegisterRequest` (`:193`), ignored | always 403 |
 | POST | `/refresh` (`:99`) | public (needs `sid_refresh` cookie) | none | 204 + 2 new `Set-Cookie` |
 | POST | `/logout` (`:146`) | public | none | 204 + 2 clearing `Set-Cookie` (Max-Age 0) |
@@ -22,7 +22,7 @@ All under `/api/auth`. No `@PreAuthorize`; `/api/auth/**` is `permitAll` (`infra
 
 ## Collaborators
 - `usecase/AuthenticateUserUseCase.java:19`: lookup by email; for an unknown email a dummy BCrypt check (`:24`, hash memoised in `dummyHash()` `:52`) then `invalidCredentials()`; clears an expired lock, rejects a locked account with the generic error (dummy BCrypt, password not checked), BCrypt match (a failure goes to `recordFailedLogin`), then checks enabled and credentials non-expired; `resetFailedLogins` on success. No full-user save.
-- `usecase/LoadUserByUsernameUseCase.java`: used by `refresh` (`AuthController.java:120`).
+- `usecase/LoadUserByUsernameUseCase.java`: used by `refresh` (`AuthController.java:127`).
 - `utils/CookieUtils.java:16,28,40,47`: builds access, refresh and clearing cookies from `AuthProperties`.
 - `utils/JwtUtils.java:56,62,98`: HS256 token generation and typed validation. Tokens carry subject, `iat`, `exp`, a `typ` claim (`access` / `refresh`) and `auth_time` (original sign-in, epoch seconds).
 - `infrastructure/config/AuthProperties.java:8`: `auth.*` (TTLs `:11-12`, cookie names/flags `:15-21`, secret `:13`).
@@ -45,6 +45,7 @@ Login failures are 400, not 401, and refresh failures are 400. Unknown email, wr
 - Login with a wrong password increments the failed-attempt counter with one SQL update; the fifth failure locks the account for 15 minutes (`users.locked_until`).
 - Successful login resets the counter and clears any lock with one SQL update; the user row is never saved whole.
 - The in-memory limiter records failures per IP and per email.
+- A successful login adds a `SIGN_IN` entry to the activity log with the email as actor, passed explicitly because the security context is still empty (`AuthController.java:68`). Failed logins are not recorded: [activity.md](activity.md).
 - No emails, no jobs.
 
 ## Gotchas

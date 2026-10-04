@@ -1,5 +1,6 @@
 package io.github.membertracker.infrastructure;
 
+import io.github.membertracker.domain.enumeration.ActivityType;
 import io.github.membertracker.domain.model.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -12,6 +13,7 @@ import io.github.membertracker.usecase.ChangePasswordUseCase;
 import io.github.membertracker.utils.CookieUtils;
 import io.github.membertracker.utils.JwtUtils;
 import io.github.membertracker.usecase.GetCurrentUserUseCase;
+import io.github.membertracker.usecase.RecordActivityUseCase;
 import io.github.membertracker.usecase.UpdateUserProfileUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
@@ -37,16 +39,19 @@ public class UserController {
     private final ChangePasswordUseCase changePasswordUseCase;
     private final CookieUtils cookieUtils;
     private final AuthProperties authProperties;
+    private final RecordActivityUseCase recordActivityUseCase;
 
     public UserController(GetCurrentUserUseCase getCurrentUserUseCase,
                          UpdateUserProfileUseCase updateUserProfileUseCase,
                          ChangePasswordUseCase changePasswordUseCase,
-                         CookieUtils cookieUtils, AuthProperties authProperties) {
+                         CookieUtils cookieUtils, AuthProperties authProperties,
+                         RecordActivityUseCase recordActivityUseCase) {
         this.getCurrentUserUseCase = getCurrentUserUseCase;
         this.updateUserProfileUseCase = updateUserProfileUseCase;
         this.changePasswordUseCase = changePasswordUseCase;
         this.cookieUtils = cookieUtils;
         this.authProperties = authProperties;
+        this.recordActivityUseCase = recordActivityUseCase;
     }
 
     @GetMapping("/me")
@@ -113,6 +118,8 @@ public class UserController {
             request.getCurrentPassword(),
             request.getNewPassword()
         );
+
+        recordActivityUseCase.record(ActivityType.PASSWORD_CHANGED, "Password was changed", "USER", userDetails.getId());
 
         // Tokens issued before the change are now rejected. Give this browser fresh ones so it stays signed in.
         long authTime = Instant.now().getEpochSecond();

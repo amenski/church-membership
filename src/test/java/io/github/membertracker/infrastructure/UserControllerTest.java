@@ -1,5 +1,6 @@
 package io.github.membertracker.infrastructure;
 
+import io.github.membertracker.domain.enumeration.ActivityType;
 import io.github.membertracker.domain.enumeration.UserRole;
 import io.github.membertracker.domain.exception.UserDomainException;
 import io.github.membertracker.domain.model.User;
@@ -12,6 +13,7 @@ import io.github.membertracker.utils.CookieUtils;
 import io.github.membertracker.usecase.GetCurrentUserUseCase;
 import io.github.membertracker.usecase.LoadUserByUsernameUseCase;
 import io.github.membertracker.usecase.UpdateUserProfileUseCase;
+import io.github.membertracker.usecase.RecordActivityUseCase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +29,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -47,6 +50,7 @@ class UserControllerTest {
     @Autowired private MockMvc mockMvc;
 
     @MockitoBean private LoadUserByUsernameUseCase loadUserByUsernameUseCase;
+    @MockitoBean private RecordActivityUseCase recordActivityUseCase;
     @MockitoBean private GetCurrentUserUseCase getCurrentUserUseCase;
     @MockitoBean private UpdateUserProfileUseCase updateUserProfileUseCase;
     @MockitoBean private ChangePasswordUseCase changePasswordUseCase;
@@ -111,6 +115,18 @@ class UserControllerTest {
         mockMvc.perform(changePassword(body("Current-pass1", "Newpass1-x")))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.message").value("Password changed successfully"));
+    }
+
+    @Test
+    void successIsRecordedAndAFailedChangeIsNot() throws Exception {
+        when(changePasswordUseCase.execute(eq(7L), eq("Wrong-pass1"), any()))
+            .thenThrow(UserDomainException.invalidPassword());
+
+        mockMvc.perform(changePassword(body("Wrong-pass1", "Newpass1-x")));
+        verifyNoInteractions(recordActivityUseCase);
+
+        mockMvc.perform(changePassword(body("Current-pass1", "Newpass1-x"))).andExpect(status().isOk());
+        verify(recordActivityUseCase).record(ActivityType.PASSWORD_CHANGED, "Password was changed", "USER", 7L);
     }
 
     @Test

@@ -25,7 +25,7 @@ The signed-in user's own profile and password, for any authenticated role. Base 
 | | `newPassword` | not blank, 8-72 characters (`:11-12`); the full rule is checked in the domain |
 
 ## Actions
-- `getCurrentUser` -> reads email from principal, calls `GetCurrentUserUseCase.execute(email)` (`UserController.java:42-55`); no try/catch.
+- `getCurrentUser` -> reads email from principal, calls `GetCurrentUserUseCase.execute(email)` (`UserController.java:45-60`); no try/catch.
 - `updateProfile` -> calls `UpdateUserProfileUseCase.execute(userId, firstName, lastName, phone, bio)`, maps the saved `User` to the DTO (`:57-87`); no try/catch.
 - `changePassword` -> calls `ChangePasswordUseCase.execute(userId, current, new)`; a wrong current password counts toward the same 5-failure, 15-minute lock as a wrong sign-in password (and a locked account is refused without a check); the new password is stored with a single-row update. Returns 200 `{"message": "Password changed successfully"}`; no try/catch, so domain exceptions reach `GlobalExceptionHandler` (`:89-108`).
 
@@ -48,6 +48,7 @@ The signed-in user's own profile and password, for any authenticated role. Base 
 ## Side effects
 - `updateProfile` writes `phone`/`bio`/names and `updatedAt`.
 - `changePassword` writes the password hash, `lastPasswordChange`, `updatedAt`, and resets `failedLoginAttempts` to 0 (`domain/model/User.java:233-238`). Every session that started before the change is rejected (token `iat` older than `lastPasswordChange`); the controller sets fresh `sid` and `sid_refresh` cookies on the success response so the caller stays signed in.
+- `changePassword` also adds a `PASSWORD_CHANGED` entry to the activity log after the change succeeded (`UserController.java:122`): [activity.md](activity.md).
 
 ## Gotchas
 - There are no catch-all blocks any more: every failure reaches `GlobalExceptionHandler`. A user row that is gone is a 400 ProblemDetail (domain exceptions all map to 400), not an empty 500; a session for a user deleted after sign-in is already a 401 at the filter.

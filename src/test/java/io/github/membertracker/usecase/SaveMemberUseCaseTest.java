@@ -1,5 +1,6 @@
 package io.github.membertracker.usecase;
 
+import io.github.membertracker.domain.enumeration.ActivityType;
 import io.github.membertracker.domain.exception.MemberDomainException;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.repository.MemberRepository;
@@ -15,18 +16,25 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class SaveMemberUseCaseTest {
 
     private MemberRepository memberRepository;
+    private RecordActivityUseCase recordActivity;
     private SaveMemberUseCase useCase;
 
     @BeforeEach
     void setUp() {
         memberRepository = mock(MemberRepository.class);
-        useCase = new SaveMemberUseCase(memberRepository);
-        when(memberRepository.save(any(Member.class))).thenAnswer(i -> i.getArgument(0));
+        recordActivity = mock(RecordActivityUseCase.class);
+        useCase = new SaveMemberUseCase(memberRepository, recordActivity);
+        when(memberRepository.save(any(Member.class))).thenAnswer(i -> {
+            Member m = i.getArgument(0);
+            m.setId(9L);
+            return m;
+        });
     }
 
     private Member saved() {
@@ -52,6 +60,13 @@ class SaveMemberUseCaseTest {
     }
 
     @Test
+    void creatingRecordsTheNameButNeitherEmailNorPhone() {
+        useCase.invoke("Dan Smith", "dan@example.com", "+390612345678", null);
+
+        verify(recordActivity).record(ActivityType.MEMBER_CREATED, "Member Dan Smith was added", "MEMBER", 9L);
+    }
+
+    @Test
     void newMemberKeepsExplicitJoinDate() {
         LocalDate earlier = LocalDate.now().minusMonths(2);
 
@@ -70,5 +85,6 @@ class SaveMemberUseCaseTest {
             .hasMessage("A member with this email already exists");
 
         verify(memberRepository, never()).save(any());
+        verifyNoInteractions(recordActivity);
     }
 }

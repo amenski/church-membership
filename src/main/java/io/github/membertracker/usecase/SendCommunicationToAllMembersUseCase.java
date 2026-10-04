@@ -1,5 +1,6 @@
 package io.github.membertracker.usecase;
 
+import io.github.membertracker.domain.enumeration.ActivityType;
 import io.github.membertracker.domain.exception.CommunicationDomainException;
 import io.github.membertracker.domain.model.Communication;
 import io.github.membertracker.domain.model.Member;
@@ -25,16 +26,19 @@ public class SendCommunicationToAllMembersUseCase {
     private final MemberRepository memberRepository;
     private final MessageDeliveryRepository messageDeliveryRepository;
     private final EmailService emailService;
+    private final RecordActivityUseCase recordActivity;
     private final ExecutorService executorService;
 
     public SendCommunicationToAllMembersUseCase(CommunicationRepository communicationRepository,
                                                MemberRepository memberRepository,
                                                MessageDeliveryRepository messageDeliveryRepository,
-                                               EmailService emailService) {
+                                               EmailService emailService,
+                                               RecordActivityUseCase recordActivity) {
         this.communicationRepository = communicationRepository;
         this.memberRepository = memberRepository;
         this.messageDeliveryRepository = messageDeliveryRepository;
         this.emailService = emailService;
+        this.recordActivity = recordActivity;
         this.executorService = Executors.newCachedThreadPool(); // Java 17 compatible
     }
 
@@ -68,12 +72,20 @@ public class SendCommunicationToAllMembersUseCase {
         
         Communication savedCommunication = communicationRepository.save(communication);
         
+        recordActivity.record(ActivityType.MESSAGE_SENT, sentDescription(savedCommunication, allMembers.size()),
+                "COMMUNICATION", savedCommunication.getId());
+
         // Send emails asynchronously
         sendEmailsAsync(savedCommunication, allMembers);
         
         return savedCommunication;
     }
     
+    private static String sentDescription(Communication communication, int recipients) {
+        return "Message \"" + communication.getTitle() + "\" was sent to " + recipients
+                + (recipients == 1 ? " member" : " members");
+    }
+
     private void sendEmailsAsync(Communication communication, List<Member> members) {
         executorService.submit(() -> {
             for (Member member : members) {

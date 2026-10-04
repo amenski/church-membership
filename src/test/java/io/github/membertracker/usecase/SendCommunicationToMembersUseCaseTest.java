@@ -1,5 +1,6 @@
 package io.github.membertracker.usecase;
 
+import io.github.membertracker.domain.enumeration.ActivityType;
 import io.github.membertracker.domain.exception.CommunicationDomainException;
 import io.github.membertracker.domain.model.Communication;
 import io.github.membertracker.domain.model.Member;
@@ -39,6 +40,7 @@ class SendCommunicationToMembersUseCaseTest {
     private CommunicationRepository communicationRepository;
     private MessageDeliveryRepository messageDeliveryRepository;
     private EmailService emailService;
+    private RecordActivityUseCase recordActivity;
     private SendCommunicationToMembersUseCase useCase;
     private final List<List<DeliveryStatus>> statusesAtEachSave = new ArrayList<>();
     private Member alice;
@@ -49,7 +51,9 @@ class SendCommunicationToMembersUseCaseTest {
         communicationRepository = mock(CommunicationRepository.class);
         messageDeliveryRepository = mock(MessageDeliveryRepository.class);
         emailService = mock(EmailService.class);
-        useCase = new SendCommunicationToMembersUseCase(communicationRepository, messageDeliveryRepository, emailService);
+        recordActivity = mock(RecordActivityUseCase.class);
+        useCase = new SendCommunicationToMembersUseCase(communicationRepository, messageDeliveryRepository, emailService,
+                recordActivity);
         when(communicationRepository.save(any(Communication.class))).thenAnswer(i -> {
             Communication c = i.getArgument(0);
             synchronized (statusesAtEachSave) {
@@ -86,7 +90,20 @@ class SendCommunicationToMembersUseCaseTest {
 
         assertThat(c.isSent()).isFalse();
         verify(communicationRepository, never()).save(any());
-        verifyNoInteractions(emailService, messageDeliveryRepository);
+        verifyNoInteractions(emailService, messageDeliveryRepository, recordActivity);
+    }
+
+    @Test
+    void sendingIsLoggedWithTheTitleAndTheRecipientCount() {
+        when(emailService.sendSimpleEmail(any(), any(), any())).thenReturn(true);
+
+        useCase.invoke(communication(), List.of(alice, bob), DeliveryChannel.EMAIL);
+        useCase.invoke(communication(), List.of(alice), DeliveryChannel.EMAIL);
+
+        verify(recordActivity).record(eq(ActivityType.MESSAGE_SENT), eq("Message \"Hello\" was sent to 2 members"),
+                eq("COMMUNICATION"), any());
+        verify(recordActivity).record(eq(ActivityType.MESSAGE_SENT), eq("Message \"Hello\" was sent to 1 member"),
+                eq("COMMUNICATION"), any());
     }
 
     @Test

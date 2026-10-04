@@ -1,5 +1,6 @@
 package io.github.membertracker.usecase;
 
+import io.github.membertracker.domain.enumeration.ActivityType;
 import io.github.membertracker.domain.exception.CommunicationDomainException;
 import io.github.membertracker.domain.model.Communication;
 import io.github.membertracker.domain.model.Member;
@@ -21,6 +22,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
@@ -39,6 +41,7 @@ class SendCommunicationToAllMembersUseCaseTest {
     private MemberRepository memberRepository;
     private MessageDeliveryRepository messageDeliveryRepository;
     private EmailService emailService;
+    private RecordActivityUseCase recordActivity;
     private SendCommunicationToAllMembersUseCase useCase;
     private final List<List<DeliveryStatus>> statusesAtEachSave = new ArrayList<>();
     private Member alice;
@@ -50,8 +53,9 @@ class SendCommunicationToAllMembersUseCaseTest {
         memberRepository = mock(MemberRepository.class);
         messageDeliveryRepository = mock(MessageDeliveryRepository.class);
         emailService = mock(EmailService.class);
+        recordActivity = mock(RecordActivityUseCase.class);
         useCase = new SendCommunicationToAllMembersUseCase(communicationRepository, memberRepository,
-                messageDeliveryRepository, emailService);
+                messageDeliveryRepository, emailService, recordActivity);
         when(communicationRepository.save(any(Communication.class))).thenAnswer(i -> {
             Communication c = i.getArgument(0);
             synchronized (statusesAtEachSave) {
@@ -96,6 +100,16 @@ class SendCommunicationToAllMembersUseCaseTest {
     }
 
     @Test
+    void sendingIsLoggedWithTheTitleAndTheRecipientCount() {
+        when(memberRepository.findByActive(true)).thenReturn(List.of(alice, bob));
+
+        useCase.invoke(communication());
+
+        verify(recordActivity).record(eq(ActivityType.MESSAGE_SENT), eq("Message \"News\" was sent to 2 members"),
+                eq("COMMUNICATION"), any());
+    }
+
+    @Test
     void noActiveMembersIsRejectedBeforeAnythingIsMarkedSentSavedOrSent() {
         when(memberRepository.findByActive(true)).thenReturn(List.of());
         Communication c = communication();
@@ -108,7 +122,7 @@ class SendCommunicationToAllMembersUseCaseTest {
         assertThat(c.isSent()).isFalse();
         assertThat(c.isSentToAllMembers()).isFalse();
         verify(communicationRepository, never()).save(any());
-        verifyNoInteractions(emailService, messageDeliveryRepository);
+        verifyNoInteractions(emailService, messageDeliveryRepository, recordActivity);
     }
 
     @Test

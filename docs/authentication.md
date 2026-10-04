@@ -105,6 +105,7 @@ The old `USER` role was removed. Migration `004.migrate-user-role-to-member.sql`
 | Payments `/api/payments` | List, get, by member | Record, export | |
 | Communications `/api/communications` | List, get, deliveries | Send to all, send to one member, send to overdue, retry failed delivery | |
 | Dashboard `/api/dashboard/*` | All | | |
+| Activity log `/api/activity-log` | | | View the activity log (who changed or exported what) |
 | Own account `/api/users/me*` | Any signed-in user, including MEMBER | | |
 
 ## Frontend

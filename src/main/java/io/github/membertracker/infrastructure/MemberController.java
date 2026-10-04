@@ -1,5 +1,6 @@
 package io.github.membertracker.infrastructure;
 
+import io.github.membertracker.domain.enumeration.ActivityType;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.infrastructure.dto.ExportMembersRequest;
 import io.github.membertracker.infrastructure.dto.MemberRequest;
@@ -43,6 +44,7 @@ public class MemberController {
     private final UpdateMemberUseCase updateMemberUseCase;
     private final DeleteMemberUseCase deleteMemberUseCase;
     private final GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase;
+    private final RecordActivityUseCase recordActivityUseCase;
 
     @Autowired
     public MemberController(GetAllMembersUseCase getAllMembersUseCase,
@@ -52,7 +54,8 @@ public class MemberController {
                            SaveMemberUseCase saveMemberUseCase,
                            UpdateMemberUseCase updateMemberUseCase,
                            DeleteMemberUseCase deleteMemberUseCase,
-                           GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase) {
+                           GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase,
+                           RecordActivityUseCase recordActivityUseCase) {
         this.getAllMembersUseCase = getAllMembersUseCase;
         this.getMemberByIdUseCase = getMemberByIdUseCase;
         this.getActiveMembersUseCase = getActiveMembersUseCase;
@@ -61,6 +64,7 @@ public class MemberController {
         this.updateMemberUseCase = updateMemberUseCase;
         this.deleteMemberUseCase = deleteMemberUseCase;
         this.getMembersWithMissedPaymentsUseCase = getMembersWithMissedPaymentsUseCase;
+        this.recordActivityUseCase = recordActivityUseCase;
     }
 
     @GetMapping
@@ -133,7 +137,7 @@ public class MemberController {
     @PreAuthorize("hasRole('STAFF')")
     @Operation(summary = "Export all members as CSV (STAFF+)")
     public ResponseEntity<byte[]> exportMembers() {
-        return csvResponse(getAllMembersUseCase.invoke());
+        return exportResponse(getAllMembersUseCase.invoke());
     }
 
     @PostMapping("/export")
@@ -144,7 +148,14 @@ public class MemberController {
         List<Member> selected = getAllMembersUseCase.invoke().stream()
                 .filter(member -> ids.contains(member.getId()))
                 .toList();
-        return csvResponse(selected);
+        return exportResponse(selected);
+    }
+
+    private ResponseEntity<byte[]> exportResponse(List<Member> members) {
+        ResponseEntity<byte[]> response = csvResponse(members);
+        recordActivityUseCase.record(ActivityType.MEMBERS_EXPORTED, "Exported " + members.size()
+                + (members.size() == 1 ? " member" : " members"), "MEMBER", null);
+        return response;
     }
 
     private ResponseEntity<byte[]> csvResponse(List<Member> members) {

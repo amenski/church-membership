@@ -1,5 +1,6 @@
 package io.github.membertracker.infrastructure;
 
+import io.github.membertracker.domain.enumeration.ActivityType;
 import io.github.membertracker.domain.exception.UserDomainException;
 import io.github.membertracker.infrastructure.config.AuthProperties;
 import io.github.membertracker.infrastructure.config.SecurityConfig;
@@ -11,6 +12,7 @@ import io.github.membertracker.domain.valueobject.Email;
 import io.github.membertracker.usecase.LoadUserByUsernameUseCase;
 import io.github.membertracker.utils.CookieUtils;
 import com.jayway.jsonpath.JsonPath;
+import io.github.membertracker.usecase.RecordActivityUseCase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -24,6 +26,8 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
@@ -35,6 +39,7 @@ class AuthControllerTest {
 
     @MockitoBean private AuthenticateUserUseCase authenticateUserUseCase;
     @MockitoBean private LoadUserByUsernameUseCase loadUserByUsernameUseCase;
+    @MockitoBean private RecordActivityUseCase recordActivityUseCase;
 
     private MockHttpServletResponse login(String email) throws Exception {
         return mockMvc.perform(post("/api/auth/login").with(csrf())
@@ -87,6 +92,20 @@ class AuthControllerTest {
         assertThat(field(throttled, "detail")).isEqualTo("Too many sign-in attempts. Try again in a few minutes.");
         // another email is unaffected (it only counts toward the IP limit)
         assertThat(login("other@example.com").getStatus()).isEqualTo(400);
+    }
+
+    @Test
+    void aSuccessfulSignInIsRecordedWithTheEmailAsActorAndAFailedOneIsNot() throws Exception {
+        User ok = new User(Email.of("good@example.com"), "hash", UserRole.MEMBER);
+        when(authenticateUserUseCase.invoke(eq("good@example.com"), anyString())).thenReturn(ok);
+        when(authenticateUserUseCase.invoke(eq("bad@example.com"), anyString()))
+            .thenThrow(UserDomainException.invalidCredentials());
+
+        login("bad@example.com");
+        verifyNoInteractions(recordActivityUseCase);
+
+        login("good@example.com");
+        verify(recordActivityUseCase).record(ActivityType.SIGN_IN, "Signed in", "USER", null, "good@example.com");
     }
 
     @Test

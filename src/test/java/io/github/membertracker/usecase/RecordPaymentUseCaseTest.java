@@ -1,5 +1,6 @@
 package io.github.membertracker.usecase;
 
+import io.github.membertracker.domain.enumeration.ActivityType;
 import io.github.membertracker.domain.enumeration.PaymentMethod;
 import io.github.membertracker.domain.exception.MemberDomainException;
 import io.github.membertracker.domain.exception.PaymentDomainException;
@@ -18,16 +19,19 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class RecordPaymentUseCaseTest {
 
     private PaymentRepository paymentRepository;
     private MemberRepository memberRepository;
+    private RecordActivityUseCase recordActivity;
     private RecordPaymentUseCase useCase;
     private Member stored;
 
@@ -36,7 +40,8 @@ class RecordPaymentUseCaseTest {
         stored = member(1L);
         paymentRepository = mock(PaymentRepository.class);
         memberRepository = mock(MemberRepository.class);
-        useCase = new RecordPaymentUseCase(paymentRepository, memberRepository);
+        recordActivity = mock(RecordActivityUseCase.class);
+        useCase = new RecordPaymentUseCase(paymentRepository, memberRepository, recordActivity);
         when(paymentRepository.save(any(Payment.class))).thenAnswer(i -> i.getArgument(0));
         when(memberRepository.findById(1L)).thenAnswer(i -> Optional.of(stored));
     }
@@ -62,6 +67,14 @@ class RecordPaymentUseCaseTest {
         assertThat(saved.getValue().getConsecutiveMonthsMissed()).isZero();
         assertThat(saved.getValue().getLastPaymentDate()).isEqualTo(LocalDate.now());
         verify(paymentRepository).save(result);
+    }
+
+    @Test
+    void aRecordedPaymentIsLoggedWithAmountPeriodAndNameButNoContactDetails() {
+        useCase.invoke(1L, 50.0, PaymentMethod.CASH, YearMonth.of(2026, 10), LocalDate.of(2026, 10, 3), null);
+
+        verify(recordActivity).record(eq(ActivityType.PAYMENT_RECORDED),
+                eq("Payment of 50.00 for 2026-10 was recorded for Alice"), eq("PAYMENT"), any());
     }
 
     @Test
@@ -91,6 +104,14 @@ class RecordPaymentUseCaseTest {
 
         verify(paymentRepository, never()).save(any());
         verify(memberRepository, never()).save(any());
+    }
+
+    @Test
+    void aRejectedPaymentIsNotLogged() {
+        assertThatThrownBy(() -> useCase.invoke(1L, 0.0, PaymentMethod.CASH, YearMonth.now(), null, null))
+                .isInstanceOf(PaymentDomainException.class);
+
+        verifyNoInteractions(recordActivity);
     }
 
     @Test

@@ -69,7 +69,7 @@ This document tracks missing features, improvements, and technical debt in the M
 - [x] Phase 1b: C3 scheduling monthly + idempotent counter (changeset 005), C4 {{member_name}}
 - [x] Phase 2: C8 MemberRequest DTO
 - [x] Phase 3: secrets out of config, CSRF back on (activity log writes deferred: see below)
-- [ ] Activity log writes: record sign-in, member create/edit/delete, exports and payments in the existing activity_log table (table exists, nothing writes to it; dashboard recent activities could then read it)
+- [x] Activity log writes: sign-in, password change, member create/edit/status/delete, payments, messages and exports are recorded in `activity_log` (migration 007 adds `actor`); ADMIN reads them at `GET /api/activity-log` ([features/activity.md](features/activity.md)). Still open: a retention or deletion job (entries accumulate forever); dashboard recent activities do not read the table
 - [ ] Phase 4: Person/Membership split (needs a decision, not started)
 
 ### Bugs found by checking the docs against the code (October 2026)

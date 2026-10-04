@@ -1,5 +1,6 @@
 package io.github.membertracker.infrastructure;
 
+import io.github.membertracker.domain.enumeration.ActivityType;
 import io.github.membertracker.domain.exception.UserDomainException;
 import io.github.membertracker.domain.model.User;
 import io.github.membertracker.infrastructure.config.AuthProperties;
@@ -10,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.github.membertracker.usecase.AuthenticateUserUseCase;
 import io.github.membertracker.usecase.LoadUserByUsernameUseCase;
+import io.github.membertracker.usecase.RecordActivityUseCase;
 import io.github.membertracker.utils.CookieUtils;
 import io.github.membertracker.utils.JwtUtils;
 import jakarta.servlet.http.Cookie;
@@ -37,16 +39,19 @@ public class AuthController {
     private final CookieUtils cookieUtils;
     private final AuthProperties authProperties;
     private final LoginAttemptLimiter loginAttemptLimiter;
+    private final RecordActivityUseCase recordActivityUseCase;
 
     public AuthController(AuthenticateUserUseCase authenticateUserUseCase,
                          LoadUserByUsernameUseCase loadUserByUsernameUseCase,
                          CookieUtils cookieUtils, AuthProperties authProperties,
-                         LoginAttemptLimiter loginAttemptLimiter) {
+                         LoginAttemptLimiter loginAttemptLimiter,
+                         RecordActivityUseCase recordActivityUseCase) {
         this.authenticateUserUseCase = authenticateUserUseCase;
         this.loadUserByUsernameUseCase = loadUserByUsernameUseCase;
         this.cookieUtils = cookieUtils;
         this.authProperties = authProperties;
         this.loginAttemptLimiter = loginAttemptLimiter;
+        this.recordActivityUseCase = recordActivityUseCase;
     }
 
     @PostMapping("/login")
@@ -59,6 +64,8 @@ public class AuthController {
         try {
             var user = authenticateUserUseCase.invoke(email, loginRequest.getPassword());
             loginAttemptLimiter.recordSuccess(ip, email);
+            // The security context is still empty here, so the actor is passed explicitly
+            recordActivityUseCase.record(ActivityType.SIGN_IN, "Signed in", "USER", null, user.getUsername());
 
             long authTime = Instant.now().getEpochSecond();
             String accessToken = JwtUtils.generateAccessToken(user, authProperties.getJwtSecret(), authProperties.getAccessTtlSeconds(), authTime);

@@ -1,12 +1,16 @@
 package io.github.membertracker.infrastructure.config;
 
+import io.github.membertracker.domain.repository.ActivityLogRepository;
 import io.github.membertracker.domain.repository.CommunicationRepository;
 import io.github.membertracker.domain.repository.MessageDeliveryRepository;
 import io.github.membertracker.domain.repository.MemberRepository;
 import io.github.membertracker.domain.repository.PaymentRepository;
 import io.github.membertracker.domain.repository.UserRepository;
+import io.github.membertracker.domain.service.CurrentActor;
 import io.github.membertracker.infrastructure.service.EmailService;
 import io.github.membertracker.usecase.AuthenticateUserUseCase;
+import io.github.membertracker.usecase.GetActivityLogUseCase;
+import io.github.membertracker.usecase.RecordActivityUseCase;
 import io.github.membertracker.usecase.ChangePasswordUseCase;
 import io.github.membertracker.usecase.DeleteMemberUseCase;
 import io.github.membertracker.usecase.GetActiveMembersUseCase;
@@ -41,6 +45,17 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
 public class UseCaseConfig {
+
+    // Audit trail
+    @Bean
+    public RecordActivityUseCase recordActivityUseCase(ActivityLogRepository activityLogRepository, CurrentActor currentActor) {
+        return new RecordActivityUseCase(activityLogRepository, currentActor);
+    }
+
+    @Bean
+    public GetActivityLogUseCase getActivityLogUseCase(ActivityLogRepository activityLogRepository) {
+        return new GetActivityLogUseCase(activityLogRepository);
+    }
 
     // User-related use cases
     @Bean
@@ -90,18 +105,18 @@ public class UseCaseConfig {
     }
 
     @Bean
-    public SaveMemberUseCase saveMemberUseCase(MemberRepository memberRepository) {
-        return new SaveMemberUseCase(memberRepository);
+    public SaveMemberUseCase saveMemberUseCase(MemberRepository memberRepository, RecordActivityUseCase recordActivityUseCase) {
+        return new SaveMemberUseCase(memberRepository, recordActivityUseCase);
     }
 
     @Bean
-    public UpdateMemberUseCase updateMemberUseCase(MemberRepository memberRepository) {
-        return new UpdateMemberUseCase(memberRepository);
+    public UpdateMemberUseCase updateMemberUseCase(MemberRepository memberRepository, RecordActivityUseCase recordActivityUseCase) {
+        return new UpdateMemberUseCase(memberRepository, recordActivityUseCase);
     }
 
     @Bean
-    public DeleteMemberUseCase deleteMemberUseCase(MemberRepository memberRepository) {
-        return new DeleteMemberUseCase(memberRepository);
+    public DeleteMemberUseCase deleteMemberUseCase(MemberRepository memberRepository, RecordActivityUseCase recordActivityUseCase) {
+        return new DeleteMemberUseCase(memberRepository, recordActivityUseCase);
     }
 
     @Bean
@@ -126,8 +141,9 @@ public class UseCaseConfig {
     }
 
     @Bean
-    public RecordPaymentUseCase recordPaymentUseCase(PaymentRepository paymentRepository, MemberRepository memberRepository) {
-        return new RecordPaymentUseCase(paymentRepository, memberRepository);
+    public RecordPaymentUseCase recordPaymentUseCase(PaymentRepository paymentRepository, MemberRepository memberRepository,
+                                                   RecordActivityUseCase recordActivityUseCase) {
+        return new RecordPaymentUseCase(paymentRepository, memberRepository, recordActivityUseCase);
     }
 
     @Bean
@@ -166,17 +182,20 @@ public class UseCaseConfig {
             CommunicationRepository communicationRepository, 
             MemberRepository memberRepository,
             MessageDeliveryRepository messageDeliveryRepository,
-            EmailService emailService) {
+            EmailService emailService,
+            RecordActivityUseCase recordActivityUseCase) {
         return new SendCommunicationToAllMembersUseCase(communicationRepository, memberRepository,
-                messageDeliveryRepository, emailService);
+                messageDeliveryRepository, emailService, recordActivityUseCase);
     }
 
     @Bean
     public SendCommunicationToMembersUseCase sendCommunicationToMembersUseCase(
             CommunicationRepository communicationRepository,
             MessageDeliveryRepository messageDeliveryRepository,
-            EmailService emailService) {
-        return new SendCommunicationToMembersUseCase(communicationRepository, messageDeliveryRepository, emailService);
+            EmailService emailService,
+            RecordActivityUseCase recordActivityUseCase) {
+        return new SendCommunicationToMembersUseCase(communicationRepository, messageDeliveryRepository, emailService,
+                recordActivityUseCase);
     }
 
     // Dashboard use cases

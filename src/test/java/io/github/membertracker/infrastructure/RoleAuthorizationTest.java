@@ -32,7 +32,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
     MemberController.class,
     PaymentController.class,
     CommunicationController.class,
-    DashboardController.class
+    DashboardController.class,
+    ActivityLogController.class
 })
 @Import({SecurityConfig.class, AuthProperties.class})
 class RoleAuthorizationTest {
@@ -52,6 +53,8 @@ class RoleAuthorizationTest {
     private MockMvc mockMvc;
 
     @MockitoBean private LoadUserByUsernameUseCase loadUserByUsernameUseCase;
+    @MockitoBean private RecordActivityUseCase recordActivityUseCase;
+    @MockitoBean private GetActivityLogUseCase getActivityLogUseCase;
     @MockitoBean private GetAllMembersUseCase getAllMembersUseCase;
     @MockitoBean private GetMemberByIdUseCase getMemberByIdUseCase;
     @MockitoBean private GetActiveMembersUseCase getActiveMembersUseCase;
@@ -111,7 +114,9 @@ class RoleAuthorizationTest {
             new Endpoint(HttpMethod.GET, "/api/dashboard/stats", null, "VOLUNTEER"),
             new Endpoint(HttpMethod.GET, "/api/dashboard/recent-payments", null, "VOLUNTEER"),
             new Endpoint(HttpMethod.GET, "/api/dashboard/overdue-members", null, "VOLUNTEER"),
-            new Endpoint(HttpMethod.GET, "/api/dashboard/recent-activities", null, "VOLUNTEER")
+            new Endpoint(HttpMethod.GET, "/api/dashboard/recent-activities", null, "VOLUNTEER"),
+
+            new Endpoint(HttpMethod.GET, "/api/activity-log", null, "ADMIN")
         );
     }
 

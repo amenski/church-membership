@@ -36,12 +36,12 @@ Example with the default threshold 3, for a member who paid through September an
 2. The second run changes nothing. The reminder job has no such protection: a second run emails again (see Rules).
 
 ### Paying clears the counter
-1. When staff record a payment whose month is the current month, the counter goes to 0 (`Member.java:46-57`, `src/main/java/io/github/membertracker/usecase/RecordPaymentUseCase.java:40-43`).
+1. When staff record a payment whose month is the current month, the counter goes to 0 (`Member.java:46-57`, `src/main/java/io/github/membertracker/usecase/RecordPaymentUseCase.java:45-48`).
 2. A payment for an earlier month (back-dated) updates the last payment date but leaves the counter alone (`Member.java:54-56`). The member stays overdue and keeps getting reminders until a current-month payment is recorded.
 3. The next monthly run only counts a month the member did not pay. See [payments.md](payments.md).
 
 ### Reactivating clears the counter
-1. Switching an inactive member to active (Members screen, status button or edit form) resets the counter to 0 (`Member.java:73-79`, `src/main/java/io/github/membertracker/usecase/UpdateMemberUseCase.java:37-43`). See [members.md](members.md#deactivate-or-reactivate).
+1. Switching an inactive member to active (Members screen, status button or edit form) resets the counter to 0 (`Member.java:73-79`, `src/main/java/io/github/membertracker/usecase/UpdateMemberUseCase.java:41-49`). See [members.md](members.md#deactivate-or-reactivate).
 2. Deactivating does not change the counter. Inactive members are not counted and not reminded by the jobs.
 
 ### What the admin sees

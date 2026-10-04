@@ -1,5 +1,6 @@
 package io.github.membertracker.infrastructure;
 
+import io.github.membertracker.domain.enumeration.ActivityType;
 import io.github.membertracker.domain.model.Payment;
 import io.github.membertracker.infrastructure.dto.RecordPaymentRequest;
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,18 +36,21 @@ public class PaymentController {
     private final GetPaymentsByMemberUseCase getPaymentsByMemberUseCase;
     private final RecordPaymentUseCase recordPaymentUseCase;
     private final GetMemberByIdUseCase getMemberByIdUseCase;
+    private final RecordActivityUseCase recordActivityUseCase;
 
     @Autowired
     public PaymentController(GetAllPaymentsUseCase getAllPaymentsUseCase,
                             GetPaymentByIdUseCase getPaymentByIdUseCase,
                             GetPaymentsByMemberUseCase getPaymentsByMemberUseCase,
                             RecordPaymentUseCase recordPaymentUseCase,
-                            GetMemberByIdUseCase getMemberByIdUseCase) {
+                            GetMemberByIdUseCase getMemberByIdUseCase,
+                            RecordActivityUseCase recordActivityUseCase) {
         this.getAllPaymentsUseCase = getAllPaymentsUseCase;
         this.getPaymentByIdUseCase = getPaymentByIdUseCase;
         this.getPaymentsByMemberUseCase = getPaymentsByMemberUseCase;
         this.recordPaymentUseCase = recordPaymentUseCase;
         this.getMemberByIdUseCase = getMemberByIdUseCase;
+        this.recordActivityUseCase = recordActivityUseCase;
     }
 
     @GetMapping
@@ -88,7 +92,8 @@ public class PaymentController {
     @Operation(summary = "Export all payments as CSV (STAFF+)")
     public ResponseEntity<byte[]> exportPayments() {
         StringBuilder csv = new StringBuilder("id,memberId,memberName,amount,paymentDate,period,method\n");
-        for (Payment payment : getAllPaymentsUseCase.invoke()) {
+        List<Payment> payments = getAllPaymentsUseCase.invoke();
+        for (Payment payment : payments) {
             csv.append(String.format(Locale.ROOT, "%s,%s,%s,%.2f,%s,%s,%s%n",
                 payment.getId() != null ? payment.getId() : "0",
                 payment.getMember() != null && payment.getMember().getId() != null ? payment.getMember().getId() : "0",
@@ -98,6 +103,8 @@ public class PaymentController {
                 payment.getPeriod() != null ? payment.getPeriod().toString() : "",
                 payment.getPaymentMethod() != null ? payment.getPaymentMethod().name() : ""));
         }
+        recordActivityUseCase.record(ActivityType.PAYMENTS_EXPORTED, "Exported " + payments.size()
+                + (payments.size() == 1 ? " payment" : " payments"), "PAYMENT", null);
         return CsvUtils.attachment("payments.csv", csv.toString());
     }
 }

@@ -1,5 +1,6 @@
 package io.github.membertracker.usecase;
 
+import io.github.membertracker.domain.enumeration.ActivityType;
 import io.github.membertracker.domain.enumeration.PaymentMethod;
 import io.github.membertracker.domain.exception.MemberDomainException;
 import io.github.membertracker.domain.model.Member;
@@ -9,15 +10,19 @@ import io.github.membertracker.domain.repository.PaymentRepository;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.Locale;
 
 public class RecordPaymentUseCase {
 
     private final PaymentRepository paymentRepository;
     private final MemberRepository memberRepository;
+    private final RecordActivityUseCase recordActivity;
 
-    public RecordPaymentUseCase(PaymentRepository paymentRepository, MemberRepository memberRepository) {
+    public RecordPaymentUseCase(PaymentRepository paymentRepository, MemberRepository memberRepository,
+                                RecordActivityUseCase recordActivity) {
         this.paymentRepository = paymentRepository;
         this.memberRepository = memberRepository;
+        this.recordActivity = recordActivity;
     }
 
     /**
@@ -52,6 +57,11 @@ public class RecordPaymentUseCase {
         member.recordPayment(payment);
 
         memberRepository.save(member);
-        return paymentRepository.save(payment);
+        Payment saved = paymentRepository.save(payment);
+        recordActivity.record(ActivityType.PAYMENT_RECORDED,
+                String.format(Locale.ROOT, "Payment of %.2f for %s was recorded for %s",
+                        saved.getAmount(), saved.getPeriod(), member.getName()),
+                "PAYMENT", saved.getId());
+        return saved;
     }
 }

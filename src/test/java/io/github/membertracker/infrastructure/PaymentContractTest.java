@@ -42,6 +42,7 @@ class PaymentContractTest {
     private MockMvc mockMvc;
 
     @MockitoBean private LoadUserByUsernameUseCase loadUserByUsernameUseCase;
+    @MockitoBean private RecordActivityUseCase recordActivityUseCase;
     @MockitoBean private GetMemberByIdUseCase getMemberByIdUseCase;
     @MockitoBean private GetAllPaymentsUseCase getAllPaymentsUseCase;
     @MockitoBean private GetPaymentByIdUseCase getPaymentByIdUseCase;

@@ -53,7 +53,7 @@ Scale: **0** absent · **1** stub or flat data · **2** basic, usable · **3** f
 | Search | 0 | No search or filter parameters on any endpoint, and no pagination. Filtering happens in the browser on the full list. |
 | Notifications | 0 | A monthly reminder scheduler runs on the 1st (C3 fixed); `{{member_name}}` in the reminder is filled in per recipient (C4 fixed). No in-app notifications, birthday or anniversary alerts, or staff task alerts. |
 | Import and export | 1 | CSV export of members and payments. No import, so a church moving from a spreadsheet must type every record by hand. |
-| Privacy | 0 | No consent records, retention rules, subject-access export or audit log. An `activity_log` table exists, but nothing writes to it. Exports (members, selected members, payments) are STAFF and above; volunteers cannot download the member list. Deleting a member permanently deletes their giving history. |
+| Privacy | 0 | No consent records, retention rules, subject-access export or audit log. An `activity_log` table exists, but nothing writes to it. *Status (October 2026): sign-ins, member changes, payments, messages and exports are now written to it with the actor, and administrators read them at `GET /api/activity-log`; there is still no retention rule.* Exports (members, selected members, payments) are STAFF and above; volunteers cannot download the member list. Deleting a member permanently deletes their giving history. |
 | Security operations | 1 | CSRF protection is off while authentication uses cookies (fixed 3 Oct 2026). A default JWT secret and `root/password` database credentials ship in `application.properties`, with `useSSL=false` and SQL logging on (fixed 3 Oct 2026: no defaults in the default profile). No HTTPS configuration. The repo has one test (context load, disabled). |
 
 ## 2. Fitness by role
@@ -179,7 +179,7 @@ Goal: every role can do its job safely.
 - All quick wins above
 - A test of every role against every endpoint, running in CI
 - Turn CSRF protection back on (or use SameSite=Strict), load secrets from the environment with no defaults, set up HTTPS
-- Write to the existing `activity_log` on create, edit, export and sign-in
+- Write to the existing `activity_log` on create, edit, export and sign-in *(done, October 2026; retention still open)*
 
 ### Phase 1: People foundation (3 to 4 weeks)
 Goal: one accurate record per person and family.
@@ -218,7 +218,7 @@ Goal: members help keep their own data up to date.
 
 ### Facts (from source)
 - All ten defects in section 3, with the file references given
-- The schema has 6 tables: `member`, `payment`, `communication`, `message_delivery`, `activity_log` (unused), `users`
+- The schema has 6 tables: `member`, `payment`, `communication`, `message_delivery`, `activity_log` (unused at audit time; written since October 2026), `users`
 - At audit time there was one test class, `ApplicationTests`, and it is disabled
 - Uncommitted changes at audit time touched only `App.vue`, `api.js` and `GlobalExceptionHandler.java`, none of which change authorization
 

@@ -1,6 +1,6 @@
 # Sign-in and sessions
 
-How staff, volunteers and members sign in, stay signed in, and get sent to the right page. Self-registration is disabled; accounts are created in SQL (`src/main/java/io/github/membertracker/infrastructure/AuthController.java:85-90`).
+How staff, volunteers and members sign in, stay signed in, and get sent to the right page. Self-registration is disabled; accounts are created in SQL (`src/main/java/io/github/membertracker/infrastructure/AuthController.java:92-97`).
 
 ## Who can do what
 | Task | Minimum role | Screen / endpoint |
@@ -20,14 +20,14 @@ The auth endpoints have no `@PreAuthorize`; `/api/auth/**` is public (`infrastru
 2. The form checks email format and that the password is not empty before sending anything; there is no minimum password length on sign-in, the server decides (`LoginView.vue:112-139`). Failure: inline field errors and a "Validation Error" toast.
 3. The store lowercases the email and posts to `/api/auth/login` (`frontend/src/stores/authStore.js:60-78`).
 4. The backend looks up the user, clears an expired lock, rejects a locked account (without checking the password), checks the password, then checks enabled and credentials not expired (`src/main/java/io/github/membertracker/usecase/AuthenticateUserUseCase.java:19-44`).
-5. On success it sets the `sid` and `sid_refresh` cookies and returns `{email, role}` (`AuthController.java:56-78`). The user sees a "Welcome back!" toast and is sent to the `?redirect=` page, or `/` (`LoginView.vue:167-189`).
+5. On success it sets the `sid` and `sid_refresh` cookies and returns `{email, role}` (`AuthController.java:61-85`). The user sees a "Welcome back!" toast and is sent to the `?redirect=` page, or `/` (`LoginView.vue:167-189`).
 6. `/` is guest-only, so the guard forwards a signed-in user to their home page: `/dashboard` for VOLUNTEER+, `/profile` for MEMBER (`router/index.js:91-96`, `authStore.js:41`).
-7. On failure the server message is shown in the form alert and a "Login Failed" toast (`LoginView.vue:190-198`, `authStore.js:160-167`). Login errors come back as HTTP 400 (`AuthController.java:80-81`), with one message, "Invalid email or password. After several failed attempts an account is locked for 15 minutes.", for an unknown email, a wrong password and a locked account. After 10 failures for one email or 30 from one IP in 10 minutes the next attempt is a 429 with `Retry-After` (`LoginAttemptLimiter`).
+7. On failure the server message is shown in the form alert and a "Login Failed" toast (`LoginView.vue:190-198`, `authStore.js:160-167`). Login errors come back as HTTP 400 (`AuthController.java:87-88`), with one message, "Invalid email or password. After several failed attempts an account is locked for 15 minutes.", for an unknown email, a wrong password and a locked account. After 10 failures for one email or 30 from one IP in 10 minutes the next attempt is a 429 with `Retry-After` (`LoginAttemptLimiter`).
 
 ### Stay signed in
 1. The access cookie `sid` lasts 30 minutes, the refresh cookie `sid_refresh` 30 days (`infrastructure/config/AuthProperties.java:11-12`). Cookie and CSRF settings: [../authentication.md](../authentication.md).
 2. When an API call returns 401, the browser calls `/api/auth/refresh` once and retries the original request (`frontend/src/services/api.js:105-126`).
-3. The refresh cookie is scoped to `/api/auth`, so the browser sends it to `/api/auth/refresh` (`utils/CookieUtils.java:33`, `AuthController.java:97-100`). Only a refresh token is accepted there; an access token gets 400. A rotated refresh token keeps the original sign-in time (`auth_time`) and expiry, so a session lasts at most 30 days from sign-in, and a refresh token issued before the user's last password change is rejected.
+3. The refresh cookie is scoped to `/api/auth`, so the browser sends it to `/api/auth/refresh` (`utils/CookieUtils.java:33`, `AuthController.java:104-107`). Only a refresh token is accepted there; an access token gets 400. A rotated refresh token keeps the original sign-in time (`auth_time`) and expiry, so a session lasts at most 30 days from sign-in, and a refresh token issued before the user's last password change is rejected.
 4. If the refresh fails, the user sees a "Session Expired" error toast and is hard-redirected to `/login?session=expired` (`api.js:147-152`, `api.js:166-168`).
 5. Client-side idle timeout: after 1 hour without mouse, key, scroll or touch activity, or any API request, the store logs the user out (`authStore.js:17`, `:196-208`, `:223-231`; request bump at `api.js:56-62`). The check runs every 30 seconds, and again on each route change (`router/index.js:75-79`).
 6. Idle-timeout fix: `isSessionExpired()` and `getTimeUntilExpiry()` are plain functions that read the clock on every call, not cached computeds (`authStore.js:43-51`). Because sessions renew through the refresh cookie while the user is active, this 1-hour idle timeout is the intended limit.
@@ -36,7 +36,7 @@ The auth endpoints have no `@PreAuthorize`; `/api/auth/**` is public (`infrastru
 ### Sign out
 1. The user picks Sign out in the left rail, which is the menu drawer on small screens (`App.vue:66-68`, `handleLogout` `:156`).
 2. The store stops the idle timer, posts `/api/auth/logout`, then clears local state even if the call fails (`authStore.js:100-121`).
-3. The server only clears both cookies (`AuthController.java:128-136`). The user lands on `/login`.
+3. The server only clears both cookies (`AuthController.java:135-143`). The user lands on `/login`.
 
 ### Being redirected
 1. Signed-out user on a protected route goes to `/login?redirect=<path>` (omitted for `/` and `/dashboard`) (`router/index.js:82-88`).
@@ -64,8 +64,8 @@ The auth endpoints have no `@PreAuthorize`; `/api/auth/**` is public (`infrastru
 - Roles rank MEMBER < VOLUNTEER < STAFF < ADMIN on the client (`authStore.js:20-29`); route `requiresRole` is a minimum (`router/index.js:103`).
 - Five failed logins lock the account for 15 minutes (`User.java`, `AuthenticateUserUseCase.java`).
 - Disabled and credential-expired accounts are rejected after the password check (`AuthenticateUserUseCase.java`).
-- Registration always returns 403 "Registration is disabled. Please contact administrator for access." (`AuthController.java:89`).
-- Logout does not revoke tokens; they stay valid until they expire (`AuthController.java:128-136`).
+- Registration always returns 403 "Registration is disabled. Please contact administrator for access." (`AuthController.java:96`).
+- Logout does not revoke tokens; they stay valid until they expire (`AuthController.java:135-143`).
 
 ## Known issues
 - Disabled and expired-credential messages are only returned after the correct password, so they confirm the password (the lock message no longer does: a locked account answers like any failure).

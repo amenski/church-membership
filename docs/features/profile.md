@@ -11,7 +11,7 @@ Every signed-in user views and edits their own name, phone and bio, and changes 
 | Edit email, role or another user | nobody | no UI or API |
 
 - No `@PreAuthorize` on these endpoints; any authenticated user passes (`.anyRequest().authenticated()`, `src/main/java/io/github/membertracker/infrastructure/config/SecurityConfig.java:134`).
-- The user always comes from the security context, never from an id in the request (`src/main/java/io/github/membertracker/infrastructure/UserController.java:62`, `:77`, `:109`).
+- The user always comes from the security context, never from an id in the request (`src/main/java/io/github/membertracker/infrastructure/UserController.java:67`, `:82`, `:114`).
 - Route `/profile` only needs sign-in (`frontend/src/router/index.js:36-41`).
 
 ## How it works
@@ -32,7 +32,7 @@ Every signed-in user views and edits their own name, phone and bio, and changes 
 1. The "Change password" button opens a dialog (`BaseModal`, `ProfileView.vue:72-93`) with "Current password", "New password" (the password rule as its hint) and "Confirm new password"; buttons "Cancel" and "Change password".
 2. Client checks on submit: current is present, new follows the password rule (`frontend/src/utils/passwordRules.js`, same rule as the server), confirm matches (`ProfileView.vue:241-274`).
 3. `PUT /users/me/password`. The server checks the current password (`src/main/java/io/github/membertracker/usecase/ChangePasswordUseCase.java:45`), then the strength rule (`:51`), then stores the new hash (`:54-56`).
-4. Success: fresh session cookies plus `{"message": "Password changed successfully"}` (`src/main/java/io/github/membertracker/infrastructure/UserController.java:117-124`); the dialog closes, its fields are cleared and a "Password changed" toast shows (`ProfileView.vue:301-313`).
+4. Success: fresh session cookies plus `{"message": "Password changed successfully"}` (`src/main/java/io/github/membertracker/infrastructure/UserController.java:124-131`); the dialog closes, its fields are cleared and a "Password changed" toast shows (`ProfileView.vue:301-313`).
 5. Failure: the dialog stays open and shows the server's reason in a banner at its top (`ProfileView.vue:314-317`): "Current password is incorrect" (400, code `USER_003`) or the password rule text (400, code `USER_004`). Both are ProblemDetail responses.
 6. Closing the dialog by any route (Cancel, X, Escape, backdrop, success) clears the fields and the banner (`ProfileView.vue:329-331`).
 
@@ -53,7 +53,7 @@ Every signed-in user views and edits their own name, phone and bio, and changes 
 - Changing the password resets failed-login attempts to 0 and stamps `lastPasswordChange` (`User.java:233-238`). A wrong current password counts toward the account lock (`ChangePasswordUseCase.java:45-48`).
 
 ## Known issues
-- Changing the password ends every other session: tokens issued before the change are rejected. The response sets fresh `sid` / `sid_refresh` cookies so this browser stays signed in (`UserController.java:99-124`).
+- Changing the password ends every other session: tokens issued before the change are rejected. The response sets fresh `sid` / `sid_refresh` cookies so this browser stays signed in (`UserController.java:104-131`).
 - No password reset; a wrong current password counts toward the 15-minute account lock; see [../authentication.md](../authentication.md) known gaps and audit user-management item in [../functionality-audit.md](../functionality-audit.md).
 - The page shows no real account status or join date: the API has none to give (`UserResponseDto` has no `createdAt`).
 
