@@ -101,7 +101,7 @@
           <tr v-for="member in filteredMembers" :key="member.id" class="h-(--row-h) border-b border-rule">
             <td :class="[TD, 'max-w-0 w-[34%]']">
               <div :class="NAME">{{ member.name }}</div>
-              <div class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
+              <div v-if="member.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
             </td>
             <td :class="[TD, 'whitespace-nowrap']">
               <template v-if="member.phone">{{ member.phone }}</template>
@@ -129,7 +129,7 @@
         <li v-for="member in filteredMembers" :key="member.id" class="flex items-start justify-between gap-2 border-b border-rule py-3">
           <div class="min-w-0 flex-1">
             <div :class="NAME">{{ member.name }}</div>
-            <div class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
+            <div v-if="member.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
             <div class="mt-1 flex flex-wrap items-center gap-x-4">
               <StatusLabel :tone="statusTone(member.status)">{{ statusLabel(member.status) }}</StatusLabel>
               <span v-if="countsForDues(member)" :class="duesClass(member)">{{ duesText(member) }}</span>
