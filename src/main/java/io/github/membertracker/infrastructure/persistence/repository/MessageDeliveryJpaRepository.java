@@ -1,6 +1,7 @@
 package io.github.membertracker.infrastructure.persistence.repository;
 
 import io.github.membertracker.infrastructure.persistence.entity.MessageDeliveryEntity;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,6 +12,7 @@ import java.util.List;
 
 @Repository
 public interface MessageDeliveryJpaRepository extends JpaRepository<MessageDeliveryEntity, Long> {
+    @EntityGraph(attributePaths = {"recipient", "recipient.person"})
     List<MessageDeliveryEntity> findByCommunicationId(Long communicationId);
 
     long countByRecipientId(Long memberId);

@@ -69,13 +69,13 @@ public class MemberDbRepository implements MemberRepository {
     @Override
     public List<Member> findDuesPayingWithMissedAtLeastOrderByMissedDesc(int months) {
         return toDomain(memberJpaRepository
-                .findByStatusAndConsecutiveMonthsMissedGreaterThanEqualOrderByConsecutiveMonthsMissedDescNameAscIdAsc(MEMBER, months));
+                .findByStatusAndConsecutiveMonthsMissedGreaterThanEqualOrderByConsecutiveMonthsMissedDescPersonNameAscIdAsc(MEMBER, months));
     }
 
     /**
      * DUAL-WRITE, remove at plan step 12: name, email and phone go to the legacy member columns (toEntity) and to the
-     * linked person row. A new member creates its person; an edit updates the person it already has. Reads still use
-     * the legacy columns until step 9. One transaction, so a member never exists without its person.
+     * linked person row. A new member creates its person; an edit updates the person it already has. Reads use the
+     * person only (step 9), so saving also heals a legacy column that drifted. One transaction, so a member never exists without its person.
      */
     @Override
     @Transactional
@@ -84,7 +84,7 @@ public class MemberDbRepository implements MemberRepository {
         PersonEntity person = member.getId() == null ? null : memberJpaRepository.findById(member.getId())
                 .map(MemberEntity::getPerson).orElse(null);
         if (person == null) {
-            person = new PersonEntity();
+            person = entity.getPerson();
         }
         MemberPersistenceMapper.copyToPerson(member, person);
         entity.setPerson(person);

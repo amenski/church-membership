@@ -23,5 +23,5 @@ public interface MemberJpaRepository extends JpaRepository<MemberEntity, Long> {
     long countByStatusAndConsecutiveMonthsMissedGreaterThanEqual(String status, int months);
 
     @EntityGraph(attributePaths = "person")
-    List<MemberEntity> findByStatusAndConsecutiveMonthsMissedGreaterThanEqualOrderByConsecutiveMonthsMissedDescNameAscIdAsc(String status, int months);
+    List<MemberEntity> findByStatusAndConsecutiveMonthsMissedGreaterThanEqualOrderByConsecutiveMonthsMissedDescPersonNameAscIdAsc(String status, int months);
 }

@@ -10,6 +10,8 @@ import java.time.YearMonth;
 /**
  * The one place a {@link MemberEntity} and a {@link Member} are converted into each other.
  * The domain reads the status and ignores the legacy {@code active} column; the entity gets both, written here.
+ * Name, email and phone are read from the linked {@link PersonEntity} (plan step 9); the legacy member columns are
+ * only written, until step 12.
  */
 public final class MemberPersistenceMapper {
 
@@ -19,9 +21,7 @@ public final class MemberPersistenceMapper {
     public static Member toDomain(MemberEntity entity) {
         Member member = new Member();
         member.setId(entity.getId());
-        member.setName(entity.getName());
-        member.setEmail(entity.getEmail());
-        member.setPhone(entity.getPhone());
+        copyFromPerson(entity.getPerson(), member);
         member.setJoinDate(entity.getJoinDate());
         member.setLastPaymentDate(entity.getLastPaymentDate());
         member.setConsecutiveMonthsMissed(entity.getConsecutiveMonthsMissed());
@@ -47,12 +47,23 @@ public final class MemberPersistenceMapper {
         entity.setArchivedAt(member.getArchivedAt());
         // The only writer of the legacy column: it follows the status, so the two never disagree.
         entity.setActive(member.getStatus().countsForDues());
+        // A transient person carrying the same three values, so an entity built here reads back like the member
+        // (payment and delivery references). MemberDbRepository.save swaps in the stored person before it saves.
+        PersonEntity person = new PersonEntity();
+        copyToPerson(member, person);
+        entity.setPerson(person);
         return entity;
+    }
+
+    private static void copyFromPerson(PersonEntity person, Member member) {
+        member.setName(person.getName());
+        member.setEmail(person.getEmail());
+        member.setPhone(person.getPhone());
     }
 
     /**
      * DUAL-WRITE, remove at plan step 12: copies the three fields that live in both tables onto the person row, so
-     * the legacy member columns and the person never disagree. MemberDbRepository.save is the only caller.
+     * the legacy member columns and the person never disagree. The person is the one read back (step 9). MemberDbRepository.save is the only caller.
      */
     public static void copyToPerson(Member member, PersonEntity person) {
         person.setName(member.getName());
@@ -67,9 +78,7 @@ public final class MemberPersistenceMapper {
     public static Member toRecipient(MemberEntity entity) {
         Member member = new Member();
         member.setId(entity.getId());
-        member.setName(entity.getName());
-        member.setEmail(entity.getEmail());
-        member.setPhone(entity.getPhone());
+        copyFromPerson(entity.getPerson(), member);
         member.setStatus(MemberStatus.valueOf(entity.getStatus()));
         return member;
     }

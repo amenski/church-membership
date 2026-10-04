@@ -109,6 +109,33 @@ class MemberPersistenceMapperTest {
     }
 
     @Test
+    void toDomainAndToRecipientReadNameEmailAndPhoneFromThePersonNotTheLegacyColumns() {
+        MemberEntity entity = MemberPersistenceMapper.toEntity(fullMember());
+        entity.setName("LEGACY");
+        entity.setEmail("legacy@example.com");
+        entity.setPhone("000");
+
+        Member member = MemberPersistenceMapper.toDomain(entity);
+        Member recipient = MemberPersistenceMapper.toRecipient(entity);
+
+        for (Member read : new Member[] {member, recipient}) {
+            assertThat(read.getName()).isEqualTo("Abebe Kebede");
+            assertThat(read.getEmail()).isEqualTo("abebe@example.com");
+            assertThat(read.getPhone()).isEqualTo("+251911234567");
+        }
+    }
+
+    @Test
+    void toEntityStillWritesTheLegacyColumnsBesideThePerson() {
+        MemberEntity entity = MemberPersistenceMapper.toEntity(fullMember());
+
+        assertThat(entity.getName()).isEqualTo("Abebe Kebede");
+        assertThat(entity.getEmail()).isEqualTo("abebe@example.com");
+        assertThat(entity.getPhone()).isEqualTo("+251911234567");
+        assertThat(entity.getPerson().getName()).isEqualTo("Abebe Kebede");
+    }
+
+    @Test
     void copyToPersonWritesNameEmailAndPhoneIncludingNulls() {
         PersonEntity person = new PersonEntity();
         Member member = fullMember();
