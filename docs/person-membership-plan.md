@@ -82,7 +82,7 @@ A person with no `member` row is a dependent or household member: no dues, no me
 |---|---|---|
 | `MemberRequest` (`MemberRequest.java:21-24`, `:35`) | `email` required, `active` optional boolean | `email` optional (blank = null, `@Email` only when present); `status` optional enum; `active` accepted until step 12 (ignored when `status` is present); later `householdId`, `birthDate` |
 | Member JSON | id, name, email, phone, joinDate, lastPaymentDate, consecutiveMonthsMissed, lastMissedCountMonth, active | same plus `status`, `personId`, `archivedAt`; `email` may be null; `active` is read-only and derived until step 12 |
-| `GET /api/members` | all rows | all except ARCHIVED; `?includeArchived=true` for ADMIN later |
+| `GET /api/members` | all rows | all except ARCHIVED; `?archived=true` (ADMIN only) returns only the archived (built in step 4) |
 | `GET /api/members/active`, `/inactive` | by `active` | by status groups (same URLs, same meaning) |
 | `DELETE /api/members/{id}` (`MemberController.java:113-123`) | hard delete, ADMIN | archive, ADMIN, same 200/404 |
 | `DELETE /api/members/{id}/permanent` | none | ADMIN, 409 when the member has payments or deliveries |
@@ -154,7 +154,7 @@ Rollback in this repo means: run the `--rollback` statements by hand on the targ
 | 1 | Extract `MemberPersistenceMapper` | low | ~5 files, ~150 lines | none | done |
 | 2 | Email optional and shareable | medium | ~14 files, ~250 lines | e | done |
 | 3 | Add `status` (expand, dual-write `active`) | medium | ~10 files, ~200 lines | c, g | done |
-| 4 | Read by status, archived hidden | medium | ~14 files, ~200 lines | c | todo |
+| 4 | Read by status, archived hidden | medium | ~14 files, ~200 lines | c | done |
 | 5 | Archive instead of delete (C9) | medium | ~10 files, ~220 lines | d | todo |
 | 6 | Frontend speaks `status` | low | 8 files, ~150 lines | c | todo |
 | 7 | Create `person` and `household` tables, unused | low | 1 migration | a, b | todo |

@@ -86,21 +86,33 @@ Stored in the `member` table (migrations `001`, `005`, `009`, `010`); the JSON o
 | `joinDate` | Today unless sent | `MemberRequest` |
 | `status` | `MEMBER`, `INACTIVE`, `DECEASED`, `TRANSFERRED` or `ARCHIVED` (migration `010`). Only `MEMBER` counts for dues, reminders, messages and payments. The backfill turned every `active = false` into `INACTIVE`; re-label deceased or transferred people by hand | `MemberRequest.status`, or the legacy `active` |
 | `active` | Legacy on/off, read-only in the JSON: true only when `status` is `MEMBER`. The `active` column is kept equal to it by `MemberPersistenceMapper` until the contract step | derived |
-| `archivedAt` | Null; set by the archive step (not built yet) | system |
+| `archivedAt` | Null until the member is archived (the archive action arrives with the next step) | system |
 | `consecutiveMonthsMissed`, `lastPaymentDate`, `lastMissedCountMonth` | Dues counters | system only |
 
 Changing `status` through `PUT`: see [member-controller.md](member-controller.md). The screens still show only Active and Inactive, driven by `active`; a person marked DECEASED or TRANSFERRED through the API appears as Inactive there until the frontend speaks `status`.
 
 ## Rules
+- Status rules (the tests of `MemberStatus` are this table). Only MEMBER counts for dues, reminders, messages and payments:
+
+| Status | Dues counter | Reminders | Messages | Listed by default | Payment can be recorded |
+|---|---|---|---|---|---|
+| MEMBER | yes | yes | yes | yes | yes |
+| INACTIVE | frozen; reactivating resets it | no | no | yes | no |
+| DECEASED | frozen | no | never | yes | no |
+| TRANSFERRED | frozen | no | no | yes | no |
+| ARCHIVED | frozen | no | no | no: only `GET /api/members?archived=true` (ADMIN) | no |
+
+- An ARCHIVED member is visible to ADMIN only on every read path (by id, id-based export, payments of the member, send to one member; embedded in payments and deliveries, email and phone are blanked for others): see [../authentication.md](../authentication.md).
+- Reads go by status, not by the legacy `active`: `findAll` (the list, the full export, the "inactive" list and the Overview total) leaves out ARCHIVED, "dues paying" is status MEMBER, and `findByConsecutiveMonthsMissedGreaterThanEqual` returns MEMBER-status members only.
 - Request shape `MemberRequest` (`src/main/java/io/github/membertracker/infrastructure/dto/MemberRequest.java:15`): name required (max 100), email optional (trimmed, blank becomes null) and well-formed when present (max 100), phone optional (blank becomes null) but if present must match `^\+?[0-9\s\-\(\)]{10,}$`, join date optional and not in the future, `active` optional. Failures return 400 with a field list. `id`, counters, last payment date and the monthly-job marker are not part of it and are ignored if sent.
 - Email is optional and not unique. Migration `009.make-member-email-optional.sql` dropped the unique index, made the column nullable and added a plain lookup index `idx_member_email_lookup`. Messages and reminders reach only members with an email, and members sharing an address get one message between them (the one with the lowest id; the others have no delivery row for that message): see [communications.md](communications.md). The activity log never records an email.
 - A child added without an email counts as a member until the status step of the [person/membership plan](../person-membership-plan.md): they appear behind on dues unless marked inactive.
 - New members: join date defaults to today, status MEMBER unless INACTIVE is asked for, counters zero (`SaveMemberUseCase.java`).
-- Export ids: not empty, at most 5000, each positive (`src/main/java/io/github/membertracker/infrastructure/dto/ExportMembersRequest.java:12-13`); unknown ids are skipped (`MemberController.java:147-150`).
+- Export ids: not empty, at most 5000, each positive (`src/main/java/io/github/membertracker/infrastructure/dto/ExportMembersRequest.java:12-13`); unknown ids are skipped. The selected export drops archived members for everyone but an ADMIN; the full export leaves them out for all.
 - `consecutiveMonthsMissed`, `lastPaymentDate` and `lastMissedCountMonth` are system-managed (never client-settable since audit C8):
   - A recorded payment sets `lastPaymentDate` to the later of the two dates, and resets the counter to 0 only if the payment's period is the current month (`Member.java:46-59`, called from `src/main/java/io/github/membertracker/usecase/RecordPaymentUseCase.java:57`).
-  - The monthly scheduler (1st, 06:00) adds 1 to the counter of active members with no payment for the previous month, once per member per month, through `Member.markMissedFor` and `lastMissedCountMonth` (`src/main/java/io/github/membertracker/usecase/UpdateMissingPaymentCountersUseCase.java:34-49`, `Member.java:66-73`); see [payment-reminder-scheduler.md](payment-reminder-scheduler.md).
-- "Behind" and "paid up" apply to active members only. An inactive member's counter is no longer raised or shown: the screens show a dash, the Dues filter and sort skip them, and the Overview, the overdue endpoints and the "behind on dues" messages leave them out.
+  - The monthly scheduler (1st, 06:00) adds 1 to the counter of members with status MEMBER and no payment for the previous month, once per member per month, through `Member.markMissedFor` and `lastMissedCountMonth` (`src/main/java/io/github/membertracker/usecase/UpdateMissingPaymentCountersUseCase.java:34-49`, `Member.java:66-73`); see [payment-reminder-scheduler.md](payment-reminder-scheduler.md).
+- "Behind" and "paid up" apply to members with status MEMBER only. For any other status the counter is frozen and not shown: the screens show a dash, the Dues filter and sort skip them, and the Overview, the overdue endpoints and the "behind on dues" messages leave them out.
 - Automatic deactivation: there is none. A membership policy (`shouldDeactivate`: 3 or more missed months) once existed but was only reachable through an unused use case; both were removed in `chore: remove unused use cases, the membership policy and PhoneNumber` and can be recovered from git history. Decide whether to build it for real.
 
 ## Known issues

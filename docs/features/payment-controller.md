@@ -4,12 +4,14 @@
 
 Membership-dues API: list, look up, record and export payments. Roles per endpoint below. The CSV export is STAFF and above (it carries every member's name and amounts).
 
+Archived members: for a non-ADMIN caller a payment that embeds an ARCHIVED member keeps the member's id, name and status but loses the email and phone (`GET /api/payments`, `/{id}`, and the dashboard's recent payments), and `/member/{memberId}` is a 404 as if the member did not exist (`ArchivedVisibility`, `ArchivedVisibilityTest`).
+
 ## Endpoints
 | Method | Path | Auth | Request | Response |
 |--------|------|------|---------|----------|
 | GET | `/api/payments` | VOLUNTEER+ (`PaymentController.java:60`) | none | `List<Payment>` |
 | GET | `/api/payments/{id}` | VOLUNTEER+ (`PaymentController.java:67`) | path `id` > 0 | `Payment`, or 404 with empty body |
-| GET | `/api/payments/member/{memberId}` | VOLUNTEER+ (`PaymentController.java:76`) | path `memberId` > 0 | `List<Payment>`, or 404 with empty body if the member does not exist |
+| GET | `/api/payments/member/{memberId}` | VOLUNTEER+ (`PaymentController.java:76`) | path `memberId` > 0 | `List<Payment>`, or 404 with empty body if the member does not exist, or is archived and the caller is not an ADMIN |
 | POST | `/api/payments` | STAFF+ (`PaymentController.java:85`) | `RecordPaymentRequest` JSON, `@Valid` | 200 + saved `Payment` |
 | GET | `/api/payments/export` | STAFF+ (`PaymentController.java:90`) | none | `text/csv; charset=UTF-8` attachment `payments.csv`, UTF-8 with a byte order mark |
 

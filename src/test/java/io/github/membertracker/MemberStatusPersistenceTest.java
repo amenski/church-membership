@@ -49,15 +49,22 @@ class MemberStatusPersistenceTest {
     }
 
     @Test
-    void theLegacyQueriesStillSeeTheSameMembers() {
+    void theStatusQueriesSeeTheRightMembersAndHideTheArchived() {
         Member deceased = new Member("Gone", null, null);
         deceased.setStatus(MemberStatus.DECEASED);
         memberRepository.save(deceased);
         memberRepository.save(new Member("Here", null, null));
 
-        assertThat(memberRepository.findByActive(true)).extracting(Member::getName).containsExactly("Here");
-        assertThat(memberRepository.findByActive(false)).extracting(Member::getName).containsExactly("Gone");
-        assertThat(memberRepository.countByActive(true)).isEqualTo(1);
+        Member archived = new Member("Hidden", null, null);
+        archived.setStatus(MemberStatus.ARCHIVED);
+        memberRepository.save(archived);
+
+        assertThat(memberRepository.findDuesPaying()).extracting(Member::getName).containsExactly("Here");
+        assertThat(memberRepository.findByStatus(MemberStatus.DECEASED)).extracting(Member::getName).containsExactly("Gone");
+        assertThat(memberRepository.findByStatus(MemberStatus.ARCHIVED)).extracting(Member::getName).containsExactly("Hidden");
+        assertThat(memberRepository.findAll()).extracting(Member::getName).containsExactly("Gone", "Here");
+        assertThat(memberRepository.countDuesPaying()).isEqualTo(1);
+        assertThat(memberRepository.countNotArchived()).isEqualTo(2);
     }
 
     @Test

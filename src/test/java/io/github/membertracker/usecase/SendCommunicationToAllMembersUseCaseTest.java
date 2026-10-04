@@ -95,7 +95,7 @@ class SendCommunicationToAllMembersUseCaseTest {
 
     @Test
     void flagsCommunicationAsSentToAllAndCreatesPendingEmailDeliveryPerMember() {
-        when(memberRepository.findByActive(true)).thenReturn(List.of(alice, bob));
+        when(memberRepository.findDuesPaying()).thenReturn(List.of(alice, bob));
         Communication c = communication();
         LocalDateTime before = LocalDateTime.now();
 
@@ -113,7 +113,7 @@ class SendCommunicationToAllMembersUseCaseTest {
 
     @Test
     void sendingIsLoggedWithTheTitleAndTheRecipientCount() {
-        when(memberRepository.findByActive(true)).thenReturn(List.of(alice, bob));
+        when(memberRepository.findDuesPaying()).thenReturn(List.of(alice, bob));
 
         useCase.invoke(communication());
 
@@ -123,7 +123,7 @@ class SendCommunicationToAllMembersUseCaseTest {
 
     @Test
     void noActiveMembersIsRejectedBeforeAnythingIsMarkedSentSavedOrSent() {
-        when(memberRepository.findByActive(true)).thenReturn(List.of());
+        when(memberRepository.findDuesPaying()).thenReturn(List.of());
         Communication c = communication();
 
         assertThatThrownBy(() -> useCase.invoke(c))
@@ -139,7 +139,7 @@ class SendCommunicationToAllMembersUseCaseTest {
 
     @Test
     void usesTheRetryEnabledEmailPathForEveryMember() {
-        when(memberRepository.findByActive(true)).thenReturn(List.of(alice, bob));
+        when(memberRepository.findDuesPaying()).thenReturn(List.of(alice, bob));
         when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenReturn(true);
 
         useCase.invoke(communication());
@@ -151,7 +151,7 @@ class SendCommunicationToAllMembersUseCaseTest {
 
     @Test
     void emailSubjectAndBodyArePersonalisedPerRecipientButTheStoredTextKeepsThePlaceholder() {
-        when(memberRepository.findByActive(true)).thenReturn(List.of(alice, bob));
+        when(memberRepository.findDuesPaying()).thenReturn(List.of(alice, bob));
         when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenReturn(true);
         Communication c = communication();
         c.setTitle("News for {{member_name}}");
@@ -171,7 +171,7 @@ class SendCommunicationToAllMembersUseCaseTest {
 
     @Test
     void anEmailThatFailsTwiceThenSucceedsIsSentWithThreeAttempts() {
-        when(memberRepository.findByActive(true)).thenReturn(List.of(alice));
+        when(memberRepository.findDuesPaying()).thenReturn(List.of(alice));
         when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenAnswer(madeAttempts(3, true));
         Communication c = communication();
 
@@ -185,7 +185,7 @@ class SendCommunicationToAllMembersUseCaseTest {
 
     @Test
     void anEmailThatFailsEveryTimeRecordsTheMaximumAttempts() {
-        when(memberRepository.findByActive(true)).thenReturn(List.of(alice));
+        when(memberRepository.findDuesPaying()).thenReturn(List.of(alice));
         when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenAnswer(madeAttempts(3, false));
         Communication c = communication();
 
@@ -199,7 +199,7 @@ class SendCommunicationToAllMembersUseCaseTest {
 
     @Test
     void whenMailIsOffNoAttemptIsCounted() {
-        when(memberRepository.findByActive(true)).thenReturn(List.of(alice));
+        when(memberRepository.findDuesPaying()).thenReturn(List.of(alice));
         when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenReturn(false);
         Communication c = communication();
 
@@ -213,7 +213,7 @@ class SendCommunicationToAllMembersUseCaseTest {
 
     @Test
     void failedEmailEventuallySavesTheDeliveryAsFailedWithNote() {
-        when(memberRepository.findByActive(true)).thenReturn(List.of(alice));
+        when(memberRepository.findDuesPaying()).thenReturn(List.of(alice));
         when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenReturn(false);
         Communication c = communication();
 
@@ -229,7 +229,7 @@ class SendCommunicationToAllMembersUseCaseTest {
 
     @Test
     void successfulEmailsSaveEachDeliveryAsSentAndTheCommunicationIsSavedOnlyOnce() {
-        when(memberRepository.findByActive(true)).thenReturn(List.of(alice, bob));
+        when(memberRepository.findDuesPaying()).thenReturn(List.of(alice, bob));
         when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenReturn(true);
         Communication c = communication();
 
@@ -244,7 +244,7 @@ class SendCommunicationToAllMembersUseCaseTest {
 
     @Test
     void aFailingDeliverySaveDoesNotStopTheLoop() {
-        when(memberRepository.findByActive(true)).thenReturn(List.of(alice, bob));
+        when(memberRepository.findDuesPaying()).thenReturn(List.of(alice, bob));
         when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenReturn(true);
         when(messageDeliveryRepository.save(any(MessageDelivery.class)))
                 .thenThrow(new RuntimeException("db down"));
@@ -259,7 +259,7 @@ class SendCommunicationToAllMembersUseCaseTest {
     void inactiveMembersAreNotSelectedAsRecipients() {
         Member inactive = member(3L, "Gone", false);
         when(memberRepository.findAll()).thenReturn(List.of(alice, inactive));
-        when(memberRepository.findByActive(true)).thenReturn(List.of(alice));
+        when(memberRepository.findDuesPaying()).thenReturn(List.of(alice));
         Communication c = communication();
 
         useCase.invoke(c);
@@ -273,7 +273,7 @@ class SendCommunicationToAllMembersUseCaseTest {
         child.setEmail(null);
         Member spouse = member(4L, "Spouse", true);
         spouse.setEmail("ALICE@example.com");
-        when(memberRepository.findByActive(true)).thenReturn(List.of(spouse, alice, bob, child));
+        when(memberRepository.findDuesPaying()).thenReturn(List.of(spouse, alice, bob, child));
         Communication c = communication();
 
         useCase.invoke(c);
@@ -287,7 +287,7 @@ class SendCommunicationToAllMembersUseCaseTest {
     void whenNobodyHasAnEmailNothingIsStored() {
         Member child = member(3L, "Child", true);
         child.setEmail("");
-        when(memberRepository.findByActive(true)).thenReturn(List.of(child));
+        when(memberRepository.findDuesPaying()).thenReturn(List.of(child));
 
         assertThatThrownBy(() -> useCase.invoke(communication()))
                 .isInstanceOf(CommunicationDomainException.class)

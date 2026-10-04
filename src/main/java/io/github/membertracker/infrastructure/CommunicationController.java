@@ -5,6 +5,7 @@ import io.github.membertracker.domain.enumeration.CommunicationType;
 import io.github.membertracker.domain.exception.MemberDomainException;
 import io.github.membertracker.domain.model.Communication;
 import io.github.membertracker.infrastructure.dto.SendCommunicationRequest;
+import io.github.membertracker.infrastructure.security.ArchivedVisibility;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.github.membertracker.domain.model.Member;
@@ -108,7 +109,7 @@ public class CommunicationController {
             @PathVariable @Positive Long memberId,
             @Valid @RequestBody SendCommunicationRequest request
     ) {
-        Member member = getMemberByIdUseCase.invoke(memberId)
+        Member member = ArchivedVisibility.visible(getMemberByIdUseCase.invoke(memberId))
                 .orElseThrow(() -> MemberDomainException.memberNotFound(memberId));
         return ResponseEntity.ok(
                 sendCommunicationToMembersUseCase.invoke(
@@ -133,7 +134,7 @@ public class CommunicationController {
     @Operation(summary = "List delivery attempts of a communication (VOLUNTEER+)")
     public ResponseEntity<List<MessageDelivery>> getDeliveries(@PathVariable @Positive Long id) {
         List<MessageDelivery> deliveries = getDeliveriesByCommunicationUseCase.invoke(id);
-        return ResponseEntity.ok(deliveries);
+        return ResponseEntity.ok(ArchivedVisibility.redact(deliveries));
     }
 
     @PostMapping("/{id}/deliveries/{deliveryId}/retry")
@@ -141,6 +142,6 @@ public class CommunicationController {
     @Operation(summary = "Retry a failed delivery (STAFF+)")
     public ResponseEntity<MessageDelivery> retryDelivery(@PathVariable @Positive Long id,
                                                          @PathVariable @Positive Long deliveryId) {
-        return ResponseEntity.ok(retryDeliveryUseCase.invoke(id, deliveryId));
+        return ResponseEntity.ok(ArchivedVisibility.redact(retryDeliveryUseCase.invoke(id, deliveryId)));
     }
 }

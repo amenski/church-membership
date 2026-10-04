@@ -18,9 +18,9 @@ class GetDashboardStatsUseCaseTest {
 
     @Test
     void combinesTheCountsAndThisMonthsRevenue() {
-        when(memberRepository.countAll()).thenReturn(10L);
-        when(memberRepository.countByActive(true)).thenReturn(8L);
-        when(memberRepository.countActiveWithMissedAtLeast(1)).thenReturn(3L);
+        when(memberRepository.countNotArchived()).thenReturn(10L);
+        when(memberRepository.countDuesPaying()).thenReturn(8L);
+        when(memberRepository.countDuesPayingWithMissedAtLeast(1)).thenReturn(3L);
         when(paymentRepository.sumAmountByPeriod(YearMonth.now())).thenReturn(120.5);
 
         DashboardStats stats = new GetDashboardStatsUseCase(memberRepository, paymentRepository).invoke();

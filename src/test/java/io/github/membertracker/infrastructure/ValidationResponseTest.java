@@ -42,6 +42,7 @@ class ValidationResponseTest {
     @MockitoBean private GetMemberByIdUseCase getMemberByIdUseCase;
     @MockitoBean private GetActiveMembersUseCase getActiveMembersUseCase;
     @MockitoBean private GetInactiveMembersUseCase getInactiveMembersUseCase;
+    @MockitoBean private GetArchivedMembersUseCase getArchivedMembersUseCase;
     @MockitoBean private SaveMemberUseCase saveMemberUseCase;
     @MockitoBean private UpdateMemberUseCase updateMemberUseCase;
     @MockitoBean private DeleteMemberUseCase deleteMemberUseCase;

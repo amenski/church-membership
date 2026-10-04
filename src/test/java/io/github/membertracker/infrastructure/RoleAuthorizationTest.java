@@ -59,6 +59,7 @@ class RoleAuthorizationTest {
     @MockitoBean private GetMemberByIdUseCase getMemberByIdUseCase;
     @MockitoBean private GetActiveMembersUseCase getActiveMembersUseCase;
     @MockitoBean private GetInactiveMembersUseCase getInactiveMembersUseCase;
+    @MockitoBean private GetArchivedMembersUseCase getArchivedMembersUseCase;
     @MockitoBean private SaveMemberUseCase saveMemberUseCase;
     @MockitoBean private UpdateMemberUseCase updateMemberUseCase;
     @MockitoBean private DeleteMemberUseCase deleteMemberUseCase;
@@ -87,6 +88,7 @@ class RoleAuthorizationTest {
     private static List<Endpoint> endpoints() {
         return List.of(
             new Endpoint(HttpMethod.GET, "/api/members", null, "VOLUNTEER"),
+            new Endpoint(HttpMethod.GET, "/api/members?archived=true", null, "ADMIN"),
             new Endpoint(HttpMethod.GET, "/api/members/1", null, "VOLUNTEER"),
             new Endpoint(HttpMethod.GET, "/api/members/active", null, "VOLUNTEER"),
             new Endpoint(HttpMethod.GET, "/api/members/inactive", null, "VOLUNTEER"),

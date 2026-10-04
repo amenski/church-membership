@@ -1,24 +1,21 @@
 package io.github.membertracker.usecase;
 
+import io.github.membertracker.domain.enumeration.MemberStatus;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.repository.MemberRepository;
 
 import java.util.List;
 
-public class GetActiveMembersUseCase {
+public class GetArchivedMembersUseCase {
 
     private final MemberRepository memberRepository;
 
-    public GetActiveMembersUseCase(MemberRepository memberRepository) {
+    public GetArchivedMembersUseCase(MemberRepository memberRepository) {
         this.memberRepository = memberRepository;
     }
 
-    /**
-     * Retrieves the members whose dues count (status MEMBER).
-     *
-     * @return a list of all dues-paying members
-     */
+    /** Only the archived members, which every other list hides. */
     public List<Member> invoke() {
-        return memberRepository.findDuesPaying();
+        return memberRepository.findByStatus(MemberStatus.ARCHIVED);
     }
 }

@@ -3,6 +3,7 @@ package io.github.membertracker.infrastructure;
 import io.github.membertracker.domain.enumeration.ActivityType;
 import io.github.membertracker.domain.model.Payment;
 import io.github.membertracker.infrastructure.dto.RecordPaymentRequest;
+import io.github.membertracker.infrastructure.security.ArchivedVisibility;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.github.membertracker.usecase.*;
@@ -57,7 +58,7 @@ public class PaymentController {
     @PreAuthorize("hasRole('VOLUNTEER')")
     @Operation(summary = "List payments (VOLUNTEER+)")
     public List<Payment> getAllPayments() {
-        return getAllPaymentsUseCase.invoke();
+        return ArchivedVisibility.redact(getAllPaymentsUseCase.invoke());
     }
 
     @GetMapping("/{id}")
@@ -65,6 +66,7 @@ public class PaymentController {
     @Operation(summary = "Get a payment by id (VOLUNTEER+)")
     public ResponseEntity<Payment> getPaymentById(@PathVariable @Positive Long id) {
         return getPaymentByIdUseCase.invoke(id)
+                .map(payment -> ArchivedVisibility.redact(payment))
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -73,7 +75,7 @@ public class PaymentController {
     @PreAuthorize("hasRole('VOLUNTEER')")
     @Operation(summary = "List payments of one member (VOLUNTEER+)")
     public ResponseEntity<List<Payment>> getPaymentsByMember(@PathVariable @Positive Long memberId) {
-        return getMemberByIdUseCase.invoke(memberId)
+        return ArchivedVisibility.visible(getMemberByIdUseCase.invoke(memberId))
                 .map(member -> ResponseEntity.ok(getPaymentsByMemberUseCase.invoke(member)))
                 .orElse(ResponseEntity.notFound().build());
     }

@@ -101,12 +101,14 @@ The old `USER` role was removed. Migration `004.migrate-user-role-to-member.sql`
 
 | Area | VOLUNTEER and above | STAFF and above | ADMIN only |
 |------|--------------------|-----------------|------------|
-| Members `/api/members` | List, get, active, inactive, overdue | Create, update, export, export selected | Delete |
+| Members `/api/members` | List, get, active, inactive, overdue | Create, update, export, export selected | Delete (archives, see below), `?archived=true` list, read and export of archived members |
 | Payments `/api/payments` | List, get, by member | Record, export | |
 | Communications `/api/communications` | List, get, deliveries | Send to all, send to one member, send to overdue, retry failed delivery | |
 | Dashboard `/api/dashboard/*` | All | | |
 | Activity log `/api/activity-log` | | | View the activity log (who changed or exported what) |
 | Own account `/api/users/me*` | Any signed-in user, including MEMBER | | |
+
+**Archived members are visible to ADMIN only, on every read path** (`infrastructure/security/ArchivedVisibility`, one helper used by all controllers): `GET /api/members/{id}`, `GET /api/payments/member/{id}` and `POST /api/communications/send-to-member/{id}` answer as for an unknown id (404, 404, 400 `MEMBER_006`), the id-based export drops them, and where a payment or a delivery embeds an archived member (`/api/payments`, `/api/payments/{id}`, `/api/dashboard/recent-payments`, `/api/communications/{id}/deliveries`, delivery retry) the email and phone are blanked and the name stays so the history still reads.
 
 ## Frontend
 

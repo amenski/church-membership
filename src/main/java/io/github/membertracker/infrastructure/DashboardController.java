@@ -1,5 +1,6 @@
 package io.github.membertracker.infrastructure;
 
+import io.github.membertracker.infrastructure.security.ArchivedVisibility;
 import io.github.membertracker.domain.model.Communication;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.model.Payment;
@@ -64,7 +65,7 @@ public class DashboardController {
     @PreAuthorize("hasRole('VOLUNTEER')")
     @Operation(summary = "Ten most recent payments (VOLUNTEER+)")
     public ResponseEntity<List<Payment>> getRecentPayments() {
-        return ResponseEntity.ok(getRecentPaymentsUseCase.invoke(RECENT_PAYMENTS));
+        return ResponseEntity.ok(ArchivedVisibility.redact(getRecentPaymentsUseCase.invoke(RECENT_PAYMENTS)));
     }
 
     @GetMapping("/overdue-members")

@@ -24,7 +24,7 @@ A VOLUNTEER sees the page without the "Record payment" and "Export CSV" buttons;
 ### Record a payment
 1. STAFF opens the "Record payment" dialog and picks: Member (active members only, sorted by name), Month covered (default and maximum the current month), Paid on (default and maximum today; hint "Change this when you enter an older payment."), Amount (at least 0.01), Payment method (default Cash) and optional Notes (500 characters, counter) (`PaymentsView.vue:114-140`).
 2. The browser sends `memberId`, `amount`, `paymentMethod`, `period` and, when set, `paymentDate` and `notes`, built only by `buildPaymentRequest` (`frontend/src/utils/paymentPayload.js:13-23`). Field rules: [payment-controller.md](payment-controller.md#request-body-post).
-3. The server loads the member by id and refuses an inactive member, builds the payment (period defaults to the current month, payment date to today), validates amount, period and payment date, then refuses a second payment for the same member and month (`src/main/java/io/github/membertracker/usecase/RecordPaymentUseCase.java:32-53`).
+3. The server loads the member by id and refuses a member whose status is not MEMBER, builds the payment (period defaults to the current month, payment date to today), validates amount, period and payment date, then refuses a second payment for the same member and month (`src/main/java/io/github/membertracker/usecase/RecordPaymentUseCase.java:32-53`).
 4. The member's `lastPaymentDate` becomes the later of its current value and the payment date, so a back-dated payment never moves it backwards. The missed-months counter is reset to 0 only when the period is the current month (`src/main/java/io/github/membertracker/domain/model/Member.java:46-59`, `Member.java:90-96`).
 5. Member and payment are saved (`RecordPaymentUseCase.java:59-60`).
 6. Success: the dialog closes, the form resets (month and date back to the defaults), the history reloads and a toast "Payment recorded" names the member, month and amount (`PaymentsView.vue:339-357`).
@@ -49,9 +49,9 @@ A VOLUNTEER sees the page without the "Record payment" and "Export CSV" buttons;
 - The payment date defaults to today; the client may send an earlier `paymentDate` (back-dating history), never a future one (`Payment.java:70-74`, `RecordPaymentRequest.java:30-32`). The "Paid on" field defaults to today and the dialog's `max` is today.
 - Notes are limited to 500 characters (`RecordPaymentRequest.java:34-35`).
 - Payments cannot be edited, deleted or voided. The DELETE endpoint was removed; payments are financial records.
-- The member must exist (unknown id is a 400) and must be active: an inactive member is a 400 (`MEMBER_008`). The dialog only lists active members, so this is reachable only through a stale list or the API.
+- The member must exist (unknown id is a 400) and must have status MEMBER: INACTIVE, DECEASED, TRANSFERRED and ARCHIVED are a 400 (`MEMBER_008`, message unchanged: "Member 'X' is inactive. Reactivate the member before recording a payment."). The dialog only lists active members, so this is reachable only through a stale list or the API.
 - Exports (this CSV, the members CSV and the selected-members CSV) need STAFF.
-- "Behind" and "paid up" apply to active members only: an inactive member's stored counter is stale, so the screens show a dash.
+- "Behind" and "paid up" apply to MEMBER-status members only: any other status's stored counter is stale, so the screens show a dash.
 
 ## Known issues
 - No way to correct a mistaken payment (wrong amount, wrong member). A void-with-audit-trail feature is future work: [payment-controller.md](payment-controller.md#gotchas), audit C7 in [../functionality-audit.md](../functionality-audit.md).

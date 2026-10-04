@@ -9,27 +9,28 @@ Roles per [../authentication.md](../authentication.md). All paths are under `/ap
 
 | Method | Path | Auth | Request | Response |
 |--------|------|------|---------|----------|
-| GET | `` (`MemberController.java:74`) | VOLUNTEER+ | - | `List<Member>` |
-| GET | `/{id}` (`:77`) | VOLUNTEER+ | - | `Member` or 404 |
-| GET | `/active` (`:86`) | VOLUNTEER+ | - | `List<Member>` (active = true) |
-| GET | `/inactive` (`:93`) | VOLUNTEER+ | - | `List<Member>` (active = false) |
+| GET | `` | VOLUNTEER+ (ADMIN for `?archived=true`) | optional `archived` (default false) | `List<Member>`: everyone except ARCHIVED; with `archived=true` ONLY the archived members. STAFF and VOLUNTEER get 403 for the parameter |
+| GET | `/{id}` (`:77`) | VOLUNTEER+ | - | `Member` or 404 (also 404 for an ARCHIVED member unless the caller is an ADMIN, same empty body as an unknown id) |
+| GET | `/active` (`:86`) | VOLUNTEER+ | - | `List<Member>` (status MEMBER) |
+| GET | `/inactive` (`:93`) | VOLUNTEER+ | - | `List<Member>` (INACTIVE, DECEASED and TRANSFERRED; archived hidden) |
 | POST | `` (`:100`) | STAFF+ | `MemberRequest` body, validated | saved `Member` |
 | PUT | `/{id}` (`:107`) | STAFF+ | `MemberRequest` body, validated | saved `Member` or 404 |
 | DELETE | `/{id}` (`:117`) | ADMIN | - | 200 empty, or 404 |
-| GET | `/overdue/{months}` (`:129`) | VOLUNTEER+ | - | ACTIVE members with `consecutiveMonthsMissed >= months`, longest behind first |
-| GET | `/export` (`:132`) | STAFF+ | - | `members.csv`, all members |
-| POST | `/export` (`:139`) | STAFF+ | `ExportMembersRequest {ids}` | `members.csv`, only the given ids |
+| GET | `/overdue/{months}` (`:129`) | VOLUNTEER+ | - | MEMBER-status members with `consecutiveMonthsMissed >= months`, longest behind first |
+| GET | `/export` (`:132`) | STAFF+ | - | `members.csv`, every member except the archived |
+| POST | `/export` (`:139`) | STAFF+ | `ExportMembersRequest {ids}` | `members.csv`, only the given ids; archived members are included for an ADMIN only |
 
-CSV: a plain response built in memory (`byte[]`), `Content-Type: text/csv; charset=UTF-8`, `Content-Disposition: attachment; filename=members.csv`, UTF-8 with a byte order mark so Excel reads non-Latin names (Amharic) correctly (`:150-163`, `CsvUtils.attachment`). Columns: `id,name,email,phone,joinDate,active,consecutiveMonthsMissed`. `joinDate` is ISO local date.
+CSV: a plain response built in memory (`byte[]`), `Content-Type: text/csv; charset=UTF-8`, `Content-Disposition: attachment; filename=members.csv`, UTF-8 with a byte order mark so Excel reads non-Latin names (Amharic) correctly (`:150-163`, `CsvUtils.attachment`). Columns: `id,name,email,phone,joinDate,active,consecutiveMonthsMissed,status` (`status` was appended last so old spreadsheets keep working; `active` stays until the contract step). `joinDate` is ISO local date.
 
 ## Collaborators
 | Dependency | Used by | Ref |
 |------------|---------|-----|
-| `GetAllMembersUseCase` -> `findAll()` | list, both exports | `usecase/GetAllMembersUseCase.java:17` |
-| `GetMemberByIdUseCase` -> `findById` | read, and the existence check in DELETE | `usecase/GetMemberByIdUseCase.java:23` |
-| `GetActiveMembersUseCase` -> `findByActive(true)` | `/active` | `usecase/GetActiveMembersUseCase.java:22` |
-| `GetInactiveMembersUseCase` -> `findByActive(false)` | `/inactive` | `usecase/GetInactiveMembersUseCase.java:22` |
-| `GetMembersWithMissedPaymentsUseCase` -> `findActiveWithMissedAtLeastOrderByMissedDesc` | `/overdue/{months}` | `usecase/GetMembersWithMissedPaymentsUseCase.java` |
+| `GetAllMembersUseCase` -> `findAll()` (everyone but ARCHIVED) | list, full export |
+| `GetArchivedMembersUseCase` -> `findByStatus(ARCHIVED)` | list with `?archived=true` (ADMIN) | `usecase/GetAllMembersUseCase.java:17` |
+| `GetMemberByIdUseCase` -> `findById` (finds archived members too) | read, the existence check in DELETE, and the selected export | `usecase/GetMemberByIdUseCase.java:23` |
+| `GetActiveMembersUseCase` -> `findDuesPaying()` | `/active` | `usecase/GetActiveMembersUseCase.java:22` |
+| `GetInactiveMembersUseCase` -> `findAll()` filtered to statuses that do not count for dues | `/inactive` | `usecase/GetInactiveMembersUseCase.java:22` |
+| `GetMembersWithMissedPaymentsUseCase` -> `findDuesPayingWithMissedAtLeastOrderByMissedDesc` | `/overdue/{months}` | `usecase/GetMembersWithMissedPaymentsUseCase.java` |
 | `SaveMemberUseCase` -> `invoke(name, email, phone, joinDate)` | POST | `usecase/SaveMemberUseCase.java:21` |
 | `UpdateMemberUseCase` -> `invoke(id, name, email, phone, joinDate, status, active)` | PUT | `usecase/UpdateMemberUseCase.java:25` |
 | `DeleteMemberUseCase` -> `deleteById` | DELETE | `usecase/DeleteMemberUseCase.java:21` |
@@ -71,5 +72,5 @@ All are RFC 7807 `ProblemDetail` ([../architecture.md](../architecture.md)), exc
 - 404 responses are empty bodies, not `ProblemDetail` (`MemberController.java:87`, `:118`, `:129`).
 - `active` is the legacy form of `status`: on POST `active: false` creates an INACTIVE member, on PUT it is applied as described above (reactivating resets the missed-months counter). `status` wins when both are sent. The `active` database column is kept in step by `MemberPersistenceMapper` (its only writer) until the contract step.
 - There is no email lookup any more (`findByEmailIgnoreCase`/`existsByEmailIgnoreCase` were removed with the duplicate check); `idx_member_email_lookup` is a plain index for future lookups.
-- POST `/export` loads all members and filters in memory; ids that do not exist are silently skipped (`MemberController.java:146-151`).
+- POST `/export` looks each distinct id up with `GetMemberByIdUseCase` (sorted by id) and drops archived members unless the caller is an ADMIN (`ArchivedVisibility`, the one rule for every read path); ids that do not exist are silently skipped.
 - The CSV is fully built before the response starts, so a failure gives a normal 500 instead of a half-written file.

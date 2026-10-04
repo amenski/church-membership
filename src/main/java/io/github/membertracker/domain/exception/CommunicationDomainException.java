@@ -13,6 +13,7 @@ public class CommunicationDomainException extends DomainException {
     public static final String ALREADY_SENT = "COMMUNICATION_005";
     public static final String NO_RECIPIENTS = "COMMUNICATION_006";
     public static final String MEMBER_HAS_NO_EMAIL = "COMMUNICATION_007";
+    public static final String MEMBER_CANNOT_RECEIVE_MESSAGES = "COMMUNICATION_008";
 
     public CommunicationDomainException(String message, String errorCode) {
         super(message, errorCode, "Communication");
@@ -27,6 +28,13 @@ public class CommunicationDomainException extends DomainException {
         return new CommunicationDomainException(
             String.format("Member '%s' has no email address, so there is nothing to send to.", memberName),
             MEMBER_HAS_NO_EMAIL
+        );
+    }
+
+    public static CommunicationDomainException memberCannotReceiveMessages(String memberName) {
+        return new CommunicationDomainException(
+            String.format("Member '%s' is not a current member, so messages are not sent to them.", memberName),
+            MEMBER_CANNOT_RECEIVE_MESSAGES
         );
     }
 

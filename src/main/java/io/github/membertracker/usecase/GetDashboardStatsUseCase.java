@@ -20,14 +20,15 @@ public class GetDashboardStatsUseCase {
     }
 
     /**
-     * Overdue means an active member at least one month behind; revenue is the sum of the payments whose
+     * Total is every member who is not archived, active is the dues-paying ones (status MEMBER), overdue
+     * means a dues-paying member at least one month behind; revenue is the sum of the payments whose
      * billing period is the current month.
      */
     public DashboardStats invoke() {
         return new DashboardStats(
-                memberRepository.countAll(),
-                memberRepository.countByActive(true),
-                memberRepository.countActiveWithMissedAtLeast(1),
+                memberRepository.countNotArchived(),
+                memberRepository.countDuesPaying(),
+                memberRepository.countDuesPayingWithMissedAtLeast(1),
                 paymentRepository.sumAmountByPeriod(YearMonth.now()));
     }
 }

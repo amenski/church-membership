@@ -9,7 +9,7 @@ Read-only summary figures (counts, revenue, recent payments, overdue members, ac
 |--------|------|------|---------|----------|
 | GET | `/api/dashboard/stats` | VOLUNTEER+ | none | `{totalMembers, activeMembers, overdueMembers, monthlyRevenue}` |
 | GET | `/api/dashboard/recent-payments` | VOLUNTEER+ | none | `Payment[]`, max 10 |
-| GET | `/api/dashboard/overdue-members` | VOLUNTEER+ | none | `Member[]`, active members only, longest behind first |
+| GET | `/api/dashboard/overdue-members` | VOLUNTEER+ | none | `Member[]`, MEMBER-status members only, longest behind first |
 | GET | `/api/dashboard/recent-activities` | VOLUNTEER+ | none | `{id, date, type, description}[]`, max 10 |
 
 Roles and hierarchy: [../authentication.md](../authentication.md). The JSON keys and shapes are unchanged by the move to queries.
@@ -19,20 +19,20 @@ Use case `GetDashboardStatsUseCase` (returns a `DashboardStats` record: four que
 
 | Field | Meaning | Source |
 |-------|---------|--------|
-| `totalMembers` | all members, active or not | `MemberRepository.countAll()` |
-| `activeMembers` | members with `active = true` | `countByActive(true)` |
-| `overdueMembers` | ACTIVE members with `consecutiveMonthsMissed >= 1` | `countActiveWithMissedAtLeast(1)` |
+| `totalMembers` | every member except the archived (any other status counts) | `MemberRepository.countNotArchived()` |
+| `activeMembers` | members with status MEMBER (dues-paying) | `countDuesPaying()` |
+| `overdueMembers` | MEMBER-status members with `consecutiveMonthsMissed >= 1` | `countDuesPayingWithMissedAtLeast(1)` |
 | `monthlyRevenue` | sum of `amount` where the billing `period` is the current month; always a double (`0.0` when there are no payments) | `PaymentRepository.sumAmountByPeriod(YearMonth.now())`, a SQL `SUM` |
 
 - Revenue is by billing `period`, not `paymentDate`: a payment made today for last month is excluded; an advance payment for this month made earlier is included.
-- Overdue is a stored counter, not computed here; it is raised once per member per month by the monthly `UpdateMissingPaymentCountersUseCase` (`src/main/java/io/github/membertracker/usecase/UpdateMissingPaymentCountersUseCase.java`). An inactive member who is behind is not counted, so the card, the overdue list and the dues meter agree.
+- Overdue is a stored counter, not computed here; it is raised once per member per month by the monthly `UpdateMissingPaymentCountersUseCase` (`src/main/java/io/github/membertracker/usecase/UpdateMissingPaymentCountersUseCase.java`). A member who is behind but not dues-paying (inactive, deceased, transferred) or archived is not counted, so the card, the overdue list and the dues meter agree.
 
 ## Recent payments
 - `GetRecentPaymentsUseCase.invoke(10)` -> `PaymentRepository.findRecent(10)`: newest `paymentDate` first, then newest id, limited in SQL.
 - Returns the domain `Payment` as-is: nested `member` object, no `memberId` field (`src/main/java/io/github/membertracker/domain/model/Payment.java`). The derived fields `onTime`, `daysLate`, `forCurrentPeriod` and `valid` are no longer in the JSON (their getters were removed in `chore: remove unused domain methods`; the frontend never read them).
 
 ## Overdue members
-- `GetMembersWithMissedPaymentsUseCase.invoke(1)` -> `MemberRepository.findActiveWithMissedAtLeastOrderByMissedDesc(1)`: active members only, the one furthest behind first (then by name). The same use case serves `GET /api/members/overdue/{months}` and the send-to-overdue endpoint, so they are active-only too.
+- `GetMembersWithMissedPaymentsUseCase.invoke(1)` -> `MemberRepository.findDuesPayingWithMissedAtLeastOrderByMissedDesc(1)`: MEMBER-status members only, the one furthest behind first (then by name). The same use case serves `GET /api/members/overdue/{months}` and the send-to-overdue endpoint, so they are dues-paying-only too.
 
 ## Recent activities
 - Derived, not read from the `activity_log` table (no Java code references that table; it is only in the SQL scripts, `src/main/resources/db/sql/001.schema-creation.sql:71`).
@@ -43,8 +43,8 @@ Use case `GetDashboardStatsUseCase` (returns a `DashboardStats` record: four que
 - Only `payment` and `communication` types are produced; no member events.
 
 ## Collaborators
-- `GetDashboardStatsUseCase` -> `countAll`, `countByActive`, `countActiveWithMissedAtLeast`, `sumAmountByPeriod`
-- `GetMembersWithMissedPaymentsUseCase` -> `findActiveWithMissedAtLeastOrderByMissedDesc`
+- `GetDashboardStatsUseCase` -> `countNotArchived`, `countDuesPaying`, `countDuesPayingWithMissedAtLeast`, `sumAmountByPeriod`
+- `GetMembersWithMissedPaymentsUseCase` -> `findDuesPayingWithMissedAtLeastOrderByMissedDesc`
 - `GetRecentPaymentsUseCase` -> `PaymentRepository.findRecent`
 - `GetRecentCommunicationsUseCase` -> `CommunicationRepository.findRecent`
 - Models: `Member`, `Payment`, `Communication` (domain), returned unmapped.
@@ -54,7 +54,7 @@ Use case `GetDashboardStatsUseCase` (returns a `DashboardStats` record: four que
 |----------|---------|
 | stats | 3 counts + 1 `SUM` |
 | recent-payments | 1 query, `LIMIT 10` |
-| overdue-members | 1 query, active members only |
+| overdue-members | 1 query, MEMBER-status members only |
 | recent-activities | 2 queries, `LIMIT 5` each |
 
 - No table is loaded and sorted in Java any more. Indexes are not justified at under about 1,000 members (see [../todo.md](../todo.md)).

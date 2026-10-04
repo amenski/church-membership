@@ -318,6 +318,17 @@ class SendCommunicationToMembersUseCaseTest {
     }
 
     @Test
+    void aSingleMemberWhoIsNotAMemberAnymoreIsRejectedEvenWithAnEmail() {
+        alice.setStatus(io.github.membertracker.domain.enumeration.MemberStatus.DECEASED);
+
+        assertThatThrownBy(() -> useCase.invoke(communication(), List.of(alice), DeliveryChannel.EMAIL))
+                .isInstanceOf(CommunicationDomainException.class)
+                .extracting("errorCode").isEqualTo(CommunicationDomainException.MEMBER_CANNOT_RECEIVE_MESSAGES);
+        verify(communicationRepository, never()).save(any());
+        verifyNoInteractions(emailService);
+    }
+
+    @Test
     void severalMembersAllWithoutAnEmailAreRejectedAsNoRecipients() {
         Member a = new Member("A", null, null);
         Member b = new Member("B", " ", null);

@@ -79,6 +79,23 @@ class SendPaymentRemindersUseCaseTest {
     }
 
     @Test
+    void deceasedAndTransferredMembersAreNotReminded() {
+        Member active = new Member("a", "a@example.com", "+1234567890");
+        Member deceased = new Member("b", "b@example.com", "+1234567890");
+        deceased.setStatus(MemberStatus.DECEASED);
+        Member transferred = new Member("c", "c@example.com", "+1234567890");
+        transferred.setStatus(MemberStatus.TRANSFERRED);
+        when(memberRepository.findByConsecutiveMonthsMissedGreaterThanEqual(3))
+                .thenReturn(List.of(active, deceased, transferred));
+        when(sender.invoke(any(), any(), any())).thenReturn(new Communication());
+
+        useCase.invoke(3);
+
+        verify(sender).invoke(any(), org.mockito.ArgumentMatchers.eq(List.of(active)),
+                org.mockito.ArgumentMatchers.eq(MessageDelivery.DeliveryChannel.EMAIL));
+    }
+
+    @Test
     void onlyInactiveOverdueMembersMeansNothingIsSent() {
         Member inactive = new Member("b", "b@example.com", "+1234567890");
         inactive.setStatus(MemberStatus.INACTIVE);

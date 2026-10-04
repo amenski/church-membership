@@ -14,11 +14,14 @@ public class GetInactiveMembersUseCase {
     }
 
     /**
-     * Retrieves all inactive members from the database.
+     * Retrieves the listed members whose dues do not count: INACTIVE, DECEASED and TRANSFERRED.
+     * Archived members are hidden.
      *
-     * @return a list of all inactive members
+     * @return a list of all members who are not dues-paying and not archived
      */
     public List<Member> invoke() {
-        return memberRepository.findByActive(false);
+        return memberRepository.findAll().stream()
+                .filter(member -> !member.getStatus().countsForDues())
+                .toList();
     }
 }

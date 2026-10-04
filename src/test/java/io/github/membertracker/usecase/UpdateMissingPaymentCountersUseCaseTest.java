@@ -49,7 +49,7 @@ class UpdateMissingPaymentCountersUseCaseTest {
     @Test
     void memberWithoutPreviousMonthPaymentIsIncrementedAndSaved() {
         Member late = member("late", 1);
-        when(memberRepository.findByActive(true)).thenReturn(List.of(late));
+        when(memberRepository.findDuesPaying()).thenReturn(List.of(late));
         when(paymentRepository.existsByMemberAndPeriod(late, previousMonth)).thenReturn(false);
 
         useCase.invoke();
@@ -61,7 +61,7 @@ class UpdateMissingPaymentCountersUseCaseTest {
     @Test
     void memberWhoPaidPreviousMonthIsLeftAloneAndNotSaved() {
         Member paid = member("paid", 0);
-        when(memberRepository.findByActive(true)).thenReturn(List.of(paid));
+        when(memberRepository.findDuesPaying()).thenReturn(List.of(paid));
         when(paymentRepository.existsByMemberAndPeriod(paid, previousMonth)).thenReturn(true);
 
         useCase.invoke();
@@ -75,7 +75,7 @@ class UpdateMissingPaymentCountersUseCaseTest {
     void onlyMembersWithoutAPaymentAreIncremented() {
         Member paid = member("paid", 0);
         Member late = member("late", 0);
-        when(memberRepository.findByActive(true)).thenReturn(List.of(paid, late));
+        when(memberRepository.findDuesPaying()).thenReturn(List.of(paid, late));
         when(paymentRepository.existsByMemberAndPeriod(paid, previousMonth)).thenReturn(true);
 
         useCase.invoke();
@@ -89,7 +89,7 @@ class UpdateMissingPaymentCountersUseCaseTest {
     @Test
     void checksThePreviousMonthNotTheCurrentOne() {
         Member m = member("m", 0);
-        when(memberRepository.findByActive(true)).thenReturn(List.of(m));
+        when(memberRepository.findDuesPaying()).thenReturn(List.of(m));
 
         useCase.invoke();
 
@@ -99,7 +99,7 @@ class UpdateMissingPaymentCountersUseCaseTest {
 
     @Test
     void noMembersMeansNoSaves() {
-        when(memberRepository.findByActive(true)).thenReturn(List.of());
+        when(memberRepository.findDuesPaying()).thenReturn(List.of());
 
         useCase.invoke();
 
@@ -109,7 +109,7 @@ class UpdateMissingPaymentCountersUseCaseTest {
     @Test
     void runningTwiceForTheSameMonthIncrementsOnlyOnce() {
         Member late = member("late", 0);
-        when(memberRepository.findByActive(true)).thenReturn(List.of(late));
+        when(memberRepository.findDuesPaying()).thenReturn(List.of(late));
 
         useCase.invoke();
         useCase.invoke();
@@ -122,7 +122,7 @@ class UpdateMissingPaymentCountersUseCaseTest {
     void onlyActiveMembersAreLoaded() {
         Member inactive = member("inactive", 0);
         inactive.setStatus(MemberStatus.INACTIVE);
-        when(memberRepository.findByActive(true)).thenReturn(List.of());
+        when(memberRepository.findDuesPaying()).thenReturn(List.of());
 
         useCase.invoke();
 
@@ -135,7 +135,7 @@ class UpdateMissingPaymentCountersUseCaseTest {
     void memberWhoJoinedAfterTheEndOfTheCountedMonthIsSkipped() {
         Member newcomer = member("newcomer", 0);
         newcomer.setJoinDate(previousMonth.plusMonths(1).atDay(1));
-        when(memberRepository.findByActive(true)).thenReturn(List.of(newcomer));
+        when(memberRepository.findDuesPaying()).thenReturn(List.of(newcomer));
 
         useCase.invoke();
 
@@ -147,7 +147,7 @@ class UpdateMissingPaymentCountersUseCaseTest {
     void memberWhoJoinedOnTheLastDayOfTheCountedMonthIsCounted() {
         Member lastDay = member("lastDay", 0);
         lastDay.setJoinDate(previousMonth.atEndOfMonth());
-        when(memberRepository.findByActive(true)).thenReturn(List.of(lastDay));
+        when(memberRepository.findDuesPaying()).thenReturn(List.of(lastDay));
 
         useCase.invoke();
 
@@ -158,7 +158,7 @@ class UpdateMissingPaymentCountersUseCaseTest {
     void memberWithoutJoinDateIsCounted() {
         Member unknown = member("unknown", 0);
         unknown.setJoinDate(null);
-        when(memberRepository.findByActive(true)).thenReturn(List.of(unknown));
+        when(memberRepository.findDuesPaying()).thenReturn(List.of(unknown));
 
         useCase.invoke();
 
@@ -170,7 +170,7 @@ class UpdateMissingPaymentCountersUseCaseTest {
     void savesNothingWhenTheMonthWasAlreadyCounted() {
         Member counted = member("counted", 1);
         counted.setLastMissedCountMonth(previousMonth);
-        when(memberRepository.findByActive(true)).thenReturn(List.of(counted));
+        when(memberRepository.findDuesPaying()).thenReturn(List.of(counted));
 
         useCase.invoke();
 
@@ -181,7 +181,7 @@ class UpdateMissingPaymentCountersUseCaseTest {
     @Test
     void recordsWhichMonthWasCounted() {
         Member late = member("late", 0);
-        when(memberRepository.findByActive(true)).thenReturn(List.of(late));
+        when(memberRepository.findDuesPaying()).thenReturn(List.of(late));
 
         useCase.invoke();
 
@@ -191,7 +191,7 @@ class UpdateMissingPaymentCountersUseCaseTest {
     @Test
     void consecutiveMonthsRaiseTheCounterOneThenTwo() {
         Member late = member("late", 0);
-        when(memberRepository.findByActive(true)).thenReturn(List.of(late));
+        when(memberRepository.findDuesPaying()).thenReturn(List.of(late));
         HasPaymentForMonthUseCase hasPayment = new HasPaymentForMonthUseCase(paymentRepository);
 
         new UpdateMissingPaymentCountersUseCase(memberRepository, hasPayment, clockAt("2026-10-01")).invoke();

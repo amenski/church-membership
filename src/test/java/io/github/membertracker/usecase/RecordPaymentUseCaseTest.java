@@ -11,6 +11,8 @@ import io.github.membertracker.domain.repository.MemberRepository;
 import io.github.membertracker.domain.repository.PaymentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 
 import java.time.LocalDate;
@@ -166,6 +168,17 @@ class RecordPaymentUseCaseTest {
                 .extracting("errorCode").isEqualTo(MemberDomainException.MEMBER_INACTIVE);
         verify(paymentRepository, never()).save(any());
         verify(memberRepository, never()).save(any());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = MemberStatus.class, names = "MEMBER", mode = EnumSource.Mode.EXCLUDE)
+    void onlyAMemberWhoseDuesCountCanHaveAPaymentRecorded(MemberStatus status) {
+        stored.setStatus(status);
+
+        assertThatThrownBy(() -> useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now(), null, null))
+                .isInstanceOf(MemberDomainException.class)
+                .extracting("errorCode").isEqualTo(MemberDomainException.MEMBER_INACTIVE);
+        verify(paymentRepository, never()).save(any());
     }
 
     @Test

@@ -118,7 +118,7 @@ frontend/src/
 | 2026-02 | Cached thread pool for email sending, not virtual threads | Keeps the project on Java 17 | In use. The audit flags it as unbounded and not durable |
 | 2026-02 | Self-registration disabled | Only church staff should have accounts | In use. There is no admin user management yet |
 | 2026-10 | HTTPS via Caddy reverse proxy, not Spring SSL | Automatic certificate renewal; app config stays simple | In use. See [development.md](development.md#https-caddy-reverse-proxy) |
-| 2026-10 | "Send to all" means active members only | Inactive includes lapsed, transferred and deceased members | In use |
+| 2026-10 | "Send to all" means members with status MEMBER only (`Recipients.reachable` also drops every other status) | Inactive, transferred and deceased people must not be billed or written to | In use |
 | 2026-10 | Any payment amount above 0 is valid; no fixed minimum | Dues vary by family and gifts can be small | In use |
 | 2026-10 | Payment reminders start 7 days before the due date (inclusive) | Matches REMINDER_DAYS_BEFORE_DUE | In use |
 | 2026-10 | OpenAPI/Swagger UI only under the dev profile | Public endpoint list helps attackers; devs still get docs | In use |
@@ -133,4 +133,5 @@ frontend/src/
 | 2026-10 | CSV exports are built in memory and returned as a plain response, UTF-8 with BOM | Streaming gained nothing at this size and hung behind the dev proxy; the BOM makes Excel read Amharic names | In use |
 | 2026-10 | Audit entries are written best-effort inside the use cases through a CurrentActor port | A failing audit write must not block the action; the domain stays free of Spring Security | In use |
 | 2026-10 | Membership status (MEMBER, INACTIVE, DECEASED, TRANSFERRED, ARCHIVED) is stored on the member; `active` is kept in step by the mapper until the contract step | Dues, reminders and messages need more than on/off; the migration must stay reversible | In use |
+| 2026-10 | Members are read by status: `findDuesPaying`/`countDuesPaying` (status MEMBER) drive dues, reminders, messages and payments; every list and count except `GET /api/members?archived=true` (ADMIN) hides ARCHIVED | One rule table (`MemberStatus`) instead of `active` checks scattered around | In use |
 | 2026-10 | Roles ADMIN > STAFF > VOLUNTEER > MEMBER with `RoleHierarchy` | Replaces ADMIN/MANAGER/USER and the planned TREASURER/VIEWER | Done (3cf5d84; frontend routes in this change) |

@@ -6,13 +6,17 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface MemberJpaRepository extends JpaRepository<MemberEntity, Long> {
-    List<MemberEntity> findByActive(boolean active);
+    List<MemberEntity> findByStatusOrderByIdAsc(String status);
 
-    List<MemberEntity> findByConsecutiveMonthsMissedGreaterThanEqual(int months);
+    List<MemberEntity> findByStatusNotOrderByIdAsc(String status);
 
-    long countByActive(boolean active);
+    long countByStatus(String status);
 
-    long countByActiveTrueAndConsecutiveMonthsMissedGreaterThanEqual(int months);
+    long countByStatusNot(String status);
 
-    List<MemberEntity> findByActiveTrueAndConsecutiveMonthsMissedGreaterThanEqualOrderByConsecutiveMonthsMissedDescNameAscIdAsc(int months);
+    List<MemberEntity> findByStatusAndConsecutiveMonthsMissedGreaterThanEqualOrderByIdAsc(String status, int months);
+
+    long countByStatusAndConsecutiveMonthsMissedGreaterThanEqual(String status, int months);
+
+    List<MemberEntity> findByStatusAndConsecutiveMonthsMissedGreaterThanEqualOrderByConsecutiveMonthsMissedDescNameAscIdAsc(String status, int months);
 }

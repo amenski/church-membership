@@ -1,5 +1,6 @@
 package io.github.membertracker.infrastructure.persistence.repository;
 
+import io.github.membertracker.domain.enumeration.MemberStatus;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.repository.MemberRepository;
 import io.github.membertracker.infrastructure.persistence.entity.MemberEntity;
@@ -19,11 +20,12 @@ public class MemberDbRepository implements MemberRepository {
         this.memberJpaRepository = memberJpaRepository;
     }
 
+    private static final String MEMBER = MemberStatus.MEMBER.name();
+    private static final String ARCHIVED = MemberStatus.ARCHIVED.name();
+
     @Override
     public List<Member> findAll() {
-        return memberJpaRepository.findAll().stream()
-                .map(MemberPersistenceMapper::toDomain)
-                .collect(Collectors.toList());
+        return toDomain(memberJpaRepository.findByStatusNotOrderByIdAsc(ARCHIVED));
     }
 
     @Override
@@ -33,41 +35,39 @@ public class MemberDbRepository implements MemberRepository {
     }
 
     @Override
-    public List<Member> findByActive(boolean active) {
-        return memberJpaRepository.findByActive(active).stream()
-                .map(MemberPersistenceMapper::toDomain)
-                .collect(Collectors.toList());
+    public List<Member> findByStatus(MemberStatus status) {
+        return toDomain(memberJpaRepository.findByStatusOrderByIdAsc(status.name()));
+    }
+
+    @Override
+    public List<Member> findDuesPaying() {
+        return findByStatus(MemberStatus.MEMBER);
     }
 
     @Override
     public List<Member> findByConsecutiveMonthsMissedGreaterThanEqual(int months) {
-        return memberJpaRepository.findByConsecutiveMonthsMissedGreaterThanEqual(months).stream()
-                .map(MemberPersistenceMapper::toDomain)
-                .collect(Collectors.toList());
+        return toDomain(memberJpaRepository.findByStatusAndConsecutiveMonthsMissedGreaterThanEqualOrderByIdAsc(MEMBER, months));
     }
 
     @Override
-    public long countAll() {
-        return memberJpaRepository.count();
+    public long countNotArchived() {
+        return memberJpaRepository.countByStatusNot(ARCHIVED);
     }
 
     @Override
-    public long countByActive(boolean active) {
-        return memberJpaRepository.countByActive(active);
+    public long countDuesPaying() {
+        return memberJpaRepository.countByStatus(MEMBER);
     }
 
     @Override
-    public long countActiveWithMissedAtLeast(int months) {
-        return memberJpaRepository.countByActiveTrueAndConsecutiveMonthsMissedGreaterThanEqual(months);
+    public long countDuesPayingWithMissedAtLeast(int months) {
+        return memberJpaRepository.countByStatusAndConsecutiveMonthsMissedGreaterThanEqual(MEMBER, months);
     }
 
     @Override
-    public List<Member> findActiveWithMissedAtLeastOrderByMissedDesc(int months) {
-        return memberJpaRepository
-                .findByActiveTrueAndConsecutiveMonthsMissedGreaterThanEqualOrderByConsecutiveMonthsMissedDescNameAscIdAsc(months)
-                .stream()
-                .map(MemberPersistenceMapper::toDomain)
-                .collect(Collectors.toList());
+    public List<Member> findDuesPayingWithMissedAtLeastOrderByMissedDesc(int months) {
+        return toDomain(memberJpaRepository
+                .findByStatusAndConsecutiveMonthsMissedGreaterThanEqualOrderByConsecutiveMonthsMissedDescNameAscIdAsc(MEMBER, months));
     }
 
     @Override
@@ -79,5 +79,11 @@ public class MemberDbRepository implements MemberRepository {
     @Override
     public void deleteById(Long id) {
         memberJpaRepository.deleteById(id);
+    }
+
+    private static List<Member> toDomain(List<MemberEntity> entities) {
+        return entities.stream()
+                .map(MemberPersistenceMapper::toDomain)
+                .collect(Collectors.toList());
     }
 }

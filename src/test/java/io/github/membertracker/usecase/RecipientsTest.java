@@ -1,5 +1,6 @@
 package io.github.membertracker.usecase;
 
+import io.github.membertracker.domain.enumeration.MemberStatus;
 import io.github.membertracker.domain.model.Member;
 import org.junit.jupiter.api.Test;
 
@@ -40,6 +41,20 @@ class RecipientsTest {
         Member other = member(3L, "other@example.com");
 
         assertThat(Recipients.reachable(List.of(upper, other, lower))).containsExactly(lower, other);
+    }
+
+    @Test
+    void everyStatusButMemberIsDroppedEvenWithAnEmail() {
+        List<Member> all = new java.util.ArrayList<>();
+        long id = 1;
+        for (MemberStatus status : MemberStatus.values()) {
+            Member m = member(id, "s" + id + "@example.com");
+            m.setStatus(status);
+            all.add(m);
+            id++;
+        }
+
+        assertThat(Recipients.reachable(all)).extracting(Member::getStatus).containsExactly(MemberStatus.MEMBER);
     }
 
     @Test

@@ -4,6 +4,7 @@ import io.github.membertracker.domain.enumeration.ActivityType;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.infrastructure.dto.ExportMembersRequest;
 import io.github.membertracker.infrastructure.dto.MemberRequest;
+import io.github.membertracker.infrastructure.security.ArchivedVisibility;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.github.membertracker.usecase.*;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.security.access.prepost.PreAuthorize;
 
@@ -28,7 +30,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/members")
@@ -40,6 +42,7 @@ public class MemberController {
     private final GetMemberByIdUseCase getMemberByIdUseCase;
     private final GetActiveMembersUseCase getActiveMembersUseCase;
     private final GetInactiveMembersUseCase getInactiveMembersUseCase;
+    private final GetArchivedMembersUseCase getArchivedMembersUseCase;
     private final SaveMemberUseCase saveMemberUseCase;
     private final UpdateMemberUseCase updateMemberUseCase;
     private final DeleteMemberUseCase deleteMemberUseCase;
@@ -51,6 +54,7 @@ public class MemberController {
                            GetMemberByIdUseCase getMemberByIdUseCase,
                            GetActiveMembersUseCase getActiveMembersUseCase,
                            GetInactiveMembersUseCase getInactiveMembersUseCase,
+                           GetArchivedMembersUseCase getArchivedMembersUseCase,
                            SaveMemberUseCase saveMemberUseCase,
                            UpdateMemberUseCase updateMemberUseCase,
                            DeleteMemberUseCase deleteMemberUseCase,
@@ -60,6 +64,7 @@ public class MemberController {
         this.getMemberByIdUseCase = getMemberByIdUseCase;
         this.getActiveMembersUseCase = getActiveMembersUseCase;
         this.getInactiveMembersUseCase = getInactiveMembersUseCase;
+        this.getArchivedMembersUseCase = getArchivedMembersUseCase;
         this.saveMemberUseCase = saveMemberUseCase;
         this.updateMemberUseCase = updateMemberUseCase;
         this.deleteMemberUseCase = deleteMemberUseCase;
@@ -68,17 +73,17 @@ public class MemberController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('VOLUNTEER')")
-    @Operation(summary = "List members (VOLUNTEER+)")
-    public List<Member> getAllMembers() {
-        return getAllMembersUseCase.invoke();
+    @PreAuthorize("hasRole('VOLUNTEER') and (!#archived or hasRole('ADMIN'))")
+    @Operation(summary = "List members, archived ones hidden; archived=true lists only the archived (VOLUNTEER+, ADMIN for archived)")
+    public List<Member> getAllMembers(@RequestParam(defaultValue = "false") boolean archived) {
+        return archived ? getArchivedMembersUseCase.invoke() : getAllMembersUseCase.invoke();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('VOLUNTEER')")
     @Operation(summary = "Get a member by id (VOLUNTEER+)")
     public ResponseEntity<Member> getMemberById(@PathVariable @Positive Long id) {
-        return getMemberByIdUseCase.invoke(id)
+        return ArchivedVisibility.visible(getMemberByIdUseCase.invoke(id))
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -136,18 +141,19 @@ public class MemberController {
 
     @GetMapping("/export")
     @PreAuthorize("hasRole('STAFF')")
-    @Operation(summary = "Export all members as CSV (STAFF+)")
+    @Operation(summary = "Export all members except the archived as CSV (STAFF+)")
     public ResponseEntity<byte[]> exportMembers() {
         return exportResponse(getAllMembersUseCase.invoke());
     }
 
     @PostMapping("/export")
     @PreAuthorize("hasRole('STAFF')")
-    @Operation(summary = "Export selected members as CSV (STAFF+)")
+    @Operation(summary = "Export the members with the given ids as CSV; archived members only for an ADMIN (STAFF+)")
     public ResponseEntity<byte[]> exportSelectedMembers(@Valid @RequestBody ExportMembersRequest request) {
-        Set<Long> ids = new HashSet<>(request.getIds());
-        List<Member> selected = getAllMembersUseCase.invoke().stream()
-                .filter(member -> ids.contains(member.getId()))
+        List<Member> selected = new HashSet<>(request.getIds()).stream()
+                .sorted()
+                .map(id -> ArchivedVisibility.visible(getMemberByIdUseCase.invoke(id)))
+                .flatMap(Optional::stream)
                 .toList();
         return exportResponse(selected);
     }
@@ -160,16 +166,17 @@ public class MemberController {
     }
 
     private ResponseEntity<byte[]> csvResponse(List<Member> members) {
-        StringBuilder csv = new StringBuilder("id,name,email,phone,joinDate,active,consecutiveMonthsMissed\n");
+        StringBuilder csv = new StringBuilder("id,name,email,phone,joinDate,active,consecutiveMonthsMissed,status\n");
         for (Member member : members) {
-            csv.append(String.format("%s,%s,%s,%s,%s,%s,%d%n",
+            csv.append(String.format("%s,%s,%s,%s,%s,%s,%d,%s%n",
                 member.getId() != null ? member.getId() : "0",
                 CsvUtils.escapeCsv(member.getName()),
                 CsvUtils.escapeCsv(member.getEmail()),
                 CsvUtils.escapeCsv(member.getPhone()),
                 member.getJoinDate() != null ? member.getJoinDate().format(DateTimeFormatter.ISO_LOCAL_DATE) : "",
                 member.isActive(),
-                member.getConsecutiveMonthsMissed()));
+                member.getConsecutiveMonthsMissed(),
+                member.getStatus()));
         }
         return CsvUtils.attachment("members.csv", csv.toString());
     }

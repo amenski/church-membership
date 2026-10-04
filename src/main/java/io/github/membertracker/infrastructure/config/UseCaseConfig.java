@@ -14,7 +14,7 @@ import io.github.membertracker.usecase.RecordActivityUseCase;
 import io.github.membertracker.usecase.ChangePasswordUseCase;
 import io.github.membertracker.usecase.DeleteMemberUseCase;
 import io.github.membertracker.usecase.GetActiveMembersUseCase;
-import io.github.membertracker.usecase.GetAllCommunicationsUseCase;
+import io.github.membertracker.usecase.GetArchivedMembersUseCase;import io.github.membertracker.usecase.GetAllCommunicationsUseCase;
 import io.github.membertracker.usecase.GetAllMembersUseCase;
 import io.github.membertracker.usecase.GetAllPaymentsUseCase;
 import io.github.membertracker.usecase.GetCommunicationByIdUseCase;
@@ -97,6 +97,11 @@ public class UseCaseConfig {
     @Bean
     public GetActiveMembersUseCase getActiveMembersUseCase(MemberRepository memberRepository) {
         return new GetActiveMembersUseCase(memberRepository);
+    }
+
+    @Bean
+    public GetArchivedMembersUseCase getArchivedMembersUseCase(MemberRepository memberRepository) {
+        return new GetArchivedMembersUseCase(memberRepository);
     }
 
     @Bean

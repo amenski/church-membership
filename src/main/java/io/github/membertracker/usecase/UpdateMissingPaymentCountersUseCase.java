@@ -27,13 +27,13 @@ public class UpdateMissingPaymentCountersUseCase {
     }
 
     /**
-     * Raises the consecutive months missed counter of active members who have no payment for the
+     * Raises the consecutive months missed counter of dues-paying members (status MEMBER) who have no payment for the
      * previous month. Each member is counted at most once per month, so re-running is safe.
      * Members who joined after the end of the previous month are skipped.
      */
     public void invoke() {
         YearMonth previousMonth = YearMonth.now(clock).minusMonths(1);
-        List<Member> activeMembers = memberRepository.findByActive(true);
+        List<Member> activeMembers = memberRepository.findDuesPaying();
 
         for (Member member : activeMembers) {
             if (member.getJoinDate() != null && member.getJoinDate().isAfter(previousMonth.atEndOfMonth())) {

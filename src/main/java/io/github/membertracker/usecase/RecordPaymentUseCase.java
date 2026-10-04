@@ -33,7 +33,7 @@ public class RecordPaymentUseCase {
                           YearMonth period, LocalDate paymentDate, String notes) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> MemberDomainException.memberNotFound(memberId));
-        if (!member.isActive()) {
+        if (!member.getStatus().countsForDues()) {
             throw MemberDomainException.memberInactive(member.getName());
         }
 

@@ -14,12 +14,12 @@ public class GetMembersWithMissedPaymentsUseCase {
     }
 
     /**
-     * Retrieves the active members who have missed payments for a specified number of consecutive months.
+     * Retrieves the dues-paying members who have missed payments for a specified number of consecutive months.
      *
      * @param monthsThreshold the minimum number of consecutive months missed to include a member
-     * @return active members at least that many months behind, the one furthest behind first
+     * @return dues-paying members at least that many months behind, the one furthest behind first
      */
     public List<Member> invoke(int monthsThreshold) {
-        return memberRepository.findActiveWithMissedAtLeastOrderByMissedDesc(monthsThreshold);
+        return memberRepository.findDuesPayingWithMissedAtLeastOrderByMissedDesc(monthsThreshold);
     }
 }
