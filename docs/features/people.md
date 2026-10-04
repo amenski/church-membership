@@ -107,7 +107,7 @@ Code: `frontend/src/views/HouseholdsView.vue` (the household detail dialog), `fr
 - Activity: the four new types read "Person added", "Person edited", "Person deleted" and "Membership started".
 
 ## Known issues
-- The screen was built from the API contract and has not been run in a browser yet, and has no automated test.
+- The screen was run in a browser on 4 October 2026 (add, blank-name error, make a member as Inactive, counts and drift 0); edit and delete from the screen, the phone layout and the VOLUNTEER read-only view were not exercised, and there is no automated test.
 - The endpoints are exercised on H2 only (MySQL mode), not on MySQL. There is no automated test for the `PeopleController` contract yet.
 - A person cannot be moved to another household from this screen (the edit form leaves the household alone), and `getPeople` is in `api.js` but no screen lists everyone yet.
 - A dependent shows only in their household's detail: a person with no household appears nowhere on screen.

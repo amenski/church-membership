@@ -8,12 +8,12 @@ Done and removed from this list (October 2026): auth hardening (token types, ref
 
 ## (a) Next structural work
 
-[person-membership-plan.md](person-membership-plan.md), Phase 4: steps 1 to 10 are done, step 11 is built (browser check pending), step 12 is held.
+[person-membership-plan.md](person-membership-plan.md), Phase 4: steps 1 to 10 are done, step 11 is done and checked in a browser, step 12 is held.
 
 - [x] Restart the demo backend on the new build so migration 013 runs on `felege_selam` and step 9 starts reading `person` (done 4 October 2026: 11 members, 11 people, drift 0)
 - [x] Step 10: households (API and UI)
 - [x] Step 11, API: people without a membership (`/api/people`, start a membership, drift query adjusted; see [features/people.md](features/people.md))
-- [x] Step 11, UI: dependents on the household detail (list, add, edit, make a member, delete); built and compiled, not yet run in a browser
+- [x] Step 11, UI: dependents on the household detail (list, add, edit, make a member, delete); checked in a browser 4 October 2026 (add, make a member); edit, delete and the VOLUNTEER view not yet
 - [ ] Step 12: contract, the destructive step that drops the legacy columns (`name`, `email`, `phone`, `active` on `member`)
 
 ## (b) Small leftovers
