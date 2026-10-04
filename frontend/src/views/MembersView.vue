@@ -95,6 +95,22 @@
         {{ countText }}
       </p>
 
+      <!-- Selection (STAFF+): the live region speaks the count, the bar holds what can be done with those members -->
+      <p class="sr-only" role="status" aria-live="polite">{{ selectionAnnouncement }}</p>
+      <div v-if="selectedMembers.length" role="region" aria-label="Selected members" class="sticky top-14 z-30 mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-teal-line bg-teal-tint px-4 py-2.5">
+        <span class="text-base font-semibold text-teal">{{ selectedMembers.length }} selected</span>
+        <span class="min-w-0 text-sm text-ink [overflow-wrap:anywhere]">{{ selectedNames }}</span>
+        <TextButton @click="selectedIds = []">Clear selection</TextButton>
+        <div class="flex flex-wrap gap-2 md:ml-auto">
+          <BaseButton variant="secondary" to="/communications">Send message</BaseButton>
+          <BaseButton variant="secondary" @click="exportSelected">Export selected</BaseButton>
+        </div>
+      </div>
+      <label v-if="canSelect" class="mb-2 flex min-h-11 cursor-pointer items-center gap-3 text-base text-ink md:hidden">
+        <input type="checkbox" :class="CHECKBOX_PHONE" :checked="allSelected" :indeterminate="someSelected" @change="toggleAll($event.target.checked)">
+        Select all {{ filteredMembers.length }} shown
+      </label>
+
       <!-- Archived (ADMIN only): what is hidden, with the two things an administrator can do about it -->
       <template v-if="showingArchived">
         <div role="note" class="mb-4 rounded-md border border-rule bg-paper px-4 py-2.5 text-sm text-ink">
@@ -175,6 +191,9 @@
         <caption class="sr-only">Members</caption>
         <thead>
           <tr class="border-b border-rule">
+            <th v-if="canSelect" scope="col" :class="[TH, 'w-8']">
+              <input type="checkbox" :class="CHECKBOX" :checked="allSelected" :indeterminate="someSelected" :aria-label="`Select all ${filteredMembers.length} shown`" @change="toggleAll($event.target.checked)">
+            </th>
             <th v-for="column in columns" :key="column.label" scope="col" :aria-sort="ariaSort(column.sortKey)" :class="[TH, column.class]">
               <button v-if="column.sortKey" type="button" :class="SORT_BUTTON" @click="setSort(column.sortKey)">
                 {{ column.label }}
@@ -186,7 +205,10 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="member in filteredMembers" :key="member.id" class="h-(--row-h) border-b border-rule">
+          <tr v-for="member in filteredMembers" :key="member.id" :class="['h-(--row-h) border-b border-rule', isSelected(member) ? 'bg-teal-tint' : '']">
+            <td v-if="canSelect" :class="TD">
+              <input type="checkbox" :class="CHECKBOX" :checked="isSelected(member)" :aria-label="`Select ${member.name}`" @change="toggleSelected(member, $event.target.checked)">
+            </td>
             <td :class="[TD, 'max-w-0 w-[26%]']">
               <div :class="NAME"><router-link :to="`/members/${member.id}`">{{ member.name }}</router-link></div>
               <div v-if="member.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
@@ -225,6 +247,9 @@
       <ul v-if="!showingArchived" class="m-0 flex list-none flex-col gap-3 p-0 md:hidden">
         <li v-for="member in filteredMembers" :key="member.id" class="flex flex-col gap-3 rounded-lg border border-rule bg-paper px-4 py-3.5">
           <div class="flex items-start justify-between gap-2">
+            <label v-if="canSelect" class="-ml-2 -mt-1.5 flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center">
+              <input type="checkbox" :class="CHECKBOX_PHONE" :checked="isSelected(member)" :aria-label="`Select ${member.name}`" @change="toggleSelected(member, $event.target.checked)">
+            </label>
             <div class="min-w-0 flex-1">
               <div :class="[NAME, 'text-xl']"><router-link :to="`/members/${member.id}`" class="inline-block py-2 -my-2">{{ member.name }}</router-link></div>
               <div v-if="member.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
@@ -279,6 +304,7 @@ import { downloadBlob, formatDate, localISODate } from '@/utils'
 import { monthsBehind } from '@/utils/dues'
 import { paidMonthsByMember, stripRangeLabel } from '@/utils/yearStrip'
 import { STATUS_SEGMENTS, filterMembers, sortMembers, statusCounts, exportIds } from '@/utils/memberFilters'
+import { membersCsv } from '@/utils/memberCsv'
 import { buildMemberRequest } from '@/utils/memberPayload'
 import { countsForDues, statusLabel, statusTone } from '@/utils/memberStatus'
 import ActionMenu from '@/components/ActionMenu.vue'
@@ -308,6 +334,9 @@ const SORT_OPTIONS = [
   { key: 'consecutiveMonthsMissed', label: 'Most behind', direction: 'desc' },
   { key: 'joinDate', label: 'Joined', direction: 'desc' }
 ]
+// A row checkbox (16px; its cell is the tap area on a desktop) and the 44px-box one on a phone card
+const CHECKBOX = 'h-4 w-4 cursor-pointer accent-teal'
+const CHECKBOX_PHONE = 'h-5 w-5 cursor-pointer accent-teal'
 const EMPTY_FILTERS = { search: '', status: 'ALL', paymentStatus: 'ALL', joinedFrom: '', joinedTo: '' }
 
 export default {
@@ -330,6 +359,7 @@ export default {
       filters: { ...EMPTY_FILTERS },
       datesOpen: false,
       sort: { key: 'name', direction: 'asc' },
+      selectedIds: [],
       formOpen: false,
       focusStatus: false,
       editingMember: null,
@@ -350,6 +380,8 @@ export default {
       SORT_BUTTON,
       NAME,
       SEGMENT,
+      CHECKBOX,
+      CHECKBOX_PHONE,
       SORT_OPTIONS,
       countsForDues,
       statusLabel,
@@ -374,6 +406,27 @@ export default {
     filteredMembers() {
       const filtered = filterMembers(this.source, this.filters)
       return this.sort.key ? sortMembers(filtered, this.sort.key, this.sort.direction) : filtered
+    },
+    // Selecting is for STAFF+ and for the normal list; only the rows on screen count as selected
+    canSelect() {
+      return this.authStore.isStaff && !this.showingArchived
+    },
+    selectedMembers() {
+      return this.canSelect ? this.filteredMembers.filter(member => this.selectedIds.includes(member.id)) : []
+    },
+    allSelected() {
+      return this.canSelect && this.selectedMembers.length === this.filteredMembers.length
+    },
+    someSelected() {
+      return this.selectedMembers.length > 0 && !this.allSelected
+    },
+    // the first three names, then how many more
+    selectedNames() {
+      const names = this.selectedMembers.map(member => member.name)
+      return names.length > 3 ? `${names.slice(0, 3).join(', ')} and ${names.length - 3} more` : names.join(', ')
+    },
+    selectionAnnouncement() {
+      return this.selectedMembers.length ? `${this.selectedMembers.length} selected` : ''
     },
     countText() {
       const noun = this.showingArchived ? 'archived member' : 'member'
@@ -471,6 +524,24 @@ export default {
       } else {
         this.sort = { key, direction: 'asc' }
       }
+    },
+    isSelected(member) {
+      return this.selectedIds.includes(member.id)
+    },
+    toggleSelected(member, checked) {
+      this.selectedIds = checked
+        ? [...this.selectedIds, member.id]
+        : this.selectedIds.filter(id => id !== member.id)
+    },
+    // the header checkbox: every row on screen, nothing hidden by a filter
+    toggleAll(checked) {
+      const shown = this.filteredMembers.map(member => member.id)
+      this.selectedIds = checked
+        ? [...new Set([...this.selectedIds, ...shown])]
+        : this.selectedIds.filter(id => !shown.includes(id))
+    },
+    exportSelected() {
+      downloadBlob(membersCsv(this.selectedMembers), `members_selected_${new Date().toISOString().split('T')[0]}.csv`)
     },
     setSortOption(key) {
       this.sort = { key, direction: SORT_OPTIONS.find(option => option.key === key).direction }
