@@ -2,10 +2,15 @@ import { countsForDues } from '@/utils/memberStatus'
 
 // Messages go by email address: members without one are skipped and members who share an
 // address get one message between them (case and spaces ignored), as the server does.
+/** The address a message goes to, as the server compares it: trimmed, lower case; '' when there is none. */
+export function emailKey(member) {
+  return (member.email || '').trim().toLowerCase()
+}
+
 function distinctAddresses(members) {
   const seen = new Set()
   for (const member of members) {
-    const address = (member.email || '').trim().toLowerCase()
+    const address = emailKey(member)
     if (address) seen.add(address)
   }
   return seen.size

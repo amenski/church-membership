@@ -9,52 +9,81 @@
       </div>
     </AlertBanner>
 
-    <!-- One reading column for the form and the history -->
-    <div class="max-w-176">
-      <!-- Compose (STAFF and above) -->
-      <section v-if="authStore.isStaff" :class="[CARD, 'mb-6']" aria-labelledby="compose-title">
-        <SectionTitle id="compose-title">New message</SectionTitle>
-        <AlertBanner v-if="sendError">{{ sendError }}</AlertBanner>
-        <form class="flex flex-col gap-4" novalidate @submit.prevent="askToSend">
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <BaseSelect id="message-audience" v-model="form.recipientType" label="Send to">
-              <option value="ALL">Everyone</option>
-              <option value="OVERDUE">Behind on dues</option>
-              <option value="SPECIFIC">One member</option>
-            </BaseSelect>
-            <BaseInput
-              v-if="form.recipientType === 'OVERDUE'"
-              id="message-months"
-              v-model="form.monthsOverdue"
-              label="At least this many months behind"
-              type="number"
-              min="1"
-              step="1"
-              inputmode="numeric"
-              :error="formErrors.monthsOverdue"
+    <div>
+      <!-- Compose and who gets it (STAFF and above): side by side from lg, stacked below -->
+      <div v-if="authStore.isStaff" class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] lg:items-start">
+        <section :class="CARD" aria-labelledby="compose-title">
+          <SectionTitle id="compose-title">New message</SectionTitle>
+          <AlertBanner v-if="sendError">{{ sendError }}</AlertBanner>
+          <form class="flex flex-col gap-4" novalidate @submit.prevent="askToSend">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <BaseSelect id="message-audience" v-model="form.recipientType" label="Send to">
+                <option value="ALL">Everyone</option>
+                <option value="OVERDUE">Behind on dues</option>
+                <option value="SPECIFIC">One member</option>
+              </BaseSelect>
+              <BaseInput
+                v-if="form.recipientType === 'OVERDUE'"
+                id="message-months"
+                v-model="form.monthsOverdue"
+                label="At least this many months behind"
+                type="number"
+                min="1"
+                step="1"
+                inputmode="numeric"
+                :error="formErrors.monthsOverdue"
+              />
+              <BaseSelect v-else-if="form.recipientType === 'SPECIFIC'" id="message-member" v-model="form.memberId" label="Member" :error="formErrors.memberId">
+                <option value="" disabled>Choose a member</option>
+                <option v-for="member in activeMembers" :key="member.id" :value="String(member.id)">{{ member.name }}{{ member.email ? '' : ' (no email)' }}</option>
+              </BaseSelect>
+            </div>
+            <BaseInput id="message-subject" v-model="form.subject" label="Subject" maxlength="200" autocomplete="off" :error="formErrors.subject" />
+            <BaseTextarea
+              id="message-body"
+              v-model="form.message"
+              label="Message"
+              :rows="6"
+              :max="MESSAGE_MAX"
+              hint="Write {{member_name}} to insert each member's name."
+              :error="formErrors.message"
             />
-            <BaseSelect v-else-if="form.recipientType === 'SPECIFIC'" id="message-member" v-model="form.memberId" label="Member" :error="formErrors.memberId">
-              <option value="" disabled>Choose a member</option>
-              <option v-for="member in activeMembers" :key="member.id" :value="String(member.id)">{{ member.name }}{{ member.email ? '' : ' (no email)' }}</option>
-            </BaseSelect>
-          </div>
-          <BaseInput id="message-subject" v-model="form.subject" label="Subject" maxlength="200" autocomplete="off" :error="formErrors.subject" />
-          <BaseTextarea
-            id="message-body"
-            v-model="form.message"
-            label="Message"
-            :rows="6"
-            :max="MESSAGE_MAX"
-            hint="Write {{member_name}} to insert each member's name."
-            :error="formErrors.message"
-          />
-          <div>
-            <BaseButton type="submit" :disabled="sending" :aria-busy="sending ? 'true' : undefined" class="max-sm:w-full">
-              {{ sending ? 'Sending...' : 'Send message' }}
-            </BaseButton>
-          </div>
-        </form>
-      </section>
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <BaseButton type="submit" :disabled="sending" :aria-busy="sending ? 'true' : undefined" class="max-sm:w-full">
+                {{ sending ? 'Sending...' : `Send to ${personLabel(recipientTotal)}` }}
+              </BaseButton>
+              <span v-if="skippedNote" class="text-sm text-ochre-text">{{ skippedNote }}</span>
+            </div>
+          </form>
+        </section>
+
+        <!-- Who gets this: computed from the members and payments already loaded -->
+        <section :class="CARD" aria-labelledby="who-title">
+          <SectionTitle id="who-title">Who gets this</SectionTitle>
+          <p class="mt-0 mb-3 text-sm text-muted" role="status">{{ summaryText }}</p>
+          <ul v-if="recipients.length" class="m-0 max-h-[32rem] list-none overflow-y-auto border-t border-rule p-0">
+            <li v-for="row in recipients" :key="row.member.id" class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-b border-rule py-2.5">
+              <div class="min-w-0">
+                <div class="font-medium text-ink [overflow-wrap:anywhere]">{{ row.member.name }}</div>
+                <div class="text-xs text-muted tabular-nums">{{ row.member.consecutiveMonthsMissed > 0 ? monthsBehind(row.member.consecutiveMonthsMissed) : 'Paid up' }}</div>
+              </div>
+              <YearStrip v-if="paidByMember" v-bind="stripProps(row.member)" />
+              <div class="flex basis-full flex-wrap items-center gap-x-2 gap-y-1">
+                <StatusBadge v-if="row.state === 'send'" tone="paid">Will get the email</StatusBadge>
+                <StatusBadge v-else-if="row.state === 'noEmail'" tone="behind">Skipped, no email</StatusBadge>
+                <StatusBadge v-else tone="muted">Skipped, shares an address</StatusBadge>
+                <span v-if="row.state === 'send'" class="text-xs text-muted [overflow-wrap:anywhere]">{{ row.member.email }}</span>
+                <span v-else-if="row.state === 'shared'" class="text-xs text-muted">{{ row.sharesWith }} gets the one copy</span>
+                <span v-else-if="row.member.phone" class="text-xs text-muted">
+                  <a :href="`tel:${row.member.phone.replace(/[^+\d]/g, '')}`" class="text-teal underline underline-offset-[3px] hover:text-teal-hover">Call {{ row.member.phone }}<span class="sr-only"> for {{ row.member.name }}</span></a> instead
+                </span>
+                <span v-else class="text-xs text-muted">No phone on file</span>
+              </div>
+            </li>
+          </ul>
+          <p class="mt-3 mb-0 text-sm text-muted">Members without an email are never sent a message.</p>
+        </section>
+      </div>
 
       <!-- History -->
       <section aria-labelledby="history-title">
@@ -93,7 +122,7 @@
     <ConfirmDialog
       v-model="confirmOpen"
       :title="`Send to ${countLabel}?`"
-      :message="`“${form.subject.trim()}” goes out by email. You cannot take it back.`"
+      :message="confirmMessage"
       :confirm-label="`Send to ${countLabel}`"
       :busy="sending"
       @confirm="sendMessage"
@@ -153,11 +182,13 @@
 import api from '@/services/api'
 import { useAuthStore } from '../stores/authStore'
 import { useAppStore } from '../stores/appStore'
-import { formatDate } from '@/utils'
-import { audienceCount } from '@/utils/audienceCount'
+import { formatDate, localISODate } from '@/utils'
+import { personLabel, previewRecipients, previewSummary, sendableCount, skippedNote, skippedSentence } from '@/utils/audiencePreview'
 import { buildCommunicationRequest } from '@/utils/communicationPayload'
 import { attemptsLabel, friendlyNotes, countDeliveries, deliveryStatus, deliverySummaryParts, sortMessages, typeLabel } from '@/utils/messageHistory'
 import { countsForDues } from '@/utils/memberStatus'
+import { monthsBehind } from '@/utils/dues'
+import { paidMonthsByMember } from '@/utils/yearStrip'
 import AlertBanner from '@/components/AlertBanner.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import BaseInput from '@/components/BaseInput.vue'
@@ -168,8 +199,10 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import EmptyNote from '@/components/EmptyNote.vue'
 import PageHead from '@/components/PageHead.vue'
 import SectionTitle from '@/components/SectionTitle.vue'
+import StatusBadge from '@/components/StatusBadge.vue'
 import StatusLabel from '@/components/StatusLabel.vue'
 import TextButton from '@/components/TextButton.vue'
+import YearStrip from '@/components/YearStrip.vue'
 
 import { CARD } from '@/ui/classes'
 const MESSAGE_MAX = 5000
@@ -179,16 +212,17 @@ const EMPTY_ERRORS = { monthsOverdue: '', memberId: '', subject: '', message: ''
 const SERVER_FIELDS = { title: 'subject', messageContent: 'message' }
 
 const emptyForm = () => ({ recipientType: 'ALL', memberId: '', monthsOverdue: '1', subject: '', message: '' })
-const plural = (n) => `${n} ${n === 1 ? 'member' : 'members'}`
 
 export default {
   name: 'CommunicationsView',
-  components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, BaseTextarea, ConfirmDialog, EmptyNote, PageHead, SectionTitle, StatusLabel, TextButton },
+  components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, BaseTextarea, ConfirmDialog, EmptyNote, PageHead, SectionTitle, StatusBadge, StatusLabel, TextButton, YearStrip },
   setup() {
     return {
       authStore: useAuthStore(),
       appStore: useAppStore(),
       formatDate,
+      monthsBehind,
+      personLabel,
       typeLabel,
       attemptsLabel,
       friendlyNotes,
@@ -199,6 +233,8 @@ export default {
   data() {
     return {
       members: [],
+      paidByMember: null,
+      today: localISODate(),
       communications: [],
       loaded: false,
       loadError: false,
@@ -222,11 +258,25 @@ export default {
     messages() {
       return sortMessages(this.communications)
     },
+    recipients() {
+      const { recipientType, monthsOverdue, memberId } = this.form
+      return previewRecipients(this.members, recipientType, monthsOverdue, memberId)
+    },
     recipientTotal() {
-      return audienceCount(this.members, this.form.recipientType, this.form.monthsOverdue)
+      return sendableCount(this.recipients)
+    },
+    skippedNote() {
+      return skippedNote(this.recipients)
     },
     countLabel() {
-      return plural(this.recipientTotal)
+      return personLabel(this.recipientTotal)
+    },
+    summaryText() {
+      return previewSummary(this.recipients, this.form.recipientType, this.form.monthsOverdue)
+    },
+    confirmMessage() {
+      const skipped = skippedSentence(this.recipients)
+      return `“${this.form.subject.trim()}” goes out by email. You cannot take it back.${skipped ? ` ${skipped}` : ''}`
     },
     deliveryTotals() {
       return deliverySummaryParts(countDeliveries(this.deliveries))
@@ -241,7 +291,8 @@ export default {
       try {
         const [members, communications] = await Promise.all([
           this.authStore.isStaff ? api.getMembers() : [],
-          api.getCommunications()
+          api.getCommunications(),
+          this.authStore.isStaff ? this.loadPayments() : null
         ])
         this.members = Array.isArray(members) ? members : []
         this.communications = Array.isArray(communications) ? communications : []
@@ -253,6 +304,25 @@ export default {
         this.loadError = true
       } finally {
         this.loaded = true
+      }
+    },
+    // The paid months behind the strips: one existing call, grouped by member. A failure only hides the strips.
+    async loadPayments() {
+      try {
+        this.paidByMember = paidMonthsByMember(await api.getPayments())
+      } catch (error) {
+        console.error('Error loading payments for the year strips:', error)
+        this.paidByMember = null
+      }
+    },
+    stripProps(member) {
+      return {
+        joinDate: member.joinDate || '',
+        paidMonths: this.paidByMember.get(member.id) || new Set(),
+        currentMonth: this.today.slice(0, 7),
+        monthsMissed: member.consecutiveMonthsMissed || 0,
+        countsForDues: countsForDues(member),
+        label: `Dues for ${member.name}, last 12 months`
       }
     },
     async refreshMessages() {
@@ -311,7 +381,7 @@ export default {
         this.confirmOpen = false
         this.form = emptyForm()
         this.formErrors = { ...EMPTY_ERRORS }
-        this.notify('success', 'Sending started', `${plural(count)} will get it in the next few minutes. Check the delivery status below.`)
+        this.notify('success', 'Sending started', `${personLabel(count)} will get it in the next few minutes. Check the delivery status below.`)
         await this.refreshMessages()
       } catch (error) {
         console.error('Error sending message:', error)
