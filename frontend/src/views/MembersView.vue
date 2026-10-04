@@ -104,6 +104,8 @@
         <div class="flex flex-wrap gap-2 md:ml-auto">
           <BaseButton variant="secondary" to="/communications">Send message</BaseButton>
           <BaseButton variant="secondary" @click="exportSelected">Export selected</BaseButton>
+          <BaseButton variant="secondary" :disabled="!inactiveTargets.length" @click="bulkAction = 'inactive'">Mark inactive</BaseButton>
+          <button v-if="authStore.isAdmin" type="button" :class="[DELETE_BUTTON, 'min-h-(--control-h) px-3 py-1.5 text-base']" @click="bulkAction = 'archive'">Archive</button>
         </div>
       </div>
       <label v-if="canSelect" class="mb-2 flex min-h-11 cursor-pointer items-center gap-3 text-base text-ink md:hidden">
@@ -291,6 +293,27 @@
       @confirm="deletePermanently"
     />
 
+    <!-- Bulk: Mark inactive and Archive for the selected members -->
+    <ConfirmDialog
+      :model-value="bulkAction === 'inactive'"
+      :title="`Mark ${inactiveTargets.length} ${inactiveTargets.length === 1 ? 'member' : 'members'} inactive?`"
+      :message="inactiveMessage"
+      confirm-label="Mark inactive"
+      :busy="bulkBusy"
+      @update:model-value="open => { if (!open) bulkAction = null }"
+      @confirm="markSelectedInactive"
+    />
+    <ConfirmDialog
+      :model-value="bulkAction === 'archive'"
+      :title="`Archive ${selectedMembers.length} ${selectedMembers.length === 1 ? 'member' : 'members'}?`"
+      :message="`This hides ${selectedMembers.length === 1 ? 'this member' : 'these members'} from the lists. Their payments and messages are kept.`"
+      :confirm-label="`Archive ${selectedMembers.length === 1 ? 'member' : selectedMembers.length + ' members'}`"
+      danger
+      :busy="bulkBusy"
+      @update:model-value="open => { if (!open) bulkAction = null }"
+      @confirm="archiveSelected"
+    />
+
     <!-- Archive (ADMIN only) -->
     <MemberArchiveDialog v-model="deleteOpen" :member="selectedMember" @archived="reloadLists" />
   </div>
@@ -360,6 +383,8 @@ export default {
       datesOpen: false,
       sort: { key: 'name', direction: 'asc' },
       selectedIds: [],
+      bulkAction: null,
+      bulkBusy: false,
       formOpen: false,
       focusStatus: false,
       editingMember: null,
@@ -419,6 +444,15 @@ export default {
     },
     someSelected() {
       return this.selectedMembers.length > 0 && !this.allSelected
+    },
+    // Mark inactive only changes a Member: an inactive, transferred or deceased one is left as it is
+    inactiveTargets() {
+      return this.selectedMembers.filter(countsForDues)
+    },
+    inactiveMessage() {
+      const skipped = this.selectedMembers.length - this.inactiveTargets.length
+      const base = 'They stop counting for dues, reminders and messages. You can mark them active again later.'
+      return skipped ? `${base} ${skipped} selected ${skipped === 1 ? 'member is' : 'members are'} not a Member now and will be left as ${skipped === 1 ? 'it is' : 'they are'}.` : base
     },
     // the first three names, then how many more
     selectedNames() {
@@ -539,6 +573,42 @@ export default {
       this.selectedIds = checked
         ? [...new Set([...this.selectedIds, ...shown])]
         : this.selectedIds.filter(id => !shown.includes(id))
+    },
+    // One call per member, one after the other. Failures never stop the rest: the ones that worked are
+    // reported with the ones that did not, and only the failed members stay selected.
+    async runBulk(targets, call, past) {
+      this.bulkBusy = true
+      const failed = []
+      let firstError = null
+      for (const member of targets) {
+        try {
+          await call(member)
+        } catch (error) {
+          console.error(`Error: ${past} ${member.name}:`, error)
+          failed.push(member)
+          firstError = firstError || error
+        }
+      }
+      const done = targets.length - failed.length
+      this.selectedIds = failed.map(member => member.id)
+      this.bulkAction = null
+      try {
+        await this.reloadLists()
+      } finally {
+        this.bulkBusy = false
+      }
+      const noun = n => `${n} ${n === 1 ? 'member' : 'members'}`
+      if (!failed.length) {
+        this.notify('success', `${past[0].toUpperCase()}${past.slice(1)}`, noun(done))
+      } else if (firstError.response?.status !== 403) {
+        this.notify('error', `${done} of ${noun(targets.length)} ${past}`, `Could not change: ${failed.map(member => member.name).join(', ')}. ${firstError.message || 'Request failed'}`)
+      }
+    },
+    markSelectedInactive() {
+      return this.runBulk(this.inactiveTargets, member => api.updateMember(member.id, buildMemberRequest({ ...member, status: 'INACTIVE' })), 'marked inactive')
+    },
+    archiveSelected() {
+      return this.runBulk(this.selectedMembers, member => api.deleteMember(member.id), 'archived')
     },
     exportSelected() {
       downloadBlob(membersCsv(this.selectedMembers), `members_selected_${new Date().toISOString().split('T')[0]}.csv`)
