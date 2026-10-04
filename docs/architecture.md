@@ -78,7 +78,7 @@ public Payment invoke(Long memberId, Double amount, PaymentMethod paymentMethod,
 
 - **Domain models:** plain unit tests, no Spring.
 - **Use cases:** integration tests covering the whole workflow.
-- **Controllers:** MockMvc tests for every role against every endpoint group (`RoleAuthorizationTest`, 130 cases).
+- **Controllers:** MockMvc tests for every role against every endpoint group (`RoleAuthorizationTest`, every role against every endpoint group).
 
 Current coverage: `RoleAuthorizationTest` and `ApplicationTests`. `ApplicationTests` is disabled.
 
@@ -122,7 +122,7 @@ frontend/src/
 | 2026-10 | HTTPS via Caddy reverse proxy, not Spring SSL | Automatic certificate renewal; app config stays simple | In use. See [development.md](development.md#https-caddy-reverse-proxy) |
 | 2026-10 | "Send to all" means members with status MEMBER only (`Recipients.reachable` also drops every other status) | Inactive, transferred and deceased people must not be billed or written to | In use |
 | 2026-10 | Any payment amount above 0 is valid; no fixed minimum | Dues vary by family and gifts can be small | In use |
-| 2026-10 | Payment reminders start 7 days before the due date (inclusive) | Matches REMINDER_DAYS_BEFORE_DUE | In use |
+| 2026-10 | Reminders go only to members who are already behind; there is no pre-due window | The old pre-due policy code was removed, so nothing sends before a due date. Whether to bring a window back is open in [todo.md](todo.md) | In use |
 | 2026-10 | OpenAPI/Swagger UI only under the dev profile | Public endpoint list helps attackers; devs still get docs | In use |
 | 2026-10 | All API errors are RFC 7807 ProblemDetail; no rejected values echoed | One format for the frontend; no input reflected back | In use |
 | 2026-10 | Member search, sort and filters stay in the browser | Under ~1,000 members the full list is ~200 kB; a paged API adds complexity for no visible gain | In use. Revisit above ~2,000 members |
