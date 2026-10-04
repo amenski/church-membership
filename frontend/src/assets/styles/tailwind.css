@@ -21,6 +21,12 @@
   --color-teal-hover: #115E59;
   --color-teal-tint: #F0FDFA;
   --color-teal-line: #99F6E4;
+  /* The side rail (dark teal): the only dark surface; text and icons on it use these, white is paper */
+  --color-rail: #0B2E2F;
+  --color-rail-hover: #12403F;
+  --color-rail-line: #1B4B4A;
+  --color-rail-text: #CFE3E0;
+  --color-rail-muted: #9FBFBB;
   /* Semantic status only, never decoration: fern is paid/success, ochre is behind/warning, clay is danger */
   --color-fern: #15803D;
   --color-fern-text: #166534;

@@ -12,7 +12,7 @@ the components in `frontend/src/components/`, and the shared class strings in
 
 A restrained, dense admin surface: neutral greys, one accent (teal) and three status colours used
 only for status. No gradients, no decorative illustration, no serif display face, no animation
-beyond the spinner. Structure carries the meaning: a compact top bar, a persistent left rail, a
+beyond the spinner. Structure carries the meaning: a compact top bar, a persistent dark-teal left rail, a
 rule under every page header, and tables for anything that repeats.
 
 ## Tokens
@@ -24,7 +24,7 @@ Each is a `--color-*` variable in the `@theme` block of `tailwind.css` (`--color
 | Token | Hex | Use | Contrast (checked with the WCAG 2.x formula) |
 |---|---|---|---|
 | `--color-mist` | `#F6F7F9` | page background | ink on mist 16.55 |
-| `--color-paper` | `#FFFFFF` | surfaces: rail, tables, cards, dialogs | ink on paper 17.74 |
+| `--color-paper` | `#FFFFFF` | surfaces: tables, cards, dialogs | ink on paper 17.74 |
 | `--color-ink` | `#111827` | body text, headings | see above |
 | `--color-muted` | `#4B5563` | secondary text, table headers, labels | 7.56 on paper, 7.05 on mist |
 | `--color-rule` | `#E5E7EB` | 1px rules and card borders (decorative) | n/a |
@@ -32,6 +32,11 @@ Each is a `--color-*` variable in the `@theme` block of `tailwind.css` (`--color
 | `--color-teal` | `#0F766E` | the accent: primary, links, active nav, focus ring | 5.47 on paper, 5.11 on mist; white on teal 5.47 |
 | `--color-teal-hover` | `#115E59` | hover and pressed | white on it 7.58 |
 | `--color-teal-tint` | `#F0FDFA` | active nav and hover background | teal on it 5.25 |
+| `--color-rail` | `#0B2E2F` | the side rail background, the one dark surface | rail-text on it 10.87, white 14.52 |
+| `--color-rail-hover` | `#12403F` | rail item hover background | rail-text on it 8.58, white 11.47, rail-muted 5.81 |
+| `--color-rail-line` | `#1B4B4A` | the rule above the account block (decorative) | n/a |
+| `--color-rail-text` | `#CFE3E0` | rail item text and Sign out | see above |
+| `--color-rail-muted` | `#9FBFBB` | rail icons, the Latin name, the email | 7.36 on rail |
 | `--color-fern` | `#15803D` | paid fill / success button | 5.02 on paper |
 | `--color-fern-text` | `#166534` | "paid" text | 7.13 on paper, 6.81 on fern tint |
 | `--color-ochre` | `#D97706` | warning fills and bar segments only, never text | 3.19 on paper (graphic only) |
@@ -86,11 +91,16 @@ Utilities read them with `h-(--control-h)`, `min-h-(--row-h)`, `p-(--card-pad)`,
 ## Layout
 
 - **Top bar** (`App.vue`): sticky, 48px, a breadcrumb on the left (each route declares
-  `meta.title`; it falls back to nothing) and the account plus Sign out on the right. Below `lg`
-  the same bar carries the brand and the menu button that opens the rail.
-- **Rail**: fixed, 248px, below the top bar from `lg` up; a drawer below `lg` with a focus trap, an
-  inert rail when closed, Escape to close and close-on-navigate. Navigation only; the account
-  block lives in the top bar.
+  `meta.title`; it falls back to nothing). Below `lg` the same bar carries the brand, the menu
+  button that opens the rail, and the account plus Sign out on the right.
+- **Rail**: deep teal (`rail` tokens), fixed, 232px, below the top bar from `lg` up; a drawer below
+  `lg` with a focus trap, an inert rail when closed, Escape to close and close-on-navigate. Top: the
+  congregation name in Amharic (white, Noto Sans Ethiopic) over "Felege Selam", linking home. Then
+  the role-based items (Activity is ADMIN only); the active one is a solid `teal` fill with white text
+  (5.47), hover is `rail-hover`. Bottom: the signed-in name linking to Profile, the email, and Sign
+  out. Focus rings on the rail are white (`outline-paper`, 14.52 on rail) because the teal ring would
+  nearly vanish on the dark ground. From `lg` the top bar shows only the breadcrumb; below `lg` it
+  keeps the name and Sign out as before. There is no separate Profile item: the name is the link.
 - **Content**: offset by the rail, centred, `max-w-[1400px]`, 24px padding.
 - **Page header**: `PageHead` (title, optional lead, action slot) with a rule under it.
 - Tables repeat the same shape: `ui/classes.js` `TABLE` / `TABLE_TH` / `TABLE_TD`, rows at

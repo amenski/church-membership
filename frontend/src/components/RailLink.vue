@@ -4,12 +4,12 @@
       :href="href"
       :aria-current="isActive ? 'page' : undefined"
       :class="[
-        'group flex items-center gap-2.5 rounded-sm px-2.5 py-1.5 text-base no-underline transition-colors duration-[120ms] hover:bg-teal-tint hover:text-teal',
-        isActive ? 'bg-teal-tint font-medium text-teal' : 'text-ink'
+        'group flex items-center gap-2.5 rounded-md px-2.5 py-2 text-base font-medium no-underline transition-colors duration-[120ms] focus-visible:outline-paper',
+        isActive ? 'bg-teal text-paper' : 'text-rail-text hover:bg-rail-hover hover:text-paper'
       ]"
       @click="navigate"
     >
-      <Icon :name="name" :size="18" class="shrink-0" :class="isActive ? 'text-teal' : 'text-muted'" />
+      <Icon :name="name" :size="18" class="shrink-0" :class="isActive ? 'text-paper' : 'text-rail-muted group-hover:text-paper'" />
       <slot />
     </a>
   </router-link>

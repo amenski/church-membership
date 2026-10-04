@@ -25,7 +25,7 @@
             </ol>
           </nav>
         </div>
-        <div class="flex shrink-0 items-center gap-3">
+        <div class="flex shrink-0 items-center gap-3 lg:hidden">
           <span class="hidden text-sm text-muted sm:inline">{{ displayName }}</span>
           <BaseButton variant="secondary" size="sm" @click="handleLogout">
             <Icon name="log-out" :size="16" class="mr-1.5" />Sign out
@@ -48,16 +48,23 @@
         aria-label="Main navigation"
         :inert="!isWide && !railOpen"
         :class="[
-          'fixed inset-y-0 left-0 z-[1045] flex w-[280px] flex-col overflow-y-auto border-r border-rule bg-paper lg:top-12 lg:w-[248px] lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-[1045] flex w-[280px] flex-col overflow-y-auto bg-rail text-rail-text lg:top-12 lg:w-[232px] lg:translate-x-0',
           'motion-safe:transition-transform motion-safe:duration-200',
           railOpen ? 'translate-x-0' : 'max-lg:-translate-x-full'
         ]"
       >
-        <div class="flex items-center justify-between p-3 lg:hidden">
-          <BrandMark :to="homePath" />
+        <div class="flex items-start justify-between gap-2 px-3 pt-5 pb-4">
+          <router-link
+            :to="homePath"
+            aria-label="Felege Selam home"
+            class="flex flex-col rounded-sm px-2.5 py-1 no-underline focus-visible:outline-paper"
+          >
+            <span class="font-ethiopic text-2xl leading-[1.25] font-bold text-paper">ፈለገ ሰላም</span>
+            <span class="mt-0.5 text-xs text-rail-muted">Felege Selam</span>
+          </router-link>
           <button
             type="button"
-            class="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent text-muted hover:text-ink"
+            class="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent text-rail-text hover:text-paper focus-visible:outline-paper lg:hidden"
             aria-label="Close menu"
             @click="closeRail"
           >
@@ -65,26 +72,36 @@
           </button>
         </div>
 
-        <nav class="flex flex-1 flex-col gap-0.5 p-3" aria-label="Sections">
+        <nav class="flex flex-1 flex-col gap-1 px-3 pb-3" aria-label="Sections">
           <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/dashboard" name="home">Overview</RailLink>
           <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/members" name="users">Members</RailLink>
           <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/households" name="home">Households</RailLink>
           <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/payments" name="banknote">Payments</RailLink>
           <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/communications" name="message-square">Messages</RailLink>
           <RailLink v-if="authStore.hasRole('ADMIN')" to="/activity" name="clock">Activity</RailLink>
-          <RailLink to="/profile" name="user">Profile</RailLink>
         </nav>
 
-        <!-- The account block lives in the top bar from lg up, so it stays in the drawer only -->
-        <div class="border-t border-rule p-3 lg:hidden">
-          <div class="text-sm font-medium [overflow-wrap:anywhere]">{{ displayName }}</div>
-          <div v-if="displayName !== currentUser?.email && currentUser?.email" class="text-xs text-muted [overflow-wrap:anywhere]">{{ currentUser.email }}</div>
+        <!-- The account: the name opens Profile, Sign out ends the session -->
+        <div class="mx-3 border-t border-rail-line px-2.5 pt-3.5 pb-4">
+          <router-link
+            to="/profile"
+            class="block rounded-sm text-base font-medium text-paper no-underline hover:underline focus-visible:outline-paper [overflow-wrap:anywhere]"
+            active-class="underline"
+          >{{ displayName }}</router-link>
+          <div v-if="displayName !== currentUser?.email && currentUser?.email" class="mt-0.5 text-xs text-rail-muted [overflow-wrap:anywhere]">{{ currentUser.email }}</div>
+          <button
+            type="button"
+            class="mt-2.5 inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-sm border-0 bg-transparent p-0 text-sm text-rail-text hover:text-paper hover:underline focus-visible:outline-paper"
+            @click="handleLogout"
+          >
+            <Icon name="log-out" :size="16" />Sign out
+          </button>
         </div>
       </aside>
     </template>
 
     <!-- Content column, beside the rail from lg up -->
-    <main :inert="railOpen ? true : null" :class="isAuthenticated ? 'lg:ml-[248px] [&>*]:mx-auto [&>*]:max-w-[1400px] [&>*]:p-6 max-sm:[&>*]:px-4' : ''">
+    <main :inert="railOpen ? true : null" :class="isAuthenticated ? 'lg:ml-[232px] [&>*]:mx-auto [&>*]:max-w-[1400px] [&>*]:p-6 max-sm:[&>*]:px-4' : ''">
       <router-view/>
     </main>
 
