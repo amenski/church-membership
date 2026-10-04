@@ -13,6 +13,23 @@
             </ol>
           </nav>
         </div>
+        <!-- From lg, staff get today's date and a member search; phones have the tab bar and each page's own search -->
+        <div v-if="showTabs" class="hidden shrink-0 items-center gap-4 lg:flex">
+          <span class="text-sm text-muted">{{ todayText }}</span>
+          <form role="search" class="relative" @submit.prevent="searchMembers">
+            <label for="topbar-search" class="sr-only">Search members</label>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false" class="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
+            <input
+              id="topbar-search"
+              v-model="searchText"
+              type="search"
+              placeholder="Search members"
+              autocomplete="off"
+              enterkeyhint="search"
+              class="block h-(--control-h) w-56 rounded-sm border border-field bg-paper pr-2.5 pl-8 text-sm text-ink placeholder:text-muted focus:border-teal focus:outline-2 focus:outline-offset-1 focus:outline-teal"
+            >
+          </form>
+        </div>
         <!-- Below lg only a signed-in user without the tab bar (a MEMBER) needs the account here: staff have More -->
         <div v-if="!showTabs" class="flex shrink-0 items-center gap-3 lg:hidden">
           <router-link to="/profile" class="hidden min-h-11 items-center text-sm text-muted sm:inline-flex">{{ displayName }}</router-link>
@@ -80,7 +97,8 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { format } from 'date-fns'
 import BaseButton from '@/components/BaseButton.vue'
 import BottomTabs from '@/components/BottomTabs.vue'
 import BrandMark from '@/components/BrandMark.vue'
@@ -114,6 +132,20 @@ const density = computed(() => (isAuthenticated.value && authStore.hasRole('VOLU
 
 // Staff get the bottom tab bar below lg (the rail takes over from lg)
 const showTabs = computed(() => isAuthenticated.value && authStore.hasRole('VOLUNTEER'))
+
+// Today in the top bar: reads the clock again on each page change, so it is right after midnight
+const todayText = computed(() => {
+  void route.fullPath
+  return format(new Date(), 'EEEE, d MMMM yyyy')
+})
+
+// The top bar search hands the text to the Members screen, which reads ?search=
+const searchText = ref('')
+const searchMembers = () => {
+  const search = searchText.value.trim()
+  router.push({ path: '/members', query: search ? { search } : {} })
+  searchText.value = ''
+}
 
 const handleLogout = async () => {
   try {
