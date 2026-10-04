@@ -18,8 +18,8 @@
         <form class="flex flex-col gap-4" novalidate @submit.prevent="askToSend">
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <BaseSelect id="message-audience" v-model="form.recipientType" label="Send to">
-              <option value="ALL">All active members</option>
-              <option value="OVERDUE">Members behind on dues</option>
+              <option value="ALL">Everyone</option>
+              <option value="OVERDUE">Behind on dues</option>
               <option value="SPECIFIC">One member</option>
             </BaseSelect>
             <BaseInput
