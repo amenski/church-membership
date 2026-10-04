@@ -139,36 +139,7 @@
     </BaseModal>
 
     <!-- Receipt -->
-    <BaseModal v-model="receiptOpen" :title="selectedPayment ? `Receipt ${receiptNumber(selectedPayment)}` : 'Receipt'" size="sm">
-      <!-- A plain element for html2pdf to capture: token hex colours only, no tinted or blended colours -->
-      <div v-if="selectedPayment" ref="receiptContent" class="bg-paper p-2 text-ink">
-        <p class="m-0 mb-3 text-base font-semibold">Felege Selam</p>
-        <dl class="m-0 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-base">
-          <dt class="font-normal text-muted">Receipt</dt>
-          <dd class="m-0 font-medium">{{ receiptNumber(selectedPayment) }}</dd>
-          <dt class="font-normal text-muted">Member</dt>
-          <dd class="m-0 font-medium [overflow-wrap:anywhere]">{{ selectedPayment.member?.name || 'Unknown' }}</dd>
-          <dt class="font-normal text-muted">Month covered</dt>
-          <dd class="m-0">{{ periodLabel(selectedPayment.period) }}</dd>
-          <dt class="font-normal text-muted">Paid on</dt>
-          <dd class="m-0">{{ formatDate(selectedPayment.paymentDate, 'MMM d, yyyy') }}</dd>
-          <dt class="font-normal text-muted">Method</dt>
-          <dd class="m-0">{{ methodLabel(selectedPayment.paymentMethod) }}</dd>
-          <template v-if="selectedPayment.notes">
-            <dt class="font-normal text-muted">Notes</dt>
-            <dd class="m-0 [overflow-wrap:anywhere]">{{ selectedPayment.notes }}</dd>
-          </template>
-        </dl>
-        <p class="mt-4 mb-0 border-t border-rule pt-3 text-muted">Amount</p>
-        <p :class="[FIGURE, 'm-0 text-2xl']">{{ formatMoney(selectedPayment.amount) }}</p>
-      </div>
-      <template #footer>
-        <BaseButton variant="secondary" @click="receiptOpen = false">Close</BaseButton>
-        <BaseButton :disabled="downloading" :aria-busy="downloading ? 'true' : undefined" @click="downloadReceipt">
-          <Icon name="download" :size="16" class="mr-1.5" />{{ downloading ? 'Preparing...' : 'Download PDF' }}
-        </BaseButton>
-      </template>
-    </BaseModal>
+    <ReceiptDialog v-model="receiptOpen" :payment="selectedPayment" />
   </div>
 </template>
 
@@ -192,10 +163,11 @@ import EmptyNote from '@/components/EmptyNote.vue'
 import Icon from '@/components/Icon.vue'
 import StatTile from '@/components/StatTile.vue'
 import PageHead from '@/components/PageHead.vue'
+import ReceiptDialog from '@/components/ReceiptDialog.vue'
 import TextButton from '@/components/TextButton.vue'
 import YearStrip from '@/components/YearStrip.vue'
 
-import { CONTROL, FIGURE, LABEL, TABLE, TABLE_TH as TH, TABLE_TD as TD } from '@/ui/classes'
+import { CONTROL, LABEL, TABLE, TABLE_TH as TH, TABLE_TD as TD } from '@/ui/classes'
 
 const NOTES_MAX = 500
 const EMPTY_ERRORS = { memberId: '', period: '', paymentDate: '', amount: '', paymentMethod: '', notes: '' }
@@ -215,7 +187,7 @@ const emptyForm = () => ({
 
 export default {
   name: 'PaymentsView',
-  components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, BaseTextarea, EmptyNote, Icon, PageHead, StatTile, TextButton, YearStrip },
+  components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, BaseTextarea, EmptyNote, Icon, PageHead, ReceiptDialog, StatTile, TextButton, YearStrip },
   setup() {
     return {
       appStore: useAppStore(),
@@ -230,7 +202,6 @@ export default {
       CONTROL,
       TH,
       TD,
-      FIGURE,
       NOTES_MAX,
       PAYMENT_METHODS
     }
@@ -250,7 +221,6 @@ export default {
       today: localISODate(),
       selectedPayment: null,
       receiptOpen: false,
-      downloading: false,
       wide: true
     }
   },
@@ -414,25 +384,6 @@ export default {
     openReceipt(payment) {
       this.selectedPayment = payment
       this.receiptOpen = true
-    },
-    async downloadReceipt() {
-      this.downloading = true
-      try {
-        const options = {
-          margin: 1,
-          filename: `receipt-${receiptNumber(this.selectedPayment)}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2 },
-          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-        }
-        const { default: html2pdf } = await import('html2pdf.js')
-        await html2pdf().set(options).from(this.$refs.receiptContent).save()
-      } catch (error) {
-        console.error('Error creating the receipt PDF:', error)
-        this.notify('error', 'Could not create the PDF', 'Try again, or close this window and open the receipt again.')
-      } finally {
-        this.downloading = false
-      }
     },
     notify(type, title, message) {
       this.appStore.addNotification({ type, title, message, isToast: true })
