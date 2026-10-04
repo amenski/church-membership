@@ -1,6 +1,6 @@
 # People
 
-A **person** is anyone on the register: a member or a dependent with no membership (a child, a spouse who pays no dues, a visitor not yet counted). A person's own fields are name, optional email, phone, birth date and household; the membership is separate and optional. This page covers the API (step 11 of the [person plan](../person-membership-plan.md)); the screen is not built yet.
+A **person** is anyone on the register: a member or a dependent with no membership (a child, a spouse who pays no dues, a visitor not yet counted). A person's own fields are name, optional email, phone, birth date and household; the membership is separate and optional. This page covers the API and the screen (step 11 of the [person plan](../person-membership-plan.md)).
 
 Dues, reminders, messages, payments, member exports and every dashboard count stay on **memberships** (decision f: dues are per membership, a household never pays once). A person with no membership appears in none of them, and a person with a membership appears through it — so a dependent never leaks into a members-only number.
 
@@ -96,11 +96,21 @@ effort, like all entries ([activity.md](activity.md)).
 - A person is created, edited and read through this API; a membership is created, edited and archived through the member API. The two meet at `POST /api/people/{id}/membership`.
 
 ## Screen
-Not built yet (step 11 frontend): an "Add person" under a household and a "Make a member" action are planned.
+Code: `frontend/src/views/HouseholdsView.vue` (the household detail dialog), `frontend/src/utils/person.js` (request bodies, age text), the people methods in `frontend/src/services/api.js`. There is no separate People page: a dependent belongs to a household, so the list sits in that household's detail.
+- Section "People without a membership (N)" under Members: the people of the household whose `memberStatus` is null, each with name and, when known, "Born Apr 1, 2015 · 11 years old". A VOLUNTEER sees the list read-only.
+- STAFF and up get "Add person" under the list and, per row, "Edit" and "Make a member"; ADMIN also gets "Delete". They are text buttons (44px tall), not an `ActionMenu`: a menu is teleported under the dialog and would be hidden by it.
+- Add person and Edit person share one form: name (required, 100), email, phone, birth date (must be in the past), and the household shown as text (a new person joins the household that is open; an edit leaves the household as it is). Edit reads the whole person first (`GET /api/people/{id}`), because the household detail carries no email or phone.
+- Make a member: a small dialog with Status (Member or Inactive) and "Joined on" (today, not in the future). Afterwards the household list and detail reload, so the person leaves the dependents list; the Members screen reads the list afresh each time it opens, so they appear there.
+- Delete asks first (`ConfirmDialog`, danger).
+- Errors: field errors from `errors[{field, message}]` sit under their field; anything else (an unknown household) goes in a banner in the form. 409 `PERSON_001` reads "X is already a member.", 409 `PERSON_002` reads "X has a membership, so they cannot be deleted here. Archive the membership from the Members screen first.", 404 reads "X is no longer on the register. The list has been refreshed." These show as a toast (and in the detail dialog for a delete), and the list reloads. No code is shown.
+- Empty: "Nobody here without a membership. Add a child or a spouse who pays no dues, so the household shows everyone." (a VOLUNTEER sees "A staff member can add them.").
+- Activity: the four new types read "Person added", "Person edited", "Person deleted" and "Membership started".
 
 ## Known issues
-- No screen yet; the endpoints are exercised on H2 only (MySQL mode), not on MySQL and not in a browser.
-- There is no automated test for the `PeopleController` contract yet.
+- The screen was built from the API contract and has not been run in a browser yet, and has no automated test.
+- The endpoints are exercised on H2 only (MySQL mode), not on MySQL. There is no automated test for the `PeopleController` contract yet.
+- A person cannot be moved to another household from this screen (the edit form leaves the household alone), and `getPeople` is in `api.js` but no screen lists everyone yet.
+- A dependent shows only in their household's detail: a person with no household appears nowhere on screen.
 
 ## Related
 - [members.md](members.md): memberships and the member API
