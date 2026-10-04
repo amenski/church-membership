@@ -97,7 +97,8 @@ Utilities read them with `h-(--control-h)`, `min-h-(--row-h)`, `p-(--card-pad)`,
 - **Top bar** (`App.vue`): sticky, 48px, a breadcrumb on the left (each route declares
   `meta.title`; it falls back to nothing). Below `lg` the same bar carries the brand; a signed-in
   user without the tab bar (a MEMBER) also gets the name (linking to Profile) and Sign out on the
-  right, staff find both in More.
+  right, staff find both in More. From `lg`, VOLUNTEER and above get today's date and a "Search
+  members" box on the right (32px control, visually hidden label, Enter goes to `/members?search=`).
 - **Rail**: deep teal (`rail` tokens), fixed, 232px, below the top bar, from `lg` up only (below `lg`
   it is `display: none`; there is no drawer). Top: the congregation name in Amharic (white, Noto Sans
   Ethiopic) over "Felege Selam", linking home. Then the role-based items (Activity is ADMIN only); the
