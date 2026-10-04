@@ -113,33 +113,7 @@
       </div>
 
       <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
-        <section class="min-w-0" aria-labelledby="collected-title">
-          <SectionTitle id="collected-title">Collected by month</SectionTitle>
-          <template v-if="chartError">
-            <AlertBanner>The monthly amounts did not load.</AlertBanner>
-            <TextButton @click="loadCollected">Try again</TextButton>
-          </template>
-          <ul v-else-if="hasCollected" class="m-0 grid list-none gap-1.5 p-0">
-            <li
-              v-for="row in collectedRows"
-              :key="row.month"
-              class="grid grid-cols-[4.5rem_1fr_auto] items-center gap-x-3 text-xs sm:grid-cols-[5rem_1fr_9rem]"
-            >
-              <span class="text-muted">{{ row.label }}</span>
-              <span class="block h-3" aria-hidden="true">
-                <span
-                  :class="['block h-full min-w-px rounded-r', row.current ? 'bg-teal-line' : 'bg-teal']"
-                  :style="{ width: row.width }"
-                ></span>
-              </span>
-              <span class="text-right tabular-nums text-ink">
-                {{ formatMoney(row.amount) }}
-                <span v-if="row.current" class="text-muted">in progress</span>
-              </span>
-            </li>
-          </ul>
-          <EmptyNote v-else>No payments in the last 12 months. Record one under Payments to see it here.</EmptyNote>
-        </section>
+        <CollectedChart />
 
         <section class="min-w-0" aria-labelledby="activity-title">
           <SectionTitle id="activity-title">Recent activity</SectionTitle>
@@ -159,6 +133,7 @@
 <script>
 import api from '@/services/api'
 import AlertBanner from '@/components/AlertBanner.vue'
+import CollectedChart from '@/components/CollectedChart.vue'
 import EmptyNote from '@/components/EmptyNote.vue'
 import Icon from '@/components/Icon.vue'
 import PageHead from '@/components/PageHead.vue'
@@ -167,7 +142,6 @@ import RuledRow from '@/components/RuledRow.vue'
 import SectionTitle from '@/components/SectionTitle.vue'
 import StatTile from '@/components/StatTile.vue'
 import StatusLabel from '@/components/StatusLabel.vue'
-import TextButton from '@/components/TextButton.vue'
 import YearStrip from '@/components/YearStrip.vue'
 import { useAuthStore } from '../stores/authStore'
 import { formatMoney, localISODate } from '@/utils'
@@ -193,7 +167,7 @@ const CALL_ACTION = 'inline-flex min-h-8 items-center gap-1.5 rounded-sm border 
 
 export default {
   name: 'DashboardView',
-  components: { AlertBanner, EmptyNote, Icon, PageHead, RuledList, RuledRow, SectionTitle, StatTile, StatusLabel, TextButton, YearStrip },
+  components: { AlertBanner, CollectedChart, EmptyNote, Icon, PageHead, RuledList, RuledRow, SectionTitle, StatTile, StatusLabel, YearStrip },
   setup() {
     return {
       authStore: useAuthStore(),
@@ -215,8 +189,6 @@ export default {
         overdueMembers: 0,
         monthlyRevenue: 0
       },
-      collected: [],
-      chartError: false,
       recentPayments: [],
       members: [],
       paidByMember: null,
@@ -278,19 +250,6 @@ export default {
         .filter(member => countsForDues(member) && (member.consecutiveMonthsMissed > 0 || (this.paidByMember && !this.paidMonths(member).has(this.currentMonth))))
         .sort((a, b) => (b.consecutiveMonthsMissed || 0) - (a.consecutiveMonthsMissed || 0) || a.name.localeCompare(b.name))
     },
-    hasCollected() {
-      return this.collected.some(row => row.amount > 0)
-    },
-    // Oldest first, as the server sends it; the last row is the current month, still being collected
-    collectedRows() {
-      const max = Math.max(...this.collected.map(row => row.amount), 0)
-      return this.collected.map((row, index) => ({
-        ...row,
-        label: this.monthLabel(row.month),
-        current: index === this.collected.length - 1,
-        width: max > 0 ? `${(row.amount / max) * 100}%` : '0%'
-      }))
-    },
     paidCount() {
       return Math.max(0, this.activeCount - this.behindMembers.length)
     }
@@ -329,7 +288,7 @@ export default {
         this.activities = activitiesRes
         this.today = localISODate()
         this.loadError = false
-        await Promise.all([this.loadCollected(), this.loadPaidMonths(), this.loadFailedReminders()])
+        await Promise.all([this.loadPaidMonths(), this.loadFailedReminders()])
       } catch (error) {
         console.error('Error loading dashboard data:', error)
         this.loadError = true
@@ -358,15 +317,6 @@ export default {
         this.failedReminders = null
       }
     },
-    async loadCollected() {
-      try {
-        this.collected = await api.getCollectedByMonth()
-        this.chartError = false
-      } catch (error) {
-        console.error('Error loading collected by month:', error)
-        this.chartError = true
-      }
-    },
     onWideChange(event) {
       this.wide = event.matches
     },
@@ -385,10 +335,6 @@ export default {
     },
     telHref(phone) {
       return `tel:${phone.replace(/[^+\d]/g, '')}`
-    },
-    monthLabel(month) {
-      const [year, number] = month.split('-').map(Number)
-      return new Date(year, number - 1, 1).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
     },
     formatDate(date) {
       return new Date(date).toLocaleDateString()

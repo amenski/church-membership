@@ -21,9 +21,12 @@
     <p v-if="!loaded" class="m-0 py-4 text-(length:--text-body) text-muted" role="status">Loading payments...</p>
 
     <!-- Figures from the loaded payments -->
-    <dl v-if="payments.length" class="m-0 mb-6 grid grid-cols-2 gap-3 lg:grid-cols-3">
-      <StatTile v-for="figure in figures" :key="figure.label" :label="figure.label" :value="figure.value" />
+    <dl v-if="payments.length" class="m-0 mb-6 grid grid-cols-2 gap-2 lg:grid-cols-3">
+      <StatTile v-for="figure in figures" :key="figure.label" slim :label="figure.label" :value="figure.value" />
     </dl>
+
+    <!-- The last twelve months, the same chart as the Overview -->
+    <CollectedChart v-if="payments.length" ref="chart" :class="[CARD, 'mb-6']" />
 
     <!-- Filters -->
     <form v-if="payments.length" class="mb-6 grid grid-cols-2 gap-3 md:flex md:flex-wrap md:items-end" role="search" aria-label="Filter payments" @submit.prevent>
@@ -159,6 +162,7 @@ import BaseInput from '@/components/BaseInput.vue'
 import BaseModal from '@/components/BaseModal.vue'
 import BaseSelect from '@/components/BaseSelect.vue'
 import BaseTextarea from '@/components/BaseTextarea.vue'
+import CollectedChart from '@/components/CollectedChart.vue'
 import EmptyNote from '@/components/EmptyNote.vue'
 import Icon from '@/components/Icon.vue'
 import StatTile from '@/components/StatTile.vue'
@@ -167,7 +171,7 @@ import ReceiptDialog from '@/components/ReceiptDialog.vue'
 import TextButton from '@/components/TextButton.vue'
 import YearStrip from '@/components/YearStrip.vue'
 
-import { CONTROL, LABEL, TABLE, TABLE_TH as TH, TABLE_TD as TD } from '@/ui/classes'
+import { CARD, CONTROL, LABEL, TABLE, TABLE_TH as TH, TABLE_TD as TD } from '@/ui/classes'
 
 const NOTES_MAX = 500
 const EMPTY_ERRORS = { memberId: '', period: '', paymentDate: '', amount: '', paymentMethod: '', notes: '' }
@@ -187,7 +191,7 @@ const emptyForm = () => ({
 
 export default {
   name: 'PaymentsView',
-  components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, BaseTextarea, EmptyNote, Icon, PageHead, ReceiptDialog, StatTile, TextButton, YearStrip },
+  components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, BaseTextarea, CollectedChart, EmptyNote, Icon, PageHead, ReceiptDialog, StatTile, TextButton, YearStrip },
   setup() {
     return {
       appStore: useAppStore(),
@@ -198,6 +202,7 @@ export default {
       periodLabel,
       receiptNumber,
       TABLE,
+      CARD,
       LABEL,
       CONTROL,
       TH,
@@ -376,6 +381,7 @@ export default {
         this.recordOpen = false
         this.form = emptyForm()
         await this.loadData()
+        this.$refs.chart?.load()
         this.notify('success', 'Payment recorded', `${member?.name || 'Member'}, ${periodLabel(request.period)}: ${formatMoney(request.amount)}`)
       } catch (error) {
         console.error('Error recording payment:', error)
