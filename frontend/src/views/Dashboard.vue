@@ -78,7 +78,7 @@ import { useAuthStore } from '../stores/authStore'
 import { useAppStore } from '../stores/appStore'
 import { buildReminderRequest } from '@/utils/communicationPayload'
 import { formatMoney } from '@/utils'
-import { monthsBehind } from '@/utils/dashboardMeter'
+import { monthsBehind } from '@/utils/dues'
 import { countsForDues } from '@/utils/memberStatus'
 
 export default {
