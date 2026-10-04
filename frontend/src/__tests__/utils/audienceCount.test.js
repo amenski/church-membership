@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest'
 import { audienceCount } from '@/utils/audienceCount'
 
 const members = [
-  { id: 1, active: true, consecutiveMonthsMissed: 0 },
-  { id: 2, active: true, consecutiveMonthsMissed: 1 },
-  { id: 3, active: true, consecutiveMonthsMissed: 3 },
-  { id: 4, active: false, consecutiveMonthsMissed: 5 }
+  { id: 1, email: 'a@example.com', active: true, consecutiveMonthsMissed: 0 },
+  { id: 2, email: 'b@example.com', active: true, consecutiveMonthsMissed: 1 },
+  { id: 3, email: 'c@example.com', active: true, consecutiveMonthsMissed: 3 },
+  { id: 4, email: 'd@example.com', active: false, consecutiveMonthsMissed: 5 }
 ]
 
 describe('audienceCount', () => {
@@ -29,6 +29,27 @@ describe('audienceCount', () => {
   it('is 1 for SPECIFIC and 0 for an unknown audience', () => {
     expect(audienceCount(members, 'SPECIFIC', 1)).toBe(1)
     expect(audienceCount(members, 'NOBODY', 1)).toBe(0)
+  })
+
+  it('skips members without an email, empty or missing', () => {
+    const list = [
+      ...members,
+      { id: 5, email: null, active: true, consecutiveMonthsMissed: 2 },
+      { id: 6, email: '  ', active: true, consecutiveMonthsMissed: 2 },
+      { id: 7, active: true, consecutiveMonthsMissed: 2 }
+    ]
+    expect(audienceCount(list, 'ALL', 1)).toBe(3)
+    expect(audienceCount(list, 'OVERDUE', 2)).toBe(1)
+  })
+
+  it('counts one message for members who share an address, ignoring case and spaces', () => {
+    const family = [
+      { id: 1, email: 'family@example.com', active: true, consecutiveMonthsMissed: 2 },
+      { id: 2, email: ' FAMILY@Example.com ', active: true, consecutiveMonthsMissed: 2 },
+      { id: 3, email: 'other@example.com', active: true, consecutiveMonthsMissed: 0 }
+    ]
+    expect(audienceCount(family, 'ALL', 1)).toBe(2)
+    expect(audienceCount(family, 'OVERDUE', 1)).toBe(1)
   })
 
   it('handles an empty or missing list', () => {

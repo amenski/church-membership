@@ -31,6 +31,10 @@ The rows are written when the communication is saved (status `PENDING`) and each
 
 STAFF can retry a `FAILED` email delivery from the delivery dialog (`POST /api/communications/{id}/deliveries/{deliveryId}/retry`). It re-sends once, synchronously (one full retry cycle, so up to the maximum attempts again), and ADDS the attempts it made to the stored count (`usecase/RetryDeliveryUseCase.java:59-66`): a delivery that failed 3 times and then succeeded on the second try of a manual retry shows 5.
 
+## Who gets a message
+
+Members without an email address are skipped, and members who share an address get one message between them (the one with the lowest id; `usecase/Recipients.java`). A message to a single member who has no email is refused with a 400.
+
 ## Personalisation
 
 `{{member_name}}` in a communication's title or message is replaced with each recipient's name when the email is sent: bulk send, send to selected members, send-to-overdue, the monthly reminder job and a delivery retry. A blank or missing name becomes "member". The stored communication keeps the placeholder; only the emailed text is personalised (`utils/MessageTemplates.java`). Other text is left as written.

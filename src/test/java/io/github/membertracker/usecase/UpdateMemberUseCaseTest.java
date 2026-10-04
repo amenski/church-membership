@@ -1,7 +1,6 @@
 package io.github.membertracker.usecase;
 
 import io.github.membertracker.domain.enumeration.ActivityType;
-import io.github.membertracker.domain.exception.MemberDomainException;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.repository.MemberRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,7 +12,6 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -55,28 +53,21 @@ class UpdateMemberUseCaseTest {
     }
 
     @Test
-    void ownEmailUnchangedIsAllowed() {
-        when(memberRepository.findByEmailIgnoreCase("OLD@example.com")).thenReturn(Optional.of(stored));
-
-        Member result = useCase.invoke(1L, "New", "OLD@example.com", "+390622222222", null, null).orElseThrow();
+    void anEmailAnotherMemberHasIsAllowed() {
+        Member result = useCase.invoke(1L, "New", "OTHER@example.com", "+390622222222", null, null).orElseThrow();
 
         assertThat(result.getName()).isEqualTo("New");
-        assertThat(result.getEmail()).isEqualTo("OLD@example.com");
+        assertThat(result.getEmail()).isEqualTo("OTHER@example.com");
         assertThat(result.getPhone()).isEqualTo("+390622222222");
         verify(memberRepository).save(stored);
     }
 
     @Test
-    void anotherMembersEmailIsRejectedAndNothingIsSaved() {
-        Member other = new Member("Other", "other@example.com", null);
-        other.setId(2L);
-        when(memberRepository.findByEmailIgnoreCase("OTHER@example.com")).thenReturn(Optional.of(other));
+    void theEmailCanBeRemoved() {
+        Member result = useCase.invoke(1L, "Old", null, null, null, null).orElseThrow();
 
-        assertThatThrownBy(() -> useCase.invoke(1L, "New", "OTHER@example.com", null, null, null))
-            .isInstanceOf(MemberDomainException.class)
-            .hasMessage("A member with this email already exists");
-
-        verify(memberRepository, never()).save(any());
+        assertThat(result.getEmail()).isNull();
+        verify(memberRepository).save(stored);
     }
 
     @Test

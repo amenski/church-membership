@@ -126,6 +126,8 @@ Hard delete with `ON DELETE CASCADE` removes all payments and delivery history. 
 A unique, required email per member blocks children and shared inboxes, and there is no household table. Every people feature on the roadmap depends on changing this.
 `Member.java` · `idx_member_email`
 
+> **Status (Oct 2026):** the email part is fixed: email is optional and not unique (migration `009`). There is still no household table: see [person-membership-plan.md](person-membership-plan.md).
+
 ## 4. Other gaps
 
 ### Workflow gaps

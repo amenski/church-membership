@@ -44,14 +44,14 @@ public class SendCommunicationToAllMembersUseCase {
     }
 
     /**
-     * Sends a communication to all active members.
+     * Sends a communication to all active members who have an email address, one message per address.
      * Nothing is stored when there are none ({@link CommunicationDomainException#noRecipients()}).
      *
      * @param communication the communication to send
      * @return the saved communication with delivery information
      */
     public Communication invoke(Communication communication) {
-        List<Member> allMembers = memberRepository.findByActive(true);
+        List<Member> allMembers = Recipients.reachable(memberRepository.findByActive(true));
         if (allMembers.isEmpty()) {
             throw CommunicationDomainException.noRecipients();
         }

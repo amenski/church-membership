@@ -43,16 +43,16 @@ Role view of the screen (the buttons are hidden, not disabled, for roles that ca
 - There is no sort control below `md`.
 
 ### Add a member
-1. Click "Add member" and fill name and email (required), optionally phone, and "Joined on" (default today, not in the future); the dialog has no "Active" switch because a new member is always active (`MembersView.vue:143-168`).
-2. "Add member" in the dialog sends `{name, email, phone?, joinDate?, active}` to `POST /api/members` (`MembersView.vue:387-408`, `frontend/src/utils/memberPayload.js`). Name and email are checked on the screen first.
+1. Click "Add member" and fill the name (required), optionally email and phone, and "Joined on" (default today, not in the future); the dialog has no "Active" switch because a new member is always active (`MembersView.vue:143-168`).
+2. "Add member" in the dialog sends `{name, email, phone?, joinDate?, active}` to `POST /api/members` (`MembersView.vue:387-408`, `frontend/src/utils/memberPayload.js`). The name is checked on the screen first, and the email only when filled (format).
 3. The server creates the member as active with the counters at zero; it uses the join date sent, or today (`src/main/java/io/github/membertracker/usecase/SaveMemberUseCase.java:21-33`, `src/main/java/io/github/membertracker/domain/model/Member.java:41-43`). It ignores `active` on create (the request still carries `active: true`).
-4. Success: the dialog closes, the row appears and a toast "Member added" names the member. A duplicate email (any letter case) returns 400 "A member with this email already exists" and shows under the Email field.
+4. Success: the dialog closes, the row appears and a toast "Member added" names the member. The email may be left empty, and two members may share one address: there is no duplicate check. A child added without an email counts as a member until the status step of the [person/membership plan](../person-membership-plan.md): they appear behind on dues unless marked inactive. The dialog's hint says so.
 5. Other failures (validation, 403): field errors from the server show under their fields; anything else shows in a banner at the top of the dialog plus an error toast "Could not save member" (no toast for 403); the dialog stays open (`MembersView.vue:369-386`).
 
 ### Edit a member
 1. Choose "Edit" in the row menu; the dialog is pre-filled from the row (`MembersView.vue:342-354`) (STAFF+).
 2. "Save changes" sends the form to `PUT /api/members/{id}` as a `MemberRequest` (`MemberController.java:107-115`). The server loads the stored member and applies name, email, phone, join date (when sent) and `active`; the missed-months counter, last payment date and monthly-job marker are never taken from the client (`src/main/java/io/github/membertracker/usecase/UpdateMemberUseCase.java:25-60`).
-3. Unknown id returns an empty 404 (`MemberController.java:114`). An email that belongs to another member returns 400 "A member with this email already exists". Otherwise the dialog closes, the table reloads and a toast "Member saved" appears.
+3. Unknown id returns an empty 404 (`MemberController.java:114`). Any email is accepted, including one another member has, or none. Otherwise the dialog closes, the table reloads and a toast "Member saved" appears.
 - The "Active" switch is shown only when editing a member (`v-if="editingMember"`, `MembersView.vue:150`), and is honoured there; changing it goes through `Member.activate()` / `deactivate()`. Its help text says inactive members do not count as behind and that turning it back on resets the months behind.
 
 ### Deactivate or reactivate
@@ -71,12 +71,13 @@ Role view of the screen (the buttons are hidden, not disabled, for roles that ca
 1. Click "Export CSV" (STAFF+). If the filters leave zero rows, a "Nothing to export" toast shows and no request is made (`MembersView.vue:445-454`).
 2. With no filter (or a filter matching everyone) the screen calls `GET /api/members/export`; with a narrowed list it calls `POST /api/members/export` with the visible ids (`memberFilters.js:62-67`, `frontend/src/services/api.js:358-363`).
 3. The file downloads as `members_<date>.csv`, or `members_filtered_<date>.csv` when any filter is set (`MembersView.vue:459-460`).
-4. Columns: id, name, email, phone, joinDate, active, consecutiveMonthsMissed (`MemberController.java:161-174`). The file is UTF-8 with a byte order mark so Excel reads non-Latin names correctly. Cells starting with a formula character are neutralised ([member-controller.md](member-controller.md)).
+4. Columns: id, name, email (empty when the member has none), phone, joinDate, active, consecutiveMonthsMissed (`MemberController.java:161-174`). The file is UTF-8 with a byte order mark so Excel reads non-Latin names correctly. Cells starting with a formula character are neutralised ([member-controller.md](member-controller.md)).
 5. Failure: error toast "Export failed" (`MembersView.vue:461-469`).
 
 ## Rules
-- Request shape `MemberRequest` (`src/main/java/io/github/membertracker/infrastructure/dto/MemberRequest.java:15`): name required (max 100), email required, well-formed (max 100), phone optional (blank becomes null) but if present must match `^\+?[0-9\s\-\(\)]{10,}$`, join date optional and not in the future, `active` optional. Failures return 400 with a field list. `id`, counters, last payment date and the monthly-job marker are not part of it and are ignored if sent.
-- Email is unique, compared ignoring case (`001.schema-creation.sql:19`). A duplicate is a 400 from the use case; if two requests race past that check the database unique index answers 409 "The request conflicts with existing data" (`src/main/java/io/github/membertracker/infrastructure/handler/GlobalExceptionHandler.java:85-90`).
+- Request shape `MemberRequest` (`src/main/java/io/github/membertracker/infrastructure/dto/MemberRequest.java:15`): name required (max 100), email optional (trimmed, blank becomes null) and well-formed when present (max 100), phone optional (blank becomes null) but if present must match `^\+?[0-9\s\-\(\)]{10,}$`, join date optional and not in the future, `active` optional. Failures return 400 with a field list. `id`, counters, last payment date and the monthly-job marker are not part of it and are ignored if sent.
+- Email is optional and not unique. Migration `009.make-member-email-optional.sql` dropped the unique index, made the column nullable and added a plain lookup index `idx_member_email_lookup`. Messages and reminders reach only members with an email, and members sharing an address get one message between them (the one with the lowest id; the others have no delivery row for that message): see [communications.md](communications.md). The activity log never records an email.
+- A child added without an email counts as a member until the status step of the [person/membership plan](../person-membership-plan.md): they appear behind on dues unless marked inactive.
 - New members: join date defaults to today, `active` is forced true, counters zero (`SaveMemberUseCase.java:21-33`).
 - Export ids: not empty, at most 5000, each positive (`src/main/java/io/github/membertracker/infrastructure/dto/ExportMembersRequest.java:12-13`); unknown ids are skipped (`MemberController.java:147-150`).
 - `consecutiveMonthsMissed`, `lastPaymentDate` and `lastMissedCountMonth` are system-managed (never client-settable since audit C8):
@@ -86,7 +87,7 @@ Role view of the screen (the buttons are hidden, not disabled, for roles that ca
 - Automatic deactivation: there is none. A membership policy (`shouldDeactivate`: 3 or more missed months) once existed but was only reachable through an unused use case; both were removed in `chore: remove unused use cases, the membership policy and PhoneNumber` and can be recovered from git history. Decide whether to build it for real.
 
 ## Known issues
-- One email per member is a model limit (audit C10).
+- A member without an email counts for dues until the status step ships (see Rules). A single-member message to one without an email is refused with a 400 (audit C10 is closed by migration 009).
 - Automatic deactivation never ran: the pre-due reminder window and automatic deactivation never ran; the code was removed in `chore: remove unused use cases, the membership policy and PhoneNumber` and can be recovered from git history; decide whether to build them for real.
 - Load errors are only logged to the console and shown as the banner; there is no retry other than the "Try again" button.
 - A filter that matches every member exports through the full-list endpoint but the file is still named `members_filtered_...` (`MembersView.vue:459`).

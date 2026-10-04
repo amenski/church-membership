@@ -1,7 +1,6 @@
 package io.github.membertracker.usecase;
 
 import io.github.membertracker.domain.enumeration.ActivityType;
-import io.github.membertracker.domain.exception.MemberDomainException;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.repository.MemberRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,12 +10,9 @@ import org.mockito.ArgumentCaptor;
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class SaveMemberUseCaseTest {
@@ -77,14 +73,18 @@ class SaveMemberUseCaseTest {
     }
 
     @Test
-    void duplicateEmailIsRejectedAndNothingIsSaved() {
-        when(memberRepository.existsByEmailIgnoreCase("DAN@Example.com")).thenReturn(true);
+    void anEmailAnotherMemberAlreadyHasIsAllowed() {
+        useCase.invoke("Dan", "DAN@Example.com", null, null);
 
-        assertThatThrownBy(() -> useCase.invoke("Dan", "DAN@Example.com", null, null))
-            .isInstanceOf(MemberDomainException.class)
-            .hasMessage("A member with this email already exists");
+        assertThat(saved().getEmail()).isEqualTo("DAN@Example.com");
+        verify(recordActivity).record(ActivityType.MEMBER_CREATED, "Member Dan was added", "MEMBER", 9L);
+    }
 
-        verify(memberRepository, never()).save(any());
-        verifyNoInteractions(recordActivity);
+    @Test
+    void aMemberWithoutAnEmailIsSaved() {
+        Member result = useCase.invoke("Child", null, null, null);
+
+        assertThat(result.getEmail()).isNull();
+        assertThat(saved().getName()).isEqualTo("Child");
     }
 }

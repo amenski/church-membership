@@ -52,6 +52,11 @@ public class RetryDeliveryUseCase {
             throw CommunicationDomainException.deliveryNotRetryable("only EMAIL deliveries can be retried");
         }
 
+        if (delivery.getRecipient() == null || delivery.getRecipient().getEmail() == null
+                || delivery.getRecipient().getEmail().isBlank()) {
+            throw CommunicationDomainException.deliveryNotRetryable("the member no longer has an email address");
+        }
+
         // The persisted delivery only carries the communication id, so load the full one for title/content
         Communication communication = communicationRepository.findById(communicationId)
                 .orElseThrow(() -> CommunicationDomainException.communicationNotFound(communicationId));

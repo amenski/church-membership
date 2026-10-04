@@ -265,4 +265,32 @@ class SendCommunicationToAllMembersUseCaseTest {
 
         assertThat(c.getDeliveries()).extracting(MessageDelivery::getRecipient).containsExactly(alice);
     }
+
+    @Test
+    void membersWithoutAnEmailAreSkippedAndSharedAddressesGetOneDelivery() {
+        Member child = member(3L, "Child", true);
+        child.setEmail(null);
+        Member spouse = member(4L, "Spouse", true);
+        spouse.setEmail("ALICE@example.com");
+        when(memberRepository.findByActive(true)).thenReturn(List.of(spouse, alice, bob, child));
+        Communication c = communication();
+
+        useCase.invoke(c);
+
+        assertThat(c.getDeliveries()).extracting(MessageDelivery::getRecipient).containsExactly(alice, bob);
+        verify(recordActivity).record(eq(ActivityType.MESSAGE_SENT), eq("Message \"News\" was sent to 2 members"),
+                eq("COMMUNICATION"), any());
+    }
+
+    @Test
+    void whenNobodyHasAnEmailNothingIsStored() {
+        Member child = member(3L, "Child", true);
+        child.setEmail("");
+        when(memberRepository.findByActive(true)).thenReturn(List.of(child));
+
+        assertThatThrownBy(() -> useCase.invoke(communication()))
+                .isInstanceOf(CommunicationDomainException.class)
+                .extracting("errorCode").isEqualTo(CommunicationDomainException.NO_RECIPIENTS);
+        verify(communicationRepository, never()).save(any());
+    }
 }

@@ -28,9 +28,9 @@ Role view of the screen:
 4. Empty: "No messages yet." plus "Use the form above to send the first one." for STAFF and above. On a load failure a banner says the messages did not load, with "Try again".
 
 ### Compose a message (STAFF+)
-1. In the "New message" card pick "Send to": "All active members", "Members behind on dues" or "One member". Behind adds "At least this many months behind" (number, minimum 1, default 1); one member adds a "Member" select of active members (`CommunicationsView.vue:20-39`).
+1. In the "New message" card pick "Send to": "All active members", "Members behind on dues" or "One member". Behind adds "At least this many months behind" (number, minimum 1, default 1); one member adds a "Member" select of active members (a member without an email is marked "(no email)" and cannot be chosen to send to; `CommunicationsView.vue:20-39`).
 2. Type "Subject" (up to 200 characters) and "Message" (up to 5000, with a counter); the helper line reads "Write {{member_name}} to insert each member's name." (`CommunicationsView.vue:41-56`).
-3. "Send message" checks the form on the screen (subject, message, member, months) and then counts the recipients on the client (`audienceCount`, `frontend/src/utils/audienceCount.js:7-16`): every ACTIVE member for all, ACTIVE members with `consecutiveMonthsMissed >= months` for behind, 1 for one member. At 0 it shows "There is nobody to send this to." in the card and asks nothing (`CommunicationsView.vue:286-294`).
+3. "Send message" checks the form on the screen (subject, message, member, months) and then counts the recipients on the client (`audienceCount`, `frontend/src/utils/audienceCount.js:7-16`): the distinct non-empty email addresses of ACTIVE members for all, of ACTIVE members with `consecutiveMonthsMissed >= months` for behind, 1 for one member (members without an email are skipped, members sharing an address count once, case ignored). At 0 it shows "There is nobody to send this to." in the card and asks nothing (`CommunicationsView.vue:286-294`).
 4. Otherwise a confirm dialog (`frontend/src/components/ConfirmDialog.vue`) asks "Send to N members?" ("Send to 1 member?") and says the message goes out by email and cannot be taken back. Cancel is focused when it opens. The button reads "Send to N members".
 5. Confirm sends only `title` and `messageContent`, trimmed, as type ANNOUNCEMENT unless the server is told otherwise (`frontend/src/utils/communicationPayload.js:2-7`).
 6. While the request runs, the confirm button is busy and both buttons are disabled (`CommunicationsView.vue:295-316`).
@@ -41,19 +41,19 @@ Role view of the screen:
 ### Send to all active members (STAFF+)
 1. Choose "All active members". The confirm dialog counts the active members in the loaded list (`audienceCount`).
 2. `POST /api/communications/send-to-all` (`CommunicationsView.vue:301`).
-3. The server looks up the active members; with none it answers 400 `COMMUNICATION_006` "There is nobody to send this to." and stores nothing (`src/main/java/io/github/membertracker/usecase/SendCommunicationToAllMembersUseCase.java:53-57`, `src/main/java/io/github/membertracker/domain/exception/CommunicationDomainException.java:14`, `:21`).
+3. The server looks up the active members, drops those without an email and keeps one member per address (`Recipients.reachable`: the lowest id wins, case and spaces ignored); with none left it answers 400 `COMMUNICATION_006` "There is nobody to send this to." and stores nothing (`src/main/java/io/github/membertracker/usecase/SendCommunicationToAllMembersUseCase.java:53-57`, `src/main/java/io/github/membertracker/domain/exception/CommunicationDomainException.java:14`, `:21`).
 4. Otherwise it marks the message as sent and as sent to all members, prepares one PENDING delivery per member, saves the message together with its deliveries and starts the background send (`SendCommunicationToAllMembersUseCase.java:59-80`). See "What happens after Send".
 
 ### Send to members behind by N months (STAFF+)
 1. Choose "Members behind on dues" and enter N. The confirm dialog counts ACTIVE members with `consecutiveMonthsMissed >= N` in the loaded list; an inactive member is never counted, as on the server.
 2. `POST /api/communications/send-to-overdue/{N}`; N must be at least 1, otherwise 400 (`CommunicationController.java:90-92`).
 3. The server selects active members at least N months behind, the one furthest behind first (`src/main/java/io/github/membertracker/usecase/GetMembersWithMissedPaymentsUseCase.java:22-24`), and sends by email (`CommunicationController.java:94-101`).
-4. If nobody matches, the server answers 400 `COMMUNICATION_006` "There is nobody to send this to." and stores nothing (`src/main/java/io/github/membertracker/usecase/SendCommunicationToMembersUseCase.java:52-54`).
+4. Members without an email are dropped and shared addresses count once, as for send to all. If nobody is left, the server answers 400 `COMMUNICATION_006` "There is nobody to send this to." and stores nothing (`src/main/java/io/github/membertracker/usecase/SendCommunicationToMembersUseCase.java:52-54`).
 
 ### Send to one member (STAFF+)
 1. Choose "One member" and pick the member (active members only). The confirm dialog reads "Send to 1 member?".
 2. `POST /api/communications/send-to-member/{memberId}` (`CommunicationsView.vue:303`).
-3. An unknown member id returns 400 (`CommunicationController.java:111-112`); otherwise one PENDING delivery is created and the send runs in the background (`CommunicationController.java:113-119`).
+3. A member with no email returns 400 `COMMUNICATION_007` "Member '<name>' has no email address, so there is nothing to send to." and stores nothing. An unknown member id returns 400 (`CommunicationController.java:111-112`); otherwise one PENDING delivery is created and the send runs in the background (`CommunicationController.java:113-119`).
 4. The Overview's "Send reminder" button uses this same endpoint and stores the message as a REMINDER: [dashboard.md](dashboard.md).
 
 ### Inspect deliveries
@@ -67,7 +67,7 @@ Role view of the screen:
 2. The server accepts only FAILED deliveries on the EMAIL channel that belong to that message (`src/main/java/io/github/membertracker/usecase/RetryDeliveryUseCase.java:44-53`).
 3. It re-sends once (one full cycle of tries) and the request waits for the result (`RetryDeliveryUseCase.java:59-66`); the tries it made are added to the delivery's attempts. The retry personalises the text for that member.
 4. Success: status becomes SENT with a time, toast "Delivery retried". Failure: status stays FAILED, notes read "Retry failed at ...", warning toast "Retry failed" (`RetryDeliveryUseCase.java:68-77`, `CommunicationsView.vue:356-373`).
-5. Not retryable (not FAILED, not EMAIL, wrong message, unknown id): 400, error toast "Could not retry delivery" with the server's message (not for 403).
+5. Not retryable (not FAILED, not EMAIL, the member no longer has an email, wrong message, unknown id): 400, error toast "Could not retry delivery" with the server's message (not for 403).
 
 ### What happens after Send
 1. The request thread saves the message and writes one `message_delivery` row (status PENDING) per recipient together with it (`src/main/java/io/github/membertracker/infrastructure/persistence/repository/CommunicationDbRepository.java:99-104`, `:123-134`), then returns at once (`SendCommunicationToAllMembersUseCase.java:74-82`, `SendCommunicationToMembersUseCase.java:67-85`). The response carries no `deliveries` list (`@JsonIgnore` on `Communication.getDeliveries()`, `src/main/java/io/github/membertracker/domain/model/Communication.java:108-112`); read them with `GET /api/communications/{id}/deliveries`.
@@ -81,7 +81,7 @@ Role view of the screen:
 
 ## Rules
 - Request body: `title` required (max 200), `messageContent` required (max 5000), optional `type` (ANNOUNCEMENT, REMINDER, PERSONAL; default ANNOUNCEMENT); the client cannot set the sent date or recipient flags (`CommunicationController.java:122-129`, `src/main/java/io/github/membertracker/infrastructure/dto/SendCommunicationRequest.java`). Details: [communication-controller.md](communication-controller.md).
-- Send to all and send to behind reach active members only; send to one member sends to the member chosen. Sending to nobody is a 400 and stores nothing.
+- Send to all and send to behind reach active members with an email only, one message per address; send to one member sends to the member chosen if they have an email. A recipient count (`recipientCount`, "Send to N members") is a count of addresses. Sending to nobody is a 400 and stores nothing.
 - There is no draft endpoint any more (`POST /api/communications` was removed), so the frontend has no `createCommunication`.
 - A message can be sent only once: every send builds a new message, and marking a message sent twice is refused (`src/main/java/io/github/membertracker/domain/model/Communication.java:141-147`).
 - Send and retry are STAFF+ on the server too; a VOLUNTEER calling them gets 403 (`CommunicationController.java:81`, `:88`, `:105`, `:140`).

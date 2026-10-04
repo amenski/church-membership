@@ -31,7 +31,7 @@ Each entry has a type, a plain description, the kind and id of the record it is 
 | `PAYMENTS_EXPORTED` | the payments CSV export | Exported 42 payments | `PaymentController.java:106` |
 | `MESSAGE_SENT` | a message is sent to all, to overdue members or to one member (the monthly reminder job too) | Message "Feast day" was sent to 8 members | `usecase/SendCommunicationToAllMembersUseCase.java:76`, `usecase/SendCommunicationToMembersUseCase.java:69` |
 
-Entries are written after the action succeeded, so a rejected request (validation error, duplicate email) leaves no entry. A delete reads the member's name first, because it is gone afterwards.
+Entries are written after the action succeeded, so a rejected request (validation error) leaves no entry. A delete reads the member's name first, because it is gone afterwards.
 
 ## What is deliberately not recorded
 - Emails and phone numbers: descriptions carry names only (data minimisation). The log is not a second copy of the register.

@@ -50,9 +50,9 @@ All in `frontend/src/utils/memberFilters.js`; all filters are ANDed.
 ## Actions
 - `loadMembers` -> `api.getMembers()`, sets `members`, sets `loadError` on failure. Runs in `created`, after every save, delete or toggle, and from "Try again".
 - Row menu (`ActionMenu`, trigger label "More actions for <name>"): Edit, Deactivate or Reactivate, Delete (ADMIN only, in clay).
-- `saveMember`: client checks (name required, email required and valid via `isValidEmail`) show under the fields without a request. Then `buildMemberRequest(form)` (`frontend/src/utils/memberPayload.js`, sends `joinDate` when set) and `api.updateMember(id, request)` or `api.createMember(request)`, reload, close the dialog, toast "Member saved" / "Member added". The primary button shows "Saving..." and is disabled while the request runs.
+- `saveMember`: client checks (name required; the email is optional and checked with `isValidEmail` only when filled) show under the fields without a request. Then `buildMemberRequest(form)` (`frontend/src/utils/memberPayload.js`, sends `joinDate` when set) and `api.updateMember(id, request)` or `api.createMember(request)`, reload, close the dialog, toast "Member saved" / "Member added". The primary button shows "Saving..." and is disabled while the request runs.
   - Add mode defaults "Joined on" to today (local date, `max` today); edit mode shows the stored date.
-  - Failure keeps the dialog open: each `error.fieldErrors` entry (`{field, message}`, set by the API interceptor) goes under the matching field (`name`, `email`, `phone`, `joinDate`); a plain 400 whose message says the email already exists ("A member with this email already exists") goes under Email; anything else goes in an `AlertBanner` at the top of the dialog plus an error toast "Could not save member" (no toast for 403: the shared handler already shows "Access denied").
+  - Failure keeps the dialog open: each `error.fieldErrors` entry (`{field, message}`, set by the API interceptor) goes under the matching field (`name`, `email`, `phone`, `joinDate`); a field-less 400 and anything else goes in an `AlertBanner` at the top of the dialog plus an error toast "Could not save member" (no toast for 403: the shared handler already shows "Access denied").
 - Delete: dialog "Delete <name>?" ("This permanently deletes the member together with their payments and message history. This cannot be undone."), buttons "Delete member" (danger) and "Cancel". Success: reload, close, toast "Member deleted". Failure: banner in the dialog and toast "Could not delete member" (not for 403).
 - `toggleStatus`: no dialog. `api.updateMember(id, buildMemberRequest({...member, active: !active}))`, reload, toast "Member deactivated" / "Member reactivated". Failure toast "Could not deactivate member" / "Could not reactivate member". Reactivating resets the months behind (the dialog's Active switch says so).
 - `clearFilters` resets `filters`; filters are not persisted.
@@ -76,7 +76,7 @@ All in `frontend/src/utils/memberFilters.js`; all filters are ANDed.
 
 ## Errors
 - Load failure: banner with "Try again" (also `console.error`).
-- Save, delete and toggle failures: see Actions. Typical: 400 "A member with this email already exists", 400 field validation, 409 "The request conflicts with existing data". A 403 shows only the shared "Access denied" toast.
+- Save, delete and toggle failures: see Actions. Typical: 400 field validation, 409 "The request conflicts with existing data". A 403 shows only the shared "Access denied" toast.
 - Export failure: error toast "Export failed" with `error.message`.
 - Backend statuses (400 validation, 403 role, 404): see [member-controller.md](member-controller.md).
 

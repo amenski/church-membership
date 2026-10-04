@@ -144,7 +144,7 @@
       <AlertBanner v-if="formError">{{ formError }}</AlertBanner>
       <form id="member-form" class="flex flex-col gap-4" novalidate @submit.prevent="saveMember">
         <BaseInput id="member-name" v-model="memberForm.name" label="Name" autocomplete="off" :error="formErrors.name" />
-        <BaseInput id="member-email" v-model="memberForm.email" label="Email" type="email" autocomplete="off" :error="formErrors.email" />
+        <BaseInput id="member-email" v-model="memberForm.email" label="Email" type="email" autocomplete="off" hint="Optional. Two members can share one address and get one message. Someone without an email gets no messages, and still counts as a member who owes dues until marked inactive." :error="formErrors.email" />
         <BaseInput id="member-phone" v-model="memberForm.phone" label="Phone" type="tel" autocomplete="off" hint="Optional. 10 digits or more." :error="formErrors.phone" />
         <BaseInput id="member-joined" v-model="memberForm.joinDate" label="Joined on" type="date" :max="today" :error="formErrors.joinDate" />
         <div v-if="editingMember">
@@ -361,8 +361,7 @@ export default {
       this.formErrors = { ...EMPTY_ERRORS }
       if (!this.memberForm.name.trim()) this.formErrors.name = 'Enter the member\'s name.'
       const email = this.memberForm.email.trim()
-      if (!email) this.formErrors.email = 'Enter an email address.'
-      else if (!isValidEmail(email)) this.formErrors.email = 'Enter a valid email address, like name@example.com.'
+      if (email && !isValidEmail(email)) this.formErrors.email = 'Enter a valid email address, like name@example.com.'
       return !this.formErrors.name && !this.formErrors.email
     },
     // Put each server field error under its field; anything else goes in the banner
@@ -374,11 +373,7 @@ export default {
         else rest.push(message)
       }
       const message = error.message || 'Request failed'
-      if (!fieldErrors.length) {
-        // A duplicate email arrives as a plain 400 detail, with no field list
-        if (/email/i.test(message) && /already exists/i.test(message)) this.formErrors.email = message
-        else rest.push(message)
-      }
+      if (!fieldErrors.length) rest.push(message)
       if (rest.length) {
         this.formError = rest.join(' ')
         this.notifyFailure('Could not save member', error)

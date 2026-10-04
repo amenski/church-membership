@@ -2,9 +2,10 @@
 // id, counters and payment dates are managed by the server.
 export function buildMemberRequest(form) {
   const request = {
-    name: (form.name || '').trim(),
-    email: (form.email || '').trim()
+    name: (form.name || '').trim()
   }
+  const email = (form.email || '').trim()
+  if (email) request.email = email
   const phone = (form.phone || '').trim()
   if (phone) request.phone = phone
   if (form.joinDate) request.joinDate = form.joinDate

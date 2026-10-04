@@ -24,10 +24,6 @@ public interface MemberRepository {
     /** Active members only, the one furthest behind first. */
     List<Member> findActiveWithMissedAtLeastOrderByMissedDesc(int months);
 
-    boolean existsByEmailIgnoreCase(String email);
-
-    Optional<Member> findByEmailIgnoreCase(String email);
-
     Member save(Member member);
     
     void deleteById(Long id);

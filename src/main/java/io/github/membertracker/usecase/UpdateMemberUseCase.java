@@ -1,7 +1,6 @@
 package io.github.membertracker.usecase;
 
 import io.github.membertracker.domain.enumeration.ActivityType;
-import io.github.membertracker.domain.exception.MemberDomainException;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.repository.MemberRepository;
 
@@ -25,12 +24,6 @@ public class UpdateMemberUseCase {
     public Optional<Member> invoke(Long id, String name, String email, String phone,
                                    LocalDate joinDate, Boolean active) {
         return memberRepository.findById(id).map(member -> {
-            memberRepository.findByEmailIgnoreCase(email)
-                    .filter(other -> !other.getId().equals(member.getId()))
-                    .ifPresent(other -> {
-                        throw MemberDomainException.emailAlreadyExists(email);
-                    });
-
             ActivityType statusChange = null;
             member.setName(name);
             member.setEmail(email);

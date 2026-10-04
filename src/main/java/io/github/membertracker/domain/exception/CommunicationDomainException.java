@@ -12,6 +12,7 @@ public class CommunicationDomainException extends DomainException {
     public static final String COMMUNICATION_NOT_FOUND = "COMMUNICATION_004";
     public static final String ALREADY_SENT = "COMMUNICATION_005";
     public static final String NO_RECIPIENTS = "COMMUNICATION_006";
+    public static final String MEMBER_HAS_NO_EMAIL = "COMMUNICATION_007";
 
     public CommunicationDomainException(String message, String errorCode) {
         super(message, errorCode, "Communication");
@@ -20,6 +21,13 @@ public class CommunicationDomainException extends DomainException {
     // Factory methods for common communication domain violations
     public static CommunicationDomainException noRecipients() {
         return new CommunicationDomainException("There is nobody to send this to.", NO_RECIPIENTS);
+    }
+
+    public static CommunicationDomainException memberHasNoEmail(String memberName) {
+        return new CommunicationDomainException(
+            String.format("Member '%s' has no email address, so there is nothing to send to.", memberName),
+            MEMBER_HAS_NO_EMAIL
+        );
     }
 
     public static CommunicationDomainException deliveryNotFound(Long deliveryId) {

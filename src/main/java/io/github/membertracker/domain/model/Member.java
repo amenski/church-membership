@@ -16,7 +16,7 @@ public class Member {
     @NotBlank(message = "Name is required")
     private String name;
     
-    @NotBlank(message = "Email is required")
+    /** Optional: a child or a spouse may have no address, and two members may share one. */
     @Email(message = "Email should be valid")
     private String email;
     

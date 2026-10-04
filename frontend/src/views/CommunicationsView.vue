@@ -35,7 +35,7 @@
             />
             <BaseSelect v-else-if="form.recipientType === 'SPECIFIC'" id="message-member" v-model="form.memberId" label="Member" :error="formErrors.memberId">
               <option value="" disabled>Choose a member</option>
-              <option v-for="member in activeMembers" :key="member.id" :value="String(member.id)">{{ member.name }}</option>
+              <option v-for="member in activeMembers" :key="member.id" :value="String(member.id)">{{ member.name }}{{ member.email ? '' : ' (no email)' }}</option>
             </BaseSelect>
           </div>
           <BaseInput id="message-subject" v-model="form.subject" label="Subject" maxlength="200" autocomplete="off" :error="formErrors.subject" />
@@ -267,6 +267,10 @@ export default {
     summaryParts(message) {
       return deliverySummaryParts(message.deliverySummary)
     },
+    hasEmail(memberId) {
+      const member = this.members.find(m => String(m.id) === String(memberId))
+      return !!(member && member.email)
+    },
     statusOf(delivery) {
       return deliveryStatus(delivery.status)
     },
@@ -275,6 +279,7 @@ export default {
       const f = this.form
       if (f.recipientType === 'OVERDUE' && !(Number(f.monthsOverdue) >= 1)) errors.monthsOverdue = 'Enter 1 or more months.'
       if (f.recipientType === 'SPECIFIC' && !f.memberId) errors.memberId = 'Choose a member.'
+      else if (f.recipientType === 'SPECIFIC' && !this.hasEmail(f.memberId)) errors.memberId = 'This member has no email address.'
       if (!f.subject.trim()) errors.subject = 'Enter a subject.'
       else if (f.subject.trim().length > SUBJECT_MAX) errors.subject = `The subject can be up to ${SUBJECT_MAX} characters.`
       if (!f.message.trim()) errors.message = 'Write a message.'

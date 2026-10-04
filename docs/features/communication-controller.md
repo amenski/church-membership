@@ -22,9 +22,9 @@ Request body is `SendCommunicationRequest` (`infrastructure/dto/SendCommunicatio
 ## Flows
 | Flow | Audience | Sends email | Thread |
 |------|----------|-------------|--------|
-| send-to-all | active members only, `findByActive(true)`; none -> 400 `COMMUNICATION_006`, nothing stored (`usecase/SendCommunicationToAllMembersUseCase.java`) | yes, sets `sentToAllMembers` (`:59`) | save on request (`:74`); emails on background thread (`:80`, `:90-135`) |
+| send-to-all | active members only, `findByActive(true)`, then `Recipients.reachable` (no email dropped, one per address); none -> 400 `COMMUNICATION_006`, nothing stored (`usecase/SendCommunicationToAllMembersUseCase.java`) | yes, sets `sentToAllMembers` (`:59`) | save on request (`:74`); emails on background thread (`:80`, `:90-135`) |
 | send-to-overdue | ACTIVE members with `consecutiveMonthsMissed >= months`, longest behind first (`GetMembersWithMissedPaymentsUseCase`); none -> 400 `COMMUNICATION_006`, nothing stored; channel fixed to EMAIL | yes | save on request; emails on background thread (`usecase/SendCommunicationToMembersUseCase.java:62-66`, `:93-123`) |
-| send-to-member | the single member loaded by id (`CommunicationController.java:121-122`); unknown id -> 400 | yes | save on request; emails on background thread (`usecase/SendCommunicationToMembersUseCase.java:62-66`, `:93-123`) |
+| send-to-member | the single member loaded by id (`CommunicationController.java:121-122`); unknown id -> 400; no email -> 400 `COMMUNICATION_007` | yes | save on request; emails on background thread (`usecase/SendCommunicationToMembersUseCase.java:62-66`, `:93-123`) |
 | retry | one delivery | yes, once | request thread, blocks until the SMTP attempts finish (`usecase/RetryDeliveryUseCase.java:60-65`) |
 
 - Empty audience: both send use cases throw `CommunicationDomainException.noRecipients()` (`COMMUNICATION_006`, "There is nobody to send this to.") BEFORE `markAsSent` or any save, so no communication or delivery row is created and no email goes out.
@@ -48,7 +48,7 @@ Format: [../architecture.md](../architecture.md).
 |--------|--------|
 | 400 | `@Valid` body failure, `errors[{field,message}]` (`infrastructure/handler/GlobalExceptionHandler.java:52-65`) |
 | 400 | `@Positive` / `@Min(1)` path failure (`GlobalExceptionHandler.java:75-84`) |
-| 400 | any `CommunicationDomainException`, with `code` (`GlobalExceptionHandler.java:67-73`); codes `COMMUNICATION_001`-`006` (`domain/exception/CommunicationDomainException.java`): delivery not found, delivery/communication mismatch, not retryable, communication not found, already sent, no recipients |
+| 400 | any `CommunicationDomainException`, with `code` (`GlobalExceptionHandler.java:67-73`); codes `COMMUNICATION_001`-`007` (`domain/exception/CommunicationDomainException.java`): delivery not found, delivery/communication mismatch, not retryable, communication not found, already sent, no recipients, member has no email |
 | 403 | role too low (`GlobalExceptionHandler.java:86-91`) |
 | 401 | not authenticated (`GlobalExceptionHandler.java:93-99`) |
 | 404 | `GET /{id}` with unknown id only, empty body (`CommunicationController.java:74`) |

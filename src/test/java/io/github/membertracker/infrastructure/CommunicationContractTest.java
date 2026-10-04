@@ -1,6 +1,7 @@
 package io.github.membertracker.infrastructure;
 
 import io.github.membertracker.domain.enumeration.CommunicationType;
+import io.github.membertracker.domain.exception.CommunicationDomainException;
 import io.github.membertracker.domain.model.Communication;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.model.MessageDelivery;
@@ -162,5 +163,21 @@ class CommunicationContractTest {
             .andExpect(status().isBadRequest());
 
         verify(sendCommunicationToMembersUseCase, never()).invoke(any(), anyList(), any());
+    }
+
+    @Test
+    void sendToMemberWithoutAnEmailIsRejectedWithAClearMessage() throws Exception {
+        Member child = new Member("Child", null, null);
+        when(getMemberByIdUseCase.invoke(5L)).thenReturn(Optional.of(child));
+        when(sendCommunicationToMembersUseCase.invoke(any(), anyList(), any()))
+            .thenThrow(CommunicationDomainException.memberHasNoEmail("Child"));
+
+        mockMvc.perform(post("/api/communications/send-to-member/5").with(csrf())
+                .with(user("s@example.com").roles("STAFF"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(fixture()))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.code").value("COMMUNICATION_007"))
+            .andExpect(jsonPath("$.detail").value("Member 'Child' has no email address, so there is nothing to send to."));
     }
 }

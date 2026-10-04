@@ -43,14 +43,22 @@ public class SendCommunicationToMembersUseCase {
      * Sends a communication to specific members using the specified delivery channel.
      *
      * @param communication the communication to send
-     * @param members the list of members to send the communication to; empty is rejected with
-     *                {@link CommunicationDomainException#noRecipients()} before anything is stored
+     * @param candidates the members to send the communication to. Those without an email address are
+     *                left out and members sharing an address get one message ({@link Recipients}). When
+     *                nobody is left, nothing is stored: {@link CommunicationDomainException#noRecipients()},
+     *                or {@link CommunicationDomainException#memberHasNoEmail(String)} for a single member
      * @param channel the delivery channel to use
      * @return the saved communication with delivery information
      */
-    public Communication invoke(Communication communication, List<Member> members, MessageDelivery.DeliveryChannel channel) {
-        if (members == null || members.isEmpty()) {
+    public Communication invoke(Communication communication, List<Member> candidates, MessageDelivery.DeliveryChannel channel) {
+        if (candidates == null || candidates.isEmpty()) {
             throw CommunicationDomainException.noRecipients();
+        }
+        List<Member> members = Recipients.reachable(candidates);
+        if (members.isEmpty()) {
+            throw candidates.size() == 1
+                    ? CommunicationDomainException.memberHasNoEmail(candidates.get(0).getName())
+                    : CommunicationDomainException.noRecipients();
         }
         communication.markAsSent();
 

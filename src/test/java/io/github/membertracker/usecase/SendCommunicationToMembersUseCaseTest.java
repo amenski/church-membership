@@ -276,4 +276,55 @@ class SendCommunicationToMembersUseCaseTest {
         verifyNoInteractions(emailService);
     }
 
+    @Test
+    void membersWithoutAnEmailAreLeftOutAndGetNoDelivery() {
+        Member child = new Member("Child", null, null);
+        child.setId(3L);
+        Communication c = communication();
+
+        useCase.invoke(c, List.of(alice, child), DeliveryChannel.EMAIL);
+
+        assertThat(c.getDeliveries()).extracting(MessageDelivery::getRecipient).containsExactly(alice);
+        verify(recordActivity).record(eq(ActivityType.MESSAGE_SENT), eq("Message \"Hello\" was sent to 1 member"),
+                eq("COMMUNICATION"), any());
+    }
+
+    @Test
+    void membersSharingAnAddressGetOneDeliveryBetweenThem() {
+        Member spouse = new Member("Spouse", "ALICE@example.com", null);
+        spouse.setId(5L);
+        Communication c = communication();
+
+        useCase.invoke(c, List.of(spouse, alice), DeliveryChannel.EMAIL);
+
+        assertThat(c.getDeliveries()).extracting(MessageDelivery::getRecipient).containsExactly(alice);
+        verify(emailService, timeout(2000).times(1)).sendSimpleEmailWithRetry(any(), any(), any(), any());
+    }
+
+    @Test
+    void aSingleMemberWithoutAnEmailIsRejectedWithAClearMessage() {
+        Member child = new Member("Child", null, null);
+        child.setId(3L);
+        Communication c = communication();
+
+        assertThatThrownBy(() -> useCase.invoke(c, List.of(child), DeliveryChannel.EMAIL))
+                .isInstanceOf(CommunicationDomainException.class)
+                .hasMessage("Member 'Child' has no email address, so there is nothing to send to.")
+                .extracting("errorCode").isEqualTo(CommunicationDomainException.MEMBER_HAS_NO_EMAIL);
+
+        assertThat(c.isSent()).isFalse();
+        verify(communicationRepository, never()).save(any());
+        verifyNoInteractions(emailService, messageDeliveryRepository, recordActivity);
+    }
+
+    @Test
+    void severalMembersAllWithoutAnEmailAreRejectedAsNoRecipients() {
+        Member a = new Member("A", null, null);
+        Member b = new Member("B", " ", null);
+
+        assertThatThrownBy(() -> useCase.invoke(communication(), List.of(a, b), DeliveryChannel.EMAIL))
+                .isInstanceOf(CommunicationDomainException.class)
+                .extracting("errorCode").isEqualTo(CommunicationDomainException.NO_RECIPIENTS);
+        verify(communicationRepository, never()).save(any());
+    }
 }

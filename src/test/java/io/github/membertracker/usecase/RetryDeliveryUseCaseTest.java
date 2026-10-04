@@ -166,4 +166,16 @@ class RetryDeliveryUseCaseTest {
         verifyNoInteractions(emailService);
         verify(deliveryRepository, never()).save(any());
     }
+
+    @Test
+    void aRecipientWhoNoLongerHasAnEmailIsRejectedAndNothingSent() {
+        member.setEmail(null);
+
+        assertThatThrownBy(() -> useCase.invoke(COMMUNICATION_ID, DELIVERY_ID))
+                .isInstanceOf(CommunicationDomainException.class)
+                .hasMessageContaining("no longer has an email address");
+
+        verifyNoInteractions(emailService);
+        verify(deliveryRepository, never()).save(any());
+    }
 }

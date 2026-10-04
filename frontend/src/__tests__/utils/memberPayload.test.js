@@ -29,6 +29,11 @@ describe('buildMemberRequest', () => {
     expect(r).not.toHaveProperty('phone')
   })
 
+  it('omits a blank or missing email', () => {
+    expect(buildMemberRequest({ name: 'A', email: '  ', active: true })).not.toHaveProperty('email')
+    expect(buildMemberRequest({ name: 'A', active: true })).not.toHaveProperty('email')
+  })
+
   it('omits joinDate when not set', () => {
     const r = buildMemberRequest({ name: 'A', email: 'a@example.com', joinDate: null, active: true })
     expect(r).not.toHaveProperty('joinDate')

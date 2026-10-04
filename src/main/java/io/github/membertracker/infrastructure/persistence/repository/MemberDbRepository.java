@@ -71,17 +71,6 @@ public class MemberDbRepository implements MemberRepository {
     }
 
     @Override
-    public boolean existsByEmailIgnoreCase(String email) {
-        return memberJpaRepository.existsByEmailIgnoreCase(email);
-    }
-
-    @Override
-    public Optional<Member> findByEmailIgnoreCase(String email) {
-        return memberJpaRepository.findByEmailIgnoreCase(email)
-                .map(MemberPersistenceMapper::toDomain);
-    }
-
-    @Override
     public Member save(Member member) {
         MemberEntity entity = MemberPersistenceMapper.toEntity(member);
         return MemberPersistenceMapper.toDomain(memberJpaRepository.save(entity));

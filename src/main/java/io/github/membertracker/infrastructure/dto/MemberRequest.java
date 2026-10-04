@@ -18,7 +18,7 @@ public class MemberRequest {
     @Size(max = 100, message = "Name must be at most 100 characters")
     private String name;
 
-    @NotBlank(message = "Email is required")
+    /** Optional; trimmed, a blank value is stored as null. Not unique: two members may share an address. */
     @Email(message = "Email should be valid")
     @Size(max = 100, message = "Email must be at most 100 characters")
     private String email;
@@ -49,7 +49,7 @@ public class MemberRequest {
     }
 
     public void setEmail(String email) {
-        this.email = email;
+        this.email = (email == null || email.isBlank()) ? null : email.trim();
     }
 
     public String getPhone() {

@@ -150,4 +150,39 @@ class MemberContractTest {
         assertThat(response).doesNotContain("not-an-email-xyz");
         verify(saveMemberUseCase, never()).invoke(any(), any(), any(), any());
     }
+
+    @Test
+    void aBodyWithoutAnEmailIsAcceptedAndReachesTheUseCaseWithNull() throws Exception {
+        when(saveMemberUseCase.invoke(any(), any(), any(), any())).thenReturn(new Member());
+        String withoutEmail = "{\"name\": \"Test Child\", \"joinDate\": \"2025-01-15\"}";
+
+        mockMvc.perform(post("/api/members").with(csrf())
+                .with(user("s@example.com").roles("STAFF"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(withoutEmail))
+            .andExpect(status().isOk());
+
+        verify(saveMemberUseCase).invoke("Test Child", null, null, JOIN);
+    }
+
+    @Test
+    void aBlankEmailBecomesNullAndAnEmailIsTrimmedOnUpdate() throws Exception {
+        when(updateMemberUseCase.invoke(any(), any(), any(), any(), any(), any())).thenReturn(Optional.of(new Member()));
+
+        mockMvc.perform(put("/api/members/1").with(csrf())
+                .with(user("s@example.com").roles("STAFF"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(fixture().replace("member@example.com", "   ")))
+            .andExpect(status().isOk());
+        mockMvc.perform(put("/api/members/2").with(csrf())
+                .with(user("s@example.com").roles("STAFF"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(fixture().replace("member@example.com", " member@example.com ")))
+            .andExpect(status().isOk());
+
+        verify(updateMemberUseCase).invoke(eq(1L), eq("Test Member"), eq(null),
+            eq("+39 333 1234567"), eq(JOIN), eq(true));
+        verify(updateMemberUseCase).invoke(eq(2L), eq("Test Member"), eq("member@example.com"),
+            eq("+39 333 1234567"), eq(JOIN), eq(true));
+    }
 }
