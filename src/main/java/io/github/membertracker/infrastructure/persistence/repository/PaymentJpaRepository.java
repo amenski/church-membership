@@ -4,7 +4,6 @@ import io.github.membertracker.infrastructure.persistence.entity.MemberEntity;
 import io.github.membertracker.infrastructure.persistence.entity.PaymentEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,17 +12,22 @@ import java.time.YearMonth;
 import java.util.List;
 
 public interface PaymentJpaRepository extends JpaRepository<PaymentEntity, Long> {
-    /** The member and its person come in the same query as the payments, not one query per payment. */
+    /**
+     * The member, its person and the person's household come in the same query as the payments, not one query per
+     * payment. Written as JPQL: an entity graph three levels deep did not join the household.
+     */
     @Override
-    @EntityGraph(attributePaths = {"member", "member.person"})
+    @Query("select p from PaymentEntity p join fetch p.member m join fetch m.person pe left join fetch pe.household")
     List<PaymentEntity> findAll();
 
     @Override
-    @EntityGraph(attributePaths = {"member", "member.person"})
+    @Query(value = "select p from PaymentEntity p join fetch p.member m join fetch m.person pe left join fetch pe.household",
+            countQuery = "select count(p) from PaymentEntity p")
     Page<PaymentEntity> findAll(Pageable pageable);
 
-    @EntityGraph(attributePaths = {"member", "member.person"})
-    List<PaymentEntity> findByMember(MemberEntity member);
+    @Query("select p from PaymentEntity p join fetch p.member m join fetch m.person pe left join fetch pe.household "
+            + "where p.member = :member")
+    List<PaymentEntity> findByMember(@Param("member") MemberEntity member);
 
     long countByMemberId(Long memberId);
 

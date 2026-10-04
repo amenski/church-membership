@@ -2,6 +2,7 @@ package io.github.membertracker.infrastructure.persistence.mapper;
 
 import io.github.membertracker.domain.enumeration.MemberStatus;
 import io.github.membertracker.domain.model.Member;
+import io.github.membertracker.infrastructure.persistence.entity.HouseholdEntity;
 import io.github.membertracker.infrastructure.persistence.entity.MemberEntity;
 import io.github.membertracker.infrastructure.persistence.entity.PersonEntity;
 
@@ -11,7 +12,8 @@ import java.time.YearMonth;
  * The one place a {@link MemberEntity} and a {@link Member} are converted into each other.
  * The domain reads the status and ignores the legacy {@code active} column; the entity gets both, written here.
  * Name, email and phone are read from the linked {@link PersonEntity} (plan step 9); the legacy member columns are
- * only written, until step 12.
+ * only written, until step 12. The household (id and name) is read from the person too; the delivery summary
+ * ({@link #toRecipient}) leaves it out.
  */
 public final class MemberPersistenceMapper {
 
@@ -29,6 +31,7 @@ public final class MemberPersistenceMapper {
                 ? null : YearMonth.parse(entity.getLastMissedCountMonth()));
         member.setStatus(MemberStatus.valueOf(entity.getStatus()));
         member.setArchivedAt(entity.getArchivedAt());
+        copyHouseholdFromPerson(entity.getPerson(), member);
         return member;
     }
 
@@ -51,6 +54,13 @@ public final class MemberPersistenceMapper {
         // (payment and delivery references). MemberDbRepository.save swaps in the stored person before it saves.
         PersonEntity person = new PersonEntity();
         copyToPerson(member, person);
+        if (member.getHouseholdId() != null) {
+            // A reference with the id and the name only, never saved: MemberDbRepository.save resolves the real household.
+            HouseholdEntity household = new HouseholdEntity();
+            household.setId(member.getHouseholdId());
+            household.setName(member.getHouseholdName());
+            person.setHousehold(household);
+        }
         entity.setPerson(person);
         return entity;
     }
@@ -59,6 +69,12 @@ public final class MemberPersistenceMapper {
         member.setName(person.getName());
         member.setEmail(person.getEmail());
         member.setPhone(person.getPhone());
+    }
+
+    private static void copyHouseholdFromPerson(PersonEntity person, Member member) {
+        HouseholdEntity household = person.getHousehold();
+        member.setHouseholdId(household == null ? null : household.getId());
+        member.setHouseholdName(household == null ? null : household.getName());
     }
 
     /**

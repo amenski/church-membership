@@ -109,6 +109,10 @@ public class MemberController {
     @PreAuthorize("hasRole('STAFF')")
     @Operation(summary = "Create a member (STAFF+)")
     public Member createMember(@Valid @RequestBody MemberRequest request) {
+        if (request.getHouseholdId() != null) {
+            return saveMemberUseCase.invoke(request.getName(), request.getEmail(), request.getPhone(),
+                    request.getJoinDate(), request.statusForCreate(), request.getHouseholdId());
+        }
         return saveMemberUseCase.invoke(request.getName(), request.getEmail(), request.getPhone(), request.getJoinDate(),
                 request.statusForCreate());
     }
@@ -120,8 +124,12 @@ public class MemberController {
         if (ArchivedVisibility.visible(getMemberByIdUseCase.invoke(id)).isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        return updateMemberUseCase.invoke(id, request.getName(), request.getEmail(), request.getPhone(),
-                        request.getJoinDate(), request.getStatus(), request.getActive())
+        Optional<Member> updated = request.isHouseholdIdSet()
+                ? updateMemberUseCase.invoke(id, request.getName(), request.getEmail(), request.getPhone(),
+                        request.getJoinDate(), request.getStatus(), request.getActive(), true, request.getHouseholdId())
+                : updateMemberUseCase.invoke(id, request.getName(), request.getEmail(), request.getPhone(),
+                        request.getJoinDate(), request.getStatus(), request.getActive());
+        return updated
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

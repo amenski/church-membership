@@ -23,6 +23,15 @@ public class SaveMemberUseCase {
     }
 
     public Member invoke(String name, String email, String phone, LocalDate joinDate, MemberStatus status) {
+        return invoke(name, email, phone, joinDate, status, null);
+    }
+
+    /**
+     * @param householdId the household to put the new member's person in, or null for none; an unknown id is refused
+     *                    when the member is saved (HouseholdDomainException, 400)
+     */
+    public Member invoke(String name, String email, String phone, LocalDate joinDate, MemberStatus status,
+                         Long householdId) {
         if (status == MemberStatus.DECEASED || status == MemberStatus.TRANSFERRED || status == MemberStatus.ARCHIVED) {
             throw MemberDomainException.statusNotAllowed("A new member can only be MEMBER or INACTIVE.");
         }
@@ -33,9 +42,15 @@ public class SaveMemberUseCase {
         if (status != null) {
             member.setStatus(status);
         }
+        member.setHouseholdId(householdId);
         Member saved = memberRepository.save(member);
         recordActivity.record(ActivityType.MEMBER_CREATED, "Member " + saved.getName() + " was added",
                 "MEMBER", saved.getId());
+        if (saved.getHouseholdId() != null) {
+            recordActivity.record(ActivityType.MEMBER_HOUSEHOLD_CHANGED,
+                    "Member " + saved.getName() + " was added to household " + saved.getHouseholdName(),
+                    "MEMBER", saved.getId());
+        }
         return saved;
     }
 }

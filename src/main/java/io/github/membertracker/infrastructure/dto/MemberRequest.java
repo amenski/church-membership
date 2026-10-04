@@ -38,6 +38,14 @@ public class MemberRequest {
     /** Legacy on/off form of the status, kept until the frontend sends {@code status}: true is MEMBER, false is INACTIVE. */
     private Boolean active;
 
+    /**
+     * Optional household of the person. Absent leaves it unchanged on update; an explicit null removes the person from
+     * its household; an id puts it there (an unknown id is a 400 with code HOUSEHOLD_001). {@link #isHouseholdIdSet()}
+     * tells absent from null: the setter runs only when the property is in the JSON.
+     */
+    private Long householdId;
+    private boolean householdIdSet;
+
     public MemberRequest() {}
 
     public String getName() {
@@ -86,6 +94,20 @@ public class MemberRequest {
             return status;
         }
         return active ? MemberStatus.MEMBER : MemberStatus.INACTIVE;
+    }
+
+    public Long getHouseholdId() {
+        return householdId;
+    }
+
+    public void setHouseholdId(Long householdId) {
+        this.householdId = householdId;
+        this.householdIdSet = true;
+    }
+
+    /** True when the body mentioned {@code householdId}, even as null. */
+    public boolean isHouseholdIdSet() {
+        return householdIdSet;
     }
 
     public Boolean getActive() {

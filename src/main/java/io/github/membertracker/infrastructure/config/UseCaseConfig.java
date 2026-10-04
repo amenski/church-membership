@@ -2,6 +2,7 @@ package io.github.membertracker.infrastructure.config;
 
 import io.github.membertracker.domain.repository.ActivityLogRepository;
 import io.github.membertracker.domain.repository.CommunicationRepository;
+import io.github.membertracker.domain.repository.HouseholdRepository;
 import io.github.membertracker.domain.repository.MessageDeliveryRepository;
 import io.github.membertracker.domain.repository.MemberRepository;
 import io.github.membertracker.domain.repository.PaymentRepository;
@@ -13,6 +14,11 @@ import io.github.membertracker.usecase.GetActivityLogUseCase;
 import io.github.membertracker.usecase.RecordActivityUseCase;
 import io.github.membertracker.usecase.ChangePasswordUseCase;
 import io.github.membertracker.usecase.ArchiveMemberUseCase;
+import io.github.membertracker.usecase.CreateHouseholdUseCase;
+import io.github.membertracker.usecase.DeleteHouseholdUseCase;
+import io.github.membertracker.usecase.GetAllHouseholdsUseCase;
+import io.github.membertracker.usecase.GetHouseholdByIdUseCase;
+import io.github.membertracker.usecase.UpdateHouseholdUseCase;
 import io.github.membertracker.usecase.DeleteMemberPermanentlyUseCase;
 import io.github.membertracker.usecase.GetActiveMembersUseCase;
 import io.github.membertracker.usecase.GetArchivedMembersUseCase;import io.github.membertracker.usecase.GetAllCommunicationsUseCase;
@@ -132,6 +138,34 @@ public class UseCaseConfig {
                                                                          RecordActivityUseCase recordActivityUseCase) {
         return new DeleteMemberPermanentlyUseCase(memberRepository, paymentRepository, messageDeliveryRepository,
                 recordActivityUseCase);
+    }
+
+    @Bean
+    public GetAllHouseholdsUseCase getAllHouseholdsUseCase(HouseholdRepository householdRepository) {
+        return new GetAllHouseholdsUseCase(householdRepository);
+    }
+
+    @Bean
+    public GetHouseholdByIdUseCase getHouseholdByIdUseCase(HouseholdRepository householdRepository) {
+        return new GetHouseholdByIdUseCase(householdRepository);
+    }
+
+    @Bean
+    public CreateHouseholdUseCase createHouseholdUseCase(HouseholdRepository householdRepository,
+                                                         RecordActivityUseCase recordActivityUseCase) {
+        return new CreateHouseholdUseCase(householdRepository, recordActivityUseCase);
+    }
+
+    @Bean
+    public UpdateHouseholdUseCase updateHouseholdUseCase(HouseholdRepository householdRepository,
+                                                         RecordActivityUseCase recordActivityUseCase) {
+        return new UpdateHouseholdUseCase(householdRepository, recordActivityUseCase);
+    }
+
+    @Bean
+    public DeleteHouseholdUseCase deleteHouseholdUseCase(HouseholdRepository householdRepository,
+                                                         RecordActivityUseCase recordActivityUseCase) {
+        return new DeleteHouseholdUseCase(householdRepository, recordActivityUseCase);
     }
 
     @Bean

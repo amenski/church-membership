@@ -7,21 +7,24 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface MemberJpaRepository extends JpaRepository<MemberEntity, Long> {
-    @EntityGraph(attributePaths = "person")
+    @EntityGraph(attributePaths = {"person", "person.household"})
     List<MemberEntity> findByStatusOrderByIdAsc(String status);
 
-    @EntityGraph(attributePaths = "person")
+    @EntityGraph(attributePaths = {"person", "person.household"})
     List<MemberEntity> findByStatusNotOrderByIdAsc(String status);
 
     long countByStatus(String status);
 
     long countByStatusNot(String status);
 
-    @EntityGraph(attributePaths = "person")
+    @EntityGraph(attributePaths = {"person", "person.household"})
     List<MemberEntity> findByStatusAndConsecutiveMonthsMissedGreaterThanEqualOrderByIdAsc(String status, int months);
 
     long countByStatusAndConsecutiveMonthsMissedGreaterThanEqual(String status, int months);
 
-    @EntityGraph(attributePaths = "person")
+    @EntityGraph(attributePaths = {"person", "person.household"})
     List<MemberEntity> findByStatusAndConsecutiveMonthsMissedGreaterThanEqualOrderByConsecutiveMonthsMissedDescPersonNameAscIdAsc(String status, int months);
+
+    @EntityGraph(attributePaths = {"person", "person.household"})
+    List<MemberEntity> findByPersonHouseholdIdOrderByPersonNameAscIdAsc(Long householdId);
 }

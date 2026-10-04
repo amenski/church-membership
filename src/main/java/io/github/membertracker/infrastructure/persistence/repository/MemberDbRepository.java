@@ -1,8 +1,10 @@
 package io.github.membertracker.infrastructure.persistence.repository;
 
 import io.github.membertracker.domain.enumeration.MemberStatus;
+import io.github.membertracker.domain.exception.HouseholdDomainException;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.repository.MemberRepository;
+import io.github.membertracker.infrastructure.persistence.entity.HouseholdEntity;
 import io.github.membertracker.infrastructure.persistence.entity.MemberEntity;
 import io.github.membertracker.infrastructure.persistence.entity.PersonEntity;
 import io.github.membertracker.infrastructure.persistence.mapper.MemberPersistenceMapper;
@@ -17,9 +19,11 @@ import java.util.stream.Collectors;
 public class MemberDbRepository implements MemberRepository {
 
     private final MemberJpaRepository memberJpaRepository;
+    private final HouseholdJpaRepository householdJpaRepository;
 
-    public MemberDbRepository(MemberJpaRepository memberJpaRepository) {
+    public MemberDbRepository(MemberJpaRepository memberJpaRepository, HouseholdJpaRepository householdJpaRepository) {
         this.memberJpaRepository = memberJpaRepository;
+        this.householdJpaRepository = householdJpaRepository;
     }
 
     private static final String MEMBER = MemberStatus.MEMBER.name();
@@ -83,12 +87,29 @@ public class MemberDbRepository implements MemberRepository {
         MemberEntity entity = MemberPersistenceMapper.toEntity(member);
         PersonEntity person = member.getId() == null ? null : memberJpaRepository.findById(member.getId())
                 .map(MemberEntity::getPerson).orElse(null);
-        if (person == null) {
+        boolean isStored = person != null;
+        if (!isStored) {
             person = entity.getPerson();
         }
         MemberPersistenceMapper.copyToPerson(member, person);
+        person.setHousehold(resolveHousehold(member.getHouseholdId(), isStored ? person.getHousehold() : null));
         entity.setPerson(person);
         return MemberPersistenceMapper.toDomain(memberJpaRepository.save(entity));
+    }
+
+    /**
+     * The household a save points the person at: the stored one when it is unchanged (no lookup), else the household
+     * with that id. A member request naming a household that does not exist is refused here (400, HOUSEHOLD_001),
+     * because this is where the reference is resolved.
+     */
+    private HouseholdEntity resolveHousehold(Long wanted, HouseholdEntity current) {
+        if (wanted == null) {
+            return null;
+        }
+        if (current != null && wanted.equals(current.getId())) {
+            return current;
+        }
+        return householdJpaRepository.findById(wanted).orElseThrow(HouseholdDomainException::notFound);
     }
 
     @Override

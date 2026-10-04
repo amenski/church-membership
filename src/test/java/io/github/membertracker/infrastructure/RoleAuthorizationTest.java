@@ -33,7 +33,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
     PaymentController.class,
     CommunicationController.class,
     DashboardController.class,
-    ActivityLogController.class
+    ActivityLogController.class,
+    HouseholdController.class
 })
 @Import({SecurityConfig.class, AuthProperties.class})
 class RoleAuthorizationTest {
@@ -43,6 +44,8 @@ class RoleAuthorizationTest {
 
     private static final String MEMBER_JSON =
         "{\"name\":\"Abel\",\"email\":\"abel@example.com\",\"phone\":\"+390612345678\",\"joinDate\":\"2025-01-01\",\"active\":true}";
+    private static final String HOUSEHOLD_JSON =
+        "{\"name\":\"Kebede family\",\"city\":\"Roma\"}";
     private static final String EXPORT_JSON = "{\"ids\":[1]}";
     private static final String PAYMENT_JSON =
         "{\"memberId\":1,\"amount\":50,\"paymentMethod\":\"CASH\"}";
@@ -78,6 +81,11 @@ class RoleAuthorizationTest {
     @MockitoBean private GetDashboardStatsUseCase getDashboardStatsUseCase;
     @MockitoBean private GetRecentPaymentsUseCase getRecentPaymentsUseCase;
     @MockitoBean private GetRecentCommunicationsUseCase getRecentCommunicationsUseCase;
+    @MockitoBean private GetAllHouseholdsUseCase getAllHouseholdsUseCase;
+    @MockitoBean private GetHouseholdByIdUseCase getHouseholdByIdUseCase;
+    @MockitoBean private CreateHouseholdUseCase createHouseholdUseCase;
+    @MockitoBean private UpdateHouseholdUseCase updateHouseholdUseCase;
+    @MockitoBean private DeleteHouseholdUseCase deleteHouseholdUseCase;
 
     private record Endpoint(HttpMethod method, String path, String body, String minimumRole) {
         @Override
@@ -120,7 +128,13 @@ class RoleAuthorizationTest {
             new Endpoint(HttpMethod.GET, "/api/dashboard/overdue-members", null, "VOLUNTEER"),
             new Endpoint(HttpMethod.GET, "/api/dashboard/recent-activities", null, "VOLUNTEER"),
 
-            new Endpoint(HttpMethod.GET, "/api/activity-log", null, "ADMIN")
+            new Endpoint(HttpMethod.GET, "/api/activity-log", null, "ADMIN"),
+
+            new Endpoint(HttpMethod.GET, "/api/households", null, "VOLUNTEER"),
+            new Endpoint(HttpMethod.GET, "/api/households/1", null, "VOLUNTEER"),
+            new Endpoint(HttpMethod.POST, "/api/households", HOUSEHOLD_JSON, "STAFF"),
+            new Endpoint(HttpMethod.PUT, "/api/households/1", HOUSEHOLD_JSON, "STAFF"),
+            new Endpoint(HttpMethod.DELETE, "/api/households/1", null, "ADMIN")
         );
     }
 

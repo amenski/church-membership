@@ -34,6 +34,10 @@ public class Member {
     private MemberStatus status = MemberStatus.MEMBER;
     private LocalDateTime archivedAt;
 
+    /** The household of the person behind this membership, or null. The name is read-only: set when a member is read. */
+    private Long householdId;
+    private String householdName;
+
     public Member() {
     }
 
@@ -191,5 +195,21 @@ public class Member {
 
     public void setArchivedAt(LocalDateTime archivedAt) {
         this.archivedAt = archivedAt;
+    }
+
+    public Long getHouseholdId() {
+        return householdId;
+    }
+
+    public void setHouseholdId(Long householdId) {
+        this.householdId = householdId;
+    }
+
+    public String getHouseholdName() {
+        return householdName;
+    }
+
+    public void setHouseholdName(String householdName) {
+        this.householdName = householdName;
     }
 }
