@@ -140,4 +140,17 @@ describe('ActionMenu', () => {
     await clickTrigger(1)
     expect(menu()).toBeNull()
   })
+
+  it('stays open, anchored to the trigger, through a small scroll and a resize', async () => {
+    mountMenu()
+    await clickTrigger(1)
+
+    document.body.dispatchEvent(new Event('scroll'))
+    window.dispatchEvent(new Event('scroll'))
+    window.dispatchEvent(new Event('resize'))
+    await wrapper.vm.$nextTick()
+
+    expect(menu()).not.toBeNull()
+    expect(trigger().attributes('aria-expanded')).toBe('true')
+  })
 })

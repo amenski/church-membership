@@ -160,8 +160,9 @@ export default {
       if (this.$refs.menu?.contains(event.target) || this.$refs.trigger?.contains(event.target)) return
       this.close(false)
     },
+    // Phones fire resize and scroll on their own (address bar, momentum): follow the trigger, do not close
     onViewportChange() {
-      this.close(false)
+      this.place()
     },
     listen() {
       document.addEventListener('mousedown', this.onOutsidePress)
