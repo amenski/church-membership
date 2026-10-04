@@ -128,17 +128,21 @@ Utilities read them with `h-(--control-h)`, `min-h-(--row-h)`, `p-(--card-pad)`,
   then the card; inputs and button 48px, inputs 16px. Text on the rail is `rail-text` (10.87) or white.
 - **Page header**: `PageHead` (title, optional lead, action slot) with a rule under it.
 - Tables repeat the same shape: `ui/classes.js` `TABLE` / `TABLE_TH` / `TABLE_TD`, rows at
-  `--row-h`, with a stacked card list below `md` for the four list screens.
+  `--row-h`, with a stacked card list below `md` for the table screens (Members, Payments).
+- **Households** is the exception: from `lg` a master-detail page, the list on the left (22rem) and the chosen household on the
+  right in the page (address, notice, members with strips, people without a membership), chosen by `?id=` in the URL; below `lg`
+  the list and the household are one screen each, with an "All households" link back.
 
 ## Components
 
 `PageHead`, `SectionTitle`, `BaseButton`, `BaseInput`, `BaseSelect`, `BaseTextarea`, `BaseModal`,
-`ConfirmDialog`, `ActionMenu`, `AlertBanner`, `EmptyNote`, `StatusLabel`, `StatusBadge`, `YearStrip`, `TextButton`, `StatTile`,
+`ConfirmDialog`, `ActionMenu`, `AlertBanner`, `EmptyNote`, `StatusLabel`, `StatusBadge`, `YearStrip`, `TextButton`, `StatTile`, `CollectedChart`,
 `Icon`, `RuledList`/`RuledRow`, `BrandMark`, `RailLink`, `ToastHost`.
 
 - `Icon` holds the whole icon set as inline SVG path data — no icon font, and only the glyphs named
   reach the bundle.
-- `StatTile` is the one place a large figure is styled; it sits inside a `<dl>`. `slim` shrinks it (20px figure, less padding) for the Overview's facts strip, whose tiles are Collected in <month>, Paid up (N of M members), Behind on dues (N members, X months unpaid) and Reminders (failed deliveries, with a Review link to Messages). There is no "expected" amount: the app has no dues amount to compare with.
+- `CollectedChart` is the "Collected by month" card body (twelve horizontal bars, the current month paler): it loads `GET /api/dashboard/collected-by-month` itself and owns its error and empty states. The Overview and Payments both use it.
+- `StatTile` is the one place a large figure is styled; it sits inside a `<dl>`. `slim` shrinks it (20px figure, less padding) for the Overview's facts strip, whose tiles are Collected in <month>, Paid up (N of M members), Behind on dues (N members, X months unpaid) and Reminders (failed deliveries, with a Review link to Messages). Payments uses the same slim tiles for its three figures. There is no "expected" amount: the app has no dues amount to compare with.
 - `StatusLabel` is a coloured dot **plus a word**, never colour alone. Tones: `paid` (fern),
   `behind` (ochre), `danger` (clay), `muted` (neutral — inactive, transferred, deceased, archived).
 - `StatusBadge` is the pill form of the same tones (tint, line and text of the tone, 4px radius, the word inside): a count or a state on a row, as "3 delivered", "1 failed" and "Will get the email" on Messages.

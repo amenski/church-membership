@@ -21,7 +21,7 @@ No endpoint was added.
 - Dues by month: the dues label (N months behind, or Paid up, only for status MEMBER), the owed sentence (`owedSummary` in `utils/dues.js`: "Owes July, August and September 2026. October is due now.", or "Paid up..."), and the strip. From `lg` the strip is `YearStrip size="detail" :months="24"`: two rows of 12 squares (44x36px, month name above each, a caption such as "Nov 2024 to Oct 2025" over each row) with a legend. Below `lg` it is the 12-month `large` strip, with Call and Record payment (44px) under it, as in MemberDetailPhone. A member who does not owe dues (Inactive, Deceased, Transferred, Archived) gets "Dues are not tracked while this member is inactive." instead of a sentence, and nothing red or amber.
 - Payments: the latest 6 (`sortPayments`): receipt number (opens the receipt dialog, `ReceiptDialog`), month, paid on, method, amount; a stacked list below `md`. The footer says "Showing the latest 6 of 14 payments." with "All payments", which opens `/payments?search=<member name>`.
 - Contact: phone (a `tel:` link), email, joined, status, last paid ("Never"), with Call (from `lg`; on a phone Call is in the dues card) and Edit details (STAFF+).
-- Household (omitted without a household): the household name, its members with a status label (for a member who owes dues: "Paid up" or "N months behind"; the others show their status; this member is marked "(this member)", the others link to their own page), its people without a membership ("No membership"), and "Open household" (`/households`).
+- Household (omitted without a household): the household name, its members with a status label (for a member who owes dues: "Paid up" or "N months behind"; the others show their status; this member is marked "(this member)", the others link to their own page), its people without a membership ("No membership"), and "Open household" (`/households?id=<householdId>`, which opens that household in the Households screen).
 - Phone only, at the bottom: Send message and, for an ADMIN, Archive.
 - Edit details and Archive reuse `MemberFormDialog` and `MemberArchiveDialog`, the same dialogs as the Members list. After Edit the page reloads; after Archive it goes back to `/members` (toast "Member archived").
 
@@ -40,5 +40,5 @@ The activity log is ADMIN only and `GET /api/activity-log` takes only `limit` (m
 
 ## Known issues
 - The page has no Amharic name above the Latin one: the data has one name field (see design-gaps).
-- The Household card links to the Households list; there is no route for one household, its detail is a dialog there.
+- The Household card links to `/households?id=<householdId>`; the Households screen chooses that household (there is no `/households/:id` route).
 - Names in the Archived list of Members do not link here.

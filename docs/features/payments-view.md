@@ -2,11 +2,12 @@
 
 `frontend/src/views/PaymentsView.vue` (no Pinia store for data)
 
-Payments page, built on Tailwind and the shared components: a "Record payment" dialog (STAFF and above), three quiet figures, a filterable history (ruled table from `md` up, stacked list below), a receipt dialog with PDF download, CSV export. Route `/payments`, minimum role VOLUNTEER (`frontend/src/router/index.js:24-29`; guard `frontend/src/router/index.js:108-109`, see [../authentication.md](../authentication.md)).
+Payments page, built on Tailwind and the shared components: a "Record payment" dialog (STAFF and above), three slim figures, the 12-month "Collected by month" chart, a filterable history (ruled table from `md` up, stacked list below), a receipt dialog with PDF download, CSV export. Route `/payments`, minimum role VOLUNTEER (`frontend/src/router/index.js:24-29`; guard `frontend/src/router/index.js:108-109`, see [../authentication.md](../authentication.md)).
 
 ## What the user sees
 - Page head "Payments", lead "Record what members paid and see the history." STAFF and above also get two buttons: "Export CSV" (secondary) and "Record payment" (primary). A VOLUNTEER gets a read-only screen: no buttons, no dialog (the server answers 403 to their writes and exports).
-- Figures row (only when there are payments): "This month", "All time", "Average payment", computed on the client by `paymentsSummary` from the loaded payments and shown with `formatMoney` ("$1,520.00"). "This month" sums payments whose `period` is the current month, not payments entered this month, so a back-dated payment never counts here.
+- Figures row (only when there are payments, `StatTile slim` like the Overview's strip): "This month", "All time", "Average payment", computed on the client by `paymentsSummary` from the loaded payments and shown with `formatMoney` ("$1,520.00"). "This month" sums payments whose `period` is the current month, not payments entered this month, so a back-dated payment never counts here.
+- "Collected by month" (only when there are payments), in a bordered card under the figures: the same `CollectedChart` component as the Overview, one bar a month for the last 12 months (the current month paler, "in progress"), the amounts from `GET /api/dashboard/collected-by-month`. It loads itself; a failure shows "The monthly amounts did not load." with "Try again", and no payments in 12 months shows its own empty note. Recording a payment reloads it.
 - Filters (only when there are payments): search by member name, a Method select ("All methods" plus the 7 methods), "Clear filters" when one is set, and a count line ("32 payments", or "3 of 32 payments" when filtered).
 - History, newest first (paid on descending, then id descending, `sortPayments`): Paid on, Member, Month covered ("Oct 2026", `periodLabel`), Method (label), Amount (right aligned, tabular), Receipt (a text button "R-000012" that opens the receipt dialog).
 - Empty states: no payments "No payments yet. Record the first one." (with a "Record payment" button for STAFF and above); filters match nothing "No payments match these filters." with "Clear filters"; a load failure shows a banner "The payments did not load. Check your connection and try again." with "Try again".
@@ -52,12 +53,12 @@ Pure helpers in `frontend/src/utils/paymentHistory.js` (tested in `frontend/src/
 ## Collaborators
 - `frontend/src/services/api.js` (default import)
 - `useAppStore().addNotification` for toasts, `useAuthStore().isStaff` for the buttons and the dialog
-- Components: `PageHead`, `AlertBanner`, `BaseButton`, `BaseInput`, `BaseSelect`, `BaseTextarea`, `BaseModal`, `EmptyNote`, `TextButton`, `YearStrip`
+- Components: `PageHead`, `CollectedChart`, `StatTile`, `AlertBanner`, `BaseButton`, `BaseInput`, `BaseSelect`, `BaseTextarea`, `BaseModal`, `EmptyNote`, `TextButton`, `YearStrip`
 - The unused `paymentStore` was removed in `chore(ui): remove dead frontend code`; the view calls `api.js` directly.
 
 ## Side effects
 - Triggers a file download for CSV and PDF
-- Recording a payment re-fetches members and payments
+- Recording a payment re-fetches members and payments, and the chart
 
 ## Gotchas
 - The table and receipt read the nested `payment.member?.name` (falls back to "Unknown").
