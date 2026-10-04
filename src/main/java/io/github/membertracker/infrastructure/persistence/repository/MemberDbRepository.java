@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -77,6 +78,14 @@ public class MemberDbRepository implements MemberRepository {
     public List<Member> findDuesPayingWithMissedAtLeastOrderByMissedDesc(int months) {
         return toDomain(memberJpaRepository
                 .findByStatusAndConsecutiveMonthsMissedGreaterThanEqualOrderByConsecutiveMonthsMissedDescPersonNameAscIdAsc(MEMBER, months));
+    }
+
+    @Override
+    public List<Member> findNotArchivedByEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return List.of();
+        }
+        return toDomain(memberJpaRepository.findNotArchivedByEmail(email.trim().toLowerCase(Locale.ROOT)));
     }
 
     /**

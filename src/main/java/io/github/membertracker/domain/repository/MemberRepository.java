@@ -38,6 +38,12 @@ public interface MemberRepository {
     /** Dues-paying members at least this many months behind, the one furthest behind first. */
     List<Member> findDuesPayingWithMissedAtLeastOrderByMissedDesc(int months);
 
+    /**
+     * Non-archived members whose person email equals {@code email}, ignoring case and surrounding spaces. A list,
+     * because two people may share an address; the caller decides what to do with more than one.
+     */
+    List<Member> findNotArchivedByEmail(String email);
+
     Member save(Member member);
 
     /**
