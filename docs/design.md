@@ -132,7 +132,7 @@ Utilities read them with `h-(--control-h)`, `min-h-(--row-h)`, `p-(--card-pad)`,
 ## Components
 
 `PageHead`, `SectionTitle`, `BaseButton`, `BaseInput`, `BaseSelect`, `BaseTextarea`, `BaseModal`,
-`ConfirmDialog`, `ActionMenu`, `AlertBanner`, `EmptyNote`, `StatusLabel`, `YearStrip`, `TextButton`, `StatTile`,
+`ConfirmDialog`, `ActionMenu`, `AlertBanner`, `EmptyNote`, `StatusLabel`, `StatusBadge`, `YearStrip`, `TextButton`, `StatTile`,
 `Icon`, `RuledList`/`RuledRow`, `BrandMark`, `RailLink`, `ToastHost`.
 
 - `Icon` holds the whole icon set as inline SVG path data — no icon font, and only the glyphs named
@@ -140,6 +140,7 @@ Utilities read them with `h-(--control-h)`, `min-h-(--row-h)`, `p-(--card-pad)`,
 - `StatTile` is the one place a large figure is styled; it sits inside a `<dl>`. `slim` shrinks it (20px figure, less padding) for the Overview's facts strip, whose tiles are Collected in <month>, Paid up (N of M members), Behind on dues (N members, X months unpaid) and Reminders (failed deliveries, with a Review link to Messages). There is no "expected" amount: the app has no dues amount to compare with.
 - `StatusLabel` is a coloured dot **plus a word**, never colour alone. Tones: `paid` (fern),
   `behind` (ochre), `danger` (clay), `muted` (neutral — inactive, transferred, deceased, archived).
+- `StatusBadge` is the pill form of the same tones (tint, line and text of the tone, 4px radius, the word inside): a count or a state on a row, as "3 delivered", "1 failed" and "Will get the email" on Messages.
 
 ## Year strip
 

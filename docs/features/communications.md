@@ -23,42 +23,43 @@ Role view of the screen:
 ## How it works
 ### View the list of sent messages
 1. The screen loads the active members (STAFF and above only) and all communications once on open, and the list again after every send and every retry (`CommunicationsView.vue:238-263`).
-2. "Sent messages" is a ruled list, newest first by sent date. Each row shows the bold title; the sent date and time; a plain type word ("Reminder", "Announcement", "Personal"); "N recipients" (`recipientCount`) or "No deliveries recorded" when it is 0; the delivery summary as words with a status dot ("8 sent" in fern, "1 failed" in clay, "1 pending" in ochre; sent and delivered are added together and zero counts are left out); and a "View deliveries" text button.
+2. "Sent messages" is a ruled list, newest first by sent date. Each row shows the bold title; the sent date and time; a plain type word ("Reminder", "Announcement", "Personal"); "N recipients" (`recipientCount`) or "No deliveries recorded" when it is 0; the delivery summary as badges ("8 delivered" in fern, "1 failed" in clay, "1 pending" in ochre; sent and delivered are added together and zero counts are left out); and a "View deliveries" text button.
 3. The list items carry `recipientCount` and a `deliverySummary` `{ sent, failed, pending, delivered }` computed by the server; the deliveries themselves are not in the list.
 4. Empty: "No messages yet." plus "Use the form above to send the first one." for STAFF and above. On a load failure a banner says the messages did not load, with "Try again".
 
 ### Compose a message (STAFF+)
-1. In the "New message" card pick "Send to": "All active members", "Members behind on dues" or "One member". Behind adds "At least this many months behind" (number, minimum 1, default 1); one member adds a "Member" select of active members (a member without an email is marked "(no email)" and cannot be chosen to send to; `CommunicationsView.vue:20-39`).
+1. In the "New message" card pick "Send to": "Everyone", "Behind on dues" or "One member". Behind adds "At least this many months behind" (number, minimum 1, default 1); one member adds a "Member" select of active members (a member without an email is marked "(no email)" and cannot be chosen to send to; `CommunicationsView.vue:20-39`).
 2. Type "Subject" (up to 200 characters) and "Message" (up to 5000, with a counter); the helper line reads "Write {{member_name}} to insert each member's name." (`CommunicationsView.vue:41-56`).
-3. "Send message" checks the form on the screen (subject, message, member, months) and then counts the recipients on the client (`audienceCount`, `frontend/src/utils/audienceCount.js:7-16`): the distinct non-empty email addresses of ACTIVE members for all, of ACTIVE members with `consecutiveMonthsMissed >= months` for behind, 1 for one member (members without an email are skipped, members sharing an address count once, case ignored). At 0 it shows "There is nobody to send this to." in the card and asks nothing (`CommunicationsView.vue:286-294`).
-4. Otherwise a confirm dialog (`frontend/src/components/ConfirmDialog.vue`) asks "Send to N members?" ("Send to 1 member?") and says the message goes out by email and cannot be taken back. Cancel is focused when it opens. The button reads "Send to N members".
-5. Confirm sends only `title` and `messageContent`, trimmed, as type ANNOUNCEMENT unless the server is told otherwise (`frontend/src/utils/communicationPayload.js:2-7`).
-6. While the request runs, the confirm button is busy and both buttons are disabled (`CommunicationsView.vue:295-316`).
-7. Success: the dialog closes, the form resets, a toast "Sending started" says "N members will get it in the next few minutes. Check the delivery status below." and the list reloads. The toast means the server accepted the send, not that emails arrived.
-8. Failure (blank title, unknown member, months below 1, nobody to send to, 403): the dialog closes, the card shows the server's message in a banner and an error toast "Could not send message" repeats it (no toast for 403, the shared handler already shows one); the form keeps what was typed (`CommunicationsView.vue:318-331`, `frontend/src/services/api.js:82-90`).
-9. Server limits: title up to 200 characters, message up to 5000 ([communication-controller.md](communication-controller.md)).
+3. Beside the form (below it on a narrow screen) the "Who gets this" card lists who the message reaches: a count line ("3 members owe 2 or more months. 2 of them have an email."), then each member with the months behind, the year strip and a badge "Will get the email" or "Skipped, no email" with the phone number to call; members who share an address show "Skipped, shares an address". It is computed on the client from the members and payments lists (`previewRecipients`, `frontend/src/utils/audiencePreview.js`).
+4. The send button reads "Send to N people", N being the recipients who will get an email (members without an email are skipped, members sharing an address count once, case ignored; only status MEMBER). Pressing it checks the form (subject, message, member, months). At 0 it shows "There is nobody to send this to." in the card and asks nothing.
+5. Otherwise a confirm dialog (`frontend/src/components/ConfirmDialog.vue`) asks "Send to N people?" ("Send to 1 person?"), says the message goes out by email and cannot be taken back, and names who is skipped. Cancel is focused when it opens. The button reads "Send to N people".
+6. Confirm sends only `title` and `messageContent`, trimmed, as type ANNOUNCEMENT unless the server is told otherwise (`frontend/src/utils/communicationPayload.js:2-7`).
+7. While the request runs, the confirm button is busy and both buttons are disabled (`CommunicationsView.vue:295-316`).
+8. Success: the dialog closes, the form resets, a toast "Sending started" says "N people will get it in the next few minutes. Check the delivery status below." and the list reloads. The toast means the server accepted the send, not that emails arrived.
+9. Failure (blank title, unknown member, months below 1, nobody to send to, 403): the dialog closes, the card shows the server's message in a banner and an error toast "Could not send message" repeats it (no toast for 403, the shared handler already shows one); the form keeps what was typed (`CommunicationsView.vue:318-331`, `frontend/src/services/api.js:82-90`).
+10. Server limits: title up to 200 characters, message up to 5000 ([communication-controller.md](communication-controller.md)).
 
 ### Send to all active members (STAFF+)
-1. Choose "All active members". The confirm dialog counts the active members in the loaded list (`audienceCount`).
+1. Choose "Everyone". The send button and the confirm dialog count the people with an email in the loaded list (`previewRecipients`).
 2. `POST /api/communications/send-to-all` (`CommunicationsView.vue:301`).
 3. The server looks up the MEMBER-status members, drops those without an email and keeps one member per address (`Recipients.reachable`: the lowest id wins, case and spaces ignored); with none left it answers 400 `COMMUNICATION_006` "There is nobody to send this to." and stores nothing (`src/main/java/io/github/membertracker/usecase/SendCommunicationToAllMembersUseCase.java:53-57`, `src/main/java/io/github/membertracker/domain/exception/CommunicationDomainException.java:14`, `:21`).
 4. Otherwise it marks the message as sent and as sent to all members, prepares one PENDING delivery per member, saves the message together with its deliveries and starts the background send (`SendCommunicationToAllMembersUseCase.java:59-80`). See "What happens after Send".
 
 ### Send to members behind by N months (STAFF+)
-1. Choose "Members behind on dues" and enter N. The confirm dialog counts MEMBER-status members with `consecutiveMonthsMissed >= N` in the loaded list; any other status is never counted, as on the server.
+1. Choose "Behind on dues" and enter N. The preview, the send button and the confirm dialog use MEMBER-status members with `consecutiveMonthsMissed >= N` in the loaded list, furthest behind first; any other status is never counted, as on the server.
 2. `POST /api/communications/send-to-overdue/{N}`; N must be at least 1, otherwise 400 (`CommunicationController.java:90-92`).
 3. The server selects MEMBER-status members at least N months behind, the one furthest behind first (`src/main/java/io/github/membertracker/usecase/GetMembersWithMissedPaymentsUseCase.java:22-24`), and sends by email (`CommunicationController.java:94-101`).
 4. Members without an email are dropped and shared addresses count once, as for send to all. If nobody is left, the server answers 400 `COMMUNICATION_006` "There is nobody to send this to." and stores nothing (`src/main/java/io/github/membertracker/usecase/SendCommunicationToMembersUseCase.java:52-54`).
 
 ### Send to one member (STAFF+)
-1. Choose "One member" and pick the member (active members only). The confirm dialog reads "Send to 1 member?".
+1. Choose "One member" and pick the member (active members only). The preview shows that member; the confirm dialog reads "Send to 1 person?".
 2. `POST /api/communications/send-to-member/{memberId}` (`CommunicationsView.vue:303`).
 3. A member with no email returns 400 `COMMUNICATION_007` "Member '<name>' has no email address, so there is nothing to send to." and stores nothing. An unknown member id returns 400 (`CommunicationController.java:111-112`); otherwise one PENDING delivery is created and the send runs in the background (`CommunicationController.java:113-119`).
 4. The Overview's "Send reminder" button uses this same endpoint and stores the message as a REMINDER: [dashboard.md](dashboard.md).
 
 ### Inspect deliveries
 1. Click "View deliveries" on a row (`CommunicationsView.vue:83-85`).
-2. The dialog "Deliveries: <title>" shows the sent date and time, the totals as words (sent, failed, pending) and one ruled row per delivery: recipient name, a status word with a dot (Sent and Delivered fern, Failed clay, Pending ochre), the time, the email address and the response notes, followed by "N attempts" ("1 attempt") when the server counted any (`CommunicationsView.vue:103-148`).
+2. The dialog "Deliveries: <title>" shows the sent date and time, the totals as badges (delivered, failed, pending) and one ruled row per delivery, failed ones first: recipient name, a status word with a dot (Sent and Delivered both read "Delivered" in fern, Failed clay, Pending ochre), the time, the email address and the response notes, followed by "N attempts" ("1 attempt") when the server counted any (`CommunicationsView.vue:103-148`).
 3. The dialog is a snapshot taken when it opens: PENDING rows do not change until it is closed and reopened.
 4. If the deliveries cannot be loaded the dialog stays open with a banner and "Try again". With none: "No deliveries were recorded for this message."
 
