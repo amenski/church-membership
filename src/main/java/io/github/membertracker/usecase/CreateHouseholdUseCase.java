@@ -23,6 +23,6 @@ public class CreateHouseholdUseCase {
         Household saved = householdRepository.save(new Household(name, addressLine1, addressLine2, city, postalCode, notes));
         recordActivity.record(ActivityType.HOUSEHOLD_CREATED, "Household " + saved.getName() + " was created",
                 "HOUSEHOLD", saved.getId());
-        return new HouseholdDetails(saved, List.of());
+        return new HouseholdDetails(saved, List.of(), List.of());
     }
 }

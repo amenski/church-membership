@@ -3,6 +3,7 @@ package io.github.membertracker.domain.repository;
 import io.github.membertracker.domain.model.Household;
 import io.github.membertracker.domain.model.HouseholdSummary;
 import io.github.membertracker.domain.model.Member;
+import io.github.membertracker.domain.model.Person;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,6 +16,9 @@ public interface HouseholdRepository {
 
     /** The members of the household's people, archived ones included, by name. */
     List<Member> findMembers(Long householdId);
+
+    /** Everyone in the household (members and dependents without a membership), archived ones included, by name. */
+    List<Person> findPeople(Long householdId);
 
     /** People assigned to the household, whether or not they have a membership and whatever its status. */
     long countPeople(Long householdId);

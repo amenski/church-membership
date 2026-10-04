@@ -142,7 +142,7 @@ class HouseholdUseCasesTest {
 
     @Test
     void getAllReturnsTheSummariesFromTheRepository() {
-        List<HouseholdSummary> summaries = List.of(new HouseholdSummary(7L, "Kebede family", "Roma", 3, 1));
+        List<HouseholdSummary> summaries = List.of(new HouseholdSummary(7L, "Kebede family", "Roma", 3, 1, 4));
         when(repo.findAllSummaries()).thenReturn(summaries);
 
         assertThat(new GetAllHouseholdsUseCase(repo).invoke()).isEqualTo(summaries);

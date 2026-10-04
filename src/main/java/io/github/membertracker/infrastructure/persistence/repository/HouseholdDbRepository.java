@@ -3,6 +3,7 @@ package io.github.membertracker.infrastructure.persistence.repository;
 import io.github.membertracker.domain.model.Household;
 import io.github.membertracker.domain.model.HouseholdSummary;
 import io.github.membertracker.domain.model.Member;
+import io.github.membertracker.domain.model.Person;
 import io.github.membertracker.domain.repository.HouseholdRepository;
 import io.github.membertracker.infrastructure.persistence.entity.HouseholdEntity;
 import io.github.membertracker.infrastructure.persistence.mapper.MemberPersistenceMapper;
@@ -40,6 +41,13 @@ public class HouseholdDbRepository implements HouseholdRepository {
     public List<Member> findMembers(Long householdId) {
         return memberJpaRepository.findByPersonHouseholdIdOrderByPersonNameAscIdAsc(householdId).stream()
                 .map(MemberPersistenceMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<Person> findPeople(Long householdId) {
+        return personJpaRepository.findRowsByHousehold(householdId).stream()
+                .map(PersonRow::toDomain)
                 .toList();
     }
 

@@ -31,7 +31,8 @@ public class UpdateHouseholdUseCase {
             Household saved = householdRepository.save(household);
             recordActivity.record(ActivityType.HOUSEHOLD_UPDATED, "Household " + saved.getName() + " was updated",
                     "HOUSEHOLD", saved.getId());
-            return new HouseholdDetails(saved, householdRepository.findMembers(saved.getId()));
+            return new HouseholdDetails(saved, householdRepository.findMembers(saved.getId()),
+                    householdRepository.findPeople(saved.getId()));
         });
     }
 }

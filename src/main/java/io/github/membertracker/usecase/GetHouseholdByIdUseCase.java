@@ -13,9 +13,10 @@ public class GetHouseholdByIdUseCase {
         this.householdRepository = householdRepository;
     }
 
-    /** The household with its members (archived ones included: hiding them is the caller's job), or empty. */
+    /** The household with its members and people (archived ones included: hiding them is the caller's job), or empty. */
     public Optional<HouseholdDetails> invoke(Long id) {
         return householdRepository.findById(id)
-                .map(household -> new HouseholdDetails(household, householdRepository.findMembers(id)));
+                .map(household -> new HouseholdDetails(household, householdRepository.findMembers(id),
+                        householdRepository.findPeople(id)));
     }
 }

@@ -6,6 +6,7 @@ import io.github.membertracker.domain.model.Household;
 import io.github.membertracker.domain.model.HouseholdDetails;
 import io.github.membertracker.domain.model.HouseholdSummary;
 import io.github.membertracker.domain.model.Member;
+import io.github.membertracker.domain.model.Person;
 import io.github.membertracker.infrastructure.config.AuthProperties;
 import io.github.membertracker.infrastructure.config.SecurityConfig;
 import io.github.membertracker.usecase.CreateHouseholdUseCase;
@@ -74,10 +75,14 @@ class HouseholdContractTest {
         return member;
     }
 
+    /** Each member is its person: the people list carries the same names with the membership status. */
     private static HouseholdDetails details(Member... members) {
         Household household = new Household("Kebede family", "Via Roma 1", "Scala B", "Roma", "00100", "Prefers calls after 18:00");
         household.setId(7L);
-        return new HouseholdDetails(household, List.of(members));
+        List<Person> people = java.util.Arrays.stream(members)
+                .map(m -> new Person(m.getId(), m.getName(), null, null, null, null, null, m.getId(), m.getStatus()))
+                .toList();
+        return new HouseholdDetails(household, List.of(members), people);
     }
 
     private HouseholdDetails kebede() {
@@ -172,16 +177,17 @@ class HouseholdContractTest {
     @Test
     void theListCarriesNameCityAndTheCountOfMembersTheCallerMaySee() throws Exception {
         when(getAllHouseholdsUseCase.invoke()).thenReturn(List.of(
-            new HouseholdSummary(7L, "Kebede family", "Roma", 3, 1),
-            new HouseholdSummary(8L, "Tesfaye family", null, 0, 0)));
+            new HouseholdSummary(7L, "Kebede family", "Roma", 3, 1, 5),
+            new HouseholdSummary(8L, "Tesfaye family", null, 0, 0, 0)));
 
         mockMvc.perform(get("/api/households").with(user("v@example.com").roles("VOLUNTEER")))
             .andExpect(status().isOk())
-            .andExpect(content().json("[{\"id\":7,\"name\":\"Kebede family\",\"city\":\"Roma\",\"memberCount\":2},"
-                + "{\"id\":8,\"name\":\"Tesfaye family\",\"city\":null,\"memberCount\":0}]", true));
+            .andExpect(content().json("[{\"id\":7,\"name\":\"Kebede family\",\"city\":\"Roma\",\"memberCount\":2,\"personCount\":4},"
+                + "{\"id\":8,\"name\":\"Tesfaye family\",\"city\":null,\"memberCount\":0,\"personCount\":0}]", true));
         mockMvc.perform(get("/api/households").with(user("a@example.com").roles("ADMIN")))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].memberCount").value(3));
+            .andExpect(jsonPath("$[0].memberCount").value(3))
+            .andExpect(jsonPath("$[0].personCount").value(5));
     }
 
     @Test
