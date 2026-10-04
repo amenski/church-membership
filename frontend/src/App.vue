@@ -54,7 +54,7 @@
             class="block rounded-sm text-base font-medium text-paper no-underline hover:underline focus-visible:outline-paper [overflow-wrap:anywhere]"
             active-class="underline"
           >{{ displayName }}</router-link>
-          <div v-if="displayName !== currentUser?.email && currentUser?.email" class="mt-0.5 text-xs text-rail-muted [overflow-wrap:anywhere]">{{ currentUser.email }}</div>
+          <div v-if="displayName !== currentUser?.email && currentUser?.email" class="mt-0.5 truncate text-xs text-rail-muted" :title="currentUser.email">{{ currentUser.email }}</div>
           <button
             type="button"
             class="mt-2.5 inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-sm border-0 bg-transparent p-0 text-sm text-rail-text hover:text-paper hover:underline focus-visible:outline-paper"
