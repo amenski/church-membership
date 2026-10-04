@@ -237,36 +237,7 @@
     </template>
 
     <!-- Add and edit -->
-    <BaseModal v-model="formOpen" :title="editingMember ? 'Edit member' : 'Add member'" size="md">
-      <AlertBanner v-if="formError">{{ formError }}</AlertBanner>
-      <form id="member-form" class="flex flex-col gap-4" novalidate @submit.prevent="saveMember">
-        <BaseInput id="member-name" v-model="memberForm.name" label="Name" autocomplete="off" :error="formErrors.name" />
-        <BaseInput id="member-email" v-model="memberForm.email" label="Email" type="email" autocomplete="off" hint="Optional. Two members can share one address and get one message. Someone without an email gets no messages: for a child without one, choose Inactive below so they are not counted as owing dues." :error="formErrors.email" />
-        <BaseInput id="member-phone" v-model="memberForm.phone" label="Phone" type="tel" autocomplete="off" hint="Optional. 10 digits or more." :error="formErrors.phone" />
-        <BaseInput id="member-joined" v-model="memberForm.joinDate" label="Joined on" type="date" :max="today" :error="formErrors.joinDate" />
-        <BaseSelect
-          id="member-household"
-          label="Household"
-          :model-value="memberForm.householdId"
-          :disabled="householdsFailed"
-          :hint="householdsFailed ? 'The household list did not load. Close this window and try again to change the household.' : 'Optional. Members of one family or address share a household.'"
-          :error="formErrors.householdId"
-          @update:model-value="chooseHousehold"
-        >
-          <option value="">None</option>
-          <option v-for="household in householdOptions" :key="household.id" :value="String(household.id)">{{ household.name }}</option>
-        </BaseSelect>
-        <BaseSelect id="member-status" v-model="memberForm.status" label="Status" :hint="statusHint">
-          <option v-for="option in statusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-        </BaseSelect>
-      </form>
-      <template #footer>
-        <BaseButton variant="secondary" :disabled="saving" @click="formOpen = false">Cancel</BaseButton>
-        <BaseButton type="submit" form="member-form" :disabled="saving" :aria-busy="saving ? 'true' : undefined">
-          {{ saving ? 'Saving...' : editingMember ? 'Save changes' : 'Add member' }}
-        </BaseButton>
-      </template>
-    </BaseModal>
+    <MemberFormDialog v-model="formOpen" :member="editingMember" :focus-status="focusStatus" @saved="reloadLists" />
 
     <!-- Delete for good (ADMIN only, archived members) -->
     <ConfirmDialog
@@ -280,16 +251,7 @@
     />
 
     <!-- Archive (ADMIN only) -->
-    <BaseModal v-model="deleteOpen" :title="`Archive ${selectedMember?.name || 'member'}?`" size="sm">
-      <AlertBanner v-if="deleteError">{{ deleteError }}</AlertBanner>
-      <p class="m-0 text-base">This hides {{ selectedMember?.name || 'the member' }} from the lists. Their payments and messages are kept.</p>
-      <template #footer>
-        <BaseButton variant="secondary" :disabled="deleting" @click="deleteOpen = false">Cancel</BaseButton>
-        <BaseButton variant="danger" :disabled="deleting" :aria-busy="deleting ? 'true' : undefined" @click="deleteMember">
-          {{ deleting ? 'Archiving...' : 'Archive member' }}
-        </BaseButton>
-      </template>
-    </BaseModal>
+    <MemberArchiveDialog v-model="deleteOpen" :member="selectedMember" @archived="reloadLists" />
   </div>
 </template>
 
@@ -297,21 +259,20 @@
 import api from '@/services/api'
 import { useAppStore } from '../stores/appStore'
 import { useAuthStore } from '../stores/authStore'
-import { downloadBlob, formatDate, isValidEmail, localISODate } from '@/utils'
+import { downloadBlob, formatDate, localISODate } from '@/utils'
 import { monthsBehind } from '@/utils/dues'
 import { paidMonthsByMember, stripRangeLabel } from '@/utils/yearStrip'
 import { filterMembers, sortMembers, exportIds } from '@/utils/memberFilters'
 import { buildMemberRequest } from '@/utils/memberPayload'
-import { NEW_MEMBER_STATUS_OPTIONS, STATUS_OPTIONS, countsForDues, statusLabel, statusTone } from '@/utils/memberStatus'
+import { STATUS_OPTIONS, countsForDues, statusLabel, statusTone } from '@/utils/memberStatus'
 import ActionMenu from '@/components/ActionMenu.vue'
 import AlertBanner from '@/components/AlertBanner.vue'
 import BaseButton from '@/components/BaseButton.vue'
-import BaseInput from '@/components/BaseInput.vue'
-import BaseModal from '@/components/BaseModal.vue'
-import BaseSelect from '@/components/BaseSelect.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import EmptyNote from '@/components/EmptyNote.vue'
 import Icon from '@/components/Icon.vue'
+import MemberArchiveDialog from '@/components/MemberArchiveDialog.vue'
+import MemberFormDialog from '@/components/MemberFormDialog.vue'
 import PageHead from '@/components/PageHead.vue'
 import StatusLabel from '@/components/StatusLabel.vue'
 import YearStrip from '@/components/YearStrip.vue'
@@ -323,11 +284,10 @@ const PHONE_ACTION = 'flex min-h-11 items-center justify-center gap-2 rounded-md
 // "Delete for good": an outline in clay (the dialog holds the solid danger button)
 const DELETE_BUTTON = 'inline-flex cursor-pointer items-center justify-center rounded-sm border border-clay bg-paper font-medium leading-normal text-clay hover:bg-clay-tint disabled:pointer-events-none disabled:border-rule disabled:text-muted disabled:opacity-65'
 const EMPTY_FILTERS = { search: '', status: 'ALL', paymentStatus: 'ALL', joinedFrom: '', joinedTo: '' }
-const EMPTY_ERRORS = { name: '', email: '', phone: '', joinDate: '', householdId: '' }
 
 export default {
   name: 'MembersView',
-  components: { ActionMenu, AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, ConfirmDialog, EmptyNote, Icon, PageHead, StatusLabel, TextButton, YearStrip },
+  components: { ActionMenu, AlertBanner, BaseButton, ConfirmDialog, EmptyNote, Icon, MemberArchiveDialog, MemberFormDialog, PageHead, StatusLabel, TextButton, YearStrip },
   setup() {
     return {
       appStore: useAppStore(),
@@ -345,18 +305,11 @@ export default {
       filters: { ...EMPTY_FILTERS },
       datesOpen: false,
       sort: { key: null, direction: 'asc' },
-      memberForm: { name: '', email: '', phone: '', joinDate: '', status: 'MEMBER', householdId: '', householdTouched: false },
-      households: [],
-      householdsFailed: false,
       formOpen: false,
-      saving: false,
-      formError: '',
-      formErrors: { ...EMPTY_ERRORS },
+      focusStatus: false,
       editingMember: null,
       selectedMember: null,
       deleteOpen: false,
-      deleting: false,
-      deleteError: '',
       permanentOpen: false,
       deletingPermanently: false,
       restoringId: null,
@@ -384,22 +337,6 @@ export default {
     // the list on screen: the archived list (ADMIN, loaded on demand) or the normal one
     source() {
       return this.showingArchived ? this.archivedMembers : this.members
-    },
-    statusOptions() {
-      return this.editingMember ? STATUS_OPTIONS : NEW_MEMBER_STATUS_OPTIONS
-    },
-    // the loaded households, plus the member's current one when the list lacks it (so the select never shows a blank)
-    householdOptions() {
-      const current = this.editingMember
-      if (current?.householdId && !this.households.some(household => household.id === current.householdId)) {
-        return [...this.households, { id: current.householdId, name: current.householdName || 'Current household' }]
-      }
-      return this.households
-    },
-    statusHint() {
-      return this.editingMember
-        ? 'Only a Member owes dues and gets messages. Moving someone back to Member resets the months behind.'
-        : 'Choose Inactive for someone who should not owe dues or get messages, such as a child.'
     },
     filteredMembers() {
       const filtered = filterMembers(this.source, this.filters)
@@ -537,118 +474,21 @@ export default {
       else if (key === 'toggle') this.toggleStatus(member)
       else if (key === 'delete') this.showDeleteModal(member)
     },
-    resetFormErrors() {
-      this.formError = ''
-      this.formErrors = { ...EMPTY_ERRORS }
-    },
     showAddModal() {
       this.editingMember = null
-      this.memberForm = { name: '', email: '', phone: '', joinDate: localISODate(), status: 'MEMBER', householdId: '', householdTouched: false }
+      this.focusStatus = false
       this.today = localISODate()
-      this.resetFormErrors()
       this.formOpen = true
-      this.loadHouseholds()
     },
     showEditModal(member, focusStatus = false) {
       this.editingMember = member
-      this.memberForm = {
-        name: member.name || '',
-        email: member.email || '',
-        phone: member.phone || '',
-        joinDate: member.joinDate || '',
-        status: member.status || 'MEMBER',
-        householdId: member.householdId ? String(member.householdId) : '',
-        householdTouched: false
-      }
+      this.focusStatus = focusStatus
       this.today = localISODate()
-      this.resetFormErrors()
       this.formOpen = true
-      this.loadHouseholds()
-      // the dialog focuses the first field when it opens; "Change status..." wants the select instead
-      if (focusStatus) setTimeout(() => document.getElementById('member-status')?.focus(), 0)
-    },
-    // for the Household select; a failure only disables the select, the rest of the form still saves
-    async loadHouseholds() {
-      this.householdsFailed = false
-      try {
-        const data = await api.getHouseholds()
-        this.households = Array.isArray(data) ? data : []
-      } catch (error) {
-        console.error('Error loading households:', error)
-        this.householdsFailed = true
-      }
-    },
-    chooseHousehold(value) {
-      this.memberForm.householdId = value
-      this.memberForm.householdTouched = true
     },
     showDeleteModal(member) {
       this.selectedMember = member
-      this.deleteError = ''
       this.deleteOpen = true
-    },
-    validateForm() {
-      this.formErrors = { ...EMPTY_ERRORS }
-      if (!this.memberForm.name.trim()) this.formErrors.name = 'Enter the member\'s name.'
-      const email = this.memberForm.email.trim()
-      if (email && !isValidEmail(email)) this.formErrors.email = 'Enter a valid email address, like name@example.com.'
-      return !this.formErrors.name && !this.formErrors.email
-    },
-    // Put each server field error under its field; anything else goes in the banner
-    showSaveError(error) {
-      const fieldErrors = Array.isArray(error.fieldErrors) ? error.fieldErrors : []
-      const rest = []
-      for (const { field, message } of fieldErrors) {
-        if (field in EMPTY_ERRORS && !this.formErrors[field]) this.formErrors[field] = message
-        else rest.push(message)
-      }
-      const message = error.message || 'Request failed'
-      if (!fieldErrors.length) rest.push(message)
-      if (rest.length) {
-        this.formError = rest.join(' ')
-        this.notifyFailure('Could not save member', error)
-      }
-    },
-    async saveMember() {
-      this.resetFormErrors()
-      if (!this.validateForm()) return
-      this.saving = true
-      try {
-        const request = buildMemberRequest(this.memberForm)
-        const editing = !!this.editingMember
-        // a new member with no household sends nothing; only an edit sends null to leave one
-        if (!editing && request.householdId === null) delete request.householdId
-        if (editing) {
-          await api.updateMember(this.editingMember.id, request)
-        } else {
-          await api.createMember(request)
-        }
-        await this.reloadLists()
-        this.formOpen = false
-        this.notify('success', editing ? 'Member saved' : 'Member added', request.name)
-      } catch (error) {
-        console.error('Error saving member:', error)
-        this.showSaveError(error)
-      } finally {
-        this.saving = false
-      }
-    },
-    async deleteMember() {
-      this.deleting = true
-      this.deleteError = ''
-      try {
-        const { id, name } = this.selectedMember
-        await api.deleteMember(id)
-        await this.reloadLists()
-        this.deleteOpen = false
-        this.notify('success', 'Member archived', name)
-      } catch (error) {
-        console.error('Error archiving member:', error)
-        this.deleteError = error.message || 'Request failed'
-        this.notifyFailure('Could not archive member', error)
-      } finally {
-        this.deleting = false
-      }
     },
     async toggleStatus(member) {
       const reactivating = member.status !== 'MEMBER'
