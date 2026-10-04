@@ -20,17 +20,23 @@
 
     <!-- Filters: one compact row from md up; the date pair folds away on a phone -->
     <form v-if="members.length || showingArchived" class="mb-6 grid grid-cols-2 gap-3 md:flex md:flex-wrap md:items-end" role="search" aria-label="Filter members" @submit.prevent>
+      <div class="col-span-2 overflow-x-auto md:basis-full md:overflow-visible">
+        <div role="group" aria-label="Filter by status" class="inline-flex">
+          <button
+            v-for="segment in statusSegments"
+            :key="segment.value"
+            type="button"
+            :class="[SEGMENT, segmentShape(segment.value), filters.status === segment.value ? 'z-10 border-teal bg-teal text-paper hover:bg-teal-hover' : 'border-field bg-paper text-ink hover:bg-teal-tint']"
+            :aria-pressed="filters.status === segment.value ? 'true' : 'false'"
+            @click="filters.status = segment.value"
+          >
+            {{ segment.label }}<template v-if="segment.count !== null"> <span class="tabular-nums">{{ segment.count }}</span></template>
+          </button>
+        </div>
+      </div>
       <div class="col-span-2 md:col-span-1 md:min-w-60 md:flex-1">
         <label for="filter-search" :class="LABEL">Search</label>
         <input id="filter-search" v-model="filters.search" type="search" placeholder="Search name, email or phone" autocomplete="off" :class="CONTROL">
-      </div>
-      <div class="md:w-40">
-        <label for="filter-status" :class="LABEL">Status</label>
-        <select id="filter-status" v-model="filters.status" :class="CONTROL">
-          <option value="ALL">All members</option>
-          <option v-for="option in STATUS_OPTIONS" :key="option.value" :value="option.value">{{ option.label }}</option>
-          <option v-if="authStore.isAdmin" value="ARCHIVED">Archived</option>
-        </select>
       </div>
       <div class="md:w-40">
         <label for="filter-dues" :class="LABEL">Dues</label>
@@ -262,9 +268,9 @@ import { useAuthStore } from '../stores/authStore'
 import { downloadBlob, formatDate, localISODate } from '@/utils'
 import { monthsBehind } from '@/utils/dues'
 import { paidMonthsByMember, stripRangeLabel } from '@/utils/yearStrip'
-import { filterMembers, sortMembers, exportIds } from '@/utils/memberFilters'
+import { STATUS_SEGMENTS, filterMembers, sortMembers, statusCounts, exportIds } from '@/utils/memberFilters'
 import { buildMemberRequest } from '@/utils/memberPayload'
-import { STATUS_OPTIONS, countsForDues, statusLabel, statusTone } from '@/utils/memberStatus'
+import { countsForDues, statusLabel, statusTone } from '@/utils/memberStatus'
 import ActionMenu from '@/components/ActionMenu.vue'
 import AlertBanner from '@/components/AlertBanner.vue'
 import BaseButton from '@/components/BaseButton.vue'
@@ -283,6 +289,8 @@ import { CONTROL, LABEL, NAME, SORT_BUTTON, TABLE, TABLE_TH as TH, TABLE_TD as T
 const PHONE_ACTION = 'flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-lg font-medium no-underline'
 // "Delete for good": an outline in clay (the dialog holds the solid danger button)
 const DELETE_BUTTON = 'inline-flex cursor-pointer items-center justify-center rounded-sm border border-clay bg-paper font-medium leading-normal text-clay hover:bg-clay-tint disabled:pointer-events-none disabled:border-rule disabled:text-muted disabled:opacity-65'
+// One button of the Status segmented control; segmentShape rounds the two ends and joins the borders
+const SEGMENT = 'relative -ml-px first:ml-0 inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1 border px-3 text-base font-medium whitespace-nowrap md:min-h-(--control-h)'
 const EMPTY_FILTERS = { search: '', status: 'ALL', paymentStatus: 'ALL', joinedFrom: '', joinedTo: '' }
 
 export default {
@@ -324,7 +332,7 @@ export default {
       TD,
       SORT_BUTTON,
       NAME,
-      STATUS_OPTIONS,
+      SEGMENT,
       countsForDues,
       statusLabel,
       statusTone
@@ -337,6 +345,13 @@ export default {
     // the list on screen: the archived list (ADMIN, loaded on demand) or the normal one
     source() {
       return this.showingArchived ? this.archivedMembers : this.members
+    },
+    // the segments with their counts; the archived list loads on demand, so its count shows once it has
+    statusSegments() {
+      const counts = statusCounts(this.members)
+      const segments = STATUS_SEGMENTS.map(segment => ({ ...segment, count: counts[segment.value] }))
+      if (this.authStore.isAdmin) segments.push({ value: 'ARCHIVED', label: 'Archived', count: this.archivedLoaded ? this.archivedMembers.length : null })
+      return segments
     },
     filteredMembers() {
       const filtered = filterMembers(this.source, this.filters)
@@ -445,6 +460,10 @@ export default {
     sortIcon(key) {
       if (this.sort.key !== key) return 'chevrons-up-down'
       return this.sort.direction === 'asc' ? 'caret-up' : 'caret-down'
+    },
+    segmentShape(value) {
+      const last = this.statusSegments[this.statusSegments.length - 1].value
+      return [value === 'ALL' ? 'rounded-l-sm' : '', value === last ? 'rounded-r-sm' : '']
     },
     clearFilters() {
       this.filters = { ...EMPTY_FILTERS }
