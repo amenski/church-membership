@@ -43,10 +43,16 @@ All in `frontend/src/utils/memberFilters.js`; all filters are ANDed.
 ## Table and list
 - From md up: a `<table>` with columns Name (name with the email beneath), Phone, Joined, Status (`StatusLabel` from `status`: "Member" fern, "Inactive" clay, "Deceased", "Transferred", "Archived" muted), Dues and, for STAFF+, a final actions cell.
 - Dues: "Paid up" (fern text) or "N months behind" (ochre text, `monthsBehind`, so "1 month behind"). For any other status the cell shows a muted en dash (screen readers get "Not tracked while inactive", "while deceased" ...); no "Paid up" or "N months behind".
-- Below md the table becomes a stacked list of the same rows (name, email, status, dues, phone and join date, More menu). For a member who is not MEMBER the dues word is left out there.
+- Below md the table becomes a list of cards (see Year strip and phone cards). For a member who is not MEMBER the dues word is left out there.
 - Dates use `formatDate(date, 'MMM d, yyyy')`; a `YYYY-MM-DD` string is read as a local day, so it never shifts by a day west of UTC (`frontend/src/utils/index.js`).
 - No sort control exists below md (the headers are gone with the table).
 - A member with a household shows its name under the name (house icon, `householdName`); the add and edit dialog has a "Household" select that sends `householdId` only once touched (see [households](households.md#screen)).
+
+## Year strip and phone cards
+- Data: `api.getPayments()` (`GET /api/payments`, VOLUNTEER+) loads in parallel with the members and after every reload; `paidMonthsByMember` groups `payment.period` ("yyyy-MM") by `payment.member.id`. No backend change. If that call fails the strip cells show a muted dash and the rest of the screen works. It returns every payment, which is fine at this size; a per-member endpoint is the next step if the list grows large.
+- Desktop: a column "Nov to Oct, one square a month" (the range follows the current month) with the compact `YearStrip`, before Dues. Sorting and filters are unchanged (the column is not sortable).
+- Rule: see [../design.md](../design.md#year-strip) and the header of `frontend/src/utils/yearStrip.js`. Red squares are capped at the server's `consecutiveMonthsMissed`, so the strip and "N months behind" cannot disagree.
+- Below md each member is a card: name, email, household, status, dues text, phone and join date, the More menu, the large strip with month initials, then Call (`tel:`, shown with a phone) and Record payment (STAFF+, members who owe dues; links to `/payments`, no member preselected yet), both 44px high.
 
 ## Actions
 - `loadMembers` -> `api.getMembers()`, sets `members`, sets `loadError` on failure. Runs in `created`, after every save, archive or toggle, and from "Try again".

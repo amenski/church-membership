@@ -99,7 +99,7 @@ Utilities read them with `h-(--control-h)`, `min-h-(--row-h)`, `p-(--card-pad)`,
 ## Components
 
 `PageHead`, `SectionTitle`, `BaseButton`, `BaseInput`, `BaseSelect`, `BaseTextarea`, `BaseModal`,
-`ConfirmDialog`, `ActionMenu`, `AlertBanner`, `EmptyNote`, `StatusLabel`, `TextButton`, `StatTile`,
+`ConfirmDialog`, `ActionMenu`, `AlertBanner`, `EmptyNote`, `StatusLabel`, `YearStrip`, `TextButton`, `StatTile`,
 `Icon`, `RuledList`/`RuledRow`, `BrandMark`, `RailLink`, `ToastHost`.
 
 - `Icon` holds the whole icon set as inline SVG path data — no icon font, and only the glyphs named
@@ -107,6 +107,29 @@ Utilities read them with `h-(--control-h)`, `min-h-(--row-h)`, `p-(--card-pad)`,
 - `StatTile` is the one place a large figure is styled; it sits inside a `<dl>`.
 - `StatusLabel` is a coloured dot **plus a word**, never colour alone. Tones: `paid` (fern),
   `behind` (ochre), `danger` (clay), `muted` (neutral — inactive, transferred, deceased, archived).
+
+## Year strip
+
+`YearStrip` (`components/YearStrip.vue`, logic in `utils/yearStrip.js`): twelve squares, the last
+twelve months ending with the current month, oldest first. No new tokens: every square uses the
+existing ones, and state is carried by fill and border pattern as well as colour.
+
+| State | Square | Screen reader text |
+|---|---|---|
+| paid | solid `teal` | Paid |
+| missed | hatching of `clay-tint` and `clay`, 1px `clay` border | Missed |
+| due now (current month, unpaid) | `paper` with a 2px `ochre-edge` outline | Due now, unpaid |
+| not a member yet, or not owing dues | dashed `field` border | Not a member that month |
+| unpaid, no longer counted by the server | dashed `field` border | Unpaid, no longer counted |
+
+Sizes: `compact` 10x18px with a 2px gap (table rows), `large` 20x26px with a 3px gap and the month
+initial underneath (phone cards, initial is `aria-hidden`). Each square has a visually hidden
+"Oct 2026: Paid"; the container is a `role="group"` named per member.
+
+Rule (also in the util header): a past unpaid month on or after the join month is "missed" only for
+the most recent `consecutiveMonthsMissed` unpaid months, so the strip never shows more red than the
+server's "N months behind". The current month is never missed (the server counts it on the 1st of
+next month). A member who is not a MEMBER shows no red or amber.
 
 ## Dialog and interaction rules
 
