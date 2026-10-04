@@ -27,6 +27,8 @@ Each entry has a type, a plain description, the kind and id of the record it is 
 | `MEMBER_ACTIVATED`, `MEMBER_DEACTIVATED` | the same save made a member of someone who was not one, or stopped counting a member for dues (to INACTIVE, DECEASED or TRANSFERRED) | Member Jane Smith was deactivated | `usecase/UpdateMemberUseCase.java` |
 | `MEMBER_ARCHIVED` | a member is archived (the screens' "Delete" became "Archive") | Member Jane Smith was archived | `usecase/ArchiveMemberUseCase.java` |
 | `MEMBER_DELETED` | a member with no history is deleted permanently (API only) | Member Jane Smith was deleted permanently | `usecase/DeleteMemberPermanentlyUseCase.java` |
+| `MEMBER_HOUSEHOLD_CHANGED` | a member is put in, moved to or removed from a household | Member Jane Smith was moved to household Smith family | `usecase/SaveMemberUseCase.java`, `usecase/UpdateMemberUseCase.java` |
+| `HOUSEHOLD_CREATED`, `HOUSEHOLD_UPDATED`, `HOUSEHOLD_DELETED` | a household is created, edited or deleted | Household Smith family was created | `usecase/CreateHouseholdUseCase.java`, `UpdateHouseholdUseCase.java`, `DeleteHouseholdUseCase.java` |
 | `MEMBERS_EXPORTED` | either members CSV export | Exported 11 members | `MemberController.java:156` |
 | `PAYMENT_RECORDED` | a payment is recorded | Payment of 50.00 for 2026-10 was recorded for John Doe | `usecase/RecordPaymentUseCase.java:61` |
 | `PAYMENTS_EXPORTED` | the payments CSV export | Exported 42 payments | `PaymentController.java:106` |

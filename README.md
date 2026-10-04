@@ -33,6 +33,7 @@ Overviews explain a feature to people (who can do what, how it works, rules, kno
 | Sign-in and sessions | [sign-in](docs/features/sign-in.md) | [auth-controller](docs/features/auth-controller.md) | [login-view](docs/features/login-view.md) |
 | Profile and password | [profile](docs/features/profile.md) | [user-controller](docs/features/user-controller.md) | [profile-view](docs/features/profile-view.md) |
 | Members | [members](docs/features/members.md) | [member-controller](docs/features/member-controller.md) | [members-view](docs/features/members-view.md) |
+| Households (API) | [households](docs/features/households.md) | same page | none yet |
 | Payments | [payments](docs/features/payments.md) | [payment-controller](docs/features/payment-controller.md) | [payments-view](docs/features/payments-view.md) |
 | Communications | [communications](docs/features/communications.md) | [communication-controller](docs/features/communication-controller.md) | [communications-view](docs/features/communications-view.md) |
 | Activity log | [activity](docs/features/activity.md) | [activity-log-controller](docs/features/activity-log-controller.md) | [activity-view](docs/features/activity-view.md) |

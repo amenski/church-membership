@@ -17,7 +17,7 @@ Clean architecture: dependencies point inwards, and the domain layer depends on 
 ```
 src/main/java/io/github/membertracker/
 ├── domain/
-│   ├── model/          Member, Payment, User, Communication, MessageDelivery, ActivityLogEntry
+│   ├── model/          Member, Household, Payment, User, Communication, MessageDelivery, ActivityLogEntry
 │   ├── valueobject/    Email
 │   ├── enumeration/    PaymentMethod, UserRole, CommunicationType, ActivityType, MemberStatus
 │   ├── exception/      DomainException + Member/Payment/User subclasses
@@ -138,4 +138,5 @@ frontend/src/
 | 2026-10 | `person` and `household` tables exist (migration 012) but no code reads or writes them until step 8; `person.email` is indexed, not unique | Expand first: the schema ships and is proven on a copy before any code depends on it | In use (empty, unused) |
 | 2026-10 | Every member save writes name, email and phone to both the legacy `member` columns and the linked `person` row (`MemberDbRepository.save`, `MemberPersistenceMapper.copyToPerson`); reads stay on the legacy columns until step 9; both go at step 12 | Expand, then contract: the two copies are proven equal (drift query in the plan, section 6) before reads move and before columns are dropped | In use |
 | 2026-10 | `Member.name/email/phone` are read from the linked `person` row (`MemberPersistenceMapper.toDomain`, `toRecipient`; step 9); the legacy `member` columns are still written on every save and nothing reads them; the overdue list sorts by `person.name`; payment and delivery list queries join member and person | The person is the source of truth before the legacy columns are dropped at step 12; any drift is now user-visible, so the drift query must be 0 before step 12 | In use in code (the live demo database is not on it yet) |
+| 2026-10 | A household is real but minimal (name, address, notes; no head, no dues): `/api/households` (VOLUNTEER read, STAFF write, ADMIN delete), members join through `person.household_id` via an optional `householdId` on the member request (absent keeps, null clears); a household with any person cannot be deleted (409), archived members stay in it and only an ADMIN sees them | Decisions a and f of the person plan; people must never lose their household behind their back | In use in code (backend of step 10; the live demo database needs no new migration, a human restart applies this build) |
 | 2026-10 | Roles ADMIN > STAFF > VOLUNTEER > MEMBER with `RoleHierarchy` | Replaces ADMIN/MANAGER/USER and the planned TREASURER/VIEWER | Done (3cf5d84; frontend routes in this change) |

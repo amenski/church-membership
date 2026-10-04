@@ -96,6 +96,7 @@ Stored in the `member` table (migrations `001`, `005`, `009`, `010`; `011` makes
 | `status` | `MEMBER`, `INACTIVE`, `DECEASED`, `TRANSFERRED` or `ARCHIVED` (migration `010`). Only `MEMBER` counts for dues, reminders, messages and payments. The backfill turned every `active = false` into `INACTIVE`; re-label deceased or transferred people by hand | `MemberRequest.status`, or the legacy `active` |
 | `active` | Legacy on/off, read-only in the JSON: true only when `status` is `MEMBER`. The `active` column is kept equal to it by `MemberPersistenceMapper` until the contract step | derived |
 | `archivedAt` | Null until the member is archived; set to the archive time, cleared on restore | system |
+| `householdId`, `householdName` | The household of the person behind the membership, or null; the name is read-only. Set with the optional `householdId` of the request (absent keeps it, null clears it, an unknown id is a 400 `HOUSEHOLD_001`): see [households.md](households.md) | `MemberRequest.householdId` |
 | `consecutiveMonthsMissed`, `lastPaymentDate`, `lastMissedCountMonth` | Dues counters | system only |
 
 Changing `status` through `PUT`: see [member-controller.md](member-controller.md). The screens read `status` only (the JSON `active` is no longer used by the frontend).
@@ -134,6 +135,7 @@ Changing `status` through `PUT`: see [member-controller.md](member-controller.md
 Fixed since the first version of this page: deleting a member no longer erases payments and message history, the member is archived and the database refuses to erase history (audit C9); the action buttons are hidden for roles that cannot use them instead of failing with a 403.
 
 ## Related
+- [households.md](households.md): households and the `householdId` of a member
 - [member-controller.md](member-controller.md): endpoints, errors, CSV details
 - [members-view.md](members-view.md): screen state, filter and sort internals
 - [payment-controller.md](payment-controller.md), [payments-view.md](payments-view.md): payments that update the counters

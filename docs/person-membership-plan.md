@@ -160,7 +160,7 @@ Rollback in this repo means: run the `--rollback` statements by hand on the targ
 | 7 | Create `person` and `household` tables, unused | low | 1 migration | a, b | done |
 | 8 | Backfill person, dual-write | high | ~8 files, ~300 lines | g | done (code and migration 013 proven on a MySQL copy; the live demo database is not migrated yet, a human restart applies 013) |
 | 9 | Read name/email/phone from person | medium | ~6 files, ~120 lines | none | done in code (the live demo is not running it yet: a human restart applies 013 and this build together) |
-| 10 | Households (API and UI) | medium | ~12 files, ~450 lines | a | todo |
+| 10 | Households (API and UI) | medium | ~12 files, ~450 lines | a | backend done (API in `docs/features/households.md`, no migration needed); frontend pending |
 | 11 | People without a membership | medium | ~10 files, ~350 lines | f | todo |
 | 12 | Contract: drop legacy columns | high | 1 migration + ~8 files | verification | todo |
 

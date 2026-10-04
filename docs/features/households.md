@@ -1,0 +1,92 @@
+# Households
+
+A household groups the people of one family or one address: a name, an optional address and free notes. A member points to a household through their person (`person.household_id`); a household never owns dues (they stay per membership, decision f of the [person plan](../person-membership-plan.md)) and has no head of household (decision a). This page covers the API (step 10, backend); the screens come with the frontend half of the step.
+
+## Who can do what
+Roles from `@PreAuthorize`; hierarchy ADMIN > STAFF > VOLUNTEER > MEMBER.
+
+| Task | Minimum role | Endpoint |
+|------|--------------|----------|
+| List households | VOLUNTEER | `GET /api/households` |
+| Open a household with its members | VOLUNTEER | `GET /api/households/{id}` |
+| Create a household | STAFF | `POST /api/households` |
+| Edit name, address, notes | STAFF | `PUT /api/households/{id}` |
+| Delete a household nobody belongs to | ADMIN | `DELETE /api/households/{id}` |
+| Put a member in a household, move or remove them | STAFF | `householdId` in `POST` and `PUT /api/members` |
+
+## How it works
+1. Create the household (`POST /api/households`), then set `householdId` on each member (create or edit). The household's people are always read through the person, so the member list, the member JSON and the household detail agree.
+2. `GET /api/households` returns every household by name with a `memberCount`. `GET /api/households/{id}` returns the fields plus its members (`id`, `name`, `status`).
+3. Archived members stay in the household but are flagged `status: "ARCHIVED"` and are shown to an ADMIN only (`ArchivedVisibility`): for everyone else they are left out of the detail and of `memberCount`.
+4. `DELETE` removes a household only when no person is assigned to it (archived members count). Otherwise it answers 409 `HOUSEHOLD_002` and nothing changes: people are never deleted, moved or cascaded. Unassign them first (`householdId: null`).
+5. The database also keeps `person.household_id` as a foreign key (`ON DELETE SET NULL`, migration 012), but the use case refuses the delete first, so the rule never relies on it.
+
+## API contract
+Fixtures shared with the tests: `src/test/resources/contracts/household-request.json` and `household-response.json`.
+
+Request body of `POST` and `PUT /api/households` (`HouseholdRequest`):
+
+```json
+{"name": "Kebede family", "addressLine1": "Via Roma 1", "addressLine2": "Scala B", "city": "Roma", "postalCode": "00100", "notes": "Prefers calls after 18:00"}
+```
+
+| Field | Rule |
+|-------|------|
+| `name` | required, trimmed, max 100 |
+| `addressLine1`, `addressLine2`, `city` | optional, max 100 |
+| `postalCode` | optional, max 20 |
+| `notes` | optional, max 2000 |
+
+Optional text is trimmed and a blank value is stored as null. A `PUT` replaces every field (a missing optional field is cleared). Unknown properties (for example `members`) are ignored.
+
+Response of `GET /api/households/{id}`, `POST` and `PUT` (200; `members` is `[]` right after create):
+
+```json
+{"id": 7, "name": "Kebede family", "addressLine1": "Via Roma 1", "addressLine2": "Scala B", "city": "Roma", "postalCode": "00100", "notes": "Prefers calls after 18:00",
+ "members": [{"id": 1, "name": "Abebe Kebede", "status": "MEMBER"}, {"id": 2, "name": "Tigist Kebede", "status": "INACTIVE"}]}
+```
+
+Response of `GET /api/households`:
+
+```json
+[{"id": 7, "name": "Kebede family", "city": "Roma", "memberCount": 2}]
+```
+
+Member JSON gains two nullable fields, read from the person (`householdName` is read-only): `"householdId": 7, "householdName": "Kebede family"`. They also appear on the member embedded in a payment; a delivery's recipient summary does not carry them.
+
+`MemberRequest` accepts an optional `householdId`:
+
+| Body | Effect |
+|------|--------|
+| field absent | on create: no household; on edit: the household is left as it is (so "mark inactive" does not clear it) |
+| `"householdId": 7` | the person joins household 7 |
+| `"householdId": null` | on edit: the person leaves its household |
+| unknown id | 400 `HOUSEHOLD_001`, field error on `householdId`, nothing saved |
+
+Errors (RFC 7807 `ProblemDetail`, rejected values never echoed):
+
+| Status | When | Body |
+|--------|------|------|
+| 400 | name blank, a field too long | `errors[{field, message}]` |
+| 400 | unknown `householdId` on a member request | `code: "HOUSEHOLD_001"`, `errors[{field: "householdId", ...}]` |
+| 401 / 403 | not signed in / role too low | as everywhere |
+| 404 | unknown household id on `GET`, `PUT`, `DELETE` | empty body, like members |
+| 409 | `DELETE` while people are assigned | `code: "HOUSEHOLD_002"` |
+
+## Activity log
+New types (`activity_log.activity_type` is a plain `VARCHAR(50)`, so no migration): `HOUSEHOLD_CREATED`, `HOUSEHOLD_UPDATED`, `HOUSEHOLD_DELETED` (entity type `HOUSEHOLD`, description "Household Kebede family was created") and `MEMBER_HOUSEHOLD_CHANGED` (entity type `MEMBER`: "Member X was added to / moved to / removed from household Y"). Names only: never an address, a note or a contact detail. Written best effort, like all entries ([activity.md](activity.md)).
+
+## Rules
+- A household is minimal: no head of household, no dues, no address validation beyond lengths.
+- The members of a household are the memberships of the people whose `household_id` points to it. People without a membership arrive with step 11 and will count as people for the delete rule already.
+- `memberCount` is the number of members the caller may see: archived ones are counted for an ADMIN only.
+- Notes are visible to every role that can read households (VOLUNTEER and up): do not store anything sensitive in them.
+- Reads join the household with the person in the same statement as the member, payment and delivery lists (explicit `join fetch`; an entity graph three levels deep did not join it).
+
+## Known issues
+- The household queries ran only on H2 (MySQL mode), not on MySQL and not in a browser.
+- The screens (household select on the member form, household column) are the frontend half of step 10 and are not built yet; `ActivityView` has no label for the new types yet.
+
+## Related
+- [members.md](members.md): the `householdId` field of a member
+- [activity.md](activity.md), [../person-membership-plan.md](../person-membership-plan.md), [../architecture.md](../architecture.md)
