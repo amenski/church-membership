@@ -22,6 +22,7 @@ Done and removed from this list (October 2026): auth hardening (token types, ref
 - [x] Members CSV has technical headers and a redundant `active` column: now `ID,Name,Email,Phone,Join date,Months behind,Status`
 - [x] Dashboard revenue-by-month chart: there is no chart library and the dashboard shows one monthly figure only — added "Collected by month", 12 CSS bars from `GET /api/dashboard/collected-by-month`, documented in `docs/features/dashboard.md`
 - [x] Coverage reports: no JaCoCo in `build.gradle` and no coverage script for the frontend — added JaCoCo (`jacocoTestReport`, xml + html, no threshold) and `npm run coverage` (Vitest + `@vitest/coverage-v8`), documented in `docs/development.md`
+- [ ] My dues match is by email; an explicit user-to-member link is the follow-up if emails turn out to be unreliable
 - [ ] Activity-log retention job: entries accumulate forever (see [features/activity.md](features/activity.md))
 - [ ] A durable send queue and an automatic later retry of FAILED deliveries (the cached thread pool loses unsent mail on a restart; only the manual Retry exists)
 - [ ] Server-side search and pagination: all lists load every row; deferred until a congregation above about 2,000 members or several campuses

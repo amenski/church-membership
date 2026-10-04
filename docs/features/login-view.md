@@ -20,7 +20,7 @@ Via `frontend/src/services/api.js` (`baseURL` `/api`, `:6`; `withCredentials`, `
 - `isLoading` / `error`: exposed as `isAuthLoading` / `authError` (`:35-36`); `error` holds a ready-to-show message
 - `authChecked`: set once `checkAuth` has run (even on failure); `clearAuth` does not reset it (`:203`)
 - `lastActivity`, `sessionTimeout` (1 h, `:18`): inactivity clock
-- `userRole`, `isAdmin`, `isStaff`, `isVolunteer`, `homePath` (`/dashboard` for VOLUNTEER+, else `/profile`, `:43`)
+- `userRole`, `isAdmin`, `isStaff`, `isVolunteer`, `homePath` (`/dashboard` for VOLUNTEER+, else `/my-dues`)
 
 `LoginView.vue`: `form`, `errors` (per-field), `isFormValid` (`:104`). The page is a paper card on the mist background, with the Felege Selam wordmark above it and the note "Accounts are set up by the church office." below; there is no Sign up link. The fields are `BaseInput`, the alert is `AlertBanner`, the button is `BaseButton`, styled with Tailwind utilities; the page root sets `data-density="comfortable"`.
 

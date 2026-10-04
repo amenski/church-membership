@@ -21,7 +21,7 @@ The auth endpoints have no `@PreAuthorize`; `/api/auth/**` is public (`infrastru
 3. The store lowercases the email and posts to `/api/auth/login` (`frontend/src/stores/authStore.js:60-78`).
 4. The backend looks up the user, clears an expired lock, rejects a locked account (without checking the password), checks the password, then checks enabled and credentials not expired (`src/main/java/io/github/membertracker/usecase/AuthenticateUserUseCase.java:19-44`).
 5. On success it sets the `sid` and `sid_refresh` cookies and returns `{email, role}` (`AuthController.java:61-85`). The user sees a "Welcome back!" toast and is sent to the `?redirect=` page, or `/` (`LoginView.vue:167-189`).
-6. `/` is guest-only, so the guard forwards a signed-in user to their home page: `/dashboard` for VOLUNTEER+, `/profile` for MEMBER (`router/index.js:97-102`, `authStore.js:41`).
+6. `/` is guest-only, so the guard forwards a signed-in user to their home page: `/dashboard` for VOLUNTEER+, `/my-dues` for MEMBER (`router/index.js`, `authStore.js` `homePath`).
 7. On failure the server message is shown in the form alert and a "Login Failed" toast (`LoginView.vue:190-198`, `authStore.js:160-167`). Login errors come back as HTTP 400 (`AuthController.java:87-88`), with one message, "Invalid email or password. After several failed attempts an account is locked for 15 minutes.", for an unknown email, a wrong password and a locked account. After 10 failures for one email or 30 from one IP in 10 minutes the next attempt is a 429 with `Retry-After` (`LoginAttemptLimiter`).
 
 ### Stay signed in
@@ -41,7 +41,7 @@ The auth endpoints have no `@PreAuthorize`; `/api/auth/**` is public (`infrastru
 ### Being redirected
 1. Signed-out user on a protected route goes to `/login?redirect=<path>` (omitted for `/` and `/dashboard`) (`router/index.js:88-94`).
 2. Signed-in user on `/` or `/login` goes to their home page (`router/index.js:97-102`).
-3. Signed-in user below VOLUNTEER on a staff route sees an "Access denied" warning toast ("You don't have access to that page.", 5 s) and goes to their home page, `/profile` for a MEMBER, with no query parameter (`router/index.js:109-118`).
+3. Signed-in user below VOLUNTEER on a staff route sees an "Access denied" warning toast ("You don't have access to that page.", 5 s) and goes to their home page, `/my-dues` for a MEMBER, with no query parameter (`router/index.js:109-118`).
 4. Unknown URLs redirect to `/` (`router/index.js:54-57`).
 5. An idle-expired user is logged out and sent to `/login?session=expired` (`router/index.js:81-85`).
 

@@ -107,6 +107,7 @@ The old `USER` role was removed. Migration `004.migrate-user-role-to-member.sql`
 | Dashboard `/api/dashboard/*` | All | | |
 | Activity log `/api/activity-log` | | | View the activity log (who changed or exported what) |
 | Own account `/api/users/me*` | Any signed-in user, including MEMBER | | |
+| Own dues `/api/me/dues` | Any signed-in user, including MEMBER (matched to a member by email, see [features/my-dues.md](features/my-dues.md)) | | |
 
 **Archived members are visible to ADMIN only, on every read path** (`infrastructure/security/ArchivedVisibility`, one helper used by all controllers): `GET /api/members/{id}`, `GET /api/payments/member/{id}` and `POST /api/communications/send-to-member/{id}` answer as for an unknown id (404, 404, 400 `MEMBER_006`), the id-based export drops them, and where a payment or a delivery embeds an archived member (`/api/payments`, `/api/payments/{id}`, `/api/dashboard/recent-payments`, `/api/communications/{id}/deliveries`, delivery retry) the email and phone are blanked and the name stays so the history still reads.
 
@@ -149,9 +150,9 @@ await authStore.logout()
 |------------|--------|
 | `requiresAuth: true` | Signed-out users go to `/login?redirect=<path>` |
 | `requiresGuest: true` | Signed-in users go to their home page (used by `/` and `/login`) |
-| `requiresRole: 'VOLUNTEER'` | Minimum role, using the same hierarchy as the backend. Users without it see an "Access denied" warning notification and go to their home page (`/dashboard`, or `/profile` for MEMBER) with no query parameter |
+| `requiresRole: 'VOLUNTEER'` | Minimum role, using the same hierarchy as the backend. Users without it see an "Access denied" warning notification and go to their home page (`/dashboard`, or `/my-dues` for MEMBER) with no query parameter |
 
-Dashboard, members, payments and communications require VOLUNTEER; `/profile` is open to every signed-in user.
+Dashboard, members, payments and communications require VOLUNTEER; `/profile` and `/my-dues` are open to every signed-in user.
 
 ## Manual test
 

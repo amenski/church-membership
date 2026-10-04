@@ -134,6 +134,7 @@ Changing `status` through `PUT`: see [member-controller.md](member-controller.md
 Fixed since the first version of this page: deleting a member no longer erases payments and message history, the member is archived and the database refuses to erase history (audit C9); the action buttons are hidden for roles that cannot use them instead of failing with a 403.
 
 ## Related
+- [my-dues.md](my-dues.md): a member's own view of their dues, matched to a member by email
 - [households.md](households.md): households and the `householdId` of a member
 - [member-controller.md](member-controller.md): endpoints, errors, CSV details
 - [members-view.md](members-view.md): screen state, filter and sort internals

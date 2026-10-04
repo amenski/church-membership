@@ -37,10 +37,10 @@ Every signed-in user views and edits their own name, phone and bio, and changes 
 6. Closing the dialog by any route (Cancel, X, Escape, backdrop, success) clears the fields and the banner (`ProfileView.vue:329-331`).
 
 ### What a MEMBER user can do
-1. Signing in sends a MEMBER to `/profile` (`frontend/src/stores/authStore.js:41`, `frontend/src/router/index.js:96-102`).
-2. The rail shows only Profile for MEMBER; the other links need VOLUNTEER (`frontend/src/App.vue:56-61`).
-3. Typing a staff-only URL shows an "Access denied" warning toast and redirects back to `/profile`, with no query parameter (`frontend/src/router/index.js:108-118`).
-4. They can edit their profile, change their password, and sign out from the rail.
+1. Signing in sends a MEMBER to `/my-dues`, their own dues screen ([my-dues.md](my-dues.md)); the name in the phone top bar opens `/profile` (`frontend/src/stores/authStore.js` `homePath`).
+2. The rail shows only the account block for MEMBER; the other links need VOLUNTEER (`frontend/src/App.vue`).
+3. Typing a staff-only URL shows an "Access denied" warning toast and redirects back to `/my-dues`, with no query parameter (`frontend/src/router/index.js`).
+4. They can edit their profile, change their password, and sign out; "Edit my details" and "Change password" on My dues link here.
 
 ## Rules
 - Server, first and last name: max 50 chars each, no minimum (`UpdateUserProfileRequest.java:8`, `:11`).
