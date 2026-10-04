@@ -7,6 +7,7 @@
         <BaseButton
           ref="menuButton"
           variant="secondary"
+          class="min-h-11"
           aria-controls="appRail"
           :aria-expanded="railOpen ? 'true' : 'false'"
           aria-label="Open menu"
@@ -72,7 +73,7 @@
     </template>
 
     <!-- Main Content: content centred at 1100px, beside the rail from lg up -->
-    <main :class="isAuthenticated ? 'lg:ml-[248px] [&>*]:mx-auto [&>*]:max-w-[1100px] [&>*]:p-10 max-sm:[&>*]:px-4 max-sm:[&>*]:py-6' : ''">
+    <main :inert="railOpen ? true : null" :class="isAuthenticated ? 'lg:ml-[248px] [&>*]:mx-auto [&>*]:max-w-[1100px] [&>*]:p-10 max-sm:[&>*]:px-4 max-sm:[&>*]:py-6' : ''">
       <router-view/>
     </main>
 
@@ -130,8 +131,25 @@ const closeRail = () => {
   menuButton.value?.$el.focus()
 }
 
+// Tab wraps inside the open drawer instead of leaving into the page behind the overlay
 const onKeydown = (event) => {
   if (event.key === 'Escape') closeRail()
+  if (event.key !== 'Tab' || !rail.value) return
+  const items = [...rail.value.querySelectorAll('a[href], button:not([disabled])')]
+  if (!items.length) return
+  const first = items[0]
+  const last = items[items.length - 1]
+  const active = document.activeElement
+  if (!rail.value.contains(active)) {
+    event.preventDefault()
+    ;(event.shiftKey ? last : first).focus()
+  } else if (event.shiftKey && active === first) {
+    event.preventDefault()
+    last.focus()
+  } else if (!event.shiftKey && active === last) {
+    event.preventDefault()
+    first.focus()
+  }
 }
 
 watch(railOpen, (open) => {
