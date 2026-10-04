@@ -121,6 +121,7 @@ PUT binds the whole domain object, so a client can set `active`, `consecutiveMon
 **C9. Deleting a member erases financial records**
 Hard delete with `ON DELETE CASCADE` removes all payments and delivery history. Giving records usually have a legal retention period.
 `MemberController.java:103` · `001.schema-creation.sql`
+> **Status (4 Oct 2026):** fixed: `DELETE /api/members/{id}` archives (status ARCHIVED, everything kept); migration `011` makes the payment and delivery foreign keys `ON DELETE RESTRICT` so the database refuses to erase history; `DELETE /api/members/{id}/permanent` (ADMIN) deletes only a member with no payments and no deliveries.
 
 **C10. The data model cannot hold a family**
 A unique, required email per member blocks children and shared inboxes, and there is no household table. Every people feature on the roadmap depends on changing this.

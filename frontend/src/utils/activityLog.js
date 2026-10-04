@@ -5,6 +5,7 @@ const TYPES = [
   { value: 'MEMBER_UPDATED', label: 'Member edited' },
   { value: 'MEMBER_ACTIVATED', label: 'Member reactivated' },
   { value: 'MEMBER_DEACTIVATED', label: 'Member deactivated' },
+  { value: 'MEMBER_ARCHIVED', label: 'Member archived' },
   { value: 'MEMBER_DELETED', label: 'Member deleted' },
   { value: 'MEMBERS_EXPORTED', label: 'Members exported' },
   { value: 'PAYMENT_RECORDED', label: 'Payment recorded' },

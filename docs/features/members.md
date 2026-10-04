@@ -1,6 +1,6 @@
 # Members
 
-The church's member directory: browse, search, add, edit, deactivate, delete and export members. Used by volunteers (read-only), staff (edit) and admins (delete).
+The church's member directory: browse, search, add, edit, deactivate, archive and export members. Used by volunteers (read-only), staff (edit) and admins (archive, restore, permanent delete through the API).
 
 ## Who can do what
 Roles from `@PreAuthorize` and route meta; hierarchy ADMIN > STAFF > VOLUNTEER > MEMBER.
@@ -14,17 +14,19 @@ Roles from `@PreAuthorize` and route meta; hierarchy ADMIN > STAFF > VOLUNTEER >
 | Add a member | STAFF | "Add member" button, `POST /api/members` (`MemberController.java:100-105`) |
 | Edit a member | STAFF | "Edit" in the row menu, `PUT /api/members/{id}` (`MemberController.java:107-115`) |
 | Deactivate / reactivate | STAFF | "Deactivate" or "Reactivate" in the row menu, same `PUT` (`frontend/src/views/MembersView.vue:426-436`) |
-| Delete a member | ADMIN | "Delete" in the row menu, `DELETE /api/members/{id}` (`MemberController.java:117-127`) |
+| Archive a member | ADMIN | "Archive" in the row menu, `DELETE /api/members/{id}` (archives, nothing is deleted) |
+| Restore an archived member | ADMIN | `PUT /api/members/{id}` with `status` MEMBER or INACTIVE (the screen's Restore comes with the status UI) |
+| Delete a member for good | ADMIN | `DELETE /api/members/{id}/permanent`: API only, refused (409) when the member has payments or messages |
 
 Role view of the screen (the buttons are hidden, not disabled, for roles that cannot use them):
 - VOLUNTEER sees the whole table, the search and the filters. There is no "Add member" or "Export CSV" button and no actions column (`MembersView.vue:4`, `:116`).
 - STAFF also sees "Add member", "Export CSV" and a More menu on every row with "Edit" and "Deactivate" or "Reactivate".
-- ADMIN also sees "Delete" (in clay) at the end of the row menu (`MembersView.vue:318-325`).
+- ADMIN also sees "Archive" (in clay) at the end of the row menu.
 - The server enforces the same roles; a 403 shows the shared "Access denied" toast and nothing else changes.
 
 ## How it works
 ### Browse members
-1. The screen loads the full member list once on open and again after every save, delete or toggle (`MembersView.vue:270-287`).
+1. The screen loads the full member list once on open and again after every save, archive or toggle (`MembersView.vue:270-287`).
 2. From `md` up a ruled table shows Name (with the email beneath), Phone, Joined, Status and Dues (`MembersView.vue:82-121`); below `md` the same rows are a stacked list (`MembersView.vue:124-139`).
 3. Status is a dot plus a word: "Active" in fern or "Inactive" in clay.
 4. Dues apply to active members only. An active member shows "Paid up" or "N months behind" ("1 month behind"). An inactive member shows a muted dash (screen readers hear "Not tracked while inactive"): the server stops counting months for them, so the stored number is stale (`MembersView.vue:107-115`, `:311-317`).
@@ -61,11 +63,15 @@ Role view of the screen (the buttons are hidden, not disabled, for roles that ca
 - Reactivating goes through `Member.activate()`, which resets the overdue counter to 0 (`Member.java:75-81`, called from `UpdateMemberUseCase.java:41-49`). Deactivating calls `deactivate()`; sending the state the member already has changes nothing.
 - Automatic deactivation after 3 missed months does not exist (see Rules).
 
-### Delete a member
-1. Choose "Delete" in the row menu (ADMIN only). A dialog "Delete <name>?" says "This permanently deletes the member together with their payments and message history. This cannot be undone." (`MembersView.vue:171-180`).
-2. "Delete member" sends `DELETE /api/members/{id}` (`MembersView.vue:409-425`); unknown id returns 404 (`MemberController.java:125`).
-3. Permanently lost with the member: every payment and every message delivery record (`src/main/resources/db/sql/001.schema-creation.sql:31`, `:61`); the dialog says so.
-4. Success: a toast "Member deleted". Failure (403 for a non-admin): a banner in the dialog and the toast "Could not delete member" (not for 403), and the member stays.
+### Archive a member
+1. Choose "Archive" in the row menu (ADMIN only). A dialog "Archive <name>?" says "This hides <name> from the lists. Their payments and messages are kept." with the buttons "Archive member" and "Cancel".
+2. "Archive member" sends `DELETE /api/members/{id}`, which now archives (`ArchiveMemberUseCase`): status ARCHIVED, `archivedAt` set to now, the months-behind counter untouched, the row, the payments and the deliveries kept. Nothing is deleted; an unknown id returns 404; archiving an archived member changes nothing.
+3. The member disappears from every list, count and export; an ADMIN can list the archived with `GET /api/members?archived=true`, and restore one by `PUT` with `status` `MEMBER` (counter reset) or `INACTIVE` (counter frozen), which clears `archivedAt`. An archived member cannot be sent to DECEASED or TRANSFERRED directly. Only an ADMIN can see or restore an archived member (see Rules).
+4. Success: a toast "Member archived". Failure (403 for a non-admin): a banner in the dialog and the toast "Could not archive member" (not for 403), and the member stays.
+5. The activity log records MEMBER_ARCHIVED ("Member X was archived").
+
+### Delete for good (API only)
+`DELETE /api/members/{id}/permanent` (ADMIN) removes the row only when the member has no payment and no message delivery (a record made by mistake); otherwise it answers 409 `MEMBER_010` and nothing changes. The database enforces the same rule: migration `011` made the payment and delivery foreign keys `ON DELETE RESTRICT`, so even a raw `DELETE FROM member` fails (MySQL error 1451) while history exists. The activity log records MEMBER_DELETED. There is no button for it yet.
 
 ### Export to CSV
 1. Click "Export CSV" (STAFF+). If the filters leave zero rows, a "Nothing to export" toast shows and no request is made (`MembersView.vue:445-454`).
@@ -75,7 +81,7 @@ Role view of the screen (the buttons are hidden, not disabled, for roles that ca
 5. Failure: error toast "Export failed" (`MembersView.vue:461-469`).
 
 ## Fields
-Stored in the `member` table (migrations `001`, `005`, `009`, `010`); the JSON of a member carries the same names.
+Stored in the `member` table (migrations `001`, `005`, `009`, `010`; `011` makes payments and deliveries restrict deletes); the JSON of a member carries the same names.
 
 | Field | Meaning | Who sets it |
 |-------|---------|-------------|
@@ -86,7 +92,7 @@ Stored in the `member` table (migrations `001`, `005`, `009`, `010`); the JSON o
 | `joinDate` | Today unless sent | `MemberRequest` |
 | `status` | `MEMBER`, `INACTIVE`, `DECEASED`, `TRANSFERRED` or `ARCHIVED` (migration `010`). Only `MEMBER` counts for dues, reminders, messages and payments. The backfill turned every `active = false` into `INACTIVE`; re-label deceased or transferred people by hand | `MemberRequest.status`, or the legacy `active` |
 | `active` | Legacy on/off, read-only in the JSON: true only when `status` is `MEMBER`. The `active` column is kept equal to it by `MemberPersistenceMapper` until the contract step | derived |
-| `archivedAt` | Null until the member is archived (the archive action arrives with the next step) | system |
+| `archivedAt` | Null until the member is archived; set to the archive time, cleared on restore | system |
 | `consecutiveMonthsMissed`, `lastPaymentDate`, `lastMissedCountMonth` | Dues counters | system only |
 
 Changing `status` through `PUT`: see [member-controller.md](member-controller.md). The screens still show only Active and Inactive, driven by `active`; a person marked DECEASED or TRANSFERRED through the API appears as Inactive there until the frontend speaks `status`.
@@ -120,9 +126,9 @@ Changing `status` through `PUT`: see [member-controller.md](member-controller.md
 - Automatic deactivation never ran: the pre-due reminder window and automatic deactivation never ran; the code was removed in `chore: remove unused use cases, the membership policy and PhoneNumber` and can be recovered from git history; decide whether to build them for real.
 - Load errors are only logged to the console and shown as the banner; there is no retry other than the "Try again" button.
 - A filter that matches every member exports through the full-list endpoint but the file is still named `members_filtered_...` (`MembersView.vue:459`).
-- After deleting a row from its menu, focus has nowhere to return (the trigger is gone) and falls to the page.
+- After archiving a row from its menu, focus has nowhere to return (the trigger is gone) and falls to the page.
 
-Fixed since the first version of this page: Delete's dialog now says that payments and message history go with the member (audit C9); the action buttons are hidden for roles that cannot use them instead of failing with a 403.
+Fixed since the first version of this page: deleting a member no longer erases payments and message history, the member is archived and the database refuses to erase history (audit C9); the action buttons are hidden for roles that cannot use them instead of failing with a 403.
 
 ## Related
 - [member-controller.md](member-controller.md): endpoints, errors, CSV details

@@ -22,5 +22,8 @@ public interface PaymentRepository {
     /** Newest payment date first, then newest id. */
     List<Payment> findRecent(int limit);
 
+    /** How many payments this member has, whatever their period. */
+    long countByMemberId(Long memberId);
+
     Payment save(Payment payment);
 }

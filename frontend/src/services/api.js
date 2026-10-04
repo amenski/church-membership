@@ -347,6 +347,7 @@ const apiService = {
     return this.put(`/members/${id}`, member)
   },
 
+  // DELETE /members/{id} archives the member (hidden from the lists, payments and messages kept)
   async deleteMember(id) {
     return this.delete(`/members/${id}`)
   },

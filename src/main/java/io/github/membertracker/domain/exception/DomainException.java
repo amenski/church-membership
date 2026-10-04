@@ -38,6 +38,11 @@ public abstract class DomainException extends RuntimeException {
         return field;
     }
 
+    /** True when the request is refused because it conflicts with existing data (HTTP 409 instead of 400). */
+    public boolean isConflict() {
+        return false;
+    }
+
     public String getUserMessage() {
         return getMessage();
     }

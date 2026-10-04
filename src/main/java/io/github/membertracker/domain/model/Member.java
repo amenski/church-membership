@@ -75,21 +75,29 @@ public class Member {
         return true;
     }
 
-    /** Back to MEMBER from any other status; the months-behind counter starts again. */
+    /** Back to MEMBER from any other status (an archived member is restored); the months-behind counter starts again. */
     public void activate() {
         if (this.status == MemberStatus.MEMBER) {
             throw MemberDomainException.memberAlreadyActive(this.name);
         }
         this.status = MemberStatus.MEMBER;
+        this.archivedAt = null;
         this.consecutiveMonthsMissed = 0;
     }
 
-    /** To INACTIVE from any other status; the counter is frozen. */
+    /** To INACTIVE from any other status (an archived member is restored); the counter is frozen. */
     public void deactivate() {
         if (this.status == MemberStatus.INACTIVE) {
             throw MemberDomainException.memberAlreadyInactive(this.name);
         }
         this.status = MemberStatus.INACTIVE;
+        this.archivedAt = null;
+    }
+
+    /** Hides the member from the lists; nothing else changes, the counter and all history are kept. */
+    public void archive(LocalDateTime now) {
+        this.status = MemberStatus.ARCHIVED;
+        this.archivedAt = now;
     }
 
     private boolean paymentCoversCurrentPeriod(Payment payment) {

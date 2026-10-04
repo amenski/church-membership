@@ -67,6 +67,11 @@ public class PaymentDbRepository implements PaymentRepository {
     }
 
     @Override
+    public long countByMemberId(Long memberId) {
+        return paymentJpaRepository.countByMemberId(memberId);
+    }
+
+    @Override
     public Payment save(Payment payment) {
         PaymentEntity entity = mapToEntity(payment);
         return mapToPayment(paymentJpaRepository.save(entity));

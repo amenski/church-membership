@@ -69,12 +69,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(DomainException.class)
     public ResponseEntity<ProblemDetail> handleDomainException(DomainException ex, WebRequest request) {
         log.error("Business rule violation: {}", ex.getMessage());
-        ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, ex.getUserMessage(), request);
+        HttpStatus status = ex.isConflict() ? HttpStatus.CONFLICT : HttpStatus.BAD_REQUEST;
+        ProblemDetail problem = problem(status, ex.getUserMessage(), request);
         problem.setProperty("code", ex.getErrorCode());
         if (ex.getField() != null) {
             problem.setProperty("errors", List.of(Map.of("field", ex.getField(), "message", ex.getUserMessage())));
         }
-        return ResponseEntity.badRequest().body(problem);
+        return ResponseEntity.status(status).body(problem);
     }
 
     @ExceptionHandler(TooManyLoginAttemptsException.class)

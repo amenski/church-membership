@@ -70,7 +70,7 @@ This document tracks missing features, improvements, and technical debt in the M
 - [x] Phase 2: C8 MemberRequest DTO
 - [x] Phase 3: secrets out of config, CSRF back on (activity log writes deferred: see below)
 - [x] Activity log writes: sign-in, password change, member create/edit/status/delete, payments, messages and exports are recorded in `activity_log` (migration 007 adds `actor`); ADMIN reads them at `GET /api/activity-log` ([features/activity.md](features/activity.md)). Still open: a retention or deletion job (entries accumulate forever); dashboard recent activities do not read the table
-- [ ] Phase 4: Person/Membership split (needs a decision, not started)
+- [ ] Phase 4: Person/Membership split ([person-membership-plan.md](person-membership-plan.md): steps 1 to 5 done, including archive instead of delete (audit C9); steps 6 to 12 open)
 
 ### Bugs found by checking the docs against the code (October 2026)
 - [ ] **Overdue tracking:** there is no pre-due reminder window (the unused policy code was removed in `chore: remove unused use cases, the membership policy and PhoneNumber`; recover from git history if you build it)

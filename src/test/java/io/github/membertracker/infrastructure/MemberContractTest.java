@@ -55,11 +55,17 @@ class MemberContractTest {
     @MockitoBean private GetArchivedMembersUseCase getArchivedMembersUseCase;
     @MockitoBean private SaveMemberUseCase saveMemberUseCase;
     @MockitoBean private UpdateMemberUseCase updateMemberUseCase;
-    @MockitoBean private DeleteMemberUseCase deleteMemberUseCase;
+    @MockitoBean private ArchiveMemberUseCase archiveMemberUseCase;
+    @MockitoBean private DeleteMemberPermanentlyUseCase deleteMemberPermanentlyUseCase;
     @MockitoBean private GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase;
 
     private static String fixture() throws Exception {
         return Files.readString(Path.of("src/test/resources/contracts/member-request.json"));
+    }
+
+    @org.junit.jupiter.api.BeforeEach
+    void theMemberBeingEditedExists() {
+        when(getMemberByIdUseCase.invoke(any())).thenReturn(Optional.of(new Member()));
     }
 
     @Test

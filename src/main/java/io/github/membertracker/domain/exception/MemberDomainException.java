@@ -14,6 +14,7 @@ public class MemberDomainException extends DomainException {
     public static final String MEMBER_NOT_FOUND = "MEMBER_006";
     public static final String MEMBER_INACTIVE = "MEMBER_008";
     public static final String STATUS_NOT_ALLOWED = "MEMBER_009";
+    public static final String MEMBER_HAS_HISTORY = "MEMBER_010";
 
     public MemberDomainException(String message, String errorCode) {
         super(message, errorCode, "Member");
@@ -59,6 +60,20 @@ public class MemberDomainException extends DomainException {
     /** The status in the request cannot be set this way; reported as a field error on {@code status}. */
     public static MemberDomainException statusNotAllowed(String reason) {
         return new MemberDomainException(reason, STATUS_NOT_ALLOWED, "status");
+    }
+
+    /** A permanent delete would erase payments or messages; the API answers 409. */
+    public static MemberDomainException memberHasHistory(String memberName, long payments, long deliveries) {
+        return new MemberDomainException(
+            String.format("Member '%s' has %d payment(s) and %d message delivery(ies), so they cannot be deleted permanently. Archive them instead.",
+                memberName, payments, deliveries),
+            MEMBER_HAS_HISTORY
+        );
+    }
+
+    @Override
+    public boolean isConflict() {
+        return MEMBER_HAS_HISTORY.equals(getErrorCode());
     }
 
     public static MemberDomainException memberInactive(String memberName) {

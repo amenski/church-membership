@@ -45,7 +45,8 @@ class ValidationResponseTest {
     @MockitoBean private GetArchivedMembersUseCase getArchivedMembersUseCase;
     @MockitoBean private SaveMemberUseCase saveMemberUseCase;
     @MockitoBean private UpdateMemberUseCase updateMemberUseCase;
-    @MockitoBean private DeleteMemberUseCase deleteMemberUseCase;
+    @MockitoBean private ArchiveMemberUseCase archiveMemberUseCase;
+    @MockitoBean private DeleteMemberPermanentlyUseCase deleteMemberPermanentlyUseCase;
     @MockitoBean private GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase;
     @MockitoBean private GetAllPaymentsUseCase getAllPaymentsUseCase;
     @MockitoBean private GetPaymentByIdUseCase getPaymentByIdUseCase;

@@ -12,7 +12,8 @@ import io.github.membertracker.usecase.AuthenticateUserUseCase;
 import io.github.membertracker.usecase.GetActivityLogUseCase;
 import io.github.membertracker.usecase.RecordActivityUseCase;
 import io.github.membertracker.usecase.ChangePasswordUseCase;
-import io.github.membertracker.usecase.DeleteMemberUseCase;
+import io.github.membertracker.usecase.ArchiveMemberUseCase;
+import io.github.membertracker.usecase.DeleteMemberPermanentlyUseCase;
 import io.github.membertracker.usecase.GetActiveMembersUseCase;
 import io.github.membertracker.usecase.GetArchivedMembersUseCase;import io.github.membertracker.usecase.GetAllCommunicationsUseCase;
 import io.github.membertracker.usecase.GetAllMembersUseCase;
@@ -120,8 +121,17 @@ public class UseCaseConfig {
     }
 
     @Bean
-    public DeleteMemberUseCase deleteMemberUseCase(MemberRepository memberRepository, RecordActivityUseCase recordActivityUseCase) {
-        return new DeleteMemberUseCase(memberRepository, recordActivityUseCase);
+    public ArchiveMemberUseCase archiveMemberUseCase(MemberRepository memberRepository, RecordActivityUseCase recordActivityUseCase) {
+        return new ArchiveMemberUseCase(memberRepository, recordActivityUseCase);
+    }
+
+    @Bean
+    public DeleteMemberPermanentlyUseCase deleteMemberPermanentlyUseCase(MemberRepository memberRepository,
+                                                                         PaymentRepository paymentRepository,
+                                                                         MessageDeliveryRepository messageDeliveryRepository,
+                                                                         RecordActivityUseCase recordActivityUseCase) {
+        return new DeleteMemberPermanentlyUseCase(memberRepository, paymentRepository, messageDeliveryRepository,
+                recordActivityUseCase);
     }
 
     @Bean

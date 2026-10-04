@@ -12,6 +12,8 @@ import java.util.List;
 public interface PaymentJpaRepository extends JpaRepository<PaymentEntity, Long> {
     List<PaymentEntity> findByMember(MemberEntity member);
 
+    long countByMemberId(Long memberId);
+
     boolean existsByMemberAndPeriod(MemberEntity member, YearMonth period);
 
     @Query("select coalesce(sum(p.amount), 0.0) from PaymentEntity p where p.period = :period")

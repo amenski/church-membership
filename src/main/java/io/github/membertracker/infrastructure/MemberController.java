@@ -45,7 +45,8 @@ public class MemberController {
     private final GetArchivedMembersUseCase getArchivedMembersUseCase;
     private final SaveMemberUseCase saveMemberUseCase;
     private final UpdateMemberUseCase updateMemberUseCase;
-    private final DeleteMemberUseCase deleteMemberUseCase;
+    private final ArchiveMemberUseCase archiveMemberUseCase;
+    private final DeleteMemberPermanentlyUseCase deleteMemberPermanentlyUseCase;
     private final GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase;
     private final RecordActivityUseCase recordActivityUseCase;
 
@@ -57,7 +58,8 @@ public class MemberController {
                            GetArchivedMembersUseCase getArchivedMembersUseCase,
                            SaveMemberUseCase saveMemberUseCase,
                            UpdateMemberUseCase updateMemberUseCase,
-                           DeleteMemberUseCase deleteMemberUseCase,
+                           ArchiveMemberUseCase archiveMemberUseCase,
+                           DeleteMemberPermanentlyUseCase deleteMemberPermanentlyUseCase,
                            GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase,
                            RecordActivityUseCase recordActivityUseCase) {
         this.getAllMembersUseCase = getAllMembersUseCase;
@@ -67,7 +69,8 @@ public class MemberController {
         this.getArchivedMembersUseCase = getArchivedMembersUseCase;
         this.saveMemberUseCase = saveMemberUseCase;
         this.updateMemberUseCase = updateMemberUseCase;
-        this.deleteMemberUseCase = deleteMemberUseCase;
+        this.archiveMemberUseCase = archiveMemberUseCase;
+        this.deleteMemberPermanentlyUseCase = deleteMemberPermanentlyUseCase;
         this.getMembersWithMissedPaymentsUseCase = getMembersWithMissedPaymentsUseCase;
         this.recordActivityUseCase = recordActivityUseCase;
     }
@@ -112,8 +115,11 @@ public class MemberController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('STAFF')")
-    @Operation(summary = "Update a member (STAFF+)")
+    @Operation(summary = "Update a member; restoring an archived member is ADMIN only (STAFF+)")
     public ResponseEntity<Member> updateMember(@PathVariable @Positive Long id, @Valid @RequestBody MemberRequest request) {
+        if (ArchivedVisibility.visible(getMemberByIdUseCase.invoke(id)).isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
         return updateMemberUseCase.invoke(id, request.getName(), request.getEmail(), request.getPhone(),
                         request.getJoinDate(), request.getStatus(), request.getActive())
                 .map(ResponseEntity::ok)
@@ -122,14 +128,20 @@ public class MemberController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Delete a member (ADMIN)")
-    public ResponseEntity<Void> deleteMember(@PathVariable @Positive Long id) {
-        if (getMemberByIdUseCase.invoke(id).isPresent()) {
-            deleteMemberUseCase.invoke(id);
-            return ResponseEntity.ok().build();
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+    @Operation(summary = "Archive a member: hidden from the lists, payments and messages kept (ADMIN)")
+    public ResponseEntity<Void> archiveMember(@PathVariable @Positive Long id) {
+        return archiveMemberUseCase.invoke(id).isPresent()
+                ? ResponseEntity.ok().build()
+                : ResponseEntity.notFound().build();
+    }
+
+    @DeleteMapping("/{id}/permanent")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Delete a member for good; 409 when they have payments or messages (ADMIN)")
+    public ResponseEntity<Void> deleteMemberPermanently(@PathVariable @Positive Long id) {
+        return deleteMemberPermanentlyUseCase.invoke(id)
+                ? ResponseEntity.ok().build()
+                : ResponseEntity.notFound().build();
     }
 
     @GetMapping("/overdue/{months}")

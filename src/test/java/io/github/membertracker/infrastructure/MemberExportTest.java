@@ -48,7 +48,8 @@ class MemberExportTest {
     @MockitoBean private GetArchivedMembersUseCase getArchivedMembersUseCase;
     @MockitoBean private SaveMemberUseCase saveMemberUseCase;
     @MockitoBean private UpdateMemberUseCase updateMemberUseCase;
-    @MockitoBean private DeleteMemberUseCase deleteMemberUseCase;
+    @MockitoBean private ArchiveMemberUseCase archiveMemberUseCase;
+    @MockitoBean private DeleteMemberPermanentlyUseCase deleteMemberPermanentlyUseCase;
     @MockitoBean private GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase;
 
     private static Member member(long id, String name) {

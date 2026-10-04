@@ -25,13 +25,14 @@ Each entry has a type, a plain description, the kind and id of the record it is 
 | `MEMBER_CREATED` | a member is added | Member Jane Smith was added | `usecase/SaveMemberUseCase.java:30` |
 | `MEMBER_UPDATED` | a member is edited (every save) | Member Jane Smith was updated; when the status changed: Member Jane Smith was updated, status is now TRANSFERRED | `usecase/UpdateMemberUseCase.java` |
 | `MEMBER_ACTIVATED`, `MEMBER_DEACTIVATED` | the same save made a member of someone who was not one, or stopped counting a member for dues (to INACTIVE, DECEASED or TRANSFERRED) | Member Jane Smith was deactivated | `usecase/UpdateMemberUseCase.java` |
-| `MEMBER_DELETED` | a member is deleted | Member Jane Smith was deleted | `usecase/DeleteMemberUseCase.java:25` |
+| `MEMBER_ARCHIVED` | a member is archived (the screens' "Delete" became "Archive") | Member Jane Smith was archived | `usecase/ArchiveMemberUseCase.java` |
+| `MEMBER_DELETED` | a member with no history is deleted permanently (API only) | Member Jane Smith was deleted permanently | `usecase/DeleteMemberPermanentlyUseCase.java` |
 | `MEMBERS_EXPORTED` | either members CSV export | Exported 11 members | `MemberController.java:156` |
 | `PAYMENT_RECORDED` | a payment is recorded | Payment of 50.00 for 2026-10 was recorded for John Doe | `usecase/RecordPaymentUseCase.java:61` |
 | `PAYMENTS_EXPORTED` | the payments CSV export | Exported 42 payments | `PaymentController.java:106` |
 | `MESSAGE_SENT` | a message is sent to all, to overdue members or to one member (the monthly reminder job too) | Message "Feast day" was sent to 8 members | `usecase/SendCommunicationToAllMembersUseCase.java:76`, `usecase/SendCommunicationToMembersUseCase.java:69` |
 
-Entries are written after the action succeeded, so a rejected request (validation error) leaves no entry. A delete reads the member's name first, because it is gone afterwards.
+Entries are written after the action succeeded, so a rejected request (validation error) leaves no entry. A permanent delete reads the member's name first, because it is gone afterwards.
 
 ## What is deliberately not recorded
 - Emails and phone numbers: descriptions carry names only (data minimisation). The log is not a second copy of the register.

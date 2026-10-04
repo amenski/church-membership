@@ -43,6 +43,11 @@ public class MessageDeliveryDbRepository implements MessageDeliveryRepository {
     }
 
     @Override
+    public long countByRecipientId(Long memberId) {
+        return messageDeliveryJpaRepository.countByRecipientId(memberId);
+    }
+
+    @Override
     public MessageDelivery save(MessageDelivery delivery) {
         MessageDeliveryEntity entity = mapToEntity(delivery);
         return mapToDomain(messageDeliveryJpaRepository.save(entity));

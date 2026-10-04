@@ -235,4 +235,39 @@ class UpdateMemberUseCaseTest {
         verifyNoInteractions(recordActivity);
         assertThat(stored.getStatus()).isEqualTo(MemberStatus.MEMBER);
     }
+
+    @Test
+    void anArchivedMemberCanBeRestoredToMemberWhichClearsTheArchiveTimeAndResetsTheCounter() {
+        stored.archive(java.time.LocalDateTime.of(2026, 9, 1, 12, 0));
+
+        Member result = useCase.invoke(1L, "Old", "old@example.com", null, null, MemberStatus.MEMBER, null).orElseThrow();
+
+        assertThat(result.getStatus()).isEqualTo(MemberStatus.MEMBER);
+        assertThat(result.getArchivedAt()).isNull();
+        assertThat(result.getConsecutiveMonthsMissed()).isZero();
+    }
+
+    @Test
+    void anArchivedMemberCanBeRestoredToInactiveKeepingTheCounter() {
+        stored.archive(java.time.LocalDateTime.of(2026, 9, 1, 12, 0));
+
+        Member result = useCase.invoke(1L, "Old", "old@example.com", null, null, MemberStatus.INACTIVE, null).orElseThrow();
+
+        assertThat(result.getStatus()).isEqualTo(MemberStatus.INACTIVE);
+        assertThat(result.getArchivedAt()).isNull();
+        assertThat(result.getConsecutiveMonthsMissed()).isEqualTo(4);
+    }
+
+    @Test
+    void anArchivedMemberCannotJumpToDeceasedOrTransferred() {
+        stored.archive(java.time.LocalDateTime.of(2026, 9, 1, 12, 0));
+
+        for (MemberStatus target : new MemberStatus[] {MemberStatus.DECEASED, MemberStatus.TRANSFERRED}) {
+            assertThatThrownBy(() -> useCase.invoke(1L, "Old", "old@example.com", null, null, target, null))
+                .isInstanceOf(MemberDomainException.class)
+                .extracting("errorCode").isEqualTo(MemberDomainException.STATUS_NOT_ALLOWED);
+        }
+        verify(memberRepository, never()).save(any());
+        assertThat(stored.getStatus()).isEqualTo(MemberStatus.ARCHIVED);
+    }
 }

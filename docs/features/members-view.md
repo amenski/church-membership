@@ -2,14 +2,14 @@
 
 `frontend/src/views/MembersView.vue`
 
-Members screen ("Members": "Everyone on the register: who is paid up and who is behind."): searchable, filterable, sortable ruled table with add, edit, delete, deactivate/reactivate and CSV export. Route `/members`, minimum role VOLUNTEER (`frontend/src/router/index.js`; guards in [../authentication.md](../authentication.md)). Built on Tailwind and the shared components (`PageHead`, `StatusLabel`, `ActionMenu`, `BaseModal`, `BaseInput`, `BaseButton`, `AlertBanner`, `EmptyNote`, `TextButton`); no Bootstrap classes or JavaScript.
+Members screen ("Members": "Everyone on the register: who is paid up and who is behind."): searchable, filterable, sortable ruled table with add, edit, archive, deactivate/reactivate and CSV export. Route `/members`, minimum role VOLUNTEER (`frontend/src/router/index.js`; guards in [../authentication.md](../authentication.md)). Built on Tailwind and the shared components (`PageHead`, `StatusLabel`, `ActionMenu`, `BaseModal`, `BaseInput`, `BaseButton`, `AlertBanner`, `EmptyNote`, `TextButton`); no Bootstrap classes or JavaScript.
 
 ## Who sees what
 | Role | Sees |
 |------|------|
 | VOLUNTEER | Read-only list, filters, no "Add member" / "Export CSV" buttons, no actions column |
 | STAFF | Plus "Add member", "Export CSV", and a More menu per row: Edit, Deactivate/Reactivate |
-| ADMIN | Plus Delete in the row menu |
+| ADMIN | Plus Archive in the row menu |
 
 Gating uses `authStore.isStaff` and `authStore.isAdmin`; the backend enforces the same roles (403 otherwise).
 
@@ -24,7 +24,7 @@ Options API component; local `data()`, not the Pinia store.
 | `datesOpen` | Below md the date pair sits under a "More filters" disclosure (`aria-expanded`); from md up it is always visible |
 | `sort` | `{key, direction}`; `key` null = server order |
 | `memberForm`, `editingMember`, `formOpen`, `saving`, `formError`, `formErrors` | Add/edit dialog: `name`, `email`, `phone`, `joinDate`, `active`; `editingMember` null = add mode (the Active switch is shown only when editing: a new member is always active, the server ignores `active` on create); `formErrors` holds per-field messages, `formError` the banner message |
-| `selectedMember`, `deleteOpen`, `deleting`, `deleteError` | Delete dialog |
+| `selectedMember`, `deleteOpen`, `deleting`, `deleteError` | Archive dialog (the `delete*` names are kept) |
 | `filteredMembers` | `filterMembers` then `sortMembers` |
 | `hasActiveFilters` | Any filter differs from its default; shows "Clear filters" |
 
@@ -48,12 +48,12 @@ All in `frontend/src/utils/memberFilters.js`; all filters are ANDed.
 - No sort control exists below md (the headers are gone with the table).
 
 ## Actions
-- `loadMembers` -> `api.getMembers()`, sets `members`, sets `loadError` on failure. Runs in `created`, after every save, delete or toggle, and from "Try again".
-- Row menu (`ActionMenu`, trigger label "More actions for <name>"): Edit, Deactivate or Reactivate, Delete (ADMIN only, in clay).
+- `loadMembers` -> `api.getMembers()`, sets `members`, sets `loadError` on failure. Runs in `created`, after every save, archive or toggle, and from "Try again".
+- Row menu (`ActionMenu`, trigger label "More actions for <name>"): Edit, Deactivate or Reactivate, Archive (ADMIN only, in clay).
 - `saveMember`: client checks (name required; the email is optional and checked with `isValidEmail` only when filled) show under the fields without a request. Then `buildMemberRequest(form)` (`frontend/src/utils/memberPayload.js`, sends `joinDate` when set) and `api.updateMember(id, request)` or `api.createMember(request)`, reload, close the dialog, toast "Member saved" / "Member added". The primary button shows "Saving..." and is disabled while the request runs.
   - Add mode defaults "Joined on" to today (local date, `max` today); edit mode shows the stored date.
   - Failure keeps the dialog open: each `error.fieldErrors` entry (`{field, message}`, set by the API interceptor) goes under the matching field (`name`, `email`, `phone`, `joinDate`); a field-less 400 and anything else goes in an `AlertBanner` at the top of the dialog plus an error toast "Could not save member" (no toast for 403: the shared handler already shows "Access denied").
-- Delete: dialog "Delete <name>?" ("This permanently deletes the member together with their payments and message history. This cannot be undone."), buttons "Delete member" (danger) and "Cancel". Success: reload, close, toast "Member deleted". Failure: banner in the dialog and toast "Could not delete member" (not for 403).
+- Archive: dialog "Archive <name>?" ("This hides <name> from the lists. Their payments and messages are kept."), buttons "Archive member" (danger) and "Cancel". Success: reload, close, toast "Member archived". Failure: banner in the dialog and toast "Could not archive member" (not for 403). `api.deleteMember` calls `DELETE /api/members/{id}`, which archives.
 - `toggleStatus`: no dialog. `api.updateMember(id, buildMemberRequest({...member, active: !active}))`, reload, toast "Member deactivated" / "Member reactivated". Failure toast "Could not deactivate member" / "Could not reactivate member". Reactivating resets the months behind (the dialog's Active switch says so).
 - `clearFilters` resets `filters`; filters are not persisted.
 - `exportMembers` (STAFF+ only):
@@ -76,7 +76,7 @@ All in `frontend/src/utils/memberFilters.js`; all filters are ANDed.
 
 ## Errors
 - Load failure: banner with "Try again" (also `console.error`).
-- Save, delete and toggle failures: see Actions. Typical: 400 field validation, 409 "The request conflicts with existing data". A 403 shows only the shared "Access denied" toast.
+- Save, archive and toggle failures: see Actions. Typical: 400 field validation, 409 "The request conflicts with existing data". A 403 shows only the shared "Access denied" toast.
 - Export failure: error toast "Export failed" with `error.message`.
 - Backend statuses (400 validation, 403 role, 404): see [member-controller.md](member-controller.md).
 
@@ -87,4 +87,4 @@ All in `frontend/src/utils/memberFilters.js`; all filters are ANDed.
 ## Gotchas
 - `exportIds` returns `[]` when a filter matches every member, so that case does a full GET export, yet the file is still named `members_filtered_...`.
 - POST export is capped at 5000 ids (400 beyond that).
-- After deleting a row from its menu, focus has nowhere to return (the trigger is gone) and falls to the page.
+- After archiving a row from its menu, focus has nowhere to return (the trigger is gone) and falls to the page.

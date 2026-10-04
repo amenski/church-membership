@@ -24,7 +24,9 @@ public class UpdateMemberUseCase {
     }
 
     /**
-     * @param status the new status, or null to leave it; ARCHIVED is refused (the archive step is separate)
+     * @param status the new status, or null to leave it; ARCHIVED is refused as a target (archiving is
+     *               {@link ArchiveMemberUseCase}). An ARCHIVED member may be moved back to MEMBER or INACTIVE, which
+     *               clears {@code archivedAt}: this is the restore
      * @param active legacy on/off form, used only when {@code status} is null: true makes a member of anyone
      *               who is not one, false makes INACTIVE of a member; it never changes a deceased or
      *               transferred person who is already off
@@ -43,6 +45,9 @@ public class UpdateMemberUseCase {
                 member.setJoinDate(joinDate);
             }
             MemberStatus target = status != null ? status : fromActive(member, active);
+            if (before == MemberStatus.ARCHIVED && (target == MemberStatus.DECEASED || target == MemberStatus.TRANSFERRED)) {
+                throw MemberDomainException.statusNotAllowed("An archived member can only be restored to MEMBER or INACTIVE.");
+            }
             if (target != null && target != before) {
                 changeStatus(member, target);
             }

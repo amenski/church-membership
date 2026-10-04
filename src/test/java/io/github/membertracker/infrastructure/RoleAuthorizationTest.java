@@ -62,7 +62,8 @@ class RoleAuthorizationTest {
     @MockitoBean private GetArchivedMembersUseCase getArchivedMembersUseCase;
     @MockitoBean private SaveMemberUseCase saveMemberUseCase;
     @MockitoBean private UpdateMemberUseCase updateMemberUseCase;
-    @MockitoBean private DeleteMemberUseCase deleteMemberUseCase;
+    @MockitoBean private ArchiveMemberUseCase archiveMemberUseCase;
+    @MockitoBean private DeleteMemberPermanentlyUseCase deleteMemberPermanentlyUseCase;
     @MockitoBean private GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase;
     @MockitoBean private GetAllPaymentsUseCase getAllPaymentsUseCase;
     @MockitoBean private GetPaymentByIdUseCase getPaymentByIdUseCase;
@@ -98,6 +99,7 @@ class RoleAuthorizationTest {
             new Endpoint(HttpMethod.POST, "/api/members", MEMBER_JSON, "STAFF"),
             new Endpoint(HttpMethod.PUT, "/api/members/1", MEMBER_JSON, "STAFF"),
             new Endpoint(HttpMethod.DELETE, "/api/members/1", null, "ADMIN"),
+            new Endpoint(HttpMethod.DELETE, "/api/members/1/permanent", null, "ADMIN"),
 
             new Endpoint(HttpMethod.GET, "/api/payments", null, "VOLUNTEER"),
             new Endpoint(HttpMethod.GET, "/api/payments/1", null, "VOLUNTEER"),

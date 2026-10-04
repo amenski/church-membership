@@ -13,6 +13,8 @@ import java.util.List;
 public interface MessageDeliveryJpaRepository extends JpaRepository<MessageDeliveryEntity, Long> {
     List<MessageDeliveryEntity> findByCommunicationId(Long communicationId);
 
+    long countByRecipientId(Long memberId);
+
     /** One row per communication and status: {communicationId, status, count}. */
     @Query("select d.communication.id, d.status, count(d) from MessageDeliveryEntity d "
             + "where d.communication.id in :ids group by d.communication.id, d.status")

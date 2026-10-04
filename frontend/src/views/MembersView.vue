@@ -167,14 +167,14 @@
       </template>
     </BaseModal>
 
-    <!-- Delete (ADMIN only) -->
-    <BaseModal v-model="deleteOpen" :title="`Delete ${selectedMember?.name || 'member'}?`" size="sm">
+    <!-- Archive (ADMIN only) -->
+    <BaseModal v-model="deleteOpen" :title="`Archive ${selectedMember?.name || 'member'}?`" size="sm">
       <AlertBanner v-if="deleteError">{{ deleteError }}</AlertBanner>
-      <p class="m-0 text-base">This permanently deletes the member together with their payments and message history. This cannot be undone.</p>
+      <p class="m-0 text-base">This hides {{ selectedMember?.name || 'the member' }} from the lists. Their payments and messages are kept.</p>
       <template #footer>
         <BaseButton variant="secondary" :disabled="deleting" @click="deleteOpen = false">Cancel</BaseButton>
         <BaseButton variant="danger" :disabled="deleting" :aria-busy="deleting ? 'true' : undefined" @click="deleteMember">
-          {{ deleting ? 'Deleting...' : 'Delete member' }}
+          {{ deleting ? 'Archiving...' : 'Archive member' }}
         </BaseButton>
       </template>
     </BaseModal>
@@ -320,7 +320,7 @@ export default {
         { key: 'edit', label: 'Edit' },
         { key: 'toggle', label: member.active ? 'Deactivate' : 'Reactivate' }
       ]
-      if (this.authStore.isAdmin) items.push({ key: 'delete', label: 'Delete', danger: true })
+      if (this.authStore.isAdmin) items.push({ key: 'delete', label: 'Archive', danger: true })
       return items
     },
     onMenuSelect(key, member) {
@@ -409,11 +409,11 @@ export default {
         await api.deleteMember(id)
         await this.loadMembers()
         this.deleteOpen = false
-        this.notify('success', 'Member deleted', name)
+        this.notify('success', 'Member archived', name)
       } catch (error) {
-        console.error('Error deleting member:', error)
+        console.error('Error archiving member:', error)
         this.deleteError = error.message || 'Request failed'
-        this.notifyFailure('Could not delete member', error)
+        this.notifyFailure('Could not archive member', error)
       } finally {
         this.deleting = false
       }

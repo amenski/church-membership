@@ -10,6 +10,9 @@ public interface MessageDeliveryRepository {
 
     List<MessageDelivery> findByCommunicationId(Long communicationId);
     
+    /** How many deliveries (any status) were addressed to this member. */
+    long countByRecipientId(Long memberId);
+
     MessageDelivery save(MessageDelivery delivery);
     
     List<MessageDelivery> saveAll(List<MessageDelivery> deliveries);
