@@ -4,6 +4,8 @@ import io.github.membertracker.infrastructure.security.ArchivedVisibility;
 import io.github.membertracker.domain.model.Communication;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.model.Payment;
+import io.github.membertracker.usecase.GetCollectedByMonthUseCase;
+import io.github.membertracker.usecase.GetCollectedByMonthUseCase.MonthlyCollected;
 import io.github.membertracker.usecase.GetDashboardStatsUseCase;
 import io.github.membertracker.usecase.GetDashboardStatsUseCase.DashboardStats;
 import io.github.membertracker.usecase.GetMembersWithMissedPaymentsUseCase;
@@ -35,6 +37,7 @@ import java.util.Map;
 public class DashboardController {
 
     private static final int RECENT_PAYMENTS = 10;
+    private static final int CHART_MONTHS = 12;
     private static final int ACTIVITIES_PER_SOURCE = 5;
     private static final int ACTIVITIES = 10;
 
@@ -42,16 +45,19 @@ public class DashboardController {
     private final GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase;
     private final GetRecentPaymentsUseCase getRecentPaymentsUseCase;
     private final GetRecentCommunicationsUseCase getRecentCommunicationsUseCase;
+    private final GetCollectedByMonthUseCase getCollectedByMonthUseCase;
 
     @Autowired
     public DashboardController(GetDashboardStatsUseCase getDashboardStatsUseCase,
                                GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase,
                                GetRecentPaymentsUseCase getRecentPaymentsUseCase,
-                               GetRecentCommunicationsUseCase getRecentCommunicationsUseCase) {
+                               GetRecentCommunicationsUseCase getRecentCommunicationsUseCase,
+                               GetCollectedByMonthUseCase getCollectedByMonthUseCase) {
         this.getDashboardStatsUseCase = getDashboardStatsUseCase;
         this.getMembersWithMissedPaymentsUseCase = getMembersWithMissedPaymentsUseCase;
         this.getRecentPaymentsUseCase = getRecentPaymentsUseCase;
         this.getRecentCommunicationsUseCase = getRecentCommunicationsUseCase;
+        this.getCollectedByMonthUseCase = getCollectedByMonthUseCase;
     }
 
     @GetMapping("/stats")
@@ -59,6 +65,13 @@ public class DashboardController {
     @Operation(summary = "Dashboard statistics (VOLUNTEER+)")
     public ResponseEntity<DashboardStats> getDashboardStats() {
         return ResponseEntity.ok(getDashboardStatsUseCase.invoke());
+    }
+
+    @GetMapping("/collected-by-month")
+    @PreAuthorize("hasRole('VOLUNTEER')")
+    @Operation(summary = "Amount collected per billing month for the last 12 months, oldest first (VOLUNTEER+)")
+    public ResponseEntity<List<MonthlyCollected>> getCollectedByMonth() {
+        return ResponseEntity.ok(getCollectedByMonthUseCase.invoke(CHART_MONTHS));
     }
 
     @GetMapping("/recent-payments")
