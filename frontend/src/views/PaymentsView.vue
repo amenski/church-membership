@@ -273,6 +273,9 @@ export default {
     this.wideQuery = window.matchMedia?.(WIDE)
     this.wide = this.wideQuery ? this.wideQuery.matches : true
     this.wideQuery?.addEventListener('change', this.onWide)
+    // a member's page links here with their name to show only their payments
+    const search = this.$route?.query?.search
+    if (typeof search === 'string') this.filters.search = search
     await this.loadData()
     this.openForQueryMember()
   },
