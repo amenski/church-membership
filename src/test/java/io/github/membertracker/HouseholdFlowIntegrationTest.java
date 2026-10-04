@@ -269,6 +269,7 @@ class HouseholdFlowIntegrationTest {
         assertThat(statistics.getPrepareStatementCount()).as("household list").isEqualTo(1);
         statistics.clear();
         send(get("/api/households/" + householdId), VOLUNTEER, 200);
-        assertThat(statistics.getPrepareStatementCount()).as("household detail").isLessThanOrEqualTo(2);
+        // Three fixed statements however many members or people it has: the household, its members, its people.
+        assertThat(statistics.getPrepareStatementCount()).as("household detail").isEqualTo(3);
     }
 }

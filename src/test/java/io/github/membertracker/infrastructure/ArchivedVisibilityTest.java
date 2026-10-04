@@ -66,6 +66,7 @@ class ArchivedVisibilityTest {
     @MockitoBean private RetryDeliveryUseCase retryDeliveryUseCase;
     @MockitoBean private GetDashboardStatsUseCase getDashboardStatsUseCase;
     @MockitoBean private GetRecentPaymentsUseCase getRecentPaymentsUseCase;
+    @MockitoBean private GetCollectedByMonthUseCase getCollectedByMonthUseCase;
     @MockitoBean private GetRecentCommunicationsUseCase getRecentCommunicationsUseCase;
 
     private Member archived;

@@ -31,6 +31,7 @@ class DashboardErrorsTest {
     @MockitoBean private GetDashboardStatsUseCase getDashboardStatsUseCase;
     @MockitoBean private GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase;
     @MockitoBean private GetRecentPaymentsUseCase getRecentPaymentsUseCase;
+    @MockitoBean private GetCollectedByMonthUseCase getCollectedByMonthUseCase;
     @MockitoBean private GetRecentCommunicationsUseCase getRecentCommunicationsUseCase;
 
     @ParameterizedTest(name = "GET {0}")

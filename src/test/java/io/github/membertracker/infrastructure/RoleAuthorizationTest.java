@@ -80,6 +80,7 @@ class RoleAuthorizationTest {
     @MockitoBean private RetryDeliveryUseCase retryDeliveryUseCase;
     @MockitoBean private GetDashboardStatsUseCase getDashboardStatsUseCase;
     @MockitoBean private GetRecentPaymentsUseCase getRecentPaymentsUseCase;
+    @MockitoBean private GetCollectedByMonthUseCase getCollectedByMonthUseCase;
     @MockitoBean private GetRecentCommunicationsUseCase getRecentCommunicationsUseCase;
     @MockitoBean private GetAllHouseholdsUseCase getAllHouseholdsUseCase;
     @MockitoBean private GetHouseholdByIdUseCase getHouseholdByIdUseCase;
