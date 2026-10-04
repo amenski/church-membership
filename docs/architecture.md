@@ -37,7 +37,7 @@ src/main/java/io/github/membertracker/
 └── utils/              CookieUtils, JwtUtils
 ```
 
-Database migrations: `src/main/resources/db/master.xml` and `db/sql/NNN.*.sql`.
+Database migrations: `src/main/resources/db/master.xml` and `db/sql/NNN.*.sql`. Migration 012 creates the empty `person` and `household` tables (unused until step 8 of the [person plan](person-membership-plan.md)).
 
 ## Where logic belongs
 
@@ -135,4 +135,5 @@ frontend/src/
 | 2026-10 | Membership status (MEMBER, INACTIVE, DECEASED, TRANSFERRED, ARCHIVED) is stored on the member; `active` is kept in step by the mapper until the contract step | Dues, reminders and messages need more than on/off; the migration must stay reversible | In use |
 | 2026-10 | Members are read by status: `findDuesPaying`/`countDuesPaying` (status MEMBER) drive dues, reminders, messages and payments; every list and count except `GET /api/members?archived=true` (ADMIN) hides ARCHIVED | One rule table (`MemberStatus`) instead of `active` checks scattered around | In use |
 | 2026-10 | Members are archived, not deleted; payments and deliveries use ON DELETE RESTRICT; a permanent delete is an admin API that refuses when history exists | A hard delete erased payment history (audit C9) | In use |
+| 2026-10 | `person` and `household` tables exist (migration 012) but no code reads or writes them until step 8; `person.email` is indexed, not unique | Expand first: the schema ships and is proven on a copy before any code depends on it | In use (empty, unused) |
 | 2026-10 | Roles ADMIN > STAFF > VOLUNTEER > MEMBER with `RoleHierarchy` | Replaces ADMIN/MANAGER/USER and the planned TREASURER/VIEWER | Done (3cf5d84; frontend routes in this change) |

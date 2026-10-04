@@ -157,7 +157,7 @@ Rollback in this repo means: run the `--rollback` statements by hand on the targ
 | 4 | Read by status, archived hidden | medium | ~14 files, ~200 lines | c | done |
 | 5 | Archive instead of delete (C9) | medium | ~10 files, ~220 lines | d | done |
 | 6 | Frontend speaks `status` | low | 8 files, ~150 lines | c | done |
-| 7 | Create `person` and `household` tables, unused | low | 1 migration | a, b | todo |
+| 7 | Create `person` and `household` tables, unused | low | 1 migration | a, b | done |
 | 8 | Backfill person, dual-write | high | ~8 files, ~300 lines | g | todo |
 | 9 | Read name/email/phone from person | medium | ~6 files, ~120 lines | none | todo |
 | 10 | Households (API and UI) | medium | ~12 files, ~450 lines | a | todo |
