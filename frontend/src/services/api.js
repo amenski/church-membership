@@ -479,6 +479,10 @@ const apiService = {
     return this.get('/dashboard/stats')
   },
 
+  async getCollectedByMonth() {
+    return this.get('/dashboard/collected-by-month')
+  },
+
   async getRecentPayments() {
     return this.get('/dashboard/recent-payments')
   },

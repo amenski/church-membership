@@ -15,6 +15,34 @@
         <StatTile label="This month" :value="formatMoney(stats.monthlyRevenue)" />
       </dl>
 
+      <section class="mb-8" aria-labelledby="collected-title">
+        <SectionTitle id="collected-title">Collected by month</SectionTitle>
+        <template v-if="chartError">
+          <AlertBanner>The monthly amounts did not load.</AlertBanner>
+          <TextButton @click="loadCollected">Try again</TextButton>
+        </template>
+        <ul v-else-if="hasCollected" class="m-0 grid list-none gap-1.5 p-0">
+          <li
+            v-for="row in collectedRows"
+            :key="row.month"
+            class="grid grid-cols-[4.5rem_1fr_auto] items-center gap-x-3 text-xs sm:grid-cols-[5rem_1fr_9rem]"
+          >
+            <span class="text-muted">{{ row.label }}</span>
+            <span class="block h-3" aria-hidden="true">
+              <span
+                :class="['block h-full min-w-px rounded-r', row.current ? 'bg-teal-line' : 'bg-teal']"
+                :style="{ width: row.width }"
+              ></span>
+            </span>
+            <span class="text-right tabular-nums text-ink">
+              {{ formatMoney(row.amount) }}
+              <span v-if="row.current" class="text-muted">in progress</span>
+            </span>
+          </li>
+        </ul>
+        <EmptyNote v-else>No payments in the last 12 months. Record one under Payments to see it here.</EmptyNote>
+      </section>
+
       <section class="mb-8" aria-labelledby="behind-title">
         <SectionTitle id="behind-title">Needs a reminder</SectionTitle>
         <RuledList v-if="behindMembers.length">
@@ -103,6 +131,8 @@ export default {
         overdueMembers: 0,
         monthlyRevenue: 0
       },
+      collected: [],
+      chartError: false,
       recentPayments: [],
       overdueMembers: [],
       activities: []
@@ -117,6 +147,19 @@ export default {
       return this.overdueMembers
         .filter(countsForDues)
         .sort((a, b) => b.consecutiveMonthsMissed - a.consecutiveMonthsMissed)
+    },
+    hasCollected() {
+      return this.collected.some(row => row.amount > 0)
+    },
+    // Oldest first, as the server sends it; the last row is the current month, still being collected
+    collectedRows() {
+      const max = Math.max(...this.collected.map(row => row.amount), 0)
+      return this.collected.map((row, index) => ({
+        ...row,
+        label: this.monthLabel(row.month),
+        current: index === this.collected.length - 1,
+        width: max > 0 ? `${(row.amount / max) * 100}%` : '0%'
+      }))
     },
     paidCount() {
       return Math.max(0, this.activeCount - this.behindMembers.length)
@@ -145,12 +188,26 @@ export default {
         this.overdueMembers = overdueRes
         this.activities = activitiesRes
         this.loadError = false
+        await this.loadCollected()
       } catch (error) {
         console.error('Error loading dashboard data:', error)
         this.loadError = true
       } finally {
         this.loaded = true
       }
+    },
+    async loadCollected() {
+      try {
+        this.collected = await api.getCollectedByMonth()
+        this.chartError = false
+      } catch (error) {
+        console.error('Error loading collected by month:', error)
+        this.chartError = true
+      }
+    },
+    monthLabel(month) {
+      const [year, number] = month.split('-').map(Number)
+      return new Date(year, number - 1, 1).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
     },
     formatDate(date) {
       return new Date(date).toLocaleDateString()
