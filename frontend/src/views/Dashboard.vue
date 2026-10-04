@@ -18,20 +18,34 @@
       <div class="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start">
         <!-- The year ledger: who owes, most behind first, one square a month -->
         <section class="min-w-0 rounded-md border border-rule bg-paper p-(--card-pad)" aria-labelledby="ledger-title">
-          <SectionTitle id="ledger-title" class="!mb-0.5 !text-xl">Dues by member</SectionTitle>
-          <p class="m-0 mb-3 text-sm text-muted">
-            {{ stripRange }}, one square a month. Members who are behind or due this month, most behind first.
-          </p>
+          <div class="mb-3 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+            <div>
+              <SectionTitle id="ledger-title" class="!mb-0.5 !text-xl">{{ wide ? 'Dues by month' : 'Dues by member' }}</SectionTitle>
+              <p class="m-0 max-w-[52ch] text-sm text-muted">
+                {{ stripRange }}, one square a month. Members who are behind or due this month, most behind first.
+              </p>
+            </div>
+            <ul v-if="wide" class="m-0 flex list-none flex-wrap gap-x-4 gap-y-2 p-0 text-xs text-muted" aria-hidden="true">
+              <li v-for="item in LEGEND" :key="item.label" class="flex items-center gap-1.5">
+                <span :class="['box-border block size-3.5 rounded-sm', SQUARES[item.state]]"></span>{{ item.label }}
+              </li>
+            </ul>
+          </div>
           <template v-if="ledgerRows.length">
-            <div :class="[LEDGER_GRID, 'hidden border-b border-rule pb-2 text-xs font-medium text-muted sm:grid']" aria-hidden="true">
+            <div :class="wide ? 'overflow-x-auto' : ''">
+            <div :class="wide ? 'min-w-[720px]' : ''">
+            <div :class="[ledgerGrid, 'hidden border-b border-rule pb-2 text-xs font-medium text-muted sm:grid']" aria-hidden="true">
               <span>Member</span>
-              <span>{{ stripRange }}</span>
+              <span v-if="wide" class="flex gap-1">
+                <span v-for="name in monthLabels" :key="name" class="w-7 text-center text-[11px]">{{ name }}</span>
+              </span>
+              <span v-else>{{ stripRange }}</span>
               <span class="text-right">Behind</span>
             </div>
             <ul class="m-0 list-none p-0">
-              <li v-for="member in ledgerRows" :key="member.id" :class="[LEDGER_GRID, 'min-h-(--list-row-h) border-b border-rule py-2']">
+              <li v-for="member in ledgerRows" :key="member.id" :class="[ledgerGrid, 'min-h-(--list-row-h) border-b border-rule py-2']">
                 <span class="min-w-0 font-medium [overflow-wrap:anywhere]">{{ member.name }}</span>
-                <span v-if="paidByMember" class="max-sm:order-3 max-sm:col-span-2"><YearStrip v-bind="stripProps(member)" /></span>
+                <span v-if="paidByMember" class="max-sm:order-3 max-sm:col-span-2"><YearStrip v-bind="stripProps(member)" :size="wide ? 'ledger' : 'compact'" /></span>
                 <span v-else class="text-muted max-sm:order-3"><span aria-hidden="true">&ndash;</span><span class="sr-only">Months paid did not load</span></span>
                 <span class="text-right max-sm:order-2">
                   <StatusLabel v-if="member.consecutiveMonthsMissed > 0" tone="behind">{{ monthsBehind(member.consecutiveMonthsMissed) }}</StatusLabel>
@@ -39,6 +53,15 @@
                 </span>
               </li>
             </ul>
+            <div v-if="wide && paidTotals" :class="[ledgerGrid, 'pt-2.5 text-xs font-medium']">
+              <span class="text-muted">Members who paid</span>
+              <span class="flex gap-1">
+                <span v-for="total in paidTotals" :key="total.month" class="w-7 text-center text-ink">{{ total.count }}<span class="sr-only"> members paid in {{ total.name }}</span></span>
+              </span>
+              <span></span>
+            </div>
+            </div>
+            </div>
           </template>
           <EmptyNote v-else-if="activeCount > 0">No overdue members. Everyone is paid up for this month.</EmptyNote>
           <EmptyNote v-else>No active members yet. Add the first one under Members.</EmptyNote>
@@ -142,10 +165,21 @@ import { useAuthStore } from '../stores/authStore'
 import { formatMoney, localISODate } from '@/utils'
 import { monthsBehind } from '@/utils/dues'
 import { countsForDues } from '@/utils/memberStatus'
-import { paidMonthsByMember, stripRangeLabel } from '@/utils/yearStrip'
+import { paidMonthsByMember, SQUARES, stripMonthLabels, stripMonths, stripRangeLabel } from '@/utils/yearStrip'
 
 // One row of the ledger: member, the compact strip (12 squares of 10px, 2px apart), months behind
 const LEDGER_GRID = 'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 sm:grid-cols-[minmax(0,1fr)_142px_9.5rem]'
+// The same row for the large-square strip (12 squares of 28px, 4px apart = 380px), Overview ledger on wide screens
+const LEDGER_GRID_WIDE = 'grid grid-cols-[minmax(0,1fr)_380px_8.5rem] items-center gap-x-3 gap-y-1.5'
+// Legend swatches: Paid, Missed, Due now, Not a member (one square each, drawn by the strip itself)
+const LEGEND = [
+  { state: 'paid', label: 'Paid' },
+  { state: 'missed', label: 'Missed' },
+  { state: 'due', label: 'Due now' },
+  { state: 'none', label: 'Not a member' }
+]
+// The large grid needs about 720px for the ledger card; that fits from the 2xl breakpoint (1400px) up
+const WIDE_QUERY = '(min-width: 87.5rem)'
 // A small action link in the Call this week panel
 const CALL_ACTION = 'inline-flex min-h-8 items-center gap-1.5 rounded-sm border px-3 text-base font-medium no-underline'
 
@@ -158,6 +192,8 @@ export default {
       monthsBehind,
       formatMoney,
       LEDGER_GRID,
+      LEGEND,
+      SQUARES,
       CALL_ACTION
     }
   },
@@ -177,6 +213,8 @@ export default {
       members: [],
       paidByMember: null,
       today: localISODate(),
+      wide: false,
+      wideQuery: null,
       activities: []
     }
   },
@@ -186,6 +224,22 @@ export default {
     },
     currentMonth() {
       return this.today.slice(0, 7)
+    },
+    ledgerGrid() {
+      return this.wide ? LEDGER_GRID_WIDE : LEDGER_GRID
+    },
+    monthLabels() {
+      return stripMonthLabels(this.currentMonth)
+    },
+    // How many dues-paying members have a payment for each of the twelve months; null when the payments did not load
+    paidTotals() {
+      if (!this.paidByMember) return null
+      const payers = this.members.filter(countsForDues)
+      return stripMonths(this.currentMonth).map((month, i) => ({
+        month,
+        name: `${this.monthLabels[i]} ${month.slice(0, 4)}`,
+        count: payers.filter(member => this.paidMonths(member).has(month)).length
+      }))
     },
     stripRange() {
       return stripRangeLabel(this.currentMonth)
@@ -224,6 +278,16 @@ export default {
   },
   async created() {
     await this.loadData()
+  },
+  mounted() {
+    // jsdom and old browsers have no matchMedia: the compact strip stays
+    if (typeof window.matchMedia !== 'function') return
+    this.wideQuery = window.matchMedia(WIDE_QUERY)
+    this.wide = this.wideQuery.matches
+    this.wideQuery.addEventListener('change', this.onWideChange)
+  },
+  beforeUnmount() {
+    this.wideQuery?.removeEventListener('change', this.onWideChange)
   },
   methods: {
     async loadData() {
@@ -271,6 +335,9 @@ export default {
         console.error('Error loading collected by month:', error)
         this.chartError = true
       }
+    },
+    onWideChange(event) {
+      this.wide = event.matches
     },
     paidMonths(member) {
       return this.paidByMember?.get(member.id) || new Set()

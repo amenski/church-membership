@@ -28,6 +28,15 @@ export const STRIP_LABELS = {
   uncounted: 'Unpaid, no longer counted'
 }
 
+// Tokens only: teal paid, clay hatching with a clay edge missed, ochre outline due now, dashed field edge for the rest
+export const SQUARES = {
+  paid: 'bg-teal',
+  missed: 'border border-clay bg-[repeating-linear-gradient(135deg,var(--color-clay-tint)_0_2px,var(--color-clay)_2px_4px)]',
+  due: 'border-2 border-ochre-edge bg-paper',
+  none: 'border border-dashed border-field',
+  uncounted: 'border border-dashed border-field'
+}
+
 const pad = (n) => String(n).padStart(2, '0')
 
 /** The twelve "yyyy-MM" keys ending with currentMonth, oldest first. */
@@ -39,6 +48,11 @@ export function stripMonths(currentMonth) {
     months.push(`${Math.floor(index / 12)}-${pad((index % 12) + 1)}`)
   }
   return months
+}
+
+/** The twelve short month names ("Nov", "Dec", ...) ending with currentMonth, oldest first. */
+export function stripMonthLabels(currentMonth) {
+  return stripMonths(currentMonth).map((key) => MONTH_NAMES[Number(key.slice(5)) - 1])
 }
 
 /** "Nov to Oct" for the column header. */
