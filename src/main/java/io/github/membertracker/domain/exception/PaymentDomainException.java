@@ -1,5 +1,7 @@
 package io.github.membertracker.domain.exception;
 
+import io.github.membertracker.domain.valueobject.MonthLabel;
+
 import java.time.LocalDate;
 import java.time.YearMonth;
 
@@ -42,7 +44,7 @@ public class PaymentDomainException extends DomainException {
     public static PaymentDomainException paymentPeriodTooOld(YearMonth period, YearMonth earliest) {
         return new PaymentDomainException(
             String.format("Payment period %s is too far back and looks like a typing mistake. The earliest month accepted is %s",
-                period, earliest),
+                MonthLabel.of(period), MonthLabel.of(earliest)),
             INVALID_PAYMENT_PERIOD
         );
     }
@@ -63,7 +65,7 @@ public class PaymentDomainException extends DomainException {
 
     public static PaymentDomainException paymentPeriodInFuture(YearMonth period) {
         return new PaymentDomainException(
-            String.format("Payment period %s is in the future. Cannot process payments for future periods", period),
+            String.format("Payment period %s is in the future. Cannot process payments for future periods", MonthLabel.of(period)),
             PAYMENT_PERIOD_IN_FUTURE
         );
     }

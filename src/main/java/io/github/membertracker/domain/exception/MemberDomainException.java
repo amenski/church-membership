@@ -1,5 +1,9 @@
 package io.github.membertracker.domain.exception;
 
+import io.github.membertracker.domain.valueobject.MonthLabel;
+
+import java.time.YearMonth;
+
 /**
  * Domain exception for Member entity violations.
  * Covers business rule violations related to member management, payments, and membership status.
@@ -50,9 +54,9 @@ public class MemberDomainException extends DomainException {
         );
     }
 
-    public static MemberDomainException duplicatePaymentForPeriod(String memberName, String period) {
+    public static MemberDomainException duplicatePaymentForPeriod(String memberName, YearMonth period) {
         return new MemberDomainException(
-            String.format("Member '%s' already has a payment recorded for period %s", memberName, period),
+            String.format("Member '%s' already has a payment recorded for %s", memberName, MonthLabel.of(period)),
             DUPLICATE_PAYMENT_FOR_PERIOD
         );
     }

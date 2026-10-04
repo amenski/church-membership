@@ -7,6 +7,7 @@ import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.model.Payment;
 import io.github.membertracker.domain.repository.MemberRepository;
 import io.github.membertracker.domain.repository.PaymentRepository;
+import io.github.membertracker.domain.valueobject.MonthLabel;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -49,7 +50,7 @@ public class RecordPaymentUseCase {
 
         if (paymentRepository.existsByMemberAndPeriod(member, payment.getPeriod())) {
             throw MemberDomainException.duplicatePaymentForPeriod(
-                member.getName(), payment.getPeriod().toString());
+                member.getName(), payment.getPeriod());
         }
 
         payment.markAsProcessed();
@@ -60,7 +61,7 @@ public class RecordPaymentUseCase {
         Payment saved = paymentRepository.save(payment);
         recordActivity.record(ActivityType.PAYMENT_RECORDED,
                 String.format(Locale.ROOT, "Payment of %.2f for %s was recorded for %s",
-                        saved.getAmount(), saved.getPeriod(), member.getName()),
+                        saved.getAmount(), MonthLabel.of(saved.getPeriod()), member.getName()),
                 "PAYMENT", saved.getId());
         return saved;
     }

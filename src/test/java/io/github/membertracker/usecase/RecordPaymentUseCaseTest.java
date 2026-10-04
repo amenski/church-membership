@@ -77,7 +77,7 @@ class RecordPaymentUseCaseTest {
         useCase.invoke(1L, 50.0, PaymentMethod.CASH, YearMonth.of(2026, 10), LocalDate.of(2026, 10, 3), null);
 
         verify(recordActivity).record(eq(ActivityType.PAYMENT_RECORDED),
-                eq("Payment of 50.00 for 2026-10 was recorded for Alice"), eq("PAYMENT"), any());
+                eq("Payment of 50.00 for Oct 2026 was recorded for Alice"), eq("PAYMENT"), any());
     }
 
     @Test
@@ -242,7 +242,9 @@ class RecordPaymentUseCaseTest {
         when(paymentRepository.existsByMemberAndPeriod(stored, YearMonth.now())).thenReturn(true);
 
         assertThatThrownBy(() -> useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now(), null, null))
-                .isInstanceOf(MemberDomainException.class);
+                .isInstanceOf(MemberDomainException.class)
+                .hasMessageContaining("for " + java.time.format.DateTimeFormatter.ofPattern("MMM yyyy", java.util.Locale.ENGLISH)
+                        .format(YearMonth.now()));
         verify(paymentRepository, never()).save(any());
     }
 }
