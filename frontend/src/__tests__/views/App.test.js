@@ -11,7 +11,7 @@ vi.mock('@/services/api', () => ({
 import App from '@/App.vue'
 import { useAuthStore } from '@/stores/authStore'
 
-describe('App drawer', () => {
+describe('App bottom tabs', () => {
   let wrapper
 
   beforeEach(() => {
@@ -19,18 +19,18 @@ describe('App drawer', () => {
   })
   afterEach(() => wrapper?.unmount())
 
-  const mountApp = async () => {
+  const mountApp = async ({ role = 'ADMIN', path = '/' } = {}) => {
     const pinia = createPinia()
     setActivePinia(pinia)
     const auth = useAuthStore()
-    auth.user = { role: 'ADMIN', email: 'a@b.c' }
+    auth.user = { role, email: 'a@b.c' }
     auth.isAuthenticated = true
     auth.authChecked = true
     const router = createRouter({
       history: createMemoryHistory(),
-      routes: [{ path: '/', component: { template: '<div>page</div>' } }]
+      routes: [{ path: '/:pathMatch(.*)*', component: { template: '<div>page</div>' } }]
     })
-    router.push('/')
+    router.push(path)
     await router.isReady()
     const i18n = createI18n({ legacy: false, locale: 'en', missingWarn: false, fallbackWarn: false, messages: { en: {} } })
     wrapper = mount(App, { attachTo: document.body, global: { plugins: [pinia, router, i18n] } })
@@ -43,22 +43,13 @@ describe('App drawer', () => {
     return event
   }
 
-  it('keeps Tab inside the open drawer and makes the page behind it inert', async () => {
-    await mountApp()
-    await wrapper.get('button[aria-controls="appRail"]').trigger('click')
-    await flushPromises()
-    const rail = document.getElementById('appRail')
-    expect(wrapper.get('main').element.hasAttribute('inert')).toBe(true)
-
-    const focusable = [...rail.querySelectorAll('a[href], button:not([disabled])')]
-    focusable[focusable.length - 1].focus()
-    const forward = press('Tab')
-    expect(forward.defaultPrevented).toBe(true)
-    expect(document.activeElement).toBe(focusable[0])
-
-    const back = press('Tab', { shiftKey: true })
-    expect(back.defaultPrevented).toBe(true)
-    expect(document.activeElement).toBe(focusable[focusable.length - 1])
+  it('renders the five tabs for a volunteer with aria-current on the active one', async () => {
+    await mountApp({ role: 'VOLUNTEER', path: '/payments' })
+    const tabs = wrapper.findAll('nav[aria-label="Main"] a')
+    expect(tabs.map(tab => tab.text())).toEqual(['Overview', 'Members', 'Payments', 'Messages', 'More'])
+    expect(tabs.filter(tab => tab.attributes('aria-current')).map(tab => tab.text())).toEqual(['Payments'])
+    expect(tabs[2].attributes('aria-current')).toBe('page')
+    tabs.forEach(tab => expect(tab.classes()).toContain('h-[60px]'))
   })
 
   it('leaves the page interactive while the drawer is closed', async () => {
@@ -66,8 +57,9 @@ describe('App drawer', () => {
     expect(wrapper.get('main').element.hasAttribute('inert')).toBe(false)
   })
 
-  it('gives the Menu button a 44px touch target', async () => {
-    await mountApp()
-    expect(wrapper.get('button[aria-controls="appRail"]').classes()).toContain('min-h-11')
+  it('marks More as aria-current="true" on a page it opens', async () => {
+    await mountApp({ role: 'ADMIN', path: '/households' })
+    const more = wrapper.findAll('nav[aria-label="Main"] a').find(tab => tab.text() === 'More')
+    expect(more.attributes('aria-current')).toBe('true')
   })
 })
