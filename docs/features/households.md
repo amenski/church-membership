@@ -1,6 +1,6 @@
 # Households
 
-A household groups the people of one family or one address: a name, an optional address and free notes. A member points to a household through their person (`person.household_id`); a household never owns dues (they stay per membership, decision f of the [person plan](../person-membership-plan.md)) and has no head of household (decision a). This page covers the API and the screens (step 10).
+A household groups the people of one family or one address: a name, an optional address and free notes. A member points to a household through their person (`person.household_id`); a household never owns dues (they stay per membership, decision f of the [person plan](../person-membership-plan.md)) and has no head of household (decision a). This page covers the API and the screens (step 10); the household detail also lists people without a membership (step 11, [people.md](people.md)).
 
 ## Who can do what
 Roles from `@PreAuthorize`; hierarchy ADMIN > STAFF > VOLUNTEER > MEMBER.
@@ -16,8 +16,8 @@ Roles from `@PreAuthorize`; hierarchy ADMIN > STAFF > VOLUNTEER > MEMBER.
 
 ## How it works
 1. Create the household (`POST /api/households`), then set `householdId` on each member (create or edit). The household's people are always read through the person, so the member list, the member JSON and the household detail agree.
-2. `GET /api/households` returns every household by name with a `memberCount`. `GET /api/households/{id}` returns the fields plus its members (`id`, `name`, `status`).
-3. Archived members stay in the household but are flagged `status: "ARCHIVED"` and are shown to an ADMIN only (`ArchivedVisibility`): for everyone else they are left out of the detail and of `memberCount`.
+2. `GET /api/households` returns every household by name with a `memberCount` (memberships) and a `personCount` (everyone, dependents included). `GET /api/households/{id}` returns the fields plus its `members` (`id`, `name`, `status`) and its `people` (every person, `id`, `name`, `birthDate`, `memberStatus`; `memberStatus` is null for a dependent).
+3. Archived members stay in the household but are flagged `status: "ARCHIVED"` and are shown to an ADMIN only (`ArchivedVisibility`): for everyone else they are left out of the detail (both `members` and `people`) and of `memberCount` and `personCount`.
 4. `DELETE` removes a household only when no person is assigned to it (archived members count). Otherwise it answers 409 `HOUSEHOLD_002` and nothing changes: people are never deleted, moved or cascaded. Unassign them first (`householdId: null`).
 5. The database also keeps `person.household_id` as a foreign key (`ON DELETE SET NULL`, migration 012), but the use case refuses the delete first, so the rule never relies on it.
 
@@ -39,17 +39,20 @@ Request body of `POST` and `PUT /api/households` (`HouseholdRequest`):
 
 Optional text is trimmed and a blank value is stored as null. A `PUT` replaces every field (a missing optional field is cleared). Unknown properties (for example `members`) are ignored.
 
-Response of `GET /api/households/{id}`, `POST` and `PUT` (200; `members` is `[]` right after create):
+Response of `GET /api/households/{id}`, `POST` and `PUT` (200; `members` and `people` are `[]` right after create):
 
 ```json
 {"id": 7, "name": "Kebede family", "addressLine1": "Via Roma 1", "addressLine2": "Scala B", "city": "Roma", "postalCode": "00100", "notes": "Prefers calls after 18:00",
- "members": [{"id": 1, "name": "Abebe Kebede", "status": "MEMBER"}, {"id": 2, "name": "Tigist Kebede", "status": "INACTIVE"}]}
+ "members": [{"id": 1, "name": "Abebe Kebede", "status": "MEMBER"}, {"id": 2, "name": "Tigist Kebede", "status": "INACTIVE"}],
+ "people": [{"id": 1, "name": "Abebe Kebede", "birthDate": null, "memberStatus": "MEMBER"}, {"id": 2, "name": "Tigist Kebede", "birthDate": null, "memberStatus": "INACTIVE"}, {"id": 3, "name": "Selam Kebede", "birthDate": "2015-04-01", "memberStatus": null}]}
 ```
+
+`people` is every person of the household (members and dependents), `members` is the memberships only. Both are kept in the JSON: the members table reads `members`, the [people](people.md) work reads `people`.
 
 Response of `GET /api/households`:
 
 ```json
-[{"id": 7, "name": "Kebede family", "city": "Roma", "memberCount": 2}]
+[{"id": 7, "name": "Kebede family", "city": "Roma", "memberCount": 2, "personCount": 3}]
 ```
 
 Member JSON gains two nullable fields, read from the person (`householdName` is read-only): `"householdId": 7, "householdName": "Kebede family"`. They also appear on the member embedded in a payment; a delivery's recipient summary does not carry them.
@@ -78,8 +81,8 @@ New types (`activity_log.activity_type` is a plain `VARCHAR(50)`, so no migratio
 
 ## Rules
 - A household is minimal: no head of household, no dues, no address validation beyond lengths.
-- The members of a household are the memberships of the people whose `household_id` points to it. People without a membership arrive with step 11 and will count as people for the delete rule already.
-- `memberCount` is the number of members the caller may see: archived ones are counted for an ADMIN only.
+- The members of a household are the memberships of the people whose `household_id` points to it; its people also include those with no membership (dependents, [people.md](people.md)).
+- `memberCount` counts memberships and `personCount` counts people; both count only what the caller may see (archived members and their persons: ADMIN only). Since a person has at most one membership, `personCount - memberCount` is the number of dependents.
 - Notes are visible to every role that can read households (VOLUNTEER and up): do not store anything sensitive in them.
 - Reads join the household with the person in the same statement as the member, payment and delivery lists (explicit `join fetch`; an entity graph three levels deep did not join it).
 
@@ -101,4 +104,5 @@ Code: `frontend/src/views/HouseholdsView.vue` (route `/households`, minimum role
 
 ## Related
 - [members.md](members.md): the `householdId` field of a member
+- [people.md](people.md): the people of a household, dependents included
 - [activity.md](activity.md), [../person-membership-plan.md](../person-membership-plan.md), [../architecture.md](../architecture.md)

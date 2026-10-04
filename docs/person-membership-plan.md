@@ -161,7 +161,7 @@ Rollback in this repo means: run the `--rollback` statements by hand on the targ
 | 8 | Backfill person, dual-write | high | ~8 files, ~300 lines | g | done (code and migration 013 proven on a MySQL copy; the live demo database is not migrated yet, a human restart applies 013) |
 | 9 | Read name/email/phone from person | medium | ~6 files, ~120 lines | none | done in code (the live demo is not running it yet: a human restart applies 013 and this build together) |
 | 10 | Households (API and UI) | medium | ~12 files, ~450 lines | a | backend done (API in `docs/features/households.md`, no migration needed); frontend pending |
-| 11 | People without a membership | medium | ~10 files, ~350 lines | f | todo |
+| 11 | People without a membership | medium | ~10 files, ~350 lines | f | backend done (API in `docs/features/people.md`, no migration needed); frontend pending |
 | 12 | Contract: drop legacy columns | high | 1 migration + ~8 files | verification | todo |
 
 Order: steps 1 to 6 need no new tables and already deliver C10 and C9. Steps 7 to 9 are the structural move and are invisible to users. Steps 10 and 11 are the new features. Step 12 is the only destructive one, last.
@@ -356,16 +356,16 @@ SELECT COUNT(*) FROM payment x LEFT JOIN member m ON m.id = x.member_id WHERE m.
 SELECT COUNT(*) FROM message_delivery d LEFT JOIN member m ON m.id = d.recipient_id WHERE m.id IS NULL;
 -- ids preserved
 SELECT COUNT(*) FROM member WHERE person_id <> id;                       -- only valid for backfilled rows; ignore for rows added after step 8
--- drift between legacy columns and person (steps 8 to 11): must return NO rows (the same SQL is PersonDriftQuery in the tests)
+-- drift between legacy columns and person (steps 8 to 11) and a member with no person: must return NO rows
+-- (the same SQL is PersonDriftQuery in the tests). A person with no member is legitimate since step 11 (a dependent),
+-- so it is no longer a problem and is not checked here.
 SELECT m.id AS member_id, m.person_id AS person_id, 'DRIFT' AS problem
   FROM member m JOIN person p ON p.id = m.person_id
  WHERE NOT (m.name = p.name
         AND (m.email = p.email OR (m.email IS NULL AND p.email IS NULL))
         AND (m.phone = p.phone OR (m.phone IS NULL AND p.phone IS NULL)))
 UNION ALL
-SELECT m.id, m.person_id, 'NO_PERSON' FROM member m LEFT JOIN person p ON p.id = m.person_id WHERE p.id IS NULL
-UNION ALL
-SELECT NULL, p.id, 'NO_MEMBER' FROM person p LEFT JOIN member m ON m.person_id = p.id WHERE m.id IS NULL;
+SELECT m.id, m.person_id, 'NO_PERSON' FROM member m LEFT JOIN person p ON p.id = m.person_id WHERE p.id IS NULL;
 -- MySQL's default collation ignores case, so the query above cannot see a case-only difference; the stricter check is
 -- SELECT COUNT(*) FROM member m JOIN person p ON p.id = m.person_id
 --  WHERE NOT (BINARY m.name <=> BINARY p.name AND BINARY m.email <=> BINARY p.email AND BINARY m.phone <=> BINARY p.phone);

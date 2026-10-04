@@ -34,6 +34,7 @@ Overviews explain a feature to people (who can do what, how it works, rules, kno
 | Profile and password | [profile](docs/features/profile.md) | [user-controller](docs/features/user-controller.md) | [profile-view](docs/features/profile-view.md) |
 | Members | [members](docs/features/members.md) | [member-controller](docs/features/member-controller.md) | [members-view](docs/features/members-view.md) |
 | Households | [households](docs/features/households.md) | same page | same page (Screen) |
+| People (members and dependents) | [people](docs/features/people.md) | same page | none yet (step 11 pending) |
 | Payments | [payments](docs/features/payments.md) | [payment-controller](docs/features/payment-controller.md) | [payments-view](docs/features/payments-view.md) |
 | Communications | [communications](docs/features/communications.md) | [communication-controller](docs/features/communication-controller.md) | [communications-view](docs/features/communications-view.md) |
 | Activity log | [activity](docs/features/activity.md) | [activity-log-controller](docs/features/activity-log-controller.md) | [activity-view](docs/features/activity-view.md) |
