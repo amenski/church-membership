@@ -86,4 +86,36 @@ describe('BaseModal', () => {
     await wrapper.setProps({ modelValue: false })
     expect(document.body.style.overflow).toBe('')
   })
+
+  it('closes on Escape and traps Tab even when focus has fallen to the body', async () => {
+    mountModal()
+    await wrapper.vm.$nextTick()
+    document.activeElement.blur()
+    expect(dialog().contains(document.activeElement)).toBe(false)
+
+    const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+    document.body.dispatchEvent(tab)
+    expect(tab.defaultPrevented).toBe(true)
+    expect(dialog().contains(document.activeElement)).toBe(true)
+
+    document.body.focus()
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(wrapper.emitted('update:modelValue')).toEqual([[false]])
+  })
+
+  it('stops listening once closed', async () => {
+    mountModal()
+    await wrapper.setProps({ modelValue: false })
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  it('lets only the topmost of two stacked modals react to Escape', async () => {
+    mountModal()
+    const upper = mount(BaseModal, { attachTo: document.body, props: { modelValue: true, title: 'Confirm' } })
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(upper.emitted('update:modelValue')).toEqual([[false]])
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    upper.unmount()
+  })
 })

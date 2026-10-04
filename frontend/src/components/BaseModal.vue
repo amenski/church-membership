@@ -23,7 +23,6 @@
             'flex max-h-[calc(100dvh-2rem)] w-full flex-col rounded-md border border-rule bg-paper text-ink shadow-modal',
             WIDTH[size] || WIDTH.md
           ]"
-          @keydown="onKeydown"
         >
           <div class="flex items-start justify-between gap-4 border-b border-rule px-6 py-4">
             <h2 :id="titleId" class="m-0 font-display text-xl leading-tight font-bold text-ink">{{ title }}</h2>
@@ -54,6 +53,8 @@
 const WIDTH = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-3xl' }
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 let nextId = 0
+// open modals, last is on top: only that one answers the keyboard
+const openModals = []
 
 export default {
   name: 'BaseModal',
@@ -97,6 +98,9 @@ export default {
     },
     onOpen() {
       this.previouslyFocused = document.activeElement
+      openModals.push(this)
+      // on the document, not the panel: focus can fall to the body (a button that got disabled)
+      document.addEventListener('keydown', this.onKeydown)
       const body = document.body
       this.savedOverflow = body.style.overflow
       this.savedPaddingRight = body.style.paddingRight
@@ -113,6 +117,9 @@ export default {
       })
     },
     onClose() {
+      document.removeEventListener('keydown', this.onKeydown)
+      const at = openModals.indexOf(this)
+      if (at !== -1) openModals.splice(at, 1)
       const body = document.body
       body.style.overflow = this.savedOverflow
       body.style.paddingRight = this.savedPaddingRight
@@ -121,12 +128,12 @@ export default {
       if (target && typeof target.focus === 'function' && document.contains(target)) target.focus()
     },
     onKeydown(event) {
+      if (openModals[openModals.length - 1] !== this) return
       if (event.key === 'Escape') {
-        event.stopPropagation()
         this.close()
         return
       }
-      if (event.key !== 'Tab') return
+      if (event.key !== 'Tab' || !this.$refs.panel) return
       const items = [...this.$refs.panel.querySelectorAll(FOCUSABLE)]
       if (!items.length) {
         event.preventDefault()
@@ -136,7 +143,10 @@ export default {
       const first = items[0]
       const last = items[items.length - 1]
       const active = document.activeElement
-      if (event.shiftKey && (active === first || active === this.$refs.panel)) {
+      if (!this.$refs.panel.contains(active)) {
+        event.preventDefault()
+        ;(event.shiftKey ? last : first).focus()
+      } else if (event.shiftKey && (active === first || active === this.$refs.panel)) {
         event.preventDefault()
         last.focus()
       } else if (!event.shiftKey && active === last) {
