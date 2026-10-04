@@ -12,19 +12,19 @@ Every signed-in user views and edits their own name, phone and bio, and changes 
 
 - No `@PreAuthorize` on these endpoints; any authenticated user passes (`.anyRequest().authenticated()`, `src/main/java/io/github/membertracker/infrastructure/config/SecurityConfig.java:134`).
 - The user always comes from the security context, never from an id in the request (`src/main/java/io/github/membertracker/infrastructure/UserController.java:67`, `:82`, `:114`).
-- Route `/profile` only needs sign-in (`frontend/src/router/index.js:36-41`).
+- Route `/profile` only needs sign-in (`frontend/src/router/index.js:42-47`).
 
 ## How it works
 ### View own profile
-1. Open "Profile" in the rail; it is shown to every role (`frontend/src/App.vue:60`).
+1. Open "Profile" in the rail; it is shown to every role (`frontend/src/App.vue:61`).
 2. The page loads `GET /users/me` and fills the form (`frontend/src/views/ProfileView.vue:186-204`). While it loads the page says "Loading profile...".
 3. The page head is "Profile" ("Your details and password."). Two paper cards follow: "Your details" and "Password". "Your details" starts with Email and Role as plain text and the line "Your email cannot be changed here." (`ProfileView.vue:16-25`). The role is shown as a word in sentence case ("Staff").
 4. The fields are always editable: there is no Edit or Cancel toggle. A load failure replaces the cards with a banner "Failed to load profile. Check your connection and try again." and a "Try again" button (`ProfileView.vue:8-13`).
-5. A MEMBER sees the page at the comfortable density (48px "Save changes", full width on a phone); staff see it dense (`frontend/src/App.vue:113`).
+5. A MEMBER sees the page at the comfortable density (48px "Save changes", full width on a phone); staff see it dense (`frontend/src/App.vue:114`).
 
 ### Edit own profile
 1. Change first name, last name, phone or bio in "Your details". The name inputs stop at 50 characters (`maxlength`); the bio has a live counter ("123 of 500") that turns red past 500 (`ProfileView.vue:27-60`).
-2. "Save changes" runs the client checks first (`ProfileView.vue:155-184`), then sends `PUT /users/me/profile` (`ProfileView.vue:206-238`, `frontend/src/services/api.js:456-459`). The server turns a blank phone into null, validates the DTO (`src/main/java/io/github/membertracker/infrastructure/dto/UpdateUserProfileRequest.java:8-17`, setter `:49-52`), then `User.updateProfile` trims and stores the values (`src/main/java/io/github/membertracker/domain/model/User.java:290-300`).
+2. "Save changes" runs the client checks first (`ProfileView.vue:155-184`), then sends `PUT /users/me/profile` (`ProfileView.vue:206-238`, `frontend/src/services/api.js:461-464`). The server turns a blank phone into null, validates the DTO (`src/main/java/io/github/membertracker/infrastructure/dto/UpdateUserProfileRequest.java:8-17`, setter `:49-52`), then `User.updateProfile` trims and stores the values (`src/main/java/io/github/membertracker/domain/model/User.java:290-300`).
 3. Success: a green banner "Profile updated successfully!" for 5 seconds, and the signed-in user in the store is replaced (`ProfileView.vue:217-225`). The name in the rail updates.
 4. Failure: a server field error (`err.fieldErrors`) shows under its field; anything else shows "Failed to update profile" in a banner inside the card. The form stays on screen and keeps what was typed (`ProfileView.vue:226-237`).
 
@@ -37,9 +37,9 @@ Every signed-in user views and edits their own name, phone and bio, and changes 
 6. Closing the dialog by any route (Cancel, X, Escape, backdrop, success) clears the fields and the banner (`ProfileView.vue:329-331`).
 
 ### What a MEMBER user can do
-1. Signing in sends a MEMBER to `/profile` (`frontend/src/stores/authStore.js:41`, `frontend/src/router/index.js:90-96`).
-2. The rail shows only Profile for MEMBER; the other links need VOLUNTEER (`frontend/src/App.vue:56-60`).
-3. Typing a staff-only URL shows an "Access denied" warning toast and redirects back to `/profile`, with no query parameter (`frontend/src/router/index.js:102-112`).
+1. Signing in sends a MEMBER to `/profile` (`frontend/src/stores/authStore.js:41`, `frontend/src/router/index.js:96-102`).
+2. The rail shows only Profile for MEMBER; the other links need VOLUNTEER (`frontend/src/App.vue:56-61`).
+3. Typing a staff-only URL shows an "Access denied" warning toast and redirects back to `/profile`, with no query parameter (`frontend/src/router/index.js:108-118`).
 4. They can edit their profile, change their password, and sign out from the rail.
 
 ## Rules

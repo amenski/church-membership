@@ -106,6 +106,21 @@ describe('router beforeEach guard', () => {
     expect(router.currentRoute.value.fullPath).toBe('/members')
   })
 
+  it('sends STAFF away from /activity to their home with the Access denied notice', async () => {
+    const { router, appStore } = await setup({ role: 'STAFF' })
+    await router.push('/activity')
+    expect(router.currentRoute.value.fullPath).toBe('/dashboard')
+    expect(appStore.notifications).toHaveLength(1)
+    expect(appStore.notifications[0]).toMatchObject({ type: 'warning', title: 'Access denied' })
+  })
+
+  it('allows ADMIN into /activity', async () => {
+    const { router, appStore } = await setup({ role: 'ADMIN' })
+    await router.push('/activity')
+    expect(router.currentRoute.value.fullPath).toBe('/activity')
+    expect(appStore.notifications).toHaveLength(0)
+  })
+
   it('allows a MEMBER into /profile', async () => {
     const { router } = await setup({ role: 'MEMBER' })
     await router.push('/profile')

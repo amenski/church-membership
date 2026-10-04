@@ -104,6 +104,8 @@ Shared patterns are small Vue components in `frontend/src/components/`, built fr
 | `BaseModal` (`v-model`, `title`, `size`, slots `default` and `footer`) | dialog: teleported to body, focus moves in and returns, Tab trapped, Escape and a click on the backdrop close it, page scroll locked |
 | `WovenBand`, `DuesMeter` | the signature (see above) |
 
+Screens built only from these components (no component of their own): Overview, Members, Payments, Messages, Profile, and Activity (ADMIN only: `PageHead`, a type select in the filter-row style of Payments, a ruled table from `md` and a stacked list below, `EmptyNote`, `AlertBanner`, `BaseButton`; see [features/activity-view.md](features/activity-view.md)).
+
 ## ActionMenu rules
 
 - One `ActionMenu` per row replaces a row of icon buttons. Put the common action first (Edit), the reversible state change next (Deactivate or Reactivate), the destructive one last, in clay, and only for the role that may use it (Delete is ADMIN only). A role with no allowed action sees no menu at all, not a disabled one.
@@ -197,7 +199,7 @@ Two densities share one palette and one type family. They are plain CSS custom p
 | `--text-label` / `--lh-label` | 14px / 18px | 15px / 20px |
 | `--text-title` / `--lh-title` | 18px / 24px | 20px / 26px |
 
-- **Dense:** staff screens (Overview, Members, Payments, Messages). **Comfortable:** guests (landing, sign-in) and a MEMBER's Profile (which follows `data-density`, so staff see the same page dense).
+- **Dense:** staff screens (Overview, Members, Payments, Messages, Activity). **Comfortable:** guests (landing, sign-in) and a MEMBER's Profile (which follows `data-density`, so staff see the same page dense).
 - `App.vue` sets `data-density` on the shell root: `comfortable` when signed out or when the role is MEMBER, otherwise `dense`. `LandingView` and `LoginView` render outside the rail shell and set `data-density="comfortable"` on their own root.
 - Inputs never go below 16px text (iOS zooms the page on smaller). The primary action on a comfortable screen is 48px and full width on mobile.
 - Status, as before, is a dot plus a word, never plain coloured text. Every list has an empty state that names the next step. A switch's whole row is the click target (wrap it in a label). Disabled means a light fill, muted text and the real `disabled` attribute.

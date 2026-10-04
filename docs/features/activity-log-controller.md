@@ -11,7 +11,7 @@ REST API to read the audit trail of who changed or exported what. ADMIN only. Ba
 
 Paths below are relative to `src/main/java/io/github/membertracker/` unless prefixed `docs`/`frontend`.
 
-Each item: `{ id, type, description, entityType, entityId, actor, createdAt }`. `type` is the `ActivityType` name (`domain/enumeration/ActivityType.java`), `entityType` is `MEMBER`, `PAYMENT`, `COMMUNICATION` or `USER`, `entityId` is null for exports and sign-ins, `actor` is an email or `system`, `createdAt` is a local date-time without zone.
+Each item: `{ id, type, description, entityType, entityId, actor, createdAt }`. `type` is the `ActivityType` name (`domain/enumeration/ActivityType.java`; it also lists three legacy names that only the sample data wrote, so rows in an existing database never fail to read), `entityType` is `MEMBER`, `PAYMENT`, `COMMUNICATION` or `USER`, `entityId` is null for exports and sign-ins, `actor` is an email or `system`, `createdAt` is a local date-time without zone.
 
 ## Actions
 - `getActivityLog` -> `GetActivityLogUseCase.invoke(limit)` (`usecase/GetActivityLogUseCase.java:17-19`) -> `ActivityLogRepository.findRecent`, which reads `PageRequest.of(0, limit)` ordered by `createdAt` then `id`, both descending (`infrastructure/persistence/repository/ActivityLogDbRepository.java:27-31`, `ActivityLogJpaRepository.java:13`). The id breaks ties between entries written in the same instant.

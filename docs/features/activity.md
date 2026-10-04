@@ -10,7 +10,10 @@ Roles from `@PreAuthorize`; hierarchy ADMIN > STAFF > VOLUNTEER > MEMBER.
 | Read the activity log | ADMIN | `GET /api/activity-log` (`src/main/java/io/github/membertracker/infrastructure/ActivityLogController.java:30-36`) |
 | Cause an entry | whoever may do the action | the member, payment, message, export, sign-in and password endpoints below |
 
-STAFF, VOLUNTEER and MEMBER get 403 on the endpoint. There is no screen for it yet.
+STAFF, VOLUNTEER and MEMBER get 403 on the endpoint.
+
+## The Activity screen
+Administrators open it from "Activity" in the side menu (route `/activity`, shown only to ADMIN). It lists the latest 50 entries newest first with the time, the person (the email, or "System") and the description, can filter by type ("All activity" or one type, for example "Payment recorded") and loads 50 more at a time up to 200. Anyone else who opens the address sees the "Access denied" notice and goes to their home page. Reference: [activity-view.md](activity-view.md).
 
 ## What is recorded
 Each entry has a type, a plain description, the kind and id of the record it is about, who did it (the actor) and when.
@@ -48,4 +51,6 @@ The use cases ask a `CurrentActor` port (`src/main/java/io/github/membertracker/
 - There is no retention or deletion job yet: entries accumulate forever. Deciding how long to keep them is an open item in [../todo.md](../todo.md).
 - The dashboard's "recent activities" list is built from payments and messages, not from this table ([dashboard.md](dashboard.md)).
 
-Reference: [activity-log-controller.md](activity-log-controller.md).
+Older databases also hold three types written by the sample data (`SYSTEM_STARTUP`, `BULK_IMPORT`, `PAYMENT_REMINDER_SENT`, actor empty, shown as "System"); nothing writes them now.
+
+Reference: [activity-log-controller.md](activity-log-controller.md), screen: [activity-view.md](activity-view.md).

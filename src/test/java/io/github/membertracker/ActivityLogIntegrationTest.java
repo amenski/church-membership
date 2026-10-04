@@ -144,6 +144,24 @@ class ActivityLogIntegrationTest {
     }
 
     @Test
+    void everyTypeTheSampleDataWroteIsStillReadable() throws Exception {
+        for (String legacy : List.of("SYSTEM_STARTUP", "BULK_IMPORT", "PAYMENT_REMINDER_SENT", "MEMBER_DEACTIVATED")) {
+            ActivityLogEntity row = new ActivityLogEntity();
+            row.setActivityType(legacy);
+            row.setDescription("From the sample data");
+            row.setCreatedAt(java.time.LocalDateTime.of(2023, 1, 1, 0, 0));
+            activityLogJpaRepository.save(row);
+        }
+
+        String body = mockMvc.perform(get("/api/activity-log").with(user("admin@example.com").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(JsonPath.<List<String>>read(body, "$[*].type"))
+                .containsExactlyInAnyOrder("SYSTEM_STARTUP", "BULK_IMPORT", "PAYMENT_REMINDER_SENT", "MEMBER_DEACTIVATED");
+    }
+
+    @Test
     void theEnumNameIsWhatIsStored() {
         activityLogRepository.save(new ActivityLogEntry(
                 ActivityType.PASSWORD_CHANGED, "Password was changed", "USER", 3L, "a@example.com"));

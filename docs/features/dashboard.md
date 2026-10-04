@@ -7,7 +7,7 @@ Roles from `@PreAuthorize` and route meta; hierarchy ADMIN > STAFF > VOLUNTEER >
 
 | Task | Minimum role | Screen / endpoint |
 |------|--------------|-------------------|
-| Open the dashboard | VOLUNTEER | `/dashboard` (`frontend/src/router/index.js:12-17`, guard `:102-112`) |
+| Open the dashboard | VOLUNTEER | `/dashboard` (`frontend/src/router/index.js:12-17`, guard `:108-118`) |
 | Read the headline figures | VOLUNTEER | `GET /api/dashboard/stats` (`src/main/java/io/github/membertracker/infrastructure/DashboardController.java:56-61`) |
 | See recent payments | VOLUNTEER | `GET /api/dashboard/recent-payments` (`DashboardController.java:63-68`) |
 | See overdue members | VOLUNTEER | `GET /api/dashboard/overdue-members` (`DashboardController.java:70-75`) |
@@ -17,8 +17,8 @@ Roles from `@PreAuthorize` and route meta; hierarchy ADMIN > STAFF > VOLUNTEER >
 Role view of the screen:
 - VOLUNTEER sees everything on the screen; the overdue rows have no "Send reminder" button (it needs `isStaff`, `Dashboard.vue:28`, `frontend/src/stores/authStore.js:39`).
 - STAFF and ADMIN also see "Send reminder" on each overdue row.
-- MEMBER cannot open it: the route guard shows an "Access denied" warning toast and sends them to `/profile` (`frontend/src/router/index.js:102-112`). The four endpoints answer 403.
-- The dashboard is the home page for VOLUNTEER and above; MEMBER's home is `/profile` (`frontend/src/stores/authStore.js:41`). Opening `/` or `/login` while signed in also lands there (`frontend/src/router/index.js:90-96`).
+- MEMBER cannot open it: the route guard shows an "Access denied" warning toast and sends them to `/profile` (`frontend/src/router/index.js:108-118`). The four endpoints answer 403.
+- The dashboard is the home page for VOLUNTEER and above; MEMBER's home is `/profile` (`frontend/src/stores/authStore.js:41`). Opening `/` or `/login` while signed in also lands there (`frontend/src/router/index.js:96-102`).
 
 ## How it works
 ### Load the dashboard

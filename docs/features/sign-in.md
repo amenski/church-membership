@@ -6,11 +6,11 @@ How staff, volunteers and members sign in, stay signed in, and get sent to the r
 | Task | Minimum role | Screen / endpoint |
 |------|--------------|-------------------|
 | See the landing page | none (signed out only) | `/` (`frontend/src/router/index.js:6-11`) |
-| Sign in | none (signed out only) | `/login` (`router/index.js:42-47`), `POST /api/auth/login` |
+| Sign in | none (signed out only) | `/login` (`router/index.js:48-53`), `POST /api/auth/login` |
 | Stay signed in | any signed-in user | cookies, `POST /api/auth/refresh` |
-| Sign out | any signed-in user | Sign out button in the left rail's user block (`frontend/src/App.vue:66-68`), `POST /api/auth/logout` |
+| Sign out | any signed-in user | Sign out button in the left rail's user block (`frontend/src/App.vue:67-69`), `POST /api/auth/logout` |
 | Open `/dashboard`, `/members`, `/payments`, `/communications` | VOLUNTEER+ | `router/index.js:12-35` |
-| Open `/profile` | MEMBER+ (any signed-in user) | `router/index.js:36-41` |
+| Open `/profile` | MEMBER+ (any signed-in user) | `router/index.js:42-47` |
 
 The auth endpoints have no `@PreAuthorize`; `/api/auth/**` is public (`infrastructure/config/SecurityConfig.java:125-126`). CSRF protection still applies: the browser first gets the `XSRF-TOKEN` cookie from any GET (the app's first call is `/api/users/me`), and every POST, including login, refresh and logout, carries it back as `X-XSRF-TOKEN`; without it the answer is 403 "Invalid or missing CSRF token".
 
@@ -21,7 +21,7 @@ The auth endpoints have no `@PreAuthorize`; `/api/auth/**` is public (`infrastru
 3. The store lowercases the email and posts to `/api/auth/login` (`frontend/src/stores/authStore.js:60-78`).
 4. The backend looks up the user, clears an expired lock, rejects a locked account (without checking the password), checks the password, then checks enabled and credentials not expired (`src/main/java/io/github/membertracker/usecase/AuthenticateUserUseCase.java:19-44`).
 5. On success it sets the `sid` and `sid_refresh` cookies and returns `{email, role}` (`AuthController.java:61-85`). The user sees a "Welcome back!" toast and is sent to the `?redirect=` page, or `/` (`LoginView.vue:167-189`).
-6. `/` is guest-only, so the guard forwards a signed-in user to their home page: `/dashboard` for VOLUNTEER+, `/profile` for MEMBER (`router/index.js:91-96`, `authStore.js:41`).
+6. `/` is guest-only, so the guard forwards a signed-in user to their home page: `/dashboard` for VOLUNTEER+, `/profile` for MEMBER (`router/index.js:97-102`, `authStore.js:41`).
 7. On failure the server message is shown in the form alert and a "Login Failed" toast (`LoginView.vue:190-198`, `authStore.js:160-167`). Login errors come back as HTTP 400 (`AuthController.java:87-88`), with one message, "Invalid email or password. After several failed attempts an account is locked for 15 minutes.", for an unknown email, a wrong password and a locked account. After 10 failures for one email or 30 from one IP in 10 minutes the next attempt is a 429 with `Retry-After` (`LoginAttemptLimiter`).
 
 ### Stay signed in
@@ -29,21 +29,21 @@ The auth endpoints have no `@PreAuthorize`; `/api/auth/**` is public (`infrastru
 2. When an API call returns 401, the browser calls `/api/auth/refresh` once and retries the original request (`frontend/src/services/api.js:105-126`).
 3. The refresh cookie is scoped to `/api/auth`, so the browser sends it to `/api/auth/refresh` (`utils/CookieUtils.java:33`, `AuthController.java:104-107`). Only a refresh token is accepted there; an access token gets 400. A rotated refresh token keeps the original sign-in time (`auth_time`) and expiry, so a session lasts at most 30 days from sign-in, and a refresh token issued before the user's last password change is rejected.
 4. If the refresh fails, the user sees a "Session Expired" error toast and is hard-redirected to `/login?session=expired` (`api.js:147-152`, `api.js:166-168`).
-5. Client-side idle timeout: after 1 hour without mouse, key, scroll or touch activity, or any API request, the store logs the user out (`authStore.js:17`, `:196-208`, `:223-231`; request bump at `api.js:56-62`). The check runs every 30 seconds, and again on each route change (`router/index.js:75-79`).
+5. Client-side idle timeout: after 1 hour without mouse, key, scroll or touch activity, or any API request, the store logs the user out (`authStore.js:17`, `:196-208`, `:223-231`; request bump at `api.js:56-62`). The check runs every 30 seconds, and again on each route change (`router/index.js:81-85`).
 6. Idle-timeout fix: `isSessionExpired()` and `getTimeUntilExpiry()` are plain functions that read the clock on every call, not cached computeds (`authStore.js:43-51`). Because sessions renew through the refresh cookie while the user is active, this 1-hour idle timeout is the intended limit.
-7. On page reload, the router guard asks `GET /users/me` once to restore the session (`router/index.js:65-70`, `authStore.js:123-145`).
+7. On page reload, the router guard asks `GET /users/me` once to restore the session (`router/index.js:71-76`, `authStore.js:123-145`).
 
 ### Sign out
-1. The user picks Sign out in the left rail, which is the menu drawer on small screens (`App.vue:66-68`, `handleLogout` `:156`).
+1. The user picks Sign out in the left rail, which is the menu drawer on small screens (`App.vue:67-69`, `handleLogout` `:157`).
 2. The store stops the idle timer, posts `/api/auth/logout`, then clears local state even if the call fails (`authStore.js:100-121`).
 3. The server only clears both cookies (`AuthController.java:135-143`). The user lands on `/login`.
 
 ### Being redirected
-1. Signed-out user on a protected route goes to `/login?redirect=<path>` (omitted for `/` and `/dashboard`) (`router/index.js:82-88`).
-2. Signed-in user on `/` or `/login` goes to their home page (`router/index.js:91-96`).
-3. Signed-in user below VOLUNTEER on a staff route sees an "Access denied" warning toast ("You don't have access to that page.", 5 s) and goes to their home page, `/profile` for a MEMBER, with no query parameter (`router/index.js:103-112`).
-4. Unknown URLs redirect to `/` (`router/index.js:48-51`).
-5. An idle-expired user is logged out and sent to `/login?session=expired` (`router/index.js:75-79`).
+1. Signed-out user on a protected route goes to `/login?redirect=<path>` (omitted for `/` and `/dashboard`) (`router/index.js:88-94`).
+2. Signed-in user on `/` or `/login` goes to their home page (`router/index.js:97-102`).
+3. Signed-in user below VOLUNTEER on a staff route sees an "Access denied" warning toast ("You don't have access to that page.", 5 s) and goes to their home page, `/profile` for a MEMBER, with no query parameter (`router/index.js:109-118`).
+4. Unknown URLs redirect to `/` (`router/index.js:54-57`).
+5. An idle-expired user is logged out and sent to `/login?session=expired` (`router/index.js:81-85`).
 
 ### A session for an account that no longer works
 0. Changing the password ends every other session: their tokens are older than `lastPasswordChange` and are rejected with 401 (and 400 on refresh). The browser that changed it receives fresh cookies.
@@ -61,7 +61,7 @@ The auth endpoints have no `@PreAuthorize`; `/api/auth/**` is public (`infrastru
 1. `/` shows a quiet welcome: the Felege Selam wordmark, one line ("Membership and dues for the church community."), a Sign in button and the note "Accounts are set up by the church office." (`frontend/src/views/LandingView.vue:2-10`). There is no Register button: registration is disabled and `/register` is not a route.
 
 ## Rules
-- Roles rank MEMBER < VOLUNTEER < STAFF < ADMIN on the client (`authStore.js:20-29`); route `requiresRole` is a minimum (`router/index.js:103`).
+- Roles rank MEMBER < VOLUNTEER < STAFF < ADMIN on the client (`authStore.js:20-29`); route `requiresRole` is a minimum (`router/index.js:109`).
 - Five failed logins lock the account for 15 minutes (`User.java`, `AuthenticateUserUseCase.java`).
 - Disabled and credential-expired accounts are rejected after the password check (`AuthenticateUserUseCase.java`).
 - Registration always returns 403 "Registration is disabled. Please contact administrator for access." (`AuthController.java:96`).

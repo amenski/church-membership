@@ -34,6 +34,12 @@ const routes = [
     meta: { requiresAuth: true, requiresRole: 'VOLUNTEER' }
   },
   {
+    path: '/activity',
+    name: 'activity',
+    component: () => import('../views/ActivityView.vue'),
+    meta: { requiresAuth: true, requiresRole: 'ADMIN' }
+  },
+  {
     path: '/profile',
     name: 'profile',
     component: () => import('../views/ProfileView.vue'),

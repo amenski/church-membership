@@ -2,17 +2,17 @@
 
 `frontend/src/views/LoginView.vue`, `frontend/src/stores/authStore.js`
 
-Sign-in form at `/login` (guest-only, no minimum role: `frontend/src/router/index.js:43-46`) and the Pinia store that holds the session. Route guards and role table: [../authentication.md](../authentication.md).
+Sign-in form at `/login` (guest-only, no minimum role: `frontend/src/router/index.js:49-52`) and the Pinia store that holds the session. Route guards and role table: [../authentication.md](../authentication.md).
 
 ## Endpoints used
 Via `frontend/src/services/api.js` (`baseURL` `/api`, `:6`; `withCredentials`, `:16`). Backend: [auth-controller.md](auth-controller.md).
 
 | Call | Request | Used by |
 |------|---------|---------|
-| `login` (`api.js:404`) | `POST /auth/login` | `authStore.login` |
-| `logout` (`api.js:415`) | `POST /auth/logout` | `authStore.logout` |
-| `refreshToken` (`api.js:424`) | `POST /auth/refresh` | interceptor |
-| `getCurrentUser` (`api.js:442`) | `GET /users/me` | `authStore.checkAuth` |
+| `login` (`api.js:409`) | `POST /auth/login` | `authStore.login` |
+| `logout` (`api.js:420`) | `POST /auth/logout` | `authStore.logout` |
+| `refreshToken` (`api.js:429`) | `POST /auth/refresh` | interceptor |
+| `getCurrentUser` (`api.js:447`) | `GET /users/me` | `authStore.checkAuth` |
 
 ## State
 `authStore.js`:
@@ -28,7 +28,7 @@ Via `frontend/src/services/api.js` (`baseURL` `/api`, `:6`; `withCredentials`, `
 Store:
 - `login(credentials)` (`:60`): validates email, lowercases it, calls api, sets `user`/`isAuthenticated`/`lastActivity`, starts the 30 s inactivity timer. Rethrows after setting `error`.
 - `logout()` (`:100`): stops timer, calls api, always `clearAuth()` even if the call fails.
-- `checkAuth()` (`:123`): runs once (cached by `authChecked`); `GET /users/me`; on any failure clears auth and returns null. Called by the router guard (`router/index.js:67`).
+- `checkAuth()` (`:123`): runs once (cached by `authChecked`); `GET /users/me`; on any failure clears auth and returns null. Called by the router guard (`router/index.js:73`).
 - `hasRole(minRole)` (`:23`): rank compare `MEMBER < VOLUNTEER < STAFF < ADMIN` (`:20`); false when signed out or role unknown. Mirrors the backend hierarchy.
 - `isSessionExpired()` / `getTimeUntilExpiry()` (`:44`, `:48`): plain functions (read the clock each call).
 - `updateActivity()` (`:190`): bumps `lastActivity`; wired to mouse, key, scroll, touch by `initialize()` (`:223`).
@@ -47,7 +47,7 @@ View:
 
 ## Collaborators
 - `frontend/src/services/api.js` (above), `frontend/src/stores/appStore` (`addNotification`), `vue-router`.
-- Router guard: `router/index.js:75-77` logs out and redirects to `/login?session=expired` when `isSessionExpired()`; `:91-93` sends a signed-in user from `/login` to `homePath`.
+- Router guard: `router/index.js:81-83` logs out and redirects to `/login?session=expired` when `isSessionExpired()`; `:97-99` sends a signed-in user from `/login` to `homePath`.
 
 ## Errors
 Shown in the form alert (`LoginView.vue:15`) and a toast.
@@ -55,7 +55,7 @@ Shown in the form alert (`LoginView.vue:15`) and a toast.
 - Server: ProblemDetail `detail` shown verbatim (`authStore.js:165`). Backend login failures are 400, so the status-based fallbacks (`:219-236`) apply only when there is no `detail` (e.g. network error -> `error.message`).
 
 ## Side effects
-- `sessionStorage.auth_timestamp` set on login and refresh (`api.js:409`, `:453`); `user`/`auth_timestamp` removed on logout and refresh failure (`:442-444`, `:459-461`).
+- `sessionStorage.auth_timestamp` set on login and refresh (`api.js:414`, `:458`); `user`/`auth_timestamp` removed on logout and refresh failure (`:447-449`, `:464-466`).
 - Document-level activity listeners added by `initialize()` (never removed).
 - 30 s `setInterval` while signed in.
 

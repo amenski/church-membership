@@ -57,6 +57,7 @@
           <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/members" icon="bi-people">Members</RailLink>
           <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/payments" icon="bi-cash-coin">Payments</RailLink>
           <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/communications" icon="bi-chat-left-text">Messages</RailLink>
+          <RailLink v-if="authStore.hasRole('ADMIN')" to="/activity" icon="bi-clock-history">Activity</RailLink>
           <RailLink to="/profile" icon="bi-person">Profile</RailLink>
         </nav>
 

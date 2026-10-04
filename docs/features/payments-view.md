@@ -2,7 +2,7 @@
 
 `frontend/src/views/PaymentsView.vue` (no Pinia store for data)
 
-Payments page, built on Tailwind and the shared components: a "Record payment" dialog (STAFF and above), three quiet figures, a filterable history (ruled table from `md` up, stacked list below), a receipt dialog with PDF download, CSV export. Route `/payments`, minimum role VOLUNTEER (`frontend/src/router/index.js:24-29`; guard `frontend/src/router/index.js:102-103`, see [../authentication.md](../authentication.md)).
+Payments page, built on Tailwind and the shared components: a "Record payment" dialog (STAFF and above), three quiet figures, a filterable history (ruled table from `md` up, stacked list below), a receipt dialog with PDF download, CSV export. Route `/payments`, minimum role VOLUNTEER (`frontend/src/router/index.js:24-29`; guard `frontend/src/router/index.js:108-109`, see [../authentication.md](../authentication.md)).
 
 ## What the user sees
 - Page head "Payments", lead "Record what members paid and see the history." STAFF and above also get two buttons: "Export CSV" (secondary) and "Record payment" (primary). A VOLUNTEER gets a read-only screen: no buttons, no dialog (the server answers 403 to their writes and exports).

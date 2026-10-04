@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { AxiosError } from 'axios'
-import { axiosInstance } from '@/services/api'
+import apiService, { axiosInstance } from '@/services/api'
 import { useAuthStore, useAppStore } from '@/stores/index.js'
 
 // Adapter that never touches the network: answers each URL from `routes`
@@ -228,5 +228,36 @@ describe('api CSRF header', () => {
     await axiosInstance.get('/members')
 
     expect(sent.headers['X-XSRF-TOKEN']).toBeUndefined()
+  })
+})
+
+describe('api getActivityLog', () => {
+  let originalAdapter
+  let sent
+
+  beforeEach(() => {
+    originalAdapter = axiosInstance.defaults.adapter
+    axiosInstance.defaults.adapter = async (config) => {
+      sent = config
+      return { status: 200, data: [{ id: 1 }], headers: {}, config, statusText: 'OK' }
+    }
+  })
+
+  afterEach(() => {
+    axiosInstance.defaults.adapter = originalAdapter
+  })
+
+  it('asks for the given number of entries and returns the list', async () => {
+    const entries = await apiService.getActivityLog(100)
+
+    expect(sent.url).toBe('/activity-log')
+    expect(sent.params).toMatchObject({ limit: 100 })
+    expect(entries).toEqual([{ id: 1 }])
+  })
+
+  it('defaults to 50', async () => {
+    await apiService.getActivityLog()
+
+    expect(sent.params).toMatchObject({ limit: 50 })
   })
 })

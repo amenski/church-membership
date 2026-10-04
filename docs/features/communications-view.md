@@ -2,7 +2,7 @@
 
 `frontend/src/views/CommunicationsView.vue` (no Pinia store for data)
 
-The Messages page: compose an email to members, see what was sent and inspect or retry deliveries. Route `/communications` (nav label and page title "Messages"), minimum role VOLUNTEER (`frontend/src/router/index.js:30-35`, guard `:102-103`); sending and retrying need STAFF and above on the server ([communication-controller.md](communication-controller.md), [../authentication.md](../authentication.md)). Built on Tailwind and the shared components.
+The Messages page: compose an email to members, see what was sent and inspect or retry deliveries. Route `/communications` (nav label and page title "Messages"), minimum role VOLUNTEER (`frontend/src/router/index.js:30-35`, guard `:108-109`); sending and retrying need STAFF and above on the server ([communication-controller.md](communication-controller.md), [../authentication.md](../authentication.md)). Built on Tailwind and the shared components.
 
 Paths below are relative to `frontend/src/`.
 

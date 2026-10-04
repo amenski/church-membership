@@ -21,7 +21,7 @@ No Pinia store for data; Options API local `data()` (`frontend/src/views/Dashboa
 ## Collaborators
 | api.js method | Request | Backend |
 |---------------|---------|---------|
-| `getDashboardStats` (`frontend/src/services/api.js:467`) | GET `/dashboard/stats` | [dashboard-controller.md](dashboard-controller.md) |
+| `getDashboardStats` (`frontend/src/services/api.js:472`) | GET `/dashboard/stats` | [dashboard-controller.md](dashboard-controller.md) |
 | `getRecentPayments` (`:522`) | GET `/dashboard/recent-payments` | same |
 | `getOverdueMembers` (`:526`) | GET `/dashboard/overdue-members` | same |
 | `getRecentActivities` (`:530`) | GET `/dashboard/recent-activities` | same |
@@ -32,7 +32,7 @@ Methods return `response.data` (`frontend/src/services/api.js:285-288`).
 ## Errors
 - 401: api.js interceptor refreshes the token, retries, else clears auth and redirects (`frontend/src/services/api.js:105-171`; see [../authentication.md](../authentication.md)).
 - Load failures: an alert at the top ("The overview did not load. Reload the page, or sign in again if it keeps happening.", `:5-7`) and a console log (`:166`). Send-reminder failures show an error toast with the server message (`:186-192`). The server no longer answers 200 with zeros when it fails: a failure is a 500 and reaches this banner.
-- A role-denied visit to another page lands here (VOLUNTEER and above) with an "Access denied" warning toast raised by the router guard (`frontend/src/router/index.js:102-112`); the URL has no query parameter and this view reads nothing.
+- A role-denied visit to another page lands here (VOLUNTEER and above) with an "Access denied" warning toast raised by the router guard (`frontend/src/router/index.js:108-118`); the URL has no query parameter and this view reads nothing.
 
 ## Side effects
 - "Send reminder" sends one real email to that member through the backend (background thread); the response returns before delivery, so a `SENT`/`FAILED` result is only visible via the deliveries endpoint.

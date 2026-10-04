@@ -400,6 +400,11 @@ const apiService = {
     return this.post(`/communications/send-to-member/${memberId}`, communication)
   },
 
+  // Activity log API (ADMIN)
+  async getActivityLog(limit = 50) {
+    return this.get('/activity-log', { limit })
+  },
+
   // Authentication API
   async login(credentials) {
     const response = await api.post('/auth/login', credentials)
