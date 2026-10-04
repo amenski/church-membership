@@ -18,12 +18,15 @@
       ]"
       @input="$emit('update:modelValue', $event.target.value)"
     />
+    <p v-if="dateText" :id="`${id}-date`" class="mt-1 mb-0 text-[0.9375rem] text-muted">{{ dateText }}</p>
     <p v-if="hint" :id="`${id}-hint`" class="mt-1 mb-0 text-[0.9375rem] text-muted">{{ hint }}</p>
     <p v-if="error" :id="`${id}-error`" class="mt-1 mb-0 text-[0.9375rem] text-clay">{{ error }}</p>
   </div>
 </template>
 
 <script>
+import { formatDate } from '@/utils'
+
 export default {
   name: 'BaseInput',
   inheritAttrs: false,
@@ -39,8 +42,13 @@ export default {
   },
   emits: ['update:modelValue'],
   computed: {
+    // the native date input shows the browser's locale (dd/mm/yyyy); echo the chosen day the way the app prints dates
+    dateText() {
+      return this.type === 'date' && this.modelValue ? formatDate(this.modelValue, 'MMM d, yyyy') : ''
+    },
     describedBy() {
       const ids = []
+      if (this.dateText) ids.push(`${this.id}-date`)
       if (this.hint) ids.push(`${this.id}-hint`)
       if (this.error) ids.push(`${this.id}-error`)
       return ids.length ? ids.join(' ') : undefined
