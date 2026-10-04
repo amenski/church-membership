@@ -50,6 +50,7 @@ export default {
       return [
         { to: '/households', label: 'Households', subtitle: 'Families and shared addresses', icon: 'home' },
         ...(this.authStore.hasRole('ADMIN') ? [{ to: '/activity', label: 'Activity', subtitle: 'Administrators only', icon: 'clock' }] : []),
+        { to: '/my-dues', label: 'My dues', subtitle: 'Your payments and year', icon: 'banknote' },
         { to: '/profile', label: 'Profile', subtitle: 'Your details and password', icon: 'user' }
       ]
     },

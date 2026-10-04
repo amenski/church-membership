@@ -50,14 +50,14 @@ describe('router beforeEach guard', () => {
     expect(router.currentRoute.value.fullPath).toBe('/login')
   })
 
-  it('sends a MEMBER away from /members to /profile with a notice and no query, without looping', async () => {
+  it('sends a MEMBER away from /members to /my-dues with a notice and no query, without looping', async () => {
     const { router, appStore } = await setup({ role: 'MEMBER' })
     await router.push('/members')
     await router.isReady()
     const route = router.currentRoute.value
-    expect(route.path).toBe('/profile')
+    expect(route.path).toBe('/my-dues')
     expect(route.query).toEqual({})
-    expect(route.fullPath).toBe('/profile')
+    expect(route.fullPath).toBe('/my-dues')
     expect(appStore.notifications).toHaveLength(1)
     expect(appStore.notifications[0]).toMatchObject({
       type: 'warning',
@@ -66,13 +66,13 @@ describe('router beforeEach guard', () => {
     })
   })
 
-  it('settles on /profile for MEMBER after the denial (no further redirect, one notice)', async () => {
+  it('settles on /my-dues for MEMBER after the denial (no further redirect, one notice)', async () => {
     const { router, appStore } = await setup({ role: 'MEMBER' })
     await router.push('/payments')
     const first = router.currentRoute.value.fullPath
     await new Promise(r => setTimeout(r, 20))
     expect(router.currentRoute.value.fullPath).toBe(first)
-    expect(first).toBe('/profile')
+    expect(first).toBe('/my-dues')
     expect(appStore.notifications).toHaveLength(1)
   })
 
@@ -82,10 +82,10 @@ describe('router beforeEach guard', () => {
     expect(appStore.notifications).toHaveLength(0)
   })
 
-  it('sends a MEMBER at / to /profile', async () => {
+  it('sends a MEMBER at / to /my-dues', async () => {
     const { router } = await setup({ role: 'MEMBER' })
     await router.push('/')
-    expect(router.currentRoute.value.fullPath).toBe('/profile')
+    expect(router.currentRoute.value.fullPath).toBe('/my-dues')
   })
 
   it('sends a VOLUNTEER at / to /dashboard', async () => {

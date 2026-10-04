@@ -105,7 +105,7 @@ const displayName = computed(() => {
   const name = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim()
   return name || user?.email || ''
 })
-const homePath = computed(() => (authStore.hasRole('VOLUNTEER') ? '/dashboard' : '/profile'))
+const homePath = computed(() => authStore.homePath)
 // The breadcrumb: the page name each route declares in its meta
 const pageTitle = computed(() => route.meta?.title || '')
 

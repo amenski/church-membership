@@ -469,6 +469,12 @@ const apiService = {
     return response.data
   },
 
+  // 404 (empty body) when no single member has the signed-in user's email
+  async getMyDues() {
+    const response = await api.get('/me/dues')
+    return response.data
+  },
+
   async updateProfile(profileData) {
     const response = await api.put('/users/me/profile', profileData)
     return response.data

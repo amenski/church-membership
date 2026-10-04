@@ -38,7 +38,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isAdmin = computed(() => user.value?.role === 'ADMIN')
   const isStaff = computed(() => hasRole('STAFF'))
   const isVolunteer = computed(() => hasRole('VOLUNTEER'))
-  const homePath = computed(() => (hasRole('VOLUNTEER') ? '/dashboard' : '/profile'))
+  const homePath = computed(() => (hasRole('VOLUNTEER') ? '/dashboard' : '/my-dues'))
 
   // Plain functions, not computeds: they read the clock on every call
   function isSessionExpired() {

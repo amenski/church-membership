@@ -96,14 +96,14 @@ describe('authStore', () => {
       ['VOLUNTEER', '/dashboard'],
       ['STAFF', '/dashboard'],
       ['ADMIN', '/dashboard'],
-      ['MEMBER', '/profile']
+      ['MEMBER', '/my-dues']
     ])('%s -> %s', (role, path) => {
       loginAs(store, role)
       expect(store.homePath).toBe(path)
     })
 
-    it('is /profile when logged out', () => {
-      expect(store.homePath).toBe('/profile')
+    it('is /my-dues when logged out', () => {
+      expect(store.homePath).toBe('/my-dues')
     })
   })
 

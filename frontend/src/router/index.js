@@ -59,6 +59,12 @@ const routes = [
     meta: { requiresAuth: true, title: 'Profile' }
   },
   {
+    path: '/my-dues',
+    name: 'my-dues',
+    component: () => import('../views/MyDuesView.vue'),
+    meta: { requiresAuth: true, title: 'My dues' }
+  },
+  {
     path: '/login',
     name: 'login',
     component: () => import('../views/LoginView.vue'),
