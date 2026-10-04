@@ -5,86 +5,73 @@
     <AlertBanner v-if="loadError">
       The overview did not load. Reload the page, or sign in again if it keeps happening.
     </AlertBanner>
-    <p v-else-if="!loaded" class="m-0 py-4 text-(length:--text-body) text-muted" role="status">Loading overview...</p>
+    <p v-else-if="!loaded" class="m-0 py-3 text-sm text-muted" role="status">Loading overview...</p>
 
-    <!-- The thesis: who needs a call -->
-    <section v-if="loaded" class="pb-6" aria-labelledby="hero-title">
-      <SectionTitle id="hero-title">Who needs a call</SectionTitle>
+    <template v-if="loaded">
+      <dl class="m-0 mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatTile label="Active members" :value="activeCount" />
+        <StatTile label="Paid up" :value="paidCount" :hint="`of ${activeCount}`" tone="paid" />
+        <StatTile label="Behind" :value="behindMembers.length" tone="behind" />
+        <StatTile label="This month" :value="formatMoney(stats.monthlyRevenue)" />
+      </dl>
 
-      <template v-if="activeCount > 0">
-        <p class="mt-0 mb-6 text-2xl font-semibold text-balance max-sm:text-xl">
-          <span :class="FIGURE">{{ paidCount }}</span> of
-          <span :class="FIGURE">{{ activeCount }}</span> active members are paid up
-        </p>
-        <DuesMeter :total="activeCount" :paid="paidCount" />
-      </template>
-      <EmptyNote v-else>No active members yet. Add the first one under Members.</EmptyNote>
-
-      <RuledList v-if="behindMembers.length" class="mt-6">
-        <RuledRow v-for="member in behindMembers" :key="member.id">
-          <span class="min-w-0 flex-auto [overflow-wrap:anywhere] max-sm:basis-full">{{ member.name }}</span>
-          <StatusLabel tone="behind" class="min-w-42 max-sm:min-w-0 max-sm:flex-auto">{{ monthsBehind(member.consecutiveMonthsMissed) }}</StatusLabel>
-          <TextButton
-            v-if="authStore.isStaff"
-            :disabled="remindingIds.includes(member.id)"
-            @click="sendReminder(member)"
-          >
-            Send reminder
-            <span class="sr-only">to {{ member.name }}</span>
-          </TextButton>
-        </RuledRow>
-      </RuledList>
-      <EmptyNote v-else-if="activeCount > 0">No overdue members. Everyone is paid up for this month.</EmptyNote>
-    </section>
-
-    <!-- Quiet secondary figures -->
-    <dl v-if="loaded" class="mt-6 mb-10 flex border-y border-rule py-4">
-      <div class="flex-1 px-6 first:pl-0 not-first:border-l not-first:border-rule max-sm:px-3 max-sm:first:pl-0">
-        <dt class="text-base font-medium text-muted">This month's payments</dt>
-        <dd :class="[FIGURE, 'm-0 text-2xl leading-[1.3]']">{{ formatMoney(stats.monthlyRevenue) }}</dd>
-      </div>
-      <div class="flex-1 px-6 first:pl-0 not-first:border-l not-first:border-rule max-sm:px-3 max-sm:first:pl-0">
-        <dt class="text-base font-medium text-muted">Active members</dt>
-        <dd :class="[FIGURE, 'm-0 text-2xl leading-[1.3]']">{{ stats.activeMembers }}</dd>
-      </div>
-    </dl>
-
-    <div v-if="loaded" class="grid grid-cols-1 gap-12 lg:grid-cols-2">
-      <section class="min-w-0" aria-labelledby="payments-title">
-        <SectionTitle id="payments-title">Recent payments</SectionTitle>
-        <RuledList v-if="recentPayments.length">
-          <RuledRow v-for="payment in recentPayments" :key="payment.id">
-            <span class="shrink-0 grow-0 basis-22 text-base text-muted max-sm:basis-full">{{ formatDate(payment.paymentDate) }}</span>
-            <span class="min-w-0 flex-auto [overflow-wrap:anywhere]">{{ payment.member?.name || 'Unknown' }}</span>
-            <span class="text-right font-medium">{{ formatMoney(payment.amount) }}</span>
+      <section class="mb-8" aria-labelledby="behind-title">
+        <SectionTitle id="behind-title">Needs a reminder</SectionTitle>
+        <RuledList v-if="behindMembers.length">
+          <RuledRow v-for="member in behindMembers" :key="member.id">
+            <span class="min-w-0 flex-auto [overflow-wrap:anywhere] max-sm:basis-full">{{ member.name }}</span>
+            <StatusLabel tone="behind" class="min-w-42 max-sm:min-w-0 max-sm:flex-auto">{{ monthsBehind(member.consecutiveMonthsMissed) }}</StatusLabel>
+            <TextButton
+              v-if="authStore.isStaff"
+              :disabled="remindingIds.includes(member.id)"
+              @click="sendReminder(member)"
+            >
+              Send reminder
+              <span class="sr-only">to {{ member.name }}</span>
+            </TextButton>
           </RuledRow>
         </RuledList>
-        <EmptyNote v-else-if="loaded">No payments recorded yet. Record the first one under Payments.</EmptyNote>
+        <EmptyNote v-else-if="activeCount > 0">No overdue members. Everyone is paid up for this month.</EmptyNote>
+        <EmptyNote v-else>No active members yet. Add the first one under Members.</EmptyNote>
       </section>
 
-      <section class="min-w-0" aria-labelledby="activity-title">
-        <SectionTitle id="activity-title">Recent activity</SectionTitle>
-        <RuledList v-if="activities.length">
-          <RuledRow v-for="activity in activities" :key="activity.id">
-            <span class="shrink-0 grow-0 basis-22 text-base text-muted max-sm:basis-full">{{ formatDate(activity.date) }}</span>
-            <span class="min-w-0 flex-auto [overflow-wrap:anywhere]">{{ activity.description }}</span>
-          </RuledRow>
-        </RuledList>
-        <EmptyNote v-else-if="loaded">Nothing has happened yet. Payments and messages will show up here.</EmptyNote>
-      </section>
-    </div>
+      <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
+        <section class="min-w-0" aria-labelledby="payments-title">
+          <SectionTitle id="payments-title">Recent payments</SectionTitle>
+          <RuledList v-if="recentPayments.length">
+            <RuledRow v-for="payment in recentPayments" :key="payment.id">
+              <span class="shrink-0 grow-0 basis-22 text-xs text-muted max-sm:basis-full">{{ formatDate(payment.paymentDate) }}</span>
+              <span class="min-w-0 flex-auto [overflow-wrap:anywhere]">{{ payment.member?.name || 'Unknown' }}</span>
+              <span class="text-right font-medium">{{ formatMoney(payment.amount) }}</span>
+            </RuledRow>
+          </RuledList>
+          <EmptyNote v-else>No payments recorded yet. Record the first one under Payments.</EmptyNote>
+        </section>
+
+        <section class="min-w-0" aria-labelledby="activity-title">
+          <SectionTitle id="activity-title">Recent activity</SectionTitle>
+          <RuledList v-if="activities.length">
+            <RuledRow v-for="activity in activities" :key="activity.id">
+              <span class="shrink-0 grow-0 basis-22 text-xs text-muted max-sm:basis-full">{{ formatDate(activity.date) }}</span>
+              <span class="min-w-0 flex-auto [overflow-wrap:anywhere]">{{ activity.description }}</span>
+            </RuledRow>
+          </RuledList>
+          <EmptyNote v-else>Nothing has happened yet. Payments and messages will show up here.</EmptyNote>
+        </section>
+      </div>
+    </template>
   </div>
 </template>
 
 <script>
 import api from '@/services/api'
 import AlertBanner from '@/components/AlertBanner.vue'
-import DuesMeter from '@/components/DuesMeter.vue'
 import EmptyNote from '@/components/EmptyNote.vue'
 import PageHead from '@/components/PageHead.vue'
 import RuledList from '@/components/RuledList.vue'
 import RuledRow from '@/components/RuledRow.vue'
 import SectionTitle from '@/components/SectionTitle.vue'
+import StatTile from '@/components/StatTile.vue'
 import StatusLabel from '@/components/StatusLabel.vue'
 import TextButton from '@/components/TextButton.vue'
 import { useAuthStore } from '../stores/authStore'
@@ -94,19 +81,15 @@ import { formatMoney } from '@/utils'
 import { monthsBehind } from '@/utils/dashboardMeter'
 import { countsForDues } from '@/utils/memberStatus'
 
-// Big figures: tabular so the digits line up column-wise
-const FIGURE = 'font-semibold tabular-nums'
-
 export default {
   name: 'DashboardView',
-  components: { AlertBanner, DuesMeter, EmptyNote, PageHead, RuledList, RuledRow, SectionTitle, StatusLabel, TextButton },
+  components: { AlertBanner, EmptyNote, PageHead, RuledList, RuledRow, SectionTitle, StatTile, StatusLabel, TextButton },
   setup() {
     return {
       authStore: useAuthStore(),
       appStore: useAppStore(),
       monthsBehind,
-      formatMoney,
-      FIGURE
+      formatMoney
     }
   },
   data() {

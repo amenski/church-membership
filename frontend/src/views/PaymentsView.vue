@@ -20,16 +20,9 @@
 
     <p v-if="!loaded" class="m-0 py-4 text-(length:--text-body) text-muted" role="status">Loading payments...</p>
 
-    <!-- Quiet figures: from the loaded payments, no coloured tiles -->
-    <dl v-if="payments.length" class="mt-0 mb-8 flex border-y border-rule py-4 max-sm:flex-col max-sm:gap-2">
-      <div
-        v-for="figure in figures"
-        :key="figure.label"
-        class="flex-1 px-6 first:pl-0 not-first:border-l not-first:border-rule max-sm:flex max-sm:items-baseline max-sm:justify-between max-sm:px-0 max-sm:not-first:border-l-0"
-      >
-        <dt class="text-base font-medium text-muted">{{ figure.label }}</dt>
-        <dd :class="[FIGURE, 'm-0 text-2xl leading-[1.3] max-sm:text-xl']">{{ figure.value }}</dd>
-      </div>
+    <!-- Figures from the loaded payments -->
+    <dl v-if="payments.length" class="m-0 mb-6 grid grid-cols-2 gap-3 lg:grid-cols-3">
+      <StatTile v-for="figure in figures" :key="figure.label" :label="figure.label" :value="figure.value" />
     </dl>
 
     <!-- Filters -->
@@ -189,6 +182,7 @@ import BaseSelect from '@/components/BaseSelect.vue'
 import BaseTextarea from '@/components/BaseTextarea.vue'
 import EmptyNote from '@/components/EmptyNote.vue'
 import Icon from '@/components/Icon.vue'
+import StatTile from '@/components/StatTile.vue'
 import PageHead from '@/components/PageHead.vue'
 import TextButton from '@/components/TextButton.vue'
 
@@ -210,7 +204,7 @@ const emptyForm = () => ({
 
 export default {
   name: 'PaymentsView',
-  components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, BaseTextarea, EmptyNote, Icon, PageHead, TextButton },
+  components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, BaseTextarea, EmptyNote, Icon, PageHead, StatTile, TextButton },
   setup() {
     return {
       appStore: useAppStore(),
