@@ -4,8 +4,10 @@ import io.github.membertracker.domain.enumeration.MemberStatus;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.repository.MemberRepository;
 import io.github.membertracker.infrastructure.persistence.entity.MemberEntity;
+import io.github.membertracker.infrastructure.persistence.entity.PersonEntity;
 import io.github.membertracker.infrastructure.persistence.mapper.MemberPersistenceMapper;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -70,9 +72,22 @@ public class MemberDbRepository implements MemberRepository {
                 .findByStatusAndConsecutiveMonthsMissedGreaterThanEqualOrderByConsecutiveMonthsMissedDescNameAscIdAsc(MEMBER, months));
     }
 
+    /**
+     * DUAL-WRITE, remove at plan step 12: name, email and phone go to the legacy member columns (toEntity) and to the
+     * linked person row. A new member creates its person; an edit updates the person it already has. Reads still use
+     * the legacy columns until step 9. One transaction, so a member never exists without its person.
+     */
     @Override
+    @Transactional
     public Member save(Member member) {
         MemberEntity entity = MemberPersistenceMapper.toEntity(member);
+        PersonEntity person = member.getId() == null ? null : memberJpaRepository.findById(member.getId())
+                .map(MemberEntity::getPerson).orElse(null);
+        if (person == null) {
+            person = new PersonEntity();
+        }
+        MemberPersistenceMapper.copyToPerson(member, person);
+        entity.setPerson(person);
         return MemberPersistenceMapper.toDomain(memberJpaRepository.save(entity));
     }
 

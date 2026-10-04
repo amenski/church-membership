@@ -3,6 +3,7 @@ package io.github.membertracker.infrastructure.persistence.mapper;
 import io.github.membertracker.domain.enumeration.MemberStatus;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.infrastructure.persistence.entity.MemberEntity;
+import io.github.membertracker.infrastructure.persistence.entity.PersonEntity;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -105,5 +106,22 @@ class MemberPersistenceMapperTest {
 
         assertThat(member.getStatus()).isEqualTo(MemberStatus.DECEASED);
         assertThat(member.isActive()).isFalse();
+    }
+
+    @Test
+    void copyToPersonWritesNameEmailAndPhoneIncludingNulls() {
+        PersonEntity person = new PersonEntity();
+        Member member = fullMember();
+
+        MemberPersistenceMapper.copyToPerson(member, person);
+        assertThat(person.getName()).isEqualTo("Abebe Kebede");
+        assertThat(person.getEmail()).isEqualTo("abebe@example.com");
+        assertThat(person.getPhone()).isEqualTo("+251911234567");
+
+        member.setEmail(null);
+        member.setPhone(null);
+        MemberPersistenceMapper.copyToPerson(member, person);
+        assertThat(person.getEmail()).isNull();
+        assertThat(person.getPhone()).isNull();
     }
 }

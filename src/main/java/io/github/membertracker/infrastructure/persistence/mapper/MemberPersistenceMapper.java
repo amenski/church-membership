@@ -3,6 +3,7 @@ package io.github.membertracker.infrastructure.persistence.mapper;
 import io.github.membertracker.domain.enumeration.MemberStatus;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.infrastructure.persistence.entity.MemberEntity;
+import io.github.membertracker.infrastructure.persistence.entity.PersonEntity;
 
 import java.time.YearMonth;
 
@@ -47,6 +48,16 @@ public final class MemberPersistenceMapper {
         // The only writer of the legacy column: it follows the status, so the two never disagree.
         entity.setActive(member.getStatus().countsForDues());
         return entity;
+    }
+
+    /**
+     * DUAL-WRITE, remove at plan step 12: copies the three fields that live in both tables onto the person row, so
+     * the legacy member columns and the person never disagree. MemberDbRepository.save is the only caller.
+     */
+    public static void copyToPerson(Member member, PersonEntity person) {
+        person.setName(member.getName());
+        person.setEmail(member.getEmail());
+        person.setPhone(member.getPhone());
     }
 
     /**

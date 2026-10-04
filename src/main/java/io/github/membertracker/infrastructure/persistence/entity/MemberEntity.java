@@ -1,10 +1,14 @@
 package io.github.membertracker.infrastructure.persistence.entity;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
 import java.time.LocalDate;
@@ -36,6 +40,15 @@ public class MemberEntity {
 
     @Column(name = "archived_at")
     private LocalDateTime archivedAt;
+
+    /**
+     * The person behind this membership (person_id, NOT NULL, unique). Written beside the legacy name/email/phone
+     * columns by MemberDbRepository.save until step 12; null only on the detached references the payment and
+     * delivery repositories build, which are never saved.
+     */
+    @OneToOne(optional = false, cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JoinColumn(name = "person_id", nullable = false, unique = true)
+    private PersonEntity person;
 
     public MemberEntity() {
     }
@@ -136,5 +149,13 @@ public class MemberEntity {
 
     public void setArchivedAt(LocalDateTime archivedAt) {
         this.archivedAt = archivedAt;
+    }
+
+    public PersonEntity getPerson() {
+        return person;
+    }
+
+    public void setPerson(PersonEntity person) {
+        this.person = person;
     }
 }
