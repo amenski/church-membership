@@ -1,8 +1,44 @@
 # MemberTracker Functionality Audit
 
-*Audited: 3 October 2026*
+*Audited: 3 October 2026. Status section last checked against the code: 4 October 2026.*
 *Branch: `feature/role-auth` @ `b117be4` plus working tree*
 *Method: source reading only. The app was not run, so no finding is confirmed at runtime.*
+
+## Status (4 October 2026)
+
+The findings below are kept as written at audit time. This table says where each stands now. Open work is tracked in [todo.md](todo.md).
+
+| Finding | State | Fixed in |
+|---------|-------|----------|
+| C1 Every screen returns 403 | Done | `3cf5d84`, `14335ff` |
+| C2 Payment overwrites the member | Done | `755f151` |
+| C3 Reminders never run, would spam | Done | `a45c603` |
+| C4 `{{member_name}}` not filled in | Done | `1ab715c` |
+| C5 Sessions end after 30 minutes, token types | Done | `5f809bb`, `c36f8bc` |
+| C6 Login reveals which emails exist | Done | `1b812e1` |
+| C7 Payment delete deletes nothing | Done (endpoint removed) | `2d0383f` |
+| C8 Member edit accepts system fields | Done | `605e51a` |
+| C9 Deleting a member erases payments | Done (archive; foreign keys RESTRICT) | `abc6164` |
+| C10 Email required and unique, no household | Email part done; households open | `9cc0d61`; steps 7 to 12 of [person-membership-plan.md](person-membership-plan.md) |
+| CSRF off, default secrets and credentials | Done | `d4c5c0b`, `aff5705`, `5efd8cf`, `db563d5` |
+| No HTTPS configuration | Done (Caddy, security headers) | `723c489`, `c107b09` |
+| Lockout permanent, login throttling | Done | `6398240` |
+| Password change keeps other sessions | Done | `41dfce5` |
+| No audit trail (`activity_log` unused) | Done; retention job open | `1f90665`, `24d2236` |
+| Exports open to volunteers | Done (STAFF and above) | `2ae3919`, `342dbc6` |
+| Payments limited to the last 3 months | Done (any month, paid-on date) | `2ae3919`, `5bbbfdc` |
+| Dashboard hides errors, counts all members | Done | `7ec4f94` |
+| Communication deliveries not stored, no retry | Done (attempts counted, manual retry) | `ec1be9c`, `884e918`, `b460af5` |
+| Member status is one boolean | Done (five statuses) | `f9accb8`, `9074602`, `472a30a` |
+| Search and filters | Done in the browser; server-side search and pagination deferred | `290a026`, `1553827` |
+| Frontend routes ignore roles | Done | `14335ff` |
+| Bootstrap, plain UI | Done (Tailwind redesign) | `2b079ee`, `e789ca1` |
+| Households, visitors, events, attendance, groups | Open | steps 7 to 12 of the person plan; the rest is Phases 1 to 4 below |
+| Import, user management, password reset, MFA | Open | none |
+| SMS and WhatsApp stubs, durable send queue | Open | none |
+| Giving funds, `BigDecimal` money, receipts and statements | Open | none |
+| Multi-campus field, configurable CORS | Open | none |
+| Docker, CI, monitoring, backups | Deferred by the owner | none |
 
 ## Verdict
 
