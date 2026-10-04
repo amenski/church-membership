@@ -13,24 +13,24 @@ export function attemptsLabel(n) {
 }
 
 /**
- * The delivery counts of one message as words with a tone for StatusLabel: "8 sent" (sent plus
+ * The delivery counts of one message as words with a tone for StatusBadge: "8 delivered" (sent plus
  * delivered, both mean the mail left), "1 failed", "1 pending". Zero counts are left out.
  * @returns {{ key: string, text: string, tone: 'paid'|'danger'|'behind' }[]}
  */
 export function deliverySummaryParts(summary) {
   const { sent = 0, delivered = 0, failed = 0, pending = 0 } = summary || {}
   const parts = [
-    { key: 'sent', count: sent + delivered, word: 'sent', tone: 'paid' },
+    { key: 'delivered', count: sent + delivered, word: 'delivered', tone: 'paid' },
     { key: 'failed', count: failed, word: 'failed', tone: 'danger' },
     { key: 'pending', count: pending, word: 'pending', tone: 'behind' }
   ]
   return parts.filter(part => part.count > 0).map(({ key, count, word, tone }) => ({ key, text: `${count} ${word}`, tone }))
 }
 
-/** StatusLabel tone and word for one delivery status. */
+/** StatusLabel tone and word for one delivery status. SENT reads Delivered: the mail left, as the totals say. */
 export function deliveryStatus(status) {
   switch (status) {
-    case 'SENT': return { tone: 'paid', label: 'Sent' }
+    case 'SENT': return { tone: 'paid', label: 'Delivered' }
     case 'DELIVERED': return { tone: 'paid', label: 'Delivered' }
     case 'FAILED': return { tone: 'danger', label: 'Failed' }
     case 'PENDING': return { tone: 'behind', label: 'Pending' }
@@ -53,4 +53,10 @@ export function sortMessages(messages) {
 /** Delivery notes carry the server's raw ISO timestamp; show it as a readable time. */
 export function friendlyNotes(notes) {
   return (notes || '').replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?/g, iso => formatDate(iso, 'MMM d, yyyy, h:mm a') || iso)
+}
+
+/** Failed deliveries first, so the ones to act on are at the top; the others keep their order. Does not change the input. */
+export function failedFirst(deliveries) {
+  const failed = deliveries.filter(delivery => delivery.status === 'FAILED')
+  return [...failed, ...deliveries.filter(delivery => delivery.status !== 'FAILED')]
 }

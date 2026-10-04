@@ -4,14 +4,14 @@ import { attemptsLabel, friendlyNotes, countDeliveries, deliveryStatus, delivery
 describe('deliverySummaryParts', () => {
   it('joins sent and delivered and tones each word', () => {
     expect(deliverySummaryParts({ sent: 0, failed: 1, pending: 1, delivered: 8 })).toEqual([
-      { key: 'sent', text: '8 sent', tone: 'paid' },
+      { key: 'delivered', text: '8 delivered', tone: 'paid' },
       { key: 'failed', text: '1 failed', tone: 'danger' },
       { key: 'pending', text: '1 pending', tone: 'behind' }
     ])
   })
 
   it('leaves zero counts out', () => {
-    expect(deliverySummaryParts({ sent: 2, failed: 0, pending: 0, delivered: 1 }).map(p => p.text)).toEqual(['3 sent'])
+    expect(deliverySummaryParts({ sent: 2, failed: 0, pending: 0, delivered: 1 }).map(p => p.text)).toEqual(['3 delivered'])
   })
 
   it('is empty for no summary or all zeros', () => {
@@ -46,7 +46,7 @@ describe('typeLabel', () => {
 
 describe('deliveryStatus and countDeliveries', () => {
   it('maps each status to a tone and a word', () => {
-    expect(deliveryStatus('SENT')).toEqual({ tone: 'paid', label: 'Sent' })
+    expect(deliveryStatus('SENT')).toEqual({ tone: 'paid', label: 'Delivered' })
     expect(deliveryStatus('DELIVERED')).toEqual({ tone: 'paid', label: 'Delivered' })
     expect(deliveryStatus('FAILED')).toEqual({ tone: 'danger', label: 'Failed' })
     expect(deliveryStatus('PENDING')).toEqual({ tone: 'behind', label: 'Pending' })

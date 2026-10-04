@@ -105,8 +105,8 @@
                   <template v-if="message.recipientCount > 0">{{ message.recipientCount }} {{ message.recipientCount === 1 ? 'recipient' : 'recipients' }}</template>
                   <template v-else>No deliveries recorded</template>
                 </div>
-                <div v-if="summaryParts(message).length" class="mt-1 flex flex-wrap gap-x-4">
-                  <StatusLabel v-for="part in summaryParts(message)" :key="part.key" :tone="part.tone">{{ part.text }}</StatusLabel>
+                <div v-if="summaryParts(message).length" class="mt-1.5 flex flex-wrap gap-1.5">
+                  <StatusBadge v-for="part in summaryParts(message)" :key="part.key" :tone="part.tone">{{ part.text }}</StatusBadge>
                 </div>
               </div>
               <TextButton class="shrink-0 max-sm:text-left" @click="openDeliveries(message)">
@@ -140,11 +140,11 @@
       </AlertBanner>
       <EmptyNote v-else-if="!deliveries.length">No deliveries were recorded for this message.</EmptyNote>
       <template v-else>
-        <div class="mb-3 flex flex-wrap gap-x-4" aria-label="Delivery totals" role="group">
-          <StatusLabel v-for="part in deliveryTotals" :key="part.key" :tone="part.tone">{{ part.text }}</StatusLabel>
+        <div class="mb-3 flex flex-wrap gap-1.5" aria-label="Delivery totals" role="group">
+          <StatusBadge v-for="part in deliveryTotals" :key="part.key" :tone="part.tone">{{ part.text }}</StatusBadge>
         </div>
         <ul class="m-0 list-none border-t border-rule p-0">
-          <li v-for="delivery in deliveries" :key="delivery.id" class="flex items-start justify-between gap-3 border-b border-rule py-3">
+          <li v-for="delivery in orderedDeliveries" :key="delivery.id" class="flex items-start justify-between gap-3 border-b border-rule py-3">
             <div class="min-w-0">
               <div class="flex flex-wrap items-baseline gap-x-4">
                 <span class="font-medium [overflow-wrap:anywhere]">{{ delivery.recipient?.name || 'Unknown' }}</span>
@@ -185,7 +185,7 @@ import { useAppStore } from '../stores/appStore'
 import { formatDate, localISODate } from '@/utils'
 import { personLabel, previewRecipients, previewSummary, sendableCount, skippedNote, skippedSentence } from '@/utils/audiencePreview'
 import { buildCommunicationRequest } from '@/utils/communicationPayload'
-import { attemptsLabel, friendlyNotes, countDeliveries, deliveryStatus, deliverySummaryParts, sortMessages, typeLabel } from '@/utils/messageHistory'
+import { attemptsLabel, friendlyNotes, countDeliveries, deliveryStatus, failedFirst, deliverySummaryParts, sortMessages, typeLabel } from '@/utils/messageHistory'
 import { countsForDues } from '@/utils/memberStatus'
 import { monthsBehind } from '@/utils/dues'
 import { paidMonthsByMember } from '@/utils/yearStrip'
@@ -277,6 +277,9 @@ export default {
     confirmMessage() {
       const skipped = skippedSentence(this.recipients)
       return `“${this.form.subject.trim()}” goes out by email. You cannot take it back.${skipped ? ` ${skipped}` : ''}`
+    },
+    orderedDeliveries() {
+      return failedFirst(this.deliveries)
     },
     deliveryTotals() {
       return deliverySummaryParts(countDeliveries(this.deliveries))
