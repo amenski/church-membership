@@ -1,21 +1,36 @@
 <template>
   <div id="app" class="min-h-screen" :data-density="density">
-    <!-- Signed in: slim top bar below lg, left rail from lg up (a drawer below lg) -->
+    <!-- Signed in: a compact top bar over a fixed rail (below lg the rail becomes a drawer) -->
     <template v-if="isAuthenticated">
-      <header class="sticky top-0 z-[1020] flex items-center justify-between border-b border-rule bg-paper px-4 py-2 lg:hidden">
-        <BrandMark :to="homePath" inline />
-        <BaseButton
-          ref="menuButton"
-          variant="secondary"
-          class="min-h-11"
-          aria-controls="appRail"
-          :aria-expanded="railOpen ? 'true' : 'false'"
-          aria-label="Open menu"
-          @click="openRail"
-        >
-          <Icon name="menu" :size="20" class="mr-1.5" />
-          Menu
-        </BaseButton>
+      <header class="sticky top-0 z-[1020] flex h-12 items-center justify-between gap-4 border-b border-rule bg-paper px-4">
+        <div class="flex min-w-0 items-center gap-3">
+          <BaseButton
+            ref="menuButton"
+            variant="secondary"
+            size="sm"
+            class="min-h-11 w-11 justify-center px-0 lg:hidden"
+            aria-controls="appRail"
+            :aria-expanded="railOpen ? 'true' : 'false'"
+            aria-label="Open menu"
+            @click="openRail"
+          >
+            <Icon name="menu" :size="20" />
+          </BaseButton>
+          <BrandMark :to="homePath" inline class="lg:hidden" />
+          <nav class="hidden min-w-0 lg:block" aria-label="Breadcrumb">
+            <ol class="m-0 flex list-none items-center gap-2 p-0 text-sm text-muted">
+              <li class="shrink-0">Felege Selam</li>
+              <li aria-hidden="true" class="shrink-0 text-rule">/</li>
+              <li class="truncate font-medium text-ink" aria-current="page">{{ pageTitle }}</li>
+            </ol>
+          </nav>
+        </div>
+        <div class="flex shrink-0 items-center gap-3">
+          <span class="hidden text-sm text-muted sm:inline">{{ displayName }}</span>
+          <BaseButton variant="secondary" size="sm" @click="handleLogout">
+            <Icon name="log-out" :size="16" class="mr-1.5" />Sign out
+          </BaseButton>
+        </div>
       </header>
 
       <Transition
@@ -33,17 +48,16 @@
         aria-label="Main navigation"
         :inert="!isWide && !railOpen"
         :class="[
-          'fixed inset-y-0 left-0 z-[1045] flex w-[280px] flex-col overflow-y-auto border-r border-rule bg-paper lg:w-[248px] lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-[1045] flex w-[280px] flex-col overflow-y-auto border-r border-rule bg-paper lg:top-12 lg:w-[248px] lg:translate-x-0',
           'motion-safe:transition-transform motion-safe:duration-200',
           railOpen ? 'translate-x-0' : 'max-lg:-translate-x-full'
         ]"
       >
-        <WovenBand :height="8" />
-        <div class="flex items-start justify-between px-6 pt-6 pb-4">
+        <div class="flex items-center justify-between p-3 lg:hidden">
           <BrandMark :to="homePath" />
           <button
             type="button"
-            class="-mt-1 -mr-2 flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-muted hover:text-ink lg:hidden"
+            class="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent text-muted hover:text-ink"
             aria-label="Close menu"
             @click="closeRail"
           >
@@ -51,7 +65,7 @@
           </button>
         </div>
 
-        <nav class="flex flex-1 flex-col gap-[2px] py-2" aria-label="Sections">
+        <nav class="flex flex-1 flex-col gap-0.5 p-3" aria-label="Sections">
           <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/dashboard" name="home">Overview</RailLink>
           <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/members" name="users">Members</RailLink>
           <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/households" name="home">Households</RailLink>
@@ -61,18 +75,16 @@
           <RailLink to="/profile" name="user">Profile</RailLink>
         </nav>
 
-        <div class="border-t border-rule px-6 pt-4 pb-6">
-          <div class="text-base font-bold [overflow-wrap:anywhere]">{{ displayName }}</div>
-          <div v-if="displayName !== currentUser?.email && currentUser?.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ currentUser.email }}</div>
-          <BaseButton variant="secondary" size="sm" class="mt-3" @click="handleLogout">
-            <Icon name="log-out" :size="16" class="mr-1.5" />Sign out
-          </BaseButton>
+        <!-- The account block lives in the top bar from lg up, so it stays in the drawer only -->
+        <div class="border-t border-rule p-3 lg:hidden">
+          <div class="text-sm font-medium [overflow-wrap:anywhere]">{{ displayName }}</div>
+          <div v-if="displayName !== currentUser?.email && currentUser?.email" class="text-xs text-muted [overflow-wrap:anywhere]">{{ currentUser.email }}</div>
         </div>
       </aside>
     </template>
 
-    <!-- Main Content: content centred at 1100px, beside the rail from lg up -->
-    <main :inert="railOpen ? true : null" :class="isAuthenticated ? 'lg:ml-[248px] [&>*]:mx-auto [&>*]:max-w-[1100px] [&>*]:p-10 max-sm:[&>*]:px-4 max-sm:[&>*]:py-6' : ''">
+    <!-- Content column, beside the rail from lg up -->
+    <main :inert="railOpen ? true : null" :class="isAuthenticated ? 'lg:ml-[248px] [&>*]:mx-auto [&>*]:max-w-[1400px] [&>*]:p-6 max-sm:[&>*]:px-4' : ''">
       <router-view/>
     </main>
 
@@ -82,7 +94,6 @@
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, watch, ref } from 'vue'
-import WovenBand from '@/components/WovenBand.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import BrandMark from '@/components/BrandMark.vue'
 import Icon from '@/components/Icon.vue'
@@ -110,8 +121,10 @@ const displayName = computed(() => {
   return name || user?.email || ''
 })
 const homePath = computed(() => (authStore.hasRole('VOLUNTEER') ? '/dashboard' : '/profile'))
+// The breadcrumb: the page name each route declares in its meta
+const pageTitle = computed(() => route.meta?.title || '')
 
-// Staff get the dense screens; guests and members get the comfortable ones (docs/design.md)
+// Staff get the dense screens; guests and members get the comfortable ones
 const density = computed(() => (isAuthenticated.value && authStore.hasRole('VOLUNTEER') ? 'dense' : 'comfortable'))
 
 // The rail is a drawer below lg: focus goes to its first link, then back to the menu button

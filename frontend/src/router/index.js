@@ -2,60 +2,61 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
 import { useAppStore } from '../stores/appStore'
 
+// `title` is the page name in the top bar's breadcrumb; the guards read the rest.
 const routes = [
+  // There is no landing page: the root is a doorway to sign-in, and the guard sends an
+  // already-signed-in visitor on to their home screen.
   {
     path: '/',
-    name: 'landing',
-    component: () => import('../views/LandingView.vue'),
-    meta: { requiresGuest: true }
+    redirect: '/login'
   },
   {
     path: '/dashboard',
     name: 'dashboard',
     component: () => import('../views/Dashboard.vue'),
-    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER' }
+    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER', title: 'Overview' }
   },
   {
     path: '/members',
     name: 'members',
     component: () => import('../views/MembersView.vue'),
-    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER' }
+    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER', title: 'Members' }
   },
   {
     path: '/households',
     name: 'households',
     component: () => import('../views/HouseholdsView.vue'),
-    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER' }
+    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER', title: 'Households' }
   },
   {
     path: '/payments',
     name: 'payments',
     component: () => import('../views/PaymentsView.vue'),
-    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER' }
+    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER', title: 'Payments' }
   },
   {
     path: '/communications',
     name: 'communications',
     component: () => import('../views/CommunicationsView.vue'),
-    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER' }
+    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER', title: 'Messages' }
   },
   {
     path: '/activity',
     name: 'activity',
     component: () => import('../views/ActivityView.vue'),
-    meta: { requiresAuth: true, requiresRole: 'ADMIN' }
+    meta: { requiresAuth: true, requiresRole: 'ADMIN', title: 'Activity' }
   },
   {
     path: '/profile',
     name: 'profile',
     component: () => import('../views/ProfileView.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, title: 'Profile' }
   },
   {
     path: '/login',
     name: 'login',
     component: () => import('../views/LoginView.vue'),
-    meta: { requiresGuest: true }
+    meta: { requiresGuest: true, title: 'Sign in' }
   },
   {
     path: '/:pathMatch(.*)*',

@@ -4,12 +4,6 @@ const messages = {
   en: {
     auth: {
       signOut: 'Sign Out'
-    },
-    landing: {
-      title: 'Felege Selam',
-      tagline: 'Membership and dues for the church community.',
-      signIn: 'Sign in',
-      note: 'Accounts are set up by the church office.'
     }
   }
 }
