@@ -176,7 +176,7 @@
         <tbody>
           <tr v-for="member in filteredMembers" :key="member.id" class="h-(--row-h) border-b border-rule">
             <td :class="[TD, 'max-w-0 w-[34%]']">
-              <div :class="NAME">{{ member.name }}</div>
+              <div :class="NAME"><router-link :to="`/members/${member.id}`">{{ member.name }}</router-link></div>
               <div v-if="member.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
               <div v-if="member.householdName" class="text-sm text-muted [overflow-wrap:anywhere]"><Icon name="home" :size="14" class="mr-1" /><span class="sr-only">Household: </span>{{ member.householdName }}</div>
             </td>
@@ -210,7 +210,7 @@
         <li v-for="member in filteredMembers" :key="member.id" class="flex flex-col gap-3 rounded-lg border border-rule bg-paper px-4 py-3.5">
           <div class="flex items-start justify-between gap-2">
             <div class="min-w-0 flex-1">
-              <div :class="[NAME, 'text-xl']">{{ member.name }}</div>
+              <div :class="[NAME, 'text-xl']"><router-link :to="`/members/${member.id}`" class="inline-block py-2 -my-2">{{ member.name }}</router-link></div>
               <div v-if="member.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
               <div v-if="member.householdName" class="text-sm text-muted [overflow-wrap:anywhere]"><Icon name="home" :size="14" class="mr-1" /><span class="sr-only">Household: </span>{{ member.householdName }}</div>
               <div class="mt-1 flex flex-wrap items-center gap-x-4">

@@ -52,7 +52,7 @@
             </div>
             <ul class="m-0 list-none p-0">
               <li v-for="member in ledgerRows" :key="member.id" :class="[ledgerGrid, 'min-h-(--list-row-h) border-b border-rule py-2']">
-                <span class="min-w-0 font-medium [overflow-wrap:anywhere]">{{ member.name }}</span>
+                <span class="min-w-0 font-medium [overflow-wrap:anywhere]"><router-link :to="`/members/${member.id}`">{{ member.name }}</router-link></span>
                 <span v-if="paidByMember" class="max-sm:order-3 max-sm:col-span-2"><YearStrip v-bind="stripProps(member)" :size="wide ? 'ledger' : 'compact'" /></span>
                 <span v-else class="text-muted max-sm:order-3"><span aria-hidden="true">&ndash;</span><span class="sr-only">Months paid did not load</span></span>
                 <span class="text-right max-sm:order-2">

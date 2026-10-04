@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { flushPromises, mount } from '@vue/test-utils'
+import { RouterLinkStub, flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import MembersView from '@/views/MembersView.vue'
 import api from '@/services/api'
@@ -12,7 +12,7 @@ async function mountWith(members) {
   api.getMembers.mockResolvedValue(members)
   const pinia = createPinia()
   setActivePinia(pinia)
-  const wrapper = mount(MembersView, { global: { plugins: [pinia] } })
+  const wrapper = mount(MembersView, { global: { plugins: [pinia], stubs: { RouterLink: RouterLinkStub } } })
   await flushPromises()
   return wrapper
 }
