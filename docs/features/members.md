@@ -43,9 +43,9 @@ Role view of the screen (the buttons are hidden, not disabled, for roles that ca
 - There is no sort control below `md`.
 
 ### Add a member
-1. Click "Add member" and fill name and email (required), optionally phone, and "Joined on" (default today, not in the future); an "Active" switch is also shown (STAFF+) (`MembersView.vue:143-168`).
+1. Click "Add member" and fill name and email (required), optionally phone, and "Joined on" (default today, not in the future); the dialog has no "Active" switch because a new member is always active (`MembersView.vue:143-168`).
 2. "Add member" in the dialog sends `{name, email, phone?, joinDate?, active}` to `POST /api/members` (`MembersView.vue:387-408`, `frontend/src/utils/memberPayload.js`). Name and email are checked on the screen first.
-3. The server creates the member as active with the counters at zero; it uses the join date sent, or today (`src/main/java/io/github/membertracker/usecase/SaveMemberUseCase.java:18-27`, `src/main/java/io/github/membertracker/domain/model/Member.java:41-43`). It ignores `active` on create, so a member added with the switch off is still created active.
+3. The server creates the member as active with the counters at zero; it uses the join date sent, or today (`src/main/java/io/github/membertracker/usecase/SaveMemberUseCase.java:18-27`, `src/main/java/io/github/membertracker/domain/model/Member.java:41-43`). It ignores `active` on create (the request still carries `active: true`).
 4. Success: the dialog closes, the row appears and a toast "Member added" names the member. A duplicate email (any letter case) returns 400 "A member with this email already exists" and shows under the Email field.
 5. Other failures (validation, 403): field errors from the server show under their fields; anything else shows in a banner at the top of the dialog plus an error toast "Could not save member" (no toast for 403); the dialog stays open (`MembersView.vue:369-386`).
 
@@ -53,7 +53,7 @@ Role view of the screen (the buttons are hidden, not disabled, for roles that ca
 1. Choose "Edit" in the row menu; the dialog is pre-filled from the row (`MembersView.vue:342-354`) (STAFF+).
 2. "Save changes" sends the form to `PUT /api/members/{id}` as a `MemberRequest` (`MemberController.java:103-111`). The server loads the stored member and applies name, email, phone, join date (when sent) and `active`; the missed-months counter, last payment date and monthly-job marker are never taken from the client (`src/main/java/io/github/membertracker/usecase/UpdateMemberUseCase.java:22-46`).
 3. Unknown id returns an empty 404 (`MemberController.java:110`). An email that belongs to another member returns 400 "A member with this email already exists". Otherwise the dialog closes, the table reloads and a toast "Member saved" appears.
-- The "Active" switch in the form is honoured on edit; changing it goes through `Member.activate()` / `deactivate()`. Its help text says inactive members do not count as behind and that turning it back on resets the months behind.
+- The "Active" switch is shown only when editing a member (`v-if="editingMember"`, `MembersView.vue:150`), and is honoured there; changing it goes through `Member.activate()` / `deactivate()`. Its help text says inactive members do not count as behind and that turning it back on resets the months behind.
 
 ### Deactivate or reactivate
 1. Choose "Deactivate" or "Reactivate" in the row menu (STAFF+). There is no dialog: the change is easy to undo, so it acts at once.
@@ -88,7 +88,6 @@ Role view of the screen (the buttons are hidden, not disabled, for roles that ca
 ## Known issues
 - One email per member is a model limit (audit C10).
 - Automatic deactivation never ran: the pre-due reminder window and automatic deactivation never ran; the code was removed in `chore: remove unused use cases, the membership policy and PhoneNumber` and can be recovered from git history; decide whether to build them for real.
-- The "Active" switch also shows when adding a member, but the server always creates the member active, so turning it off there has no effect (`MembersView.vue:150-160`, `SaveMemberUseCase.java:18-27`).
 - Load errors are only logged to the console and shown as the banner; there is no retry other than the "Try again" button.
 - A filter that matches every member exports through the full-list endpoint but the file is still named `members_filtered_...` (`MembersView.vue:459`).
 - After deleting a row from its menu, focus has nowhere to return (the trigger is gone) and falls to the page.

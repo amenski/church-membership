@@ -147,7 +147,7 @@
         <BaseInput id="member-email" v-model="memberForm.email" label="Email" type="email" autocomplete="off" :error="formErrors.email" />
         <BaseInput id="member-phone" v-model="memberForm.phone" label="Phone" type="tel" autocomplete="off" hint="Optional. 10 digits or more." :error="formErrors.phone" />
         <BaseInput id="member-joined" v-model="memberForm.joinDate" label="Joined on" type="date" :max="today" :error="formErrors.joinDate" />
-        <div>
+        <div v-if="editingMember">
           <label class="tw:flex tw:min-h-11 tw:cursor-pointer tw:items-center tw:gap-3">
             <input v-model="memberForm.active" type="checkbox" role="switch" class="tw:peer tw:sr-only">
             <span

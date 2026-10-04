@@ -23,7 +23,7 @@ Options API component; local `data()`, not the Pinia store.
 | `filters` | `search`, `status` (ALL/ACTIVE/INACTIVE), `paymentStatus` (ALL/CURRENT/OVERDUE, shown as "Dues": All / Paid up / Behind), `joinedFrom`, `joinedTo` |
 | `datesOpen` | Below md the date pair sits under a "More filters" disclosure (`aria-expanded`); from md up it is always visible |
 | `sort` | `{key, direction}`; `key` null = server order |
-| `memberForm`, `editingMember`, `formOpen`, `saving`, `formError`, `formErrors` | Add/edit dialog: `name`, `email`, `phone`, `joinDate`, `active`; `editingMember` null = add mode; `formErrors` holds per-field messages, `formError` the banner message |
+| `memberForm`, `editingMember`, `formOpen`, `saving`, `formError`, `formErrors` | Add/edit dialog: `name`, `email`, `phone`, `joinDate`, `active`; `editingMember` null = add mode (the Active switch is shown only when editing: a new member is always active, the server ignores `active` on create); `formErrors` holds per-field messages, `formError` the banner message |
 | `selectedMember`, `deleteOpen`, `deleting`, `deleteError` | Delete dialog |
 | `filteredMembers` | `filterMembers` then `sortMembers` |
 | `hasActiveFilters` | Any filter differs from its default; shows "Clear filters" |
