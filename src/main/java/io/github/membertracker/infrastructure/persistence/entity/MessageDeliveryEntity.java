@@ -1,5 +1,6 @@
 package io.github.membertracker.infrastructure.persistence.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -33,6 +34,9 @@ public class MessageDeliveryEntity {
     private DeliveryChannel channel;
 
     private String responseNotes;
+
+    @Column(nullable = false)
+    private int attempts;
 
     // Enums
     public enum DeliveryStatus {
@@ -109,5 +113,13 @@ public class MessageDeliveryEntity {
 
     public void setResponseNotes(String responseNotes) {
         this.responseNotes = responseNotes;
+    }
+
+    public int getAttempts() {
+        return attempts;
+    }
+
+    public void setAttempts(int attempts) {
+        this.attempts = attempts;
     }
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { countDeliveries, deliveryStatus, deliverySummaryParts, sortMessages, typeLabel } from '@/utils/messageHistory'
+import { attemptsLabel, countDeliveries, deliveryStatus, deliverySummaryParts, sortMessages, typeLabel } from '@/utils/messageHistory'
 
 describe('deliverySummaryParts', () => {
   it('joins sent and delivered and tones each word', () => {
@@ -17,6 +17,20 @@ describe('deliverySummaryParts', () => {
   it('is empty for no summary or all zeros', () => {
     expect(deliverySummaryParts(undefined)).toEqual([])
     expect(deliverySummaryParts({ sent: 0, failed: 0, pending: 0, delivered: 0 })).toEqual([])
+  })
+})
+
+describe('attemptsLabel', () => {
+  it('counts attempts in words', () => {
+    expect(attemptsLabel(1)).toBe('1 attempt')
+    expect(attemptsLabel(3)).toBe('3 attempts')
+  })
+
+  it('is empty for zero, missing or invalid counts', () => {
+    expect(attemptsLabel(0)).toBe('')
+    expect(attemptsLabel(undefined)).toBe('')
+    expect(attemptsLabel(null)).toBe('')
+    expect(attemptsLabel(-1)).toBe('')
   })
 })
 

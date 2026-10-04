@@ -123,7 +123,10 @@
                 <span v-if="delivery.deliveryTime" class="text-sm text-muted tabular-nums">{{ formatDate(delivery.deliveryTime, 'MMM d, yyyy, h:mm a') }}</span>
               </div>
               <div class="text-sm text-muted [overflow-wrap:anywhere]">{{ delivery.recipient?.email }}</div>
-              <div v-if="delivery.responseNotes" class="text-sm text-muted [overflow-wrap:anywhere]">{{ delivery.responseNotes }}</div>
+              <div v-if="delivery.responseNotes || delivery.attempts > 0" class="text-sm text-muted [overflow-wrap:anywhere]">
+                <span v-if="delivery.responseNotes">{{ delivery.responseNotes }}</span>
+                <span v-if="delivery.attempts > 0" class="tabular-nums"><template v-if="delivery.responseNotes"> &middot; </template>{{ attemptsLabel(delivery.attempts) }}</span>
+              </div>
             </div>
             <BaseButton
               v-if="canRetry(delivery)"
@@ -153,7 +156,7 @@ import { useAppStore } from '../stores/appStore'
 import { formatDate } from '@/utils'
 import { audienceCount } from '@/utils/audienceCount'
 import { buildCommunicationRequest } from '@/utils/communicationPayload'
-import { countDeliveries, deliveryStatus, deliverySummaryParts, sortMessages, typeLabel } from '@/utils/messageHistory'
+import { attemptsLabel, countDeliveries, deliveryStatus, deliverySummaryParts, sortMessages, typeLabel } from '@/utils/messageHistory'
 import AlertBanner from '@/components/AlertBanner.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import BaseInput from '@/components/BaseInput.vue'
@@ -186,6 +189,7 @@ export default {
       appStore: useAppStore(),
       formatDate,
       typeLabel,
+      attemptsLabel,
       CARD,
       MESSAGE_MAX
     }

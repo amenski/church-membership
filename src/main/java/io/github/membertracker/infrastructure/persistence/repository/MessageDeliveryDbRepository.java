@@ -65,6 +65,7 @@ public class MessageDeliveryDbRepository implements MessageDeliveryRepository {
         delivery.setChannel(mapToDomainChannel(entity.getChannel()));
         delivery.setDeliveryTime(entity.getDeliveryTime());
         delivery.setResponseNotes(entity.getResponseNotes());
+        delivery.setAttempts(entity.getAttempts());
 
         // Map recipient
         if (entity.getRecipient() != null) {
@@ -96,6 +97,7 @@ public class MessageDeliveryDbRepository implements MessageDeliveryRepository {
         entity.setChannel(mapToEntityChannel(delivery.getChannel()));
         entity.setDeliveryTime(delivery.getDeliveryTime());
         entity.setResponseNotes(delivery.getResponseNotes());
+        entity.setAttempts(delivery.getAttempts());
 
         // Map recipient
         if (delivery.getRecipient() != null && delivery.getRecipient().getId() != null) {

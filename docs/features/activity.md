@@ -26,7 +26,7 @@ Each entry has a type, a plain description, the kind and id of the record it is 
 | `MEMBERS_EXPORTED` | either members CSV export | Exported 11 members | `MemberController.java:156` |
 | `PAYMENT_RECORDED` | a payment is recorded | Payment of 50.00 for 2026-10 was recorded for John Doe | `usecase/RecordPaymentUseCase.java:61` |
 | `PAYMENTS_EXPORTED` | the payments CSV export | Exported 42 payments | `PaymentController.java:106` |
-| `MESSAGE_SENT` | a message is sent to all, to overdue members or to one member (the monthly reminder job too) | Message "Feast day" was sent to 8 members | `usecase/SendCommunicationToAllMembersUseCase.java:75`, `usecase/SendCommunicationToMembersUseCase.java:68` |
+| `MESSAGE_SENT` | a message is sent to all, to overdue members or to one member (the monthly reminder job too) | Message "Feast day" was sent to 8 members | `usecase/SendCommunicationToAllMembersUseCase.java:76`, `usecase/SendCommunicationToMembersUseCase.java:69` |
 
 Entries are written after the action succeeded, so a rejected request (validation error, duplicate email) leaves no entry. A delete reads the member's name first, because it is gone afterwards.
 

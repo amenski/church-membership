@@ -71,6 +71,17 @@ class SendCommunicationToMembersUseCaseTest {
         return m;
     }
 
+    /** The email service tries {@code attempts} times (reporting each one to the callback), then gives {@code sent}. */
+    private static org.mockito.stubbing.Answer<Boolean> madeAttempts(int attempts, boolean sent) {
+        return invocation -> {
+            EmailService.RetryCallback callback = invocation.getArgument(3);
+            for (int i = 1; i <= attempts; i++) {
+                callback.onRetry(i, 3);
+            }
+            return sent;
+        };
+    }
+
     private Communication communication() {
         Communication c = new Communication();
         c.setTitle("Hello");
@@ -95,7 +106,7 @@ class SendCommunicationToMembersUseCaseTest {
 
     @Test
     void sendingIsLoggedWithTheTitleAndTheRecipientCount() {
-        when(emailService.sendSimpleEmail(any(), any(), any())).thenReturn(true);
+        when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenReturn(true);
 
         useCase.invoke(communication(), List.of(alice, bob), DeliveryChannel.EMAIL);
         useCase.invoke(communication(), List.of(alice), DeliveryChannel.EMAIL);
@@ -108,7 +119,7 @@ class SendCommunicationToMembersUseCaseTest {
 
     @Test
     void emailCreatesOnePendingDeliveryPerRecipientAndSavesBeforeSending() {
-        when(emailService.sendSimpleEmail(any(), any(), any())).thenReturn(true);
+        when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenReturn(true);
         Communication c = communication();
         LocalDateTime before = LocalDateTime.now();
 
@@ -128,32 +139,32 @@ class SendCommunicationToMembersUseCaseTest {
 
     @Test
     void emailIsSentToEachRecipientWithTitleAndContent() {
-        when(emailService.sendSimpleEmail(any(), any(), any())).thenReturn(true);
+        when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenReturn(true);
 
         useCase.invoke(communication(), List.of(alice, bob), DeliveryChannel.EMAIL);
 
-        verify(emailService, timeout(5000)).sendSimpleEmail(alice, "Hello", "Body");
-        verify(emailService, timeout(5000)).sendSimpleEmail(bob, "Hello", "Body");
+        verify(emailService, timeout(5000)).sendSimpleEmailWithRetry(eq(alice), eq("Hello"), eq("Body"), any());
+        verify(emailService, timeout(5000)).sendSimpleEmailWithRetry(eq(bob), eq("Hello"), eq("Body"), any());
     }
 
     @Test
     void emailSubjectAndBodyArePersonalisedPerRecipientButTheStoredTextKeepsThePlaceholder() {
-        when(emailService.sendSimpleEmail(any(), any(), any())).thenReturn(true);
+        when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenReturn(true);
         Communication c = communication();
         c.setTitle("Hello {{member_name}}");
         c.setMessageContent("Dear {{member_name}}, see you soon");
 
         useCase.invoke(c, List.of(alice, bob), DeliveryChannel.EMAIL);
 
-        verify(emailService, timeout(5000)).sendSimpleEmail(alice, "Hello Alice", "Dear Alice, see you soon");
-        verify(emailService, timeout(5000)).sendSimpleEmail(bob, "Hello Bob", "Dear Bob, see you soon");
+        verify(emailService, timeout(5000)).sendSimpleEmailWithRetry(eq(alice), eq("Hello Alice"), eq("Dear Alice, see you soon"), any());
+        verify(emailService, timeout(5000)).sendSimpleEmailWithRetry(eq(bob), eq("Hello Bob"), eq("Dear Bob, see you soon"), any());
         assertThat(c.getTitle()).isEqualTo("Hello {{member_name}}");
         assertThat(c.getMessageContent()).isEqualTo("Dear {{member_name}}, see you soon");
     }
 
     @Test
     void successfulEmailsSaveEachDeliveryAsSentAndTheCommunicationIsSavedOnlyOnce() {
-        when(emailService.sendSimpleEmail(any(), any(), any())).thenReturn(true);
+        when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenReturn(true);
         Communication c = communication();
 
         useCase.invoke(c, List.of(alice, bob), DeliveryChannel.EMAIL);
@@ -169,8 +180,47 @@ class SendCommunicationToMembersUseCaseTest {
     }
 
     @Test
+    void anEmailThatFailsTwiceThenSucceedsIsSentWithThreeAttempts() {
+        when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenAnswer(madeAttempts(3, true));
+        Communication c = communication();
+
+        useCase.invoke(c, List.of(alice), DeliveryChannel.EMAIL);
+
+        ArgumentCaptor<MessageDelivery> saved = ArgumentCaptor.forClass(MessageDelivery.class);
+        verify(messageDeliveryRepository, timeout(5000)).save(saved.capture());
+        assertThat(saved.getValue().getStatus()).isEqualTo(DeliveryStatus.SENT);
+        assertThat(saved.getValue().getAttempts()).isEqualTo(3);
+    }
+
+    @Test
+    void anEmailThatFailsEveryTimeRecordsTheMaximumAttempts() {
+        when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenAnswer(madeAttempts(3, false));
+        Communication c = communication();
+
+        useCase.invoke(c, List.of(alice), DeliveryChannel.EMAIL);
+
+        ArgumentCaptor<MessageDelivery> saved = ArgumentCaptor.forClass(MessageDelivery.class);
+        verify(messageDeliveryRepository, timeout(5000)).save(saved.capture());
+        assertThat(saved.getValue().getStatus()).isEqualTo(DeliveryStatus.FAILED);
+        assertThat(saved.getValue().getAttempts()).isEqualTo(3);
+    }
+
+    @Test
+    void whenMailIsOffNoAttemptIsCounted() {
+        when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenReturn(false);
+        Communication c = communication();
+
+        useCase.invoke(c, List.of(alice), DeliveryChannel.EMAIL);
+
+        ArgumentCaptor<MessageDelivery> saved = ArgumentCaptor.forClass(MessageDelivery.class);
+        verify(messageDeliveryRepository, timeout(5000)).save(saved.capture());
+        assertThat(saved.getValue().getStatus()).isEqualTo(DeliveryStatus.FAILED);
+        assertThat(saved.getValue().getAttempts()).isZero();
+    }
+
+    @Test
     void failedEmailSavesTheDeliveryAsFailedWithNote() {
-        when(emailService.sendSimpleEmail(eq(alice), any(), any())).thenReturn(false);
+        when(emailService.sendSimpleEmailWithRetry(eq(alice), any(), any(), any())).thenReturn(false);
         Communication c = communication();
 
         useCase.invoke(c, List.of(alice), DeliveryChannel.EMAIL);
@@ -186,14 +236,14 @@ class SendCommunicationToMembersUseCaseTest {
 
     @Test
     void aFailingDeliverySaveDoesNotStopTheLoop() {
-        when(emailService.sendSimpleEmail(any(), any(), any())).thenReturn(true);
+        when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenReturn(true);
         when(messageDeliveryRepository.save(any(MessageDelivery.class)))
                 .thenThrow(new RuntimeException("db down"));
 
         useCase.invoke(communication(), List.of(alice, bob), DeliveryChannel.EMAIL);
 
         verify(messageDeliveryRepository, timeout(5000).times(2)).save(any(MessageDelivery.class));
-        verify(emailService, timeout(5000)).sendSimpleEmail(eq(bob), any(), any());
+        verify(emailService, timeout(5000)).sendSimpleEmailWithRetry(eq(bob), any(), any(), any());
     }
 
     @Test

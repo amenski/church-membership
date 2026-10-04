@@ -5,6 +5,11 @@ export function typeLabel(type) {
   return TYPE_LABELS[type] || type || ''
 }
 
+/** "1 attempt", "3 attempts"; empty when none were made (or the count is unknown). */
+export function attemptsLabel(n) {
+  return n > 0 ? `${n} ${n === 1 ? 'attempt' : 'attempts'}` : ''
+}
+
 /**
  * The delivery counts of one message as words with a tone for StatusLabel: "8 sent" (sent plus
  * delivered, both mean the mail left), "1 failed", "1 pending". Zero counts are left out.

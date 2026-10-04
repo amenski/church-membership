@@ -74,6 +74,17 @@ class SendCommunicationToAllMembersUseCaseTest {
         return m;
     }
 
+    /** The email service tries {@code attempts} times (reporting each one to the callback), then gives {@code sent}. */
+    private static org.mockito.stubbing.Answer<Boolean> madeAttempts(int attempts, boolean sent) {
+        return invocation -> {
+            EmailService.RetryCallback callback = invocation.getArgument(3);
+            for (int i = 1; i <= attempts; i++) {
+                callback.onRetry(i, 3);
+            }
+            return sent;
+        };
+    }
+
     private Communication communication() {
         Communication c = new Communication();
         c.setTitle("News");
@@ -155,6 +166,48 @@ class SendCommunicationToAllMembersUseCaseTest {
                 org.mockito.ArgumentMatchers.eq("Dear Bob, welcome"), any());
         assertThat(c.getTitle()).isEqualTo("News for {{member_name}}");
         assertThat(c.getMessageContent()).isEqualTo("Dear {{member_name}}, welcome");
+    }
+
+    @Test
+    void anEmailThatFailsTwiceThenSucceedsIsSentWithThreeAttempts() {
+        when(memberRepository.findByActive(true)).thenReturn(List.of(alice));
+        when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenAnswer(madeAttempts(3, true));
+        Communication c = communication();
+
+        useCase.invoke(c);
+
+        ArgumentCaptor<MessageDelivery> saved = ArgumentCaptor.forClass(MessageDelivery.class);
+        verify(messageDeliveryRepository, timeout(5000)).save(saved.capture());
+        assertThat(saved.getValue().getStatus()).isEqualTo(DeliveryStatus.SENT);
+        assertThat(saved.getValue().getAttempts()).isEqualTo(3);
+    }
+
+    @Test
+    void anEmailThatFailsEveryTimeRecordsTheMaximumAttempts() {
+        when(memberRepository.findByActive(true)).thenReturn(List.of(alice));
+        when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenAnswer(madeAttempts(3, false));
+        Communication c = communication();
+
+        useCase.invoke(c);
+
+        ArgumentCaptor<MessageDelivery> saved = ArgumentCaptor.forClass(MessageDelivery.class);
+        verify(messageDeliveryRepository, timeout(5000)).save(saved.capture());
+        assertThat(saved.getValue().getStatus()).isEqualTo(DeliveryStatus.FAILED);
+        assertThat(saved.getValue().getAttempts()).isEqualTo(3);
+    }
+
+    @Test
+    void whenMailIsOffNoAttemptIsCounted() {
+        when(memberRepository.findByActive(true)).thenReturn(List.of(alice));
+        when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenReturn(false);
+        Communication c = communication();
+
+        useCase.invoke(c);
+
+        ArgumentCaptor<MessageDelivery> saved = ArgumentCaptor.forClass(MessageDelivery.class);
+        verify(messageDeliveryRepository, timeout(5000)).save(saved.capture());
+        assertThat(saved.getValue().getStatus()).isEqualTo(DeliveryStatus.FAILED);
+        assertThat(saved.getValue().getAttempts()).isZero();
     }
 
     @Test

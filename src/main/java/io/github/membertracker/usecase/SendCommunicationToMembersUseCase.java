@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class SendCommunicationToMembersUseCase {
 
@@ -92,17 +93,19 @@ public class SendCommunicationToMembersUseCase {
     private void sendEmailsAsync(Communication communication, List<Member> members) {
         executorService.submit(() -> {
             for (Member member : members) {
+                AtomicInteger attempts = new AtomicInteger();
                 try {
-                    boolean sent = emailService.sendSimpleEmail(
+                    boolean sent = emailService.sendSimpleEmailWithRetry(
                         member,
                         MessageTemplates.personalize(communication.getTitle(), member),
-                        MessageTemplates.personalize(communication.getMessageContent(), member)
+                        MessageTemplates.personalize(communication.getMessageContent(), member),
+                        (currentAttempt, maxAttempts) -> attempts.set(currentAttempt)
                     );
                     
                     // Update delivery status
                     updateDeliveryStatus(communication, member, 
                         sent ? MessageDelivery.DeliveryStatus.SENT : MessageDelivery.DeliveryStatus.FAILED,
-                        sent ? null : "Failed to send email"
+                        sent ? null : "Failed to send email", attempts.get()
                     );
                     
                     // Small delay to avoid overwhelming SMTP server
@@ -111,7 +114,7 @@ public class SendCommunicationToMembersUseCase {
                     logger.error("Error sending email to {}: {}", member.getEmail(), e.getMessage(), e);
                     updateDeliveryStatus(communication, member, 
                         MessageDelivery.DeliveryStatus.FAILED, 
-                        "Exception: " + e.getMessage()
+                        "Exception: " + e.getMessage(), attempts.get()
                     );
                 }
             }
@@ -120,12 +123,13 @@ public class SendCommunicationToMembersUseCase {
     }
     
     private void updateDeliveryStatus(Communication communication, Member member, 
-                                     MessageDelivery.DeliveryStatus status, String notes) {
+                                     MessageDelivery.DeliveryStatus status, String notes, int attempts) {
         communication.getDeliveries().stream()
             .filter(d -> d.getRecipient().getId().equals(member.getId()))
             .findFirst()
             .ifPresent(delivery -> {
                 delivery.setStatus(status);
+                delivery.setAttempts(attempts);
                 delivery.setDeliveryTime(LocalDateTime.now());
                 if (notes != null) {
                     delivery.setResponseNotes(notes);

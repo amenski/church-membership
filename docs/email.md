@@ -23,11 +23,13 @@ Each recipient gets a `MessageDelivery` row:
 
 - **Channel:** `EMAIL`, `SMS` or `WHATSAPP`. SMS and WhatsApp are stubs that record a failed delivery.
 - **Status:** `PENDING`, `SENT`, `FAILED` or `DELIVERED`
-- **Also stored:** timestamp and failure notes
+- **Also stored:** timestamp, failure notes and `attempts`, the number of send attempts made (migration `008.add-message-delivery-attempts.sql`)
 
 The rows are written when the communication is saved (status `PENDING`) and each one is updated as soon as its email result is known. The send response itself does not list them: to see deliveries, call `GET /api/communications/{id}/deliveries`, or open the delivery dialog on the Communications page.
 
-STAFF can retry a `FAILED` email delivery from the delivery dialog (`POST /api/communications/{id}/deliveries/{deliveryId}/retry`). It re-sends once, synchronously.
+`attempts` counts the tries the mail service made for that recipient: 1 when the first try worked, up to `app.mail.retry.max-attempts` (3 by default) when it kept failing. It stays 0 when no try was made (mail disabled, SMS and WhatsApp stubs, rows from before the migration). The send use cases count them with the `RetryCallback` of `EmailService.sendSimpleEmailWithRetry` (`usecase/SendCommunicationToAllMembersUseCase.java:93-103`, `usecase/SendCommunicationToMembersUseCase.java:96-102`) and store the number together with the status. The Messages screen shows it beside the note as "3 attempts".
+
+STAFF can retry a `FAILED` email delivery from the delivery dialog (`POST /api/communications/{id}/deliveries/{deliveryId}/retry`). It re-sends once, synchronously (one full retry cycle, so up to the maximum attempts again), and ADDS the attempts it made to the stored count (`usecase/RetryDeliveryUseCase.java:59-66`): a delivery that failed 3 times and then succeeded on the second try of a manual retry shows 5.
 
 ## Personalisation
 

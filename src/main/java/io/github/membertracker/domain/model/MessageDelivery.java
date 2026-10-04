@@ -10,6 +10,8 @@ public class MessageDelivery {
     private DeliveryStatus status;
     private DeliveryChannel channel;
     private String responseNotes;
+    /** Send attempts made so far, across the retries of one send and later manual retries. */
+    private int attempts;
 
     // Enums
     public enum DeliveryStatus {
@@ -86,5 +88,13 @@ public class MessageDelivery {
 
     public void setResponseNotes(String responseNotes) {
         this.responseNotes = responseNotes;
+    }
+
+    public int getAttempts() {
+        return attempts;
+    }
+
+    public void setAttempts(int attempts) {
+        this.attempts = attempts;
     }
 }

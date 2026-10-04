@@ -105,7 +105,7 @@ class SendPaymentRemindersUseCaseTest {
         CommunicationRepository communicationRepository = mock(CommunicationRepository.class);
         when(communicationRepository.save(any(Communication.class))).thenAnswer(i -> i.getArgument(0));
         EmailService emailService = mock(EmailService.class);
-        when(emailService.sendSimpleEmail(any(), any(), any())).thenReturn(true);
+        when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenReturn(true);
         Member alice = new Member("Alice", "a@example.com", "+1234567890");
         alice.setId(1L);
         when(memberRepository.findByConsecutiveMonthsMissedGreaterThanEqual(3)).thenReturn(List.of(alice));
@@ -116,8 +116,8 @@ class SendPaymentRemindersUseCaseTest {
         endToEnd.invoke(3);
 
         ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
-        verify(emailService, timeout(5000)).sendSimpleEmail(org.mockito.ArgumentMatchers.eq(alice),
-                org.mockito.ArgumentMatchers.eq("Payment Reminder"), body.capture());
+        verify(emailService, timeout(5000)).sendSimpleEmailWithRetry(org.mockito.ArgumentMatchers.eq(alice),
+                org.mockito.ArgumentMatchers.eq("Payment Reminder"), body.capture(), any());
         assertThat(body.getValue()).startsWith("Dear Alice,").doesNotContain("{{member_name}}");
     }
 }

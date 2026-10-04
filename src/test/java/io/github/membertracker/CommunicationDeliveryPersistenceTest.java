@@ -27,7 +27,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -81,12 +81,16 @@ class CommunicationDeliveryPersistenceTest {
         memberJpaRepository.deleteAll();
     }
 
-    /** Alice's email goes out, Bob's fails. */
+    /** Alice's email goes out on the first attempt, Bob's fails after three. */
     private void aliceSucceedsBobFails() {
-        when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any()))
-                .thenAnswer(i -> ((Member) i.getArgument(0)).getEmail().equals("alice@example.com"));
-        when(emailService.sendSimpleEmail(any(), any(), any()))
-                .thenAnswer(i -> ((Member) i.getArgument(0)).getEmail().equals("alice@example.com"));
+        when(emailService.sendSimpleEmailWithRetry(any(), any(), any(), any())).thenAnswer(i -> {
+            boolean alice = ((Member) i.getArgument(0)).getEmail().equals("alice@example.com");
+            EmailService.RetryCallback callback = i.getArgument(3);
+            for (int attempt = 1; attempt <= (alice ? 1 : 3); attempt++) {
+                callback.onRetry(attempt, 3);
+            }
+            return alice;
+        });
     }
 
     private String asStaff(org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder request,
@@ -130,14 +134,27 @@ class CommunicationDeliveryPersistenceTest {
         assertThat((List<String>) JsonPath.read(deliveries, "$[?(@.recipient.email=='bob@example.com')].responseNotes"))
                 .containsExactly("Failed after max retry attempts");
         assertThat((List<Integer>) JsonPath.read(deliveries, "$[*].communication.id")).containsOnly(communicationId);
+        assertThat((List<Integer>) JsonPath.read(deliveries, "$[?(@.recipient.email=='alice@example.com')].attempts"))
+                .containsExactly(1);
+        assertThat((List<Integer>) JsonPath.read(deliveries, "$[?(@.recipient.email=='bob@example.com')].attempts"))
+                .containsExactly(3);
         int failedId = ((List<Integer>) JsonPath.read(deliveries,
                 "$[?(@.recipient.email=='bob@example.com')].id")).get(0);
 
-        // The mail server is back: retry the failed delivery
-        doReturn(true).when(emailService).sendSimpleEmailWithRetry(any(), any(), any(), any());
+        // The mail server is back: the retry succeeds on its second attempt, and those attempts are added
+        doAnswer(i -> {
+            EmailService.RetryCallback callback = i.getArgument(3);
+            callback.onRetry(1, 3);
+            callback.onRetry(2, 3);
+            return true;
+        }).when(emailService).sendSimpleEmailWithRetry(any(), any(), any(), any());
         String retried = asStaff(post("/api/communications/" + communicationId + "/deliveries/" + failedId + "/retry"), "");
 
         assertThat((String) JsonPath.read(retried, "$.status")).isEqualTo("SENT");
+        assertThat((Integer) JsonPath.read(retried, "$.attempts")).isEqualTo(5);
+        assertThat(messageDeliveryJpaRepository.findById((long) failedId).orElseThrow().getAttempts()).isEqualTo(5);
+        assertThat((List<Integer>) JsonPath.read(asVolunteer("/api/communications/" + communicationId + "/deliveries"),
+                "$[?(@.recipient.email=='bob@example.com')].attempts")).containsExactly(5);
         assertThat(messageDeliveryJpaRepository.findById((long) failedId).orElseThrow().getStatus())
                 .isEqualTo(MessageDeliveryEntity.DeliveryStatus.SENT);
         assertThat(messageDeliveryJpaRepository.findByCommunicationId((long) communicationId))

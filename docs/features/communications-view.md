@@ -15,11 +15,11 @@ Paths below are relative to `frontend/src/`.
   - "Send message" (busy label "Sending...").
 - **Confirm dialog** (`components/ConfirmDialog.vue`): "Send to N members?" ("Send to 1 member?"), the text `"<subject>" goes out by email. You cannot take it back.`, buttons "Cancel" (focused when it opens) and "Send to N members". N is computed on the client by `audienceCount` (`utils/audienceCount.js`): every ACTIVE member for ALL, ACTIVE members with `consecutiveMonthsMissed >= months` for behind (an inactive member never counts, as on the server), 1 for one member. When N is 0 nothing is asked: the card shows "There is nobody to send this to."
 - **Sent messages** (a ruled list, newest first by sent date): bold title; sent date and time (local), a plain type word ("Reminder", "Announcement", "Personal"), "N recipients" (`recipientCount`; 0 shows "No deliveries recorded"); the delivery summary as words with a status dot: "8 sent" (sent plus delivered, fern), "1 failed" (clay), "1 pending" (ochre), zero counts left out (`deliverySummaryParts`); a "View deliveries" text button per row.
-- **Deliveries dialog** (`BaseModal` lg), titled "Deliveries: <message title>": sent date and time, the totals as words, then one ruled row per delivery: recipient name, a `StatusLabel` (Sent and Delivered fern, Failed clay, Pending ochre), time, the email address and the response notes beneath; STAFF and above get a "Retry" button on FAILED EMAIL deliveries only (busy label "Retrying..." per row). Empty: "No deliveries were recorded for this message."
+- **Deliveries dialog** (`BaseModal` lg), titled "Deliveries: <message title>": sent date and time, the totals as words, then one ruled row per delivery: recipient name, a `StatusLabel` (Sent and Delivered fern, Failed clay, Pending ochre), time, the email address and the response notes beneath, with "3 attempts" ("1 attempt") beside the note in small muted text when `attempts` is above 0 (`attemptsLabel`, `frontend/src/utils/messageHistory.js:8-11`); STAFF and above get a "Retry" button on FAILED EMAIL deliveries only (busy label "Retrying..." per row). Empty: "No deliveries were recorded for this message."
 - Empty state: "No messages yet." plus "Use the form above to send the first one." for STAFF and above. A load failure shows a banner "The messages did not load. Check your connection and try again." with "Try again".
 
 ## State
-Component `data()` (`views/CommunicationsView.vue:193-211`), not the Pinia store:
+Component `data()` (`views/CommunicationsView.vue:197-215`), not the Pinia store:
 
 | Field | Meaning |
 |-------|---------|
@@ -35,13 +35,13 @@ Component `data()` (`views/CommunicationsView.vue:193-211`), not the Pinia store
 ## Actions
 | Method | Does |
 |--------|------|
-| `loadData` (`:234`) | `api.getMembers` (STAFF and above) and `api.getCommunications` in parallel |
-| `refreshMessages` (`:252`) | reloads only the history, after a send or a retry |
-| `validateForm`, `askToSend` (`:269`, `:282`) | checks the fields, stops at 0 recipients, otherwise opens the confirm dialog |
-| `sendMessage` (`:291`) | body from `buildCommunicationRequest` (`{ title, messageContent }`, the type is left to the server, so ANNOUNCEMENT); ALL -> `api.sendToAllMembers(payload)`; behind -> `api.sendToOverdueMembers(months, payload)`; one -> `api.sendToMember(memberId, payload)`. Success: closes the dialog, clears the form, toast "Sending started" ("N members will get it in the next few minutes. Check the delivery status below."), reloads the history |
-| `showSendError` (`:314`) | `fieldErrors` (`title`, `messageContent`) go under Subject and Message; any other 400 detail goes in the card's `AlertBanner`, plus an error toast "Could not send message" (no toast for 403: the shared handler already shows one) |
-| `openDeliveries`, `loadDeliveries` (`:328`, `:334`) | `api.getCommunicationDeliveries(id)` into the dialog; a failure shows "Try again" |
-| `canRetry`, `retryDelivery` (`:349`, `:352`) | `api.retryDelivery(commId, deliveryId)`; swaps the row with the response. Toast "Delivery retried" when it is no longer FAILED, a warning "Retry failed" when it stays FAILED, an error toast "Could not retry delivery" on an exception |
+| `loadData` (`:238`) | `api.getMembers` (STAFF and above) and `api.getCommunications` in parallel |
+| `refreshMessages` (`:256`) | reloads only the history, after a send or a retry |
+| `validateForm`, `askToSend` (`:273`, `:286`) | checks the fields, stops at 0 recipients, otherwise opens the confirm dialog |
+| `sendMessage` (`:295`) | body from `buildCommunicationRequest` (`{ title, messageContent }`, the type is left to the server, so ANNOUNCEMENT); ALL -> `api.sendToAllMembers(payload)`; behind -> `api.sendToOverdueMembers(months, payload)`; one -> `api.sendToMember(memberId, payload)`. Success: closes the dialog, clears the form, toast "Sending started" ("N members will get it in the next few minutes. Check the delivery status below."), reloads the history |
+| `showSendError` (`:318`) | `fieldErrors` (`title`, `messageContent`) go under Subject and Message; any other 400 detail goes in the card's `AlertBanner`, plus an error toast "Could not send message" (no toast for 403: the shared handler already shows one) |
+| `openDeliveries`, `loadDeliveries` (`:332`, `:338`) | `api.getCommunicationDeliveries(id)` into the dialog; a failure shows "Try again" |
+| `canRetry`, `retryDelivery` (`:353`, `:356`) | `api.retryDelivery(commId, deliveryId)`; swaps the row with the response. Toast "Delivery retried" when it is no longer FAILED, a warning "Retry failed" when it stays FAILED, an error toast "Could not retry delivery" on an exception |
 
 ## Backend facts
 - `GET /api/communications` items carry `recipientCount` (int) and `deliverySummary` `{ sent, failed, pending, delivered }`; `deliveries` is not in the list, `GET /api/communications/{id}/deliveries` has them. The draft endpoint `POST /api/communications` no longer exists, so the view and `api.js` have no `createCommunication`.
@@ -51,7 +51,7 @@ Component `data()` (`views/CommunicationsView.vue:193-211`), not the Pinia store
 ## Collaborators
 - API methods: `services/api.js:379-401` (`getCommunications`, `getCommunicationDeliveries`, `retryDelivery`, `sendToAllMembers`, `sendToOverdueMembers`, `sendToMember`); `request` returns `response.data` (`services/api.js:285-288`)
 - `utils/communicationPayload.js` `buildCommunicationRequest` (frontend half of the shared contract fixture, `__tests__/utils/communicationPayload.test.js`)
-- `utils/audienceCount.js` and `utils/messageHistory.js` (`typeLabel`, `deliverySummaryParts`, `deliveryStatus`, `countDeliveries`, `sortMessages`), each with a test in `__tests__/utils/`
+- `utils/audienceCount.js` and `utils/messageHistory.js` (`attemptsLabel`, `typeLabel`, `deliverySummaryParts`, `deliveryStatus`, `countDeliveries`, `sortMessages`), each with a test in `__tests__/utils/`
 - Components: `PageHead`, `SectionTitle`, `AlertBanner`, `BaseButton`, `BaseInput`, `BaseSelect`, `BaseTextarea`, `BaseModal`, `ConfirmDialog`, `StatusLabel`, `TextButton`, `EmptyNote`
 - `stores/authStore.js:39` `isStaff` (`hasRole('STAFF')`); `useAppStore().addNotification` for toasts
 - Backend: [communication-controller.md](communication-controller.md)

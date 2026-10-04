@@ -185,6 +185,7 @@ public class CommunicationDbRepository implements CommunicationRepository {
                 : MessageDeliveryEntity.DeliveryChannel.valueOf(delivery.getChannel().name()));
         entity.setDeliveryTime(delivery.getDeliveryTime());
         entity.setResponseNotes(delivery.getResponseNotes());
+        entity.setAttempts(delivery.getAttempts());
         return entity;
     }
 

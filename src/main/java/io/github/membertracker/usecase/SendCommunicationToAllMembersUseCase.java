@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class SendCommunicationToAllMembersUseCase {
 
@@ -89,6 +90,7 @@ public class SendCommunicationToAllMembersUseCase {
     private void sendEmailsAsync(Communication communication, List<Member> members) {
         executorService.submit(() -> {
             for (Member member : members) {
+                AtomicInteger attempts = new AtomicInteger();
                 try {
                     // Use retry-enabled email sending with callback for logging
                     boolean sent = emailService.sendSimpleEmailWithRetry(
@@ -98,6 +100,7 @@ public class SendCommunicationToAllMembersUseCase {
                         new EmailService.RetryCallback() {
                             @Override
                             public void onRetry(int currentAttempt, int maxAttempts) {
+                                attempts.set(currentAttempt);
                                 logger.info("Attempt {}/{} to send email to {}", 
                                     currentAttempt, maxAttempts, member.getEmail());
                             }
@@ -108,12 +111,12 @@ public class SendCommunicationToAllMembersUseCase {
                     if (sent) {
                         updateDeliveryStatus(communication, member, 
                             MessageDelivery.DeliveryStatus.SENT, 
-                            null);
+                            null, attempts.get());
                         logger.info("Email sent successfully to {}", member.getEmail());
                     } else {
                         updateDeliveryStatus(communication, member, 
                             MessageDelivery.DeliveryStatus.FAILED, 
-                            "Failed after max retry attempts");
+                            "Failed after max retry attempts", attempts.get());
                         logger.error("Email failed after retries for {}", member.getEmail());
                     }
                     
@@ -123,7 +126,7 @@ public class SendCommunicationToAllMembersUseCase {
                     logger.error("Error sending email to {}: {}", member.getEmail(), e.getMessage(), e);
                     updateDeliveryStatus(communication, member, 
                         MessageDelivery.DeliveryStatus.FAILED, 
-                        "Exception: " + e.getMessage()
+                        "Exception: " + e.getMessage(), attempts.get()
                     );
                 }
             }
@@ -132,12 +135,13 @@ public class SendCommunicationToAllMembersUseCase {
     }
     
     private void updateDeliveryStatus(Communication communication, Member member, 
-                                     MessageDelivery.DeliveryStatus status, String notes) {
+                                     MessageDelivery.DeliveryStatus status, String notes, int attempts) {
         communication.getDeliveries().stream()
             .filter(d -> d.getRecipient().getId().equals(member.getId()))
             .findFirst()
             .ifPresent(delivery -> {
                 delivery.setStatus(status);
+                delivery.setAttempts(attempts);
                 delivery.setDeliveryTime(LocalDateTime.now());
                 if (notes != null) {
                     delivery.setResponseNotes(notes);

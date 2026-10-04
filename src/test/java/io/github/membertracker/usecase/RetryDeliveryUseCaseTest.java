@@ -16,6 +16,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -65,7 +66,7 @@ class RetryDeliveryUseCaseTest {
 
     @Test
     void failedDeliveryIsResentAndMarkedSent() {
-        when(emailService.sendSimpleEmailWithRetry(member, "Title", "Body", null)).thenReturn(true);
+        when(emailService.sendSimpleEmailWithRetry(eq(member), eq("Title"), eq("Body"), any())).thenReturn(true);
 
         LocalDateTime before = LocalDateTime.now();
         MessageDelivery result = useCase.invoke(COMMUNICATION_ID, DELIVERY_ID);
@@ -80,7 +81,7 @@ class RetryDeliveryUseCaseTest {
         member.setName("Alice");
         communication.setTitle("Hello {{member_name}}");
         communication.setMessageContent("Dear {{member_name}}, see you soon");
-        when(emailService.sendSimpleEmailWithRetry(member, "Hello Alice", "Dear Alice, see you soon", null))
+        when(emailService.sendSimpleEmailWithRetry(eq(member), eq("Hello Alice"), eq("Dear Alice, see you soon"), any()))
                 .thenReturn(true);
 
         MessageDelivery result = useCase.invoke(COMMUNICATION_ID, DELIVERY_ID);
@@ -90,8 +91,32 @@ class RetryDeliveryUseCaseTest {
     }
 
     @Test
+    void theAttemptsOfTheRetryAreAddedToTheStoredCount() {
+        delivery.setAttempts(3);
+        when(emailService.sendSimpleEmailWithRetry(eq(member), eq("Title"), eq("Body"), any())).thenAnswer(i -> {
+            EmailService.RetryCallback callback = i.getArgument(3);
+            callback.onRetry(1, 3);
+            callback.onRetry(2, 3);
+            return true;
+        });
+
+        MessageDelivery result = useCase.invoke(COMMUNICATION_ID, DELIVERY_ID);
+
+        assertThat(result.getStatus()).isEqualTo(MessageDelivery.DeliveryStatus.SENT);
+        assertThat(result.getAttempts()).isEqualTo(5);
+    }
+
+    @Test
+    void aRetryWithMailOffLeavesTheCountAlone() {
+        delivery.setAttempts(3);
+        when(emailService.sendSimpleEmailWithRetry(eq(member), eq("Title"), eq("Body"), any())).thenReturn(false);
+
+        assertThat(useCase.invoke(COMMUNICATION_ID, DELIVERY_ID).getAttempts()).isEqualTo(3);
+    }
+
+    @Test
     void failedAgainStaysFailedWithNotes() {
-        when(emailService.sendSimpleEmailWithRetry(member, "Title", "Body", null)).thenReturn(false);
+        when(emailService.sendSimpleEmailWithRetry(eq(member), eq("Title"), eq("Body"), any())).thenReturn(false);
 
         MessageDelivery result = useCase.invoke(COMMUNICATION_ID, DELIVERY_ID);
 

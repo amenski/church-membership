@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class RetryDeliveryUseCase {
 
@@ -30,7 +31,7 @@ public class RetryDeliveryUseCase {
     }
 
     /**
-     * Re-sends one FAILED email delivery, synchronously and once.
+     * Re-sends one FAILED email delivery, synchronously and once; the attempts it made are added to the stored count.
      *
      * @param communicationId the communication the delivery must belong to
      * @param deliveryId      the delivery to retry
@@ -55,12 +56,14 @@ public class RetryDeliveryUseCase {
         Communication communication = communicationRepository.findById(communicationId)
                 .orElseThrow(() -> CommunicationDomainException.communicationNotFound(communicationId));
 
+        AtomicInteger attempts = new AtomicInteger();
         boolean sent = emailService.sendSimpleEmailWithRetry(
                 delivery.getRecipient(),
                 MessageTemplates.personalize(communication.getTitle(), delivery.getRecipient()),
                 MessageTemplates.personalize(communication.getMessageContent(), delivery.getRecipient()),
-                null
+                (currentAttempt, maxAttempts) -> attempts.set(currentAttempt)
         );
+        delivery.setAttempts(delivery.getAttempts() + attempts.get());
 
         if (sent) {
             delivery.setStatus(MessageDelivery.DeliveryStatus.SENT);

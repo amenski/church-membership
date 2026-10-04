@@ -99,10 +99,11 @@ This document tracks missing features, improvements, and technical debt in the M
   - [x] Add retry functionality for failed deliveries
   - **Location**: `frontend/src/views/CommunicationsView.vue`
 
-- [ ] **Email Retry Logic Enhancement**
-  - [x] Implement exponential backoff retry strategy (send-to-all only; `SendCommunicationToMembersUseCase` still sends without retry)
+- [x] **Email Retry Logic Enhancement**
+  - [x] Implement exponential backoff retry strategy (every send flow and the manual retry go through `EmailService.sendSimpleEmailWithRetry`)
   - [x] Add retry configuration to `MailProperties` (`app.mail.retry.*`)
-  - Track retry attempts in `MessageDelivery`
+  - [x] Track retry attempts in `MessageDelivery`: `attempts` column (migration 008), set by both send use cases and added to by the manual retry, shown in the deliveries dialog as "N attempts". It is only a count: the error of each attempt and its time are not stored.
+  - Still not done: a durable queue (the cached thread pool loses unsent mail on a restart, see the audit); an automatic retry of FAILED deliveries later (only the manual Retry button exists)
   - **Location**: `EmailService`, `MailProperties`, retry use case
 
 - [x] **CSV Export Improvements**
