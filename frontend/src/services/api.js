@@ -318,6 +318,11 @@ const apiService = {
     return this.delete(`/members/${id}`)
   },
 
+  // DELETE /members/{id}/permanent removes an archived member for good; 409 MEMBER_010 when they have payments or messages
+  async deleteMemberPermanently(id) {
+    return this.delete(`/members/${id}/permanent`)
+  },
+
   // Households API: the list carries only name, city and member count; the detail adds address, notes and members
   async getHouseholds() {
     return this.get('/households')

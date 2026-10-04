@@ -9,7 +9,7 @@ Members screen ("Members": "Everyone on the register: who is paid up and who is 
 |------|------|
 | VOLUNTEER | Read-only list, filters, no "Add member" / "Export CSV" buttons, no actions column |
 | STAFF | Plus "Add member", "Export CSV", and a More menu per row: Edit, Mark inactive/Mark active, Change status... |
-| ADMIN | Plus Archive in the row menu |
+| ADMIN | Plus Archive in the row menu, and the Archived view with Restore and Delete for good |
 
 Gating uses `authStore.isStaff` and `authStore.isAdmin`; the backend enforces the same roles (403 otherwise).
 
@@ -50,19 +50,28 @@ All in `frontend/src/utils/memberFilters.js`; all filters are ANDed.
 
 ## Year strip and phone cards
 - Data: `api.getPayments()` (`GET /api/payments`, VOLUNTEER+) loads in parallel with the members and after every reload; `paidMonthsByMember` groups `payment.period` ("yyyy-MM") by `payment.member.id`. No backend change. If that call fails the strip cells show a muted dash and the rest of the screen works. It returns every payment, which is fine at this size; a per-member endpoint is the next step if the list grows large.
+- `YearStrip` takes a `muted` prop (used by the Archived view): paid squares are grey (`field` at half strength), and no square is red or amber.
 - Desktop: a column "Nov to Oct, one square a month" (the range follows the current month) with the compact `YearStrip`, before Dues. Sorting and filters are unchanged (the column is not sortable).
 - Rule: see [../design.md](../design.md#year-strip) and the header of `frontend/src/utils/yearStrip.js`. Red squares are capped at the server's `consecutiveMonthsMissed`, so the strip and "N months behind" cannot disagree.
 - Below md each member is a card: name, email, household, status, dues text, phone and join date, the More menu, the large strip with month initials, then Call (`tel:`, shown with a phone) and Record payment (STAFF+, members who owe dues; links to `/payments?memberId=<id>`, which opens the Record payment sheet with that member chosen and the oldest unpaid month filled in, see [payments-view](payments-view.md#record-payment-on-a-phone)), both 44px high. The last card clears the bottom tab bar (`main` carries the bar's padding below `lg`).
 
+## Archived view (ADMIN only)
+- Status filter "Archived" loads `GET /api/members?archived=true` (see Filters). The count line reads "N archived members".
+- A note first: "Archived members are hidden from the lists, dues, reminders and messages. Their payments and messages are kept. Only administrators see this view."
+- From md up a table: Member (name in muted ink, email beneath), Household ("None" without one), the year strip in its `muted` treatment, Last paid (`lastPaymentDate`, "Never"), Archived (`archivedAt` as a date; the API does not say who archived, so no "by"), and the actions Restore and Delete for good. Below md each member is a card with the large muted strip and the same two buttons at 44px.
+- Delete for good opens `ConfirmDialog` "Delete <name> for good?" (cannot be undone; only works for a member with no payments and no messages), confirm button "Delete for good" (danger, focus starts on Cancel).
+- The button is disabled with "Has payments, so it stays archived" when the payments already loaded for the strips include that member (`hasPayments`; `GET /api/payments` shows an ADMIN the payments of archived members). A member with messages but no payments is still enabled and the server's 409 decides.
+
 ## Actions
 - `loadMembers` -> `api.getMembers()`, sets `members`, sets `loadError` on failure. Runs in `created`, after every save, archive or toggle, and from "Try again".
-- Row menu (`ActionMenu`, trigger label "More actions for <name>"): Edit, Mark inactive (Member) or Mark active (Inactive), Change status... (opens Edit with the Status select focused), Archive (ADMIN only, in clay). An archived row (ADMIN only) has "Restore" alone.
+- Row menu (`ActionMenu`, trigger label "More actions for <name>"): Edit, Mark inactive (Member) or Mark active (Inactive), Change status... (opens Edit with the Status select focused), Archive (ADMIN only, in clay). Archived members have no row menu: they live in the Archived view (below).
 - `saveMember`: client checks (name required; the email is optional and checked with `isValidEmail` only when filled) show under the fields without a request. Then `buildMemberRequest(form)` (`frontend/src/utils/memberPayload.js`, sends `joinDate` when set) and `api.updateMember(id, request)` or `api.createMember(request)`, reload, close the dialog, toast "Member saved" / "Member added". The primary button shows "Saving..." and is disabled while the request runs.
   - Add mode defaults "Joined on" to today (local date, `max` today); edit mode shows the stored date.
   - Failure keeps the dialog open: each `error.fieldErrors` entry (`{field, message}`, set by the API interceptor) goes under the matching field (`name`, `email`, `phone`, `joinDate`); a field-less 400 and anything else goes in an `AlertBanner` at the top of the dialog plus an error toast "Could not save member" (no toast for 403: the shared handler already shows "Access denied").
 - Archive: dialog "Archive <name>?" ("This hides <name> from the lists. Their payments and messages are kept."), buttons "Archive member" (danger) and "Cancel". Success: reload, close, toast "Member archived". Failure: banner in the dialog and toast "Could not archive member" (not for 403). `api.deleteMember` calls `DELETE /api/members/{id}`, which archives.
 - `toggleStatus`: no dialog. `api.updateMember(id, buildMemberRequest({...member, status: INACTIVE or MEMBER}))`, reload, toast "Member deactivated" / "Member reactivated". Failure toast "Could not deactivate member" / "Could not reactivate member". Reactivating resets the months behind.
-- `restoreMember` (ADMIN, archived rows): `updateMember` with `status: MEMBER`, reload both lists, toast "Member restored" / "Could not restore member".
+- `restoreMember` (ADMIN, Archived view): `updateMember` with `status: MEMBER` (`PUT /api/members/{id}`; this resets the months behind), reload both lists, toast "Restored" / "Could not restore member". The button is disabled while the request runs.
+- `deletePermanently` (ADMIN, Archived view): `api.deleteMemberPermanently` -> `DELETE /api/members/{id}/permanent`, reload, toast "Deleted for good". On a 409 (payments or messages) the dialog closes and an error toast says "<name> has payments or messages, so they can only stay archived. Their history is kept."; the member stays. Other failures: toast "Could not delete member" (not for 403).
 - `clearFilters` resets `filters`; filters are not persisted.
 - `exportMembers` (STAFF+ only):
   1. Nothing on screen: warning toast "Nothing to export", no request.

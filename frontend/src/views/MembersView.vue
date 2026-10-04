@@ -80,11 +80,86 @@
 
     <template v-if="filteredMembers.length">
       <p class="mt-0 mb-2 text-sm text-muted" aria-live="polite">
-        {{ filteredMembers.length !== source.length ? `${filteredMembers.length} of ${source.length} members` : `${source.length} ${source.length === 1 ? 'member' : 'members'}` }}
+        {{ countText }}
       </p>
 
+      <!-- Archived (ADMIN only): what is hidden, with the two things an administrator can do about it -->
+      <template v-if="showingArchived">
+        <div role="note" class="mb-4 rounded-md border border-rule bg-paper px-4 py-2.5 text-sm text-ink">
+          Archived members are hidden from the lists, dues, reminders and messages. Their payments and messages are kept. Only administrators see this view.
+        </div>
+
+        <table :class="TABLE">
+          <caption class="sr-only">Archived members</caption>
+          <thead>
+            <tr class="border-b border-rule">
+              <th scope="col" :class="TH">Member</th>
+              <th scope="col" :class="TH">Household</th>
+              <th scope="col" :class="TH">{{ stripRangeLabel(today.slice(0, 7)) }}, one square a month</th>
+              <th scope="col" :class="TH">Last paid</th>
+              <th scope="col" :class="TH">Archived</th>
+              <th scope="col" :class="TH"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="member in filteredMembers" :key="member.id" class="border-b border-rule align-top">
+              <td :class="[TD, 'max-w-0 w-[26%] py-3']">
+                <div :class="[NAME, 'text-muted']">{{ member.name }}</div>
+                <div v-if="member.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
+              </td>
+              <td :class="[TD, 'py-3 text-muted']">
+                <template v-if="member.householdName">{{ member.householdName }}</template>
+                <template v-else>None</template>
+              </td>
+              <td :class="[TD, 'py-3 whitespace-nowrap']">
+                <YearStrip v-if="paidByMember" v-bind="stripProps(member)" />
+                <span v-else class="text-muted"><span aria-hidden="true">&ndash;</span><span class="sr-only">Months paid did not load</span></span>
+              </td>
+              <td :class="[TD, 'py-3 whitespace-nowrap']">{{ member.lastPaymentDate ? formatMemberDate(member.lastPaymentDate) : 'Never' }}</td>
+              <td :class="[TD, 'py-3 whitespace-nowrap']">{{ archivedOn(member) }}</td>
+              <td :class="[TD, 'py-3']">
+                <div class="flex flex-wrap items-center justify-end gap-2">
+                  <BaseButton variant="secondary" size="sm" :disabled="restoringId === member.id" @click="restoreMember(member)">
+                    Restore<span class="sr-only"> {{ member.name }}</span>
+                  </BaseButton>
+                  <button type="button" :class="[DELETE_BUTTON, 'px-2.5 py-1 text-sm']" :disabled="hasPayments(member)" :aria-describedby="hasPayments(member) ? `keep-${member.id}` : undefined" @click="showPermanentModal(member)">
+                    Delete for good<span class="sr-only"> {{ member.name }}</span>
+                  </button>
+                </div>
+                <p v-if="hasPayments(member)" :id="`keep-${member.id}`" class="m-0 mt-1 text-right text-xs text-muted">Has payments, so it stays archived</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <ul class="m-0 flex list-none flex-col gap-3 p-0 md:hidden">
+          <li v-for="member in filteredMembers" :key="member.id" class="flex flex-col gap-3 rounded-lg border border-rule bg-paper px-4 py-3.5">
+            <div class="min-w-0">
+              <div :class="[NAME, 'text-xl text-muted']">{{ member.name }}</div>
+              <div v-if="member.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
+              <div v-if="member.householdName" class="text-sm text-muted [overflow-wrap:anywhere]"><Icon name="home" :size="14" class="mr-1" /><span class="sr-only">Household: </span>{{ member.householdName }}</div>
+              <div class="mt-1 text-sm text-muted tabular-nums">
+                Last paid {{ member.lastPaymentDate ? formatMemberDate(member.lastPaymentDate) : 'never' }} &middot; {{ archivedOn(member) }}
+              </div>
+            </div>
+            <YearStrip v-if="paidByMember" size="large" v-bind="stripProps(member)" />
+            <div class="flex flex-col gap-2">
+              <div class="flex gap-2">
+                <button type="button" :class="[PHONE_ACTION, 'flex-1 border border-field bg-paper text-ink hover:border-teal hover:bg-teal-tint disabled:pointer-events-none disabled:opacity-65']" :disabled="restoringId === member.id" @click="restoreMember(member)">
+                  Restore<span class="sr-only"> {{ member.name }}</span>
+                </button>
+                <button type="button" :class="[DELETE_BUTTON, PHONE_ACTION, 'flex-1']" :disabled="hasPayments(member)" :aria-describedby="hasPayments(member) ? `keep-card-${member.id}` : undefined" @click="showPermanentModal(member)">
+                  Delete for good<span class="sr-only"> {{ member.name }}</span>
+                </button>
+              </div>
+              <p v-if="hasPayments(member)" :id="`keep-card-${member.id}`" class="m-0 text-sm text-muted">Has payments, so it stays archived.</p>
+            </div>
+          </li>
+        </ul>
+      </template>
+
       <!-- md and up: ruled table -->
-      <table :class="TABLE">
+      <table v-else :class="TABLE">
         <caption class="sr-only">Members</caption>
         <thead>
           <tr class="border-b border-rule">
@@ -131,7 +206,7 @@
       </table>
 
       <!-- Below md: one card per member -->
-      <ul class="m-0 flex list-none flex-col gap-3 p-0 md:hidden">
+      <ul v-if="!showingArchived" class="m-0 flex list-none flex-col gap-3 p-0 md:hidden">
         <li v-for="member in filteredMembers" :key="member.id" class="flex flex-col gap-3 rounded-lg border border-rule bg-paper px-4 py-3.5">
           <div class="flex items-start justify-between gap-2">
             <div class="min-w-0 flex-1">
@@ -193,6 +268,17 @@
       </template>
     </BaseModal>
 
+    <!-- Delete for good (ADMIN only, archived members) -->
+    <ConfirmDialog
+      v-model="permanentOpen"
+      :title="`Delete ${selectedMember?.name || 'member'} for good?`"
+      :message="`This removes ${selectedMember?.name || 'the member'} and cannot be undone. It only works for a member with no payments and no messages, such as one added by mistake.`"
+      confirm-label="Delete for good"
+      danger
+      :busy="deletingPermanently"
+      @confirm="deletePermanently"
+    />
+
     <!-- Archive (ADMIN only) -->
     <BaseModal v-model="deleteOpen" :title="`Archive ${selectedMember?.name || 'member'}?`" size="sm">
       <AlertBanner v-if="deleteError">{{ deleteError }}</AlertBanner>
@@ -216,13 +302,14 @@ import { monthsBehind } from '@/utils/dues'
 import { paidMonthsByMember, stripRangeLabel } from '@/utils/yearStrip'
 import { filterMembers, sortMembers, exportIds } from '@/utils/memberFilters'
 import { buildMemberRequest } from '@/utils/memberPayload'
-import { NEW_MEMBER_STATUS_OPTIONS, STATUS_OPTIONS, countsForDues, isArchived, statusLabel, statusTone } from '@/utils/memberStatus'
+import { NEW_MEMBER_STATUS_OPTIONS, STATUS_OPTIONS, countsForDues, statusLabel, statusTone } from '@/utils/memberStatus'
 import ActionMenu from '@/components/ActionMenu.vue'
 import AlertBanner from '@/components/AlertBanner.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import BaseInput from '@/components/BaseInput.vue'
 import BaseModal from '@/components/BaseModal.vue'
 import BaseSelect from '@/components/BaseSelect.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import EmptyNote from '@/components/EmptyNote.vue'
 import Icon from '@/components/Icon.vue'
 import PageHead from '@/components/PageHead.vue'
@@ -233,12 +320,14 @@ import { CONTROL, LABEL, NAME, SORT_BUTTON, TABLE, TABLE_TH as TH, TABLE_TD as T
 
 // A 44px tap target for the card's two actions
 const PHONE_ACTION = 'flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-lg font-medium no-underline'
+// "Delete for good": an outline in clay (the dialog holds the solid danger button)
+const DELETE_BUTTON = 'inline-flex cursor-pointer items-center justify-center rounded-sm border border-clay bg-paper font-medium leading-normal text-clay hover:bg-clay-tint disabled:pointer-events-none disabled:border-rule disabled:text-muted disabled:opacity-65'
 const EMPTY_FILTERS = { search: '', status: 'ALL', paymentStatus: 'ALL', joinedFrom: '', joinedTo: '' }
 const EMPTY_ERRORS = { name: '', email: '', phone: '', joinDate: '', householdId: '' }
 
 export default {
   name: 'MembersView',
-  components: { ActionMenu, AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, EmptyNote, Icon, PageHead, StatusLabel, TextButton, YearStrip },
+  components: { ActionMenu, AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, ConfirmDialog, EmptyNote, Icon, PageHead, StatusLabel, TextButton, YearStrip },
   setup() {
     return {
       appStore: useAppStore(),
@@ -268,8 +357,13 @@ export default {
       deleteOpen: false,
       deleting: false,
       deleteError: '',
+      permanentOpen: false,
+      deletingPermanently: false,
+      restoringId: null,
       today: localISODate(),
       PHONE_ACTION,
+      DELETE_BUTTON,
+      stripRangeLabel,
       TABLE,
       LABEL,
       CONTROL,
@@ -310,6 +404,13 @@ export default {
     filteredMembers() {
       const filtered = filterMembers(this.source, this.filters)
       return this.sort.key ? sortMembers(filtered, this.sort.key, this.sort.direction) : filtered
+    },
+    countText() {
+      const noun = this.showingArchived ? 'archived member' : 'member'
+      const total = this.source.length
+      return this.filteredMembers.length !== total
+        ? `${this.filteredMembers.length} of ${total} ${noun}s`
+        : `${total} ${noun}${total === 1 ? '' : 's'}`
     },
     hasActiveFilters() {
       const f = this.filters
@@ -371,6 +472,7 @@ export default {
         currentMonth: this.today.slice(0, 7),
         monthsMissed: member.consecutiveMonthsMissed || 0,
         countsForDues: countsForDues(member),
+        muted: this.showingArchived,
         label: `Dues for ${member.name}, last 12 months`
       }
     },
@@ -422,8 +524,6 @@ export default {
       return ['font-medium', member.consecutiveMonthsMissed > 0 ? 'text-ochre-text' : 'text-fern-text']
     },
     menuItems(member) {
-      // an archived member (only an ADMIN sees them) can only be restored
-      if (isArchived(member)) return [{ key: 'restore', label: 'Restore' }]
       const items = [{ key: 'edit', label: 'Edit' }]
       if (member.status === 'MEMBER') items.push({ key: 'toggle', label: 'Mark inactive' })
       else if (member.status === 'INACTIVE') items.push({ key: 'toggle', label: 'Mark active' })
@@ -435,7 +535,6 @@ export default {
       if (key === 'edit') this.showEditModal(member)
       else if (key === 'status') this.showEditModal(member, true)
       else if (key === 'toggle') this.toggleStatus(member)
-      else if (key === 'restore') this.restoreMember(member)
       else if (key === 'delete') this.showDeleteModal(member)
     },
     resetFormErrors() {
@@ -562,14 +661,49 @@ export default {
         this.notifyFailure(reactivating ? 'Could not reactivate member' : 'Could not deactivate member', error)
       }
     },
+    // the archived list is not the normal list: the payments loaded for the strips say whether a member has history
+    hasPayments(member) {
+      return !!this.paidByMember?.get(member.id)?.size
+    },
+    // archivedAt is a date-time: the day is all the screen shows (the API does not say who archived)
+    archivedOn(member) {
+      return member.archivedAt ? this.formatMemberDate(member.archivedAt.slice(0, 10)) : ''
+    },
+    showPermanentModal(member) {
+      this.selectedMember = member
+      this.permanentOpen = true
+    },
+    async deletePermanently() {
+      const { id, name } = this.selectedMember
+      this.deletingPermanently = true
+      try {
+        await api.deleteMemberPermanently(id)
+        await this.reloadLists()
+        this.permanentOpen = false
+        this.notify('success', 'Deleted for good', name)
+      } catch (error) {
+        console.error('Error deleting member for good:', error)
+        this.permanentOpen = false
+        if (error.response?.status === 409) {
+          this.notify('error', 'Could not delete', `${name} has payments or messages, so they can only stay archived. Their history is kept.`)
+        } else {
+          this.notifyFailure('Could not delete member', error)
+        }
+      } finally {
+        this.deletingPermanently = false
+      }
+    },
     async restoreMember(member) {
+      this.restoringId = member.id
       try {
         await api.updateMember(member.id, buildMemberRequest({ ...member, status: 'MEMBER' }))
         await this.reloadLists()
-        this.notify('success', 'Member restored', member.name)
+        this.notify('success', 'Restored', member.name)
       } catch (error) {
         console.error('Error restoring member:', error)
         this.notifyFailure('Could not restore member', error)
+      } finally {
+        this.restoringId = null
       }
     },
     notify(type, title, message) {
