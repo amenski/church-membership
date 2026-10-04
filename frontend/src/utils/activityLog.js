@@ -1,3 +1,5 @@
+import { format } from 'date-fns'
+
 const TYPES = [
   { value: 'SIGN_IN', label: 'Signed in' },
   { value: 'PASSWORD_CHANGED', label: 'Password changed' },
@@ -50,4 +52,52 @@ export const MAX_LIMIT = 200
 /** The next limit for "Show more": 50 more, never above the server maximum of 200. */
 export function nextLimit(limit) {
   return Math.min(limit + PAGE_SIZE, MAX_LIMIT)
+}
+
+const TONES = {
+  PAYMENT_RECORDED: 'paid',
+  MESSAGE_SENT: 'paid',
+  PAYMENT_REMINDER_SENT: 'paid',
+  MEMBERS_EXPORTED: 'behind',
+  PAYMENTS_EXPORTED: 'behind',
+  MEMBER_ARCHIVED: 'danger',
+  MEMBER_DELETED: 'danger',
+  HOUSEHOLD_DELETED: 'danger',
+  PERSON_DELETED: 'danger'
+}
+
+/** The StatusBadge tone for a type: payments and messages success, exports warning, archive and delete danger, the rest neutral. */
+export function activityTone(type) {
+  return TONES[type] || 'muted'
+}
+
+const dayKey = date => format(date, 'yyyy-MM-dd')
+
+/** "Today, Sunday 4 October", "Saturday 3 October" (yesterday), then with the year for older days ("Wednesday 30 September 2026"). Local time. */
+export function dayHeading(date, now = new Date()) {
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1)
+  const today = dayKey(date) === dayKey(now)
+  const recent = today || dayKey(date) === dayKey(yesterday)
+  const text = format(date, recent ? 'EEEE d MMMM' : 'EEEE d MMMM yyyy')
+  return today ? `Today, ${text}` : text
+}
+
+/**
+ * Entries grouped by local day, in the order given (newest first stays newest first):
+ * [{ key, heading, entries }]. An entry without a readable createdAt is left out.
+ */
+export function groupByDay(entries, now = new Date()) {
+  const groups = []
+  for (const entry of Array.isArray(entries) ? entries : []) {
+    const date = new Date(entry.createdAt)
+    if (!entry.createdAt || Number.isNaN(date.getTime())) continue
+    const key = dayKey(date)
+    let group = groups[groups.length - 1]
+    if (!group || group.key !== key) {
+      group = { key, heading: dayHeading(date, now), entries: [] }
+      groups.push(group)
+    }
+    group.entries.push(entry)
+  }
+  return groups
 }

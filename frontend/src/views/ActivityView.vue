@@ -35,33 +35,29 @@
         {{ type === 'ALL' ? `Latest ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}` : `${visible.length} of the latest ${entries.length} entries` }}
       </p>
 
-      <!-- md and up: ruled table -->
-      <table :class="TABLE">
-        <caption class="sr-only">Activity log, newest first</caption>
-        <thead>
-          <tr class="border-b border-rule">
-            <th scope="col" :class="TH">When</th>
-            <th scope="col" :class="TH">Who</th>
-            <th scope="col" :class="TH">What happened</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="entry in visible" :key="entry.id" class="min-h-(--row-h) border-b border-rule">
-            <td :class="[TD, 'whitespace-nowrap']">{{ when(entry) }}</td>
-            <td :class="[TD, 'max-w-0 w-[28%] [overflow-wrap:anywhere]']">{{ actorLabel(entry.actor) }}</td>
-            <td :class="[TD, 'max-w-0 w-[44%] [overflow-wrap:anywhere]']">{{ entry.description }}</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <!-- Below md: the same rows, stacked -->
-      <ul class="m-0 list-none border-t border-rule p-0 md:hidden">
-        <li v-for="entry in visible" :key="entry.id" class="border-b border-rule py-3">
-          <div class="[overflow-wrap:anywhere]">{{ entry.description }}</div>
-          <div class="text-sm text-muted tabular-nums">{{ when(entry) }}</div>
-          <div class="text-sm text-muted [overflow-wrap:anywhere]">{{ actorLabel(entry.actor) }}</div>
-        </li>
-      </ul>
+      <!-- One ruled card per day; an entry is a grid row from md, stacked below -->
+      <section aria-label="Activity log, newest first" class="flex flex-col gap-4">
+        <div v-for="day in days" :key="day.key" class="overflow-hidden rounded-md border border-rule bg-paper">
+          <div class="flex items-baseline justify-between gap-3 border-b border-rule bg-mist px-4 py-2.5 md:px-5">
+            <h2 class="m-0 text-sm font-semibold text-ink">{{ day.heading }}</h2>
+            <span class="shrink-0 text-xs text-muted">{{ day.entries.length }} {{ day.entries.length === 1 ? 'entry' : 'entries' }}</span>
+          </div>
+          <ul class="m-0 list-none p-0">
+            <li
+              v-for="entry in day.entries"
+              :key="entry.id"
+              class="flex min-h-(--row-h) flex-col gap-1 border-b border-rule px-4 py-3 last:border-b-0 md:grid md:grid-cols-[56px_176px_minmax(0,1fr)_240px] md:items-center md:gap-x-4 md:px-5 md:py-2.5"
+            >
+              <div class="flex items-center gap-3 md:contents">
+                <span class="text-sm text-muted tabular-nums">{{ time(entry) }}</span>
+                <span><StatusBadge :tone="activityTone(entry.type)">{{ activityTypeLabel(entry.type) }}</StatusBadge></span>
+              </div>
+              <div class="[overflow-wrap:anywhere]">{{ entry.description }}</div>
+              <div class="text-sm text-muted [overflow-wrap:anywhere]">{{ actorLabel(entry.actor) }}</div>
+            </li>
+          </ul>
+        </div>
+      </section>
     </template>
 
     <div v-if="entries.length" class="mt-6">
@@ -77,20 +73,21 @@
 <script>
 import api from '@/services/api'
 import { formatDate } from '@/utils'
-import { ACTIVITY_TYPES, MAX_LIMIT, PAGE_SIZE, actorLabel, activityTypeLabel, filterByType, nextLimit } from '@/utils/activityLog'
+import { ACTIVITY_TYPES, MAX_LIMIT, PAGE_SIZE, actorLabel, activityTone, activityTypeLabel, filterByType, groupByDay, nextLimit } from '@/utils/activityLog'
 import AlertBanner from '@/components/AlertBanner.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import EmptyNote from '@/components/EmptyNote.vue'
 import PageHead from '@/components/PageHead.vue'
+import StatusBadge from '@/components/StatusBadge.vue'
 import TextButton from '@/components/TextButton.vue'
 
-import { CONTROL, LABEL, TABLE, TABLE_TH as TH, TABLE_TD as TD } from '@/ui/classes'
+import { CONTROL, LABEL } from '@/ui/classes'
 
 export default {
   name: 'ActivityView',
-  components: { AlertBanner, BaseButton, EmptyNote, PageHead, TextButton },
+  components: { AlertBanner, BaseButton, EmptyNote, PageHead, StatusBadge, TextButton },
   setup() {
-    return { ACTIVITY_TYPES, MAX_LIMIT, actorLabel, activityTypeLabel, TABLE, LABEL, CONTROL, TH, TD }
+    return { ACTIVITY_TYPES, MAX_LIMIT, actorLabel, activityTone, activityTypeLabel, LABEL, CONTROL }
   },
   data() {
     return {
@@ -105,6 +102,9 @@ export default {
   computed: {
     visible() {
       return filterByType(this.entries, this.type)
+    },
+    days() {
+      return groupByDay(this.visible)
     },
     // The server returns at most `limit` entries, so a full page means there may be more
     canShowMore() {
@@ -141,8 +141,8 @@ export default {
       await this.$nextTick()
       if (!this.canShowMore) this.$refs.endNote?.focus()
     },
-    when(entry) {
-      return formatDate(entry.createdAt, 'MMM d, yyyy, h:mm a')
+    time(entry) {
+      return formatDate(entry.createdAt, 'HH:mm')
     }
   }
 }
