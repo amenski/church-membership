@@ -23,8 +23,9 @@ members.example.org {
 		X-Content-Type-Options nosniff
 		Referrer-Policy strict-origin-when-cross-origin
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
-		# Report-only for now: the frontend currently loads fonts and icons from CDNs, which this
-		# policy would block. Enforce it (rename to Content-Security-Policy) once they are self-hosted.
+		# Report-only for now. Fonts and icons are npm packages served by the app itself, so nothing
+		# loads from a CDN any more. Enforce it (rename to Content-Security-Policy) after a check
+		# that no page logs a violation.
 		Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 	}
 }
