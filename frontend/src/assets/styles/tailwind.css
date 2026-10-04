@@ -1,61 +1,64 @@
 /*
-  Tailwind v4, CSS-first, and the only stylesheet of the app (icons and fonts are npm
-  packages imported in main.js). Tokens live in @theme below (names and hex values from
-  docs/design.md); `@import "tailwindcss"` brings the reset (preflight), the theme and the
-  utilities. No prefix, no @apply, no <style> blocks: shared patterns are Vue components.
+  Tailwind v4, CSS-first, and the only stylesheet of the app (the font is an npm package imported in
+  main.js). Tokens live in @theme below; `@import "tailwindcss"` brings the reset (preflight), the
+  theme and the utilities. No prefix, no @apply, no <style> blocks: shared patterns are Vue components
+  and the class strings in src/ui/classes.js.
 */
 @import "tailwindcss";
 
 @theme {
   /* Only the design's colours: nothing else in Tailwind's default palette exists */
   --color-*: initial;
-  --color-mist: #F2F5F2;
+  /* Neutrals: one page tone, one surface, one ink, one secondary, one hairline, one control edge */
+  --color-mist: #F6F7F9;
   --color-paper: #FFFFFF;
-  --color-ink: #14323A;
-  --color-muted: #4F6870;
-  --color-rule: #D9E0DC;
-  --color-field: #6F8680;
-  --color-teal: #0E6B6E;
-  --color-teal-hover: #0A5457;
-  --color-teal-tint: #E3EFEE;
-  --color-ochre: #C98A1B;
-  --color-ochre-edge: #B87A0E;
-  --color-ochre-text: #7A4F00;
-  --color-ochre-tint: #F7ECD4;
-  --color-fern: #3F7A4B;
-  --color-fern-text: #2F5E39;
-  --color-fern-tint: #E2EFE4;
-  --color-clay: #A8412F;
-  --color-clay-tint: #F7E6E2;
-  --color-clay-hover: #8A3324;
-
-  /* Alert outlines (decorative, like rule) */
-  --color-teal-line: #B8D5D4;
-  --color-fern-line: #BFD8C4;
-  --color-ochre-line: #E4CC93;
-  --color-clay-line: #E7C4BC;
+  --color-ink: #111827;
+  --color-muted: #4B5563;
+  --color-rule: #E5E7EB;
+  --color-field: #6B7280;
+  /* The one accent */
+  --color-teal: #0F766E;
+  --color-teal-hover: #115E59;
+  --color-teal-tint: #F0FDFA;
+  --color-teal-line: #99F6E4;
+  /* Semantic status only, never decoration: fern is paid/success, ochre is behind/warning, clay is danger */
+  --color-fern: #15803D;
+  --color-fern-text: #166534;
+  --color-fern-tint: #F0FDF4;
+  --color-fern-line: #BBF7D0;
+  --color-ochre: #D97706;
+  --color-ochre-edge: #B45309;
+  --color-ochre-text: #92400E;
+  --color-ochre-tint: #FFFBEB;
+  --color-ochre-line: #FDE68A;
+  --color-clay: #B91C1C;
+  --color-clay-hover: #991B1B;
+  --color-clay-tint: #FEF2F2;
+  --color-clay-line: #FECACA;
 
   --font-*: initial;
-  --font-display: "Alegreya", Georgia, "Times New Roman", serif;
-  --font-sans: "Alegreya Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-ethiopic: "Noto Sans Ethiopic", "Abyssinica SIL", sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-ethiopic: "Noto Sans Ethiopic", "Abyssinian SIL", sans-serif;
 
-  /* 14 / 16 / 18 / 22 / 28 / 40 px */
+  /* 12 / 13 / 14 / 16 / 18 / 22 / 28 px: a dense UI ramp, not a print one */
   --text-*: initial;
-  --text-sm: 0.875rem;
-  --text-base: 1rem;
-  --text-lg: 1.125rem;
-  --text-xl: 1.375rem;
-  --text-2xl: 1.75rem;
-  --text-3xl: 2.5rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+  --text-lg: 1rem;
+  --text-xl: 1.125rem;
+  --text-2xl: 1.375rem;
+  --text-3xl: 1.75rem;
 
   --radius-*: initial;
+  --radius-sm: 4px;
   --radius-md: 6px;
+  --radius-lg: 8px;
 
   --shadow-*: initial;
-  --shadow-modal: 0 4px 16px rgb(20 50 58 / 0.08);
+  --shadow-modal: 0 4px 16px rgb(17 24 39 / 0.08);
 
-  /* 576 / 768 / 992 / 1200 / 1400 px (the values every screen was laid out with) */
+  /* 576 / 768 / 992 / 1200 / 1400 px */
   --breakpoint-*: initial;
   --breakpoint-sm: 36rem;
   --breakpoint-md: 48rem;
@@ -70,19 +73,20 @@
   }
 }
 
-/* What the reset takes away and the screens still rely on: tokens only */
 @layer base {
   body {
     background-color: var(--color-mist);
     color: var(--color-ink);
     font-family: var(--font-sans);
-    font-size: 1.125rem; /* 18px: Alegreya Sans runs small */
+    font-size: 0.875rem;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-display);
-    font-weight: 700;
-    line-height: 1.2;
+    font-family: var(--font-sans);
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
   }
   a { text-underline-offset: 3px; }
   /* Date inputs: the browser pads the separators and fields, which widened the text */
@@ -109,32 +113,32 @@
 }
 
 /*
-  Two densities, set by a data-density attribute at runtime (so plain custom properties,
-  not @theme). Read in utilities as h-(--control-h), min-h-(--row-h), p-(--card-pad),
-  text-(length:--text-body). See "Density" in docs/design.md.
+  Two densities, set by a data-density attribute at runtime (so plain custom properties, not @theme).
+  Read in utilities as h-(--control-h), min-h-(--row-h), p-(--card-pad), text-(length:--text-body).
+  Dense is the admin default; comfortable covers sign-in and a MEMBER's profile.
 */
 @layer base {
   :root, [data-density="dense"] {
-    --control-h: 36px;
-    --control-primary-h: 36px;
-    --row-h: 44px;
-    --list-row-h: 48px;
+    --control-h: 32px;
+    --control-primary-h: 32px;
+    --row-h: 40px;
+    --list-row-h: 44px;
     --card-pad: 16px;
-    --text-body: 16px;
-    --lh-body: 22px;
-    --text-label: 14px;
-    --lh-label: 18px;
+    --text-body: 14px;
+    --lh-body: 20px;
+    --text-label: 12px;
+    --lh-label: 16px;
   }
   [data-density="comfortable"] {
-    --control-h: 44px;
-    --control-primary-h: 48px;
-    --row-h: 56px;
-    --list-row-h: 56px;
+    --control-h: 40px;
+    --control-primary-h: 44px;
+    --row-h: 48px;
+    --list-row-h: 52px;
     --card-pad: 16px;
-    --text-body: 18px;
-    --lh-body: 26px;
-    --text-label: 15px;
-    --lh-label: 20px;
+    --text-body: 16px;
+    --lh-body: 24px;
+    --text-label: 13px;
+    --lh-label: 18px;
   }
   @media (min-width: 768px) {
     [data-density="comfortable"] { --card-pad: 24px; }

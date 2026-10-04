@@ -12,7 +12,7 @@
       <SectionTitle id="hero-title">Who needs a call</SectionTitle>
 
       <template v-if="activeCount > 0">
-        <p class="mt-0 mb-6 font-display text-3xl leading-[1.15] text-balance max-sm:text-2xl">
+        <p class="mt-0 mb-6 text-2xl font-semibold text-balance max-sm:text-xl">
           <span :class="FIGURE">{{ paidCount }}</span> of
           <span :class="FIGURE">{{ activeCount }}</span> active members are paid up
         </p>
@@ -94,8 +94,8 @@ import { formatMoney } from '@/utils'
 import { monthsBehind } from '@/utils/dashboardMeter'
 import { countsForDues } from '@/utils/memberStatus'
 
-// Big figures: Alegreya, tabular and lining so numbers line up
-const FIGURE = 'font-display font-bold tabular-nums lining-nums'
+// Big figures: tabular so the digits line up column-wise
+const FIGURE = 'font-semibold tabular-nums'
 
 export default {
   name: 'DashboardView',

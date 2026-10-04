@@ -5,11 +5,11 @@
 </template>
 
 <script>
-const BASE = 'inline-flex items-center justify-center cursor-pointer rounded-md border text-center align-middle font-sans font-medium leading-normal no-underline select-none transition-colors duration-[120ms] disabled:pointer-events-none disabled:opacity-65'
+const BASE = 'inline-flex items-center justify-center cursor-pointer rounded-sm border text-center align-middle font-sans font-medium leading-normal no-underline select-none transition-colors duration-[120ms] disabled:pointer-events-none disabled:opacity-65'
 const SIZES = {
-  sm: 'px-3 py-1 text-[0.9375rem]',
-  md: 'px-4 py-2 text-base',
-  lg: 'px-6 py-3 text-lg'
+  sm: 'px-2.5 py-1 text-sm',
+  md: 'px-3 py-1.5 text-base',
+  lg: 'px-4 py-2 text-lg'
 }
 // The density height: a main action (primary, danger) is 48px when comfortable, the rest 44px.
 // min-height never shrinks a button, so dense screens (natural height ~42px) are unchanged.

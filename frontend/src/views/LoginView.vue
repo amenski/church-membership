@@ -2,13 +2,13 @@
   <div data-density="comfortable" class="flex min-h-screen flex-col items-center justify-center gap-6 bg-mist px-4 py-6">
     <router-link to="/" class="flex flex-col items-center no-underline" aria-label="Felege Selam home">
       <span class="font-ethiopic text-2xl leading-[1.3] font-bold text-teal">ፈለገ ሰላም</span>
-      <span class="font-display text-lg font-bold text-ink">Felege Selam</span>
+      <span class="text-sm font-semibold text-ink">Felege Selam</span>
     </router-link>
 
     <div class="w-full max-w-[400px] overflow-hidden rounded-md border border-rule bg-paper">
       <WovenBand :height="8" />
       <div class="p-6">
-        <h1 class="mt-0 mb-6 font-display text-2xl leading-[1.2] font-bold text-ink">Sign in</h1>
+        <h1 class="mt-0 mb-6 text-2xl font-semibold text-ink">Sign in</h1>
 
         <form @submit.prevent="handleLogin">
           <AlertBanner v-if="sessionExpired" tone="warning" role="status">Your session expired. Sign in again.</AlertBanner>

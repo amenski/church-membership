@@ -25,7 +25,7 @@
           ]"
         >
           <div class="flex items-start justify-between gap-4 border-b border-rule px-6 py-4">
-            <h2 :id="titleId" class="m-0 font-display text-xl leading-tight font-bold text-ink">{{ title }}</h2>
+            <h2 :id="titleId" class="m-0 text-lg leading-tight font-semibold text-ink">{{ title }}</h2>
             <button
               type="button"
               class="-mr-2 -mt-1 flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-muted hover:text-ink"

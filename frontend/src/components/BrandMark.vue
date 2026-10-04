@@ -5,7 +5,7 @@
     :class="['flex no-underline', inline ? 'flex-row items-baseline gap-3' : 'flex-col']"
   >
     <span :class="['font-ethiopic font-bold leading-[1.3] text-teal', inline ? 'text-lg' : 'text-xl']">ፈለገ ሰላም</span>
-    <span class="font-display text-lg leading-[1.2] font-bold text-ink">Felege Selam</span>
+    <span class="text-sm leading-tight font-semibold text-ink">Felege Selam</span>
   </router-link>
 </template>
 

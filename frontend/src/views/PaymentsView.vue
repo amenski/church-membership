@@ -143,7 +143,7 @@
     <BaseModal v-model="receiptOpen" :title="selectedPayment ? `Receipt ${receiptNumber(selectedPayment)}` : 'Receipt'" size="sm">
       <!-- A plain element for html2pdf to capture: token hex colours only, no tinted or blended colours -->
       <div v-if="selectedPayment" ref="receiptContent" class="bg-paper p-2 text-ink">
-        <p class="m-0 mb-3 font-display text-lg font-bold">Felege Selam</p>
+        <p class="m-0 mb-3 text-base font-semibold">Felege Selam</p>
         <dl class="m-0 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-base">
           <dt class="font-normal text-muted">Receipt</dt>
           <dd class="m-0 font-medium">{{ receiptNumber(selectedPayment) }}</dd>
@@ -195,8 +195,8 @@ const LABEL = 'mb-1 block text-(length:--text-label) leading-(--lh-label) font-m
 const CONTROL = 'block h-(--control-h) w-full rounded-md border border-field bg-paper px-3 text-(length:--text-body) text-ink placeholder:text-muted placeholder:opacity-80 focus:border-teal focus:outline-2 focus:outline-offset-1 focus:outline-teal'
 const TH = 'px-3 py-2 text-[0.9375rem] font-medium text-muted first:pl-0 last:pr-0'
 const TD = 'px-3 py-2 align-middle first:pl-0 last:pr-0'
-// Big figures: Alegreya, tabular and lining so numbers line up
-const FIGURE = 'font-display font-bold tabular-nums lining-nums'
+// Big figures: tabular so the digits line up column-wise
+const FIGURE = 'font-semibold tabular-nums'
 
 const NOTES_MAX = 500
 const EMPTY_ERRORS = { memberId: '', period: '', paymentDate: '', amount: '', paymentMethod: '', notes: '' }
