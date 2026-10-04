@@ -23,8 +23,8 @@ Each entry has a type, a plain description, the kind and id of the record it is 
 | `SIGN_IN` | a sign-in succeeds | Signed in | `AuthController.java:68` |
 | `PASSWORD_CHANGED` | a user changes their own password | Password was changed | `UserController.java:122` |
 | `MEMBER_CREATED` | a member is added | Member Jane Smith was added | `usecase/SaveMemberUseCase.java:30` |
-| `MEMBER_UPDATED` | a member is edited (every save) | Member Jane Smith was updated | `usecase/UpdateMemberUseCase.java:51` |
-| `MEMBER_ACTIVATED`, `MEMBER_DEACTIVATED` | the same save also changed the status | Member Jane Smith was deactivated | `usecase/UpdateMemberUseCase.java:55` |
+| `MEMBER_UPDATED` | a member is edited (every save) | Member Jane Smith was updated; when the status changed: Member Jane Smith was updated, status is now TRANSFERRED | `usecase/UpdateMemberUseCase.java` |
+| `MEMBER_ACTIVATED`, `MEMBER_DEACTIVATED` | the same save made a member of someone who was not one, or stopped counting a member for dues (to INACTIVE, DECEASED or TRANSFERRED) | Member Jane Smith was deactivated | `usecase/UpdateMemberUseCase.java` |
 | `MEMBER_DELETED` | a member is deleted | Member Jane Smith was deleted | `usecase/DeleteMemberUseCase.java:25` |
 | `MEMBERS_EXPORTED` | either members CSV export | Exported 11 members | `MemberController.java:156` |
 | `PAYMENT_RECORDED` | a payment is recorded | Payment of 50.00 for 2026-10 was recorded for John Doe | `usecase/RecordPaymentUseCase.java:61` |

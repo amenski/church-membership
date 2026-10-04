@@ -1,6 +1,8 @@
 package io.github.membertracker.usecase;
 
 import io.github.membertracker.domain.enumeration.ActivityType;
+import io.github.membertracker.domain.enumeration.MemberStatus;
+import io.github.membertracker.domain.exception.MemberDomainException;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.repository.MemberRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,9 +12,12 @@ import org.mockito.ArgumentCaptor;
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class SaveMemberUseCaseTest {
@@ -41,7 +46,7 @@ class SaveMemberUseCaseTest {
 
     @Test
     void newMemberWithoutJoinDateGetsTodayAndIsActiveWithZeroCounters() {
-        Member result = useCase.invoke("Dan", "dan@example.com", null, null);
+        Member result = useCase.invoke("Dan", "dan@example.com", null, null, null);
 
         Member s = saved();
         assertThat(result).isSameAs(s);
@@ -57,7 +62,7 @@ class SaveMemberUseCaseTest {
 
     @Test
     void creatingRecordsTheNameButNeitherEmailNorPhone() {
-        useCase.invoke("Dan Smith", "dan@example.com", "+390612345678", null);
+        useCase.invoke("Dan Smith", "dan@example.com", "+390612345678", null, null);
 
         verify(recordActivity).record(ActivityType.MEMBER_CREATED, "Member Dan Smith was added", "MEMBER", 9L);
     }
@@ -66,7 +71,7 @@ class SaveMemberUseCaseTest {
     void newMemberKeepsExplicitJoinDate() {
         LocalDate earlier = LocalDate.now().minusMonths(2);
 
-        useCase.invoke("Dan", "dan@example.com", "+390612345678", earlier);
+        useCase.invoke("Dan", "dan@example.com", "+390612345678", earlier, null);
 
         assertThat(saved().getJoinDate()).isEqualTo(earlier);
         assertThat(saved().getPhone()).isEqualTo("+390612345678");
@@ -74,7 +79,7 @@ class SaveMemberUseCaseTest {
 
     @Test
     void anEmailAnotherMemberAlreadyHasIsAllowed() {
-        useCase.invoke("Dan", "DAN@Example.com", null, null);
+        useCase.invoke("Dan", "DAN@Example.com", null, null, null);
 
         assertThat(saved().getEmail()).isEqualTo("DAN@Example.com");
         verify(recordActivity).record(ActivityType.MEMBER_CREATED, "Member Dan was added", "MEMBER", 9L);
@@ -82,9 +87,31 @@ class SaveMemberUseCaseTest {
 
     @Test
     void aMemberWithoutAnEmailIsSaved() {
-        Member result = useCase.invoke("Child", null, null, null);
+        Member result = useCase.invoke("Child", null, null, null, null);
 
         assertThat(result.getEmail()).isNull();
         assertThat(saved().getName()).isEqualTo("Child");
+    }
+
+    @Test
+    void aNewMemberIsAMemberByDefaultAndMayStartAsInactive() {
+        assertThat(useCase.invoke("A", null, null, null, null).getStatus()).isEqualTo(MemberStatus.MEMBER);
+        assertThat(useCase.invoke("B", null, null, null, MemberStatus.MEMBER).getStatus()).isEqualTo(MemberStatus.MEMBER);
+
+        Member inactive = useCase.invoke("C", null, null, null, MemberStatus.INACTIVE);
+
+        assertThat(inactive.getStatus()).isEqualTo(MemberStatus.INACTIVE);
+        assertThat(inactive.isActive()).isFalse();
+    }
+
+    @Test
+    void aNewMemberCannotStartDeceasedTransferredOrArchived() {
+        for (MemberStatus status : new MemberStatus[] {MemberStatus.DECEASED, MemberStatus.TRANSFERRED, MemberStatus.ARCHIVED}) {
+            assertThatThrownBy(() -> useCase.invoke("Dan", null, null, null, status))
+                .isInstanceOf(MemberDomainException.class)
+                .satisfies(e -> assertThat(((MemberDomainException) e).getField()).isEqualTo("status"));
+        }
+        verify(memberRepository, never()).save(any());
+        verifyNoInteractions(recordActivity);
     }
 }

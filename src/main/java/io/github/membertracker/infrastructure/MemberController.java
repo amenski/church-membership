@@ -101,7 +101,8 @@ public class MemberController {
     @PreAuthorize("hasRole('STAFF')")
     @Operation(summary = "Create a member (STAFF+)")
     public Member createMember(@Valid @RequestBody MemberRequest request) {
-        return saveMemberUseCase.invoke(request.getName(), request.getEmail(), request.getPhone(), request.getJoinDate());
+        return saveMemberUseCase.invoke(request.getName(), request.getEmail(), request.getPhone(), request.getJoinDate(),
+                request.statusForCreate());
     }
 
     @PutMapping("/{id}")
@@ -109,7 +110,7 @@ public class MemberController {
     @Operation(summary = "Update a member (STAFF+)")
     public ResponseEntity<Member> updateMember(@PathVariable @Positive Long id, @Valid @RequestBody MemberRequest request) {
         return updateMemberUseCase.invoke(id, request.getName(), request.getEmail(), request.getPhone(),
-                        request.getJoinDate(), request.getActive())
+                        request.getJoinDate(), request.getStatus(), request.getActive())
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

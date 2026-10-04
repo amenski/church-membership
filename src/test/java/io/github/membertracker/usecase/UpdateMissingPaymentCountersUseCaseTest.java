@@ -1,5 +1,6 @@
 package io.github.membertracker.usecase;
 
+import io.github.membertracker.domain.enumeration.MemberStatus;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.repository.MemberRepository;
 import io.github.membertracker.domain.repository.PaymentRepository;
@@ -120,7 +121,7 @@ class UpdateMissingPaymentCountersUseCaseTest {
     @Test
     void onlyActiveMembersAreLoaded() {
         Member inactive = member("inactive", 0);
-        inactive.setActive(false);
+        inactive.setStatus(MemberStatus.INACTIVE);
         when(memberRepository.findByActive(true)).thenReturn(List.of());
 
         useCase.invoke();

@@ -45,7 +45,7 @@ Role view of the screen (the buttons are hidden, not disabled, for roles that ca
 ### Add a member
 1. Click "Add member" and fill the name (required), optionally email and phone, and "Joined on" (default today, not in the future); the dialog has no "Active" switch because a new member is always active (`MembersView.vue:143-168`).
 2. "Add member" in the dialog sends `{name, email, phone?, joinDate?, active}` to `POST /api/members` (`MembersView.vue:387-408`, `frontend/src/utils/memberPayload.js`). The name is checked on the screen first, and the email only when filled (format).
-3. The server creates the member as active with the counters at zero; it uses the join date sent, or today (`src/main/java/io/github/membertracker/usecase/SaveMemberUseCase.java:21-33`, `src/main/java/io/github/membertracker/domain/model/Member.java:41-43`). It ignores `active` on create (the request still carries `active: true`).
+3. The server creates the member with the status MEMBER (or INACTIVE when the request asks for it: `status`, or the legacy `active: false`) and the counters at zero; it uses the join date sent, or today (`src/main/java/io/github/membertracker/usecase/SaveMemberUseCase.java`). The screen still sends `active: true`, so a new member is a MEMBER. DECEASED, TRANSFERRED and ARCHIVED are refused on create (400, field error on `status`).
 4. Success: the dialog closes, the row appears and a toast "Member added" names the member. The email may be left empty, and two members may share one address: there is no duplicate check. A child added without an email counts as a member until the status step of the [person/membership plan](../person-membership-plan.md): they appear behind on dues unless marked inactive. The dialog's hint says so.
 5. Other failures (validation, 403): field errors from the server show under their fields; anything else shows in a banner at the top of the dialog plus an error toast "Could not save member" (no toast for 403); the dialog stays open (`MembersView.vue:369-386`).
 
@@ -74,11 +74,28 @@ Role view of the screen (the buttons are hidden, not disabled, for roles that ca
 4. Columns: id, name, email (empty when the member has none), phone, joinDate, active, consecutiveMonthsMissed (`MemberController.java:161-174`). The file is UTF-8 with a byte order mark so Excel reads non-Latin names correctly. Cells starting with a formula character are neutralised ([member-controller.md](member-controller.md)).
 5. Failure: error toast "Export failed" (`MembersView.vue:461-469`).
 
+## Fields
+Stored in the `member` table (migrations `001`, `005`, `009`, `010`); the JSON of a member carries the same names.
+
+| Field | Meaning | Who sets it |
+|-------|---------|-------------|
+| `id` | Row id, never changes | system |
+| `name` | Required, max 100 | `MemberRequest` |
+| `email` | Optional, not unique, may be shared | `MemberRequest` |
+| `phone` | Optional | `MemberRequest` |
+| `joinDate` | Today unless sent | `MemberRequest` |
+| `status` | `MEMBER`, `INACTIVE`, `DECEASED`, `TRANSFERRED` or `ARCHIVED` (migration `010`). Only `MEMBER` counts for dues, reminders, messages and payments. The backfill turned every `active = false` into `INACTIVE`; re-label deceased or transferred people by hand | `MemberRequest.status`, or the legacy `active` |
+| `active` | Legacy on/off, read-only in the JSON: true only when `status` is `MEMBER`. The `active` column is kept equal to it by `MemberPersistenceMapper` until the contract step | derived |
+| `archivedAt` | Null; set by the archive step (not built yet) | system |
+| `consecutiveMonthsMissed`, `lastPaymentDate`, `lastMissedCountMonth` | Dues counters | system only |
+
+Changing `status` through `PUT`: see [member-controller.md](member-controller.md). The screens still show only Active and Inactive, driven by `active`; a person marked DECEASED or TRANSFERRED through the API appears as Inactive there until the frontend speaks `status`.
+
 ## Rules
 - Request shape `MemberRequest` (`src/main/java/io/github/membertracker/infrastructure/dto/MemberRequest.java:15`): name required (max 100), email optional (trimmed, blank becomes null) and well-formed when present (max 100), phone optional (blank becomes null) but if present must match `^\+?[0-9\s\-\(\)]{10,}$`, join date optional and not in the future, `active` optional. Failures return 400 with a field list. `id`, counters, last payment date and the monthly-job marker are not part of it and are ignored if sent.
 - Email is optional and not unique. Migration `009.make-member-email-optional.sql` dropped the unique index, made the column nullable and added a plain lookup index `idx_member_email_lookup`. Messages and reminders reach only members with an email, and members sharing an address get one message between them (the one with the lowest id; the others have no delivery row for that message): see [communications.md](communications.md). The activity log never records an email.
 - A child added without an email counts as a member until the status step of the [person/membership plan](../person-membership-plan.md): they appear behind on dues unless marked inactive.
-- New members: join date defaults to today, `active` is forced true, counters zero (`SaveMemberUseCase.java:21-33`).
+- New members: join date defaults to today, status MEMBER unless INACTIVE is asked for, counters zero (`SaveMemberUseCase.java`).
 - Export ids: not empty, at most 5000, each positive (`src/main/java/io/github/membertracker/infrastructure/dto/ExportMembersRequest.java:12-13`); unknown ids are skipped (`MemberController.java:147-150`).
 - `consecutiveMonthsMissed`, `lastPaymentDate` and `lastMissedCountMonth` are system-managed (never client-settable since audit C8):
   - A recorded payment sets `lastPaymentDate` to the later of the two dates, and resets the counter to 0 only if the payment's period is the current month (`Member.java:46-59`, called from `src/main/java/io/github/membertracker/usecase/RecordPaymentUseCase.java:57`).

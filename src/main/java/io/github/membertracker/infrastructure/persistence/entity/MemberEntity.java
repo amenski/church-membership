@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "member")
@@ -27,7 +28,14 @@ public class MemberEntity {
     @Column(name = "last_missed_count_month", length = 7)
     private String lastMissedCountMonth;
 
+    /** Kept equal to {@code status == MEMBER} by MemberPersistenceMapper, its only writer, until the contract step. */
     private boolean active;
+
+    @Column(name = "status", nullable = false, length = 20)
+    private String status = "MEMBER";
+
+    @Column(name = "archived_at")
+    private LocalDateTime archivedAt;
 
     public MemberEntity() {
     }
@@ -112,5 +120,21 @@ public class MemberEntity {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public LocalDateTime getArchivedAt() {
+        return archivedAt;
+    }
+
+    public void setArchivedAt(LocalDateTime archivedAt) {
+        this.archivedAt = archivedAt;
     }
 }

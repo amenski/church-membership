@@ -71,6 +71,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         log.error("Business rule violation: {}", ex.getMessage());
         ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, ex.getUserMessage(), request);
         problem.setProperty("code", ex.getErrorCode());
+        if (ex.getField() != null) {
+            problem.setProperty("errors", List.of(Map.of("field", ex.getField(), "message", ex.getUserMessage())));
+        }
         return ResponseEntity.badRequest().body(problem);
     }
 

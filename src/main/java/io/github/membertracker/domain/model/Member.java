@@ -1,5 +1,6 @@
 package io.github.membertracker.domain.model;
 
+import io.github.membertracker.domain.enumeration.MemberStatus;
 import io.github.membertracker.domain.exception.MemberDomainException;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -7,6 +8,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.PastOrPresent;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 
 public class Member {
@@ -29,7 +31,8 @@ public class Member {
     private LocalDate lastPaymentDate;
     private int consecutiveMonthsMissed;
     private YearMonth lastMissedCountMonth;
-    private boolean active;
+    private MemberStatus status = MemberStatus.MEMBER;
+    private LocalDateTime archivedAt;
 
     public Member() {
     }
@@ -39,7 +42,7 @@ public class Member {
         this.email = email;
         this.phone = phone;
         this.joinDate = LocalDate.now();
-        this.active = true;
+        this.status = MemberStatus.MEMBER;
         this.consecutiveMonthsMissed = 0;
     }
 
@@ -72,19 +75,21 @@ public class Member {
         return true;
     }
 
+    /** Back to MEMBER from any other status; the months-behind counter starts again. */
     public void activate() {
-        if (this.active) {
+        if (this.status == MemberStatus.MEMBER) {
             throw MemberDomainException.memberAlreadyActive(this.name);
         }
-        this.active = true;
+        this.status = MemberStatus.MEMBER;
         this.consecutiveMonthsMissed = 0;
     }
 
+    /** To INACTIVE from any other status; the counter is frozen. */
     public void deactivate() {
-        if (!this.active) {
+        if (this.status == MemberStatus.INACTIVE) {
             throw MemberDomainException.memberAlreadyInactive(this.name);
         }
-        this.active = false;
+        this.status = MemberStatus.INACTIVE;
     }
 
     private boolean paymentCoversCurrentPeriod(Payment payment) {
@@ -159,11 +164,24 @@ public class Member {
         this.lastMissedCountMonth = lastMissedCountMonth;
     }
 
+    /** Derived from the status: true only for a member whose dues count. There is no setter. */
     public boolean isActive() {
-        return active;
+        return status.countsForDues();
     }
 
-    public void setActive(boolean active) {
-        this.active = active;
+    public MemberStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(MemberStatus status) {
+        this.status = status;
+    }
+
+    public LocalDateTime getArchivedAt() {
+        return archivedAt;
+    }
+
+    public void setArchivedAt(LocalDateTime archivedAt) {
+        this.archivedAt = archivedAt;
     }
 }

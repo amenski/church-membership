@@ -1,5 +1,6 @@
 package io.github.membertracker.infrastructure.persistence.mapper;
 
+import io.github.membertracker.domain.enumeration.MemberStatus;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.infrastructure.persistence.entity.MemberEntity;
 
@@ -7,6 +8,7 @@ import java.time.YearMonth;
 
 /**
  * The one place a {@link MemberEntity} and a {@link Member} are converted into each other.
+ * The domain reads the status and ignores the legacy {@code active} column; the entity gets both, written here.
  */
 public final class MemberPersistenceMapper {
 
@@ -24,7 +26,8 @@ public final class MemberPersistenceMapper {
         member.setConsecutiveMonthsMissed(entity.getConsecutiveMonthsMissed());
         member.setLastMissedCountMonth(entity.getLastMissedCountMonth() == null
                 ? null : YearMonth.parse(entity.getLastMissedCountMonth()));
-        member.setActive(entity.isActive());
+        member.setStatus(MemberStatus.valueOf(entity.getStatus()));
+        member.setArchivedAt(entity.getArchivedAt());
         return member;
     }
 
@@ -39,12 +42,15 @@ public final class MemberPersistenceMapper {
         entity.setConsecutiveMonthsMissed(member.getConsecutiveMonthsMissed());
         entity.setLastMissedCountMonth(member.getLastMissedCountMonth() == null
                 ? null : member.getLastMissedCountMonth().toString());
-        entity.setActive(member.isActive());
+        entity.setStatus(member.getStatus().name());
+        entity.setArchivedAt(member.getArchivedAt());
+        // The only writer of the legacy column: it follows the status, so the two never disagree.
+        entity.setActive(member.getStatus().countsForDues());
         return entity;
     }
 
     /**
-     * The short form kept on a message delivery: id, name, email, phone and active only,
+     * The short form kept on a message delivery: id, name, email, phone and status (so {@code active}) only,
      * so the delivery JSON carries no join date or counters.
      */
     public static Member toRecipient(MemberEntity entity) {
@@ -53,7 +59,7 @@ public final class MemberPersistenceMapper {
         member.setName(entity.getName());
         member.setEmail(entity.getEmail());
         member.setPhone(entity.getPhone());
-        member.setActive(entity.isActive());
+        member.setStatus(MemberStatus.valueOf(entity.getStatus()));
         return member;
     }
 }

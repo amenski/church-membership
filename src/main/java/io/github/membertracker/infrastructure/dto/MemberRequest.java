@@ -1,5 +1,6 @@
 package io.github.membertracker.infrastructure.dto;
 
+import io.github.membertracker.domain.enumeration.MemberStatus;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.PastOrPresent;
@@ -31,7 +32,10 @@ public class MemberRequest {
     @PastOrPresent(message = "Join date cannot be in the future")
     private LocalDate joinDate;
 
-    /** Optional; used on update only. New members are always active. */
+    /** Optional. Absent means a new member is MEMBER and an edit leaves the status alone. Wins over {@code active}. */
+    private MemberStatus status;
+
+    /** Legacy on/off form of the status, kept until the frontend sends {@code status}: true is MEMBER, false is INACTIVE. */
     private Boolean active;
 
     public MemberRequest() {}
@@ -66,6 +70,22 @@ public class MemberRequest {
 
     public void setJoinDate(LocalDate joinDate) {
         this.joinDate = joinDate;
+    }
+
+    public MemberStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(MemberStatus status) {
+        this.status = status;
+    }
+
+    /** The status a new member is created with: {@code status}, else the legacy {@code active}, else null (MEMBER). */
+    public MemberStatus statusForCreate() {
+        if (status != null || active == null) {
+            return status;
+        }
+        return active ? MemberStatus.MEMBER : MemberStatus.INACTIVE;
     }
 
     public Boolean getActive() {

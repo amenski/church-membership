@@ -1,5 +1,6 @@
 package io.github.membertracker.usecase;
 
+import io.github.membertracker.domain.enumeration.MemberStatus;
 import io.github.membertracker.domain.enumeration.CommunicationType;
 import io.github.membertracker.domain.model.Communication;
 import io.github.membertracker.domain.model.Member;
@@ -67,7 +68,7 @@ class SendPaymentRemindersUseCaseTest {
     void inactiveMembersAreNotReminded() {
         Member active = new Member("a", "a@example.com", "+1234567890");
         Member inactive = new Member("b", "b@example.com", "+1234567890");
-        inactive.setActive(false);
+        inactive.setStatus(MemberStatus.INACTIVE);
         when(memberRepository.findByConsecutiveMonthsMissedGreaterThanEqual(3)).thenReturn(List.of(active, inactive));
         when(sender.invoke(any(), any(), any())).thenReturn(new Communication());
 
@@ -80,7 +81,7 @@ class SendPaymentRemindersUseCaseTest {
     @Test
     void onlyInactiveOverdueMembersMeansNothingIsSent() {
         Member inactive = new Member("b", "b@example.com", "+1234567890");
-        inactive.setActive(false);
+        inactive.setStatus(MemberStatus.INACTIVE);
         when(memberRepository.findByConsecutiveMonthsMissedGreaterThanEqual(3)).thenReturn(List.of(inactive));
 
         assertThat(useCase.invoke(3)).isNull();

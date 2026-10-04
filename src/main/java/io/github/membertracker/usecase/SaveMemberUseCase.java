@@ -1,12 +1,17 @@
 package io.github.membertracker.usecase;
 
 import io.github.membertracker.domain.enumeration.ActivityType;
+import io.github.membertracker.domain.enumeration.MemberStatus;
+import io.github.membertracker.domain.exception.MemberDomainException;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.repository.MemberRepository;
 
 import java.time.LocalDate;
 
-/** Creates a member: active, counters zero, join date today unless given. */
+/**
+ * Creates a member: counters zero, join date today unless given. The status is MEMBER unless INACTIVE is
+ * asked for; a new member cannot start as deceased, transferred or archived.
+ */
 public class SaveMemberUseCase {
 
     private final MemberRepository memberRepository;
@@ -17,10 +22,16 @@ public class SaveMemberUseCase {
         this.recordActivity = recordActivity;
     }
 
-    public Member invoke(String name, String email, String phone, LocalDate joinDate) {
+    public Member invoke(String name, String email, String phone, LocalDate joinDate, MemberStatus status) {
+        if (status == MemberStatus.DECEASED || status == MemberStatus.TRANSFERRED || status == MemberStatus.ARCHIVED) {
+            throw MemberDomainException.statusNotAllowed("A new member can only be MEMBER or INACTIVE.");
+        }
         Member member = new Member(name, email, phone);
         if (joinDate != null) {
             member.setJoinDate(joinDate);
+        }
+        if (status != null) {
+            member.setStatus(status);
         }
         Member saved = memberRepository.save(member);
         recordActivity.record(ActivityType.MEMBER_CREATED, "Member " + saved.getName() + " was added",

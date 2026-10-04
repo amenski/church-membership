@@ -13,9 +13,14 @@ public class MemberDomainException extends DomainException {
     public static final String DUPLICATE_PAYMENT_FOR_PERIOD = "MEMBER_004";
     public static final String MEMBER_NOT_FOUND = "MEMBER_006";
     public static final String MEMBER_INACTIVE = "MEMBER_008";
+    public static final String STATUS_NOT_ALLOWED = "MEMBER_009";
 
     public MemberDomainException(String message, String errorCode) {
         super(message, errorCode, "Member");
+    }
+
+    private MemberDomainException(String message, String errorCode, String field) {
+        super(message, errorCode, "Member", field);
     }
 
     public MemberDomainException(String message, String errorCode, Throwable cause) {
@@ -49,6 +54,11 @@ public class MemberDomainException extends DomainException {
             String.format("Member '%s' already has a payment recorded for period %s", memberName, period),
             DUPLICATE_PAYMENT_FOR_PERIOD
         );
+    }
+
+    /** The status in the request cannot be set this way; reported as a field error on {@code status}. */
+    public static MemberDomainException statusNotAllowed(String reason) {
+        return new MemberDomainException(reason, STATUS_NOT_ALLOWED, "status");
     }
 
     public static MemberDomainException memberInactive(String memberName) {

@@ -1,5 +1,6 @@
 package io.github.membertracker;
 
+import io.github.membertracker.domain.enumeration.MemberStatus;
 import com.jayway.jsonpath.JsonPath;
 import io.github.membertracker.domain.enumeration.PaymentMethod;
 import io.github.membertracker.domain.model.Communication;
@@ -60,7 +61,7 @@ class DashboardQueriesIntegrationTest {
 
     private Member member(String name, boolean active, int missed) {
         Member m = new Member(name, name.toLowerCase() + "@example.com", "+1234567890");
-        m.setActive(active);
+        m.setStatus(active ? MemberStatus.MEMBER : MemberStatus.INACTIVE);
         m.setConsecutiveMonthsMissed(missed);
         return memberRepository.save(m);
     }

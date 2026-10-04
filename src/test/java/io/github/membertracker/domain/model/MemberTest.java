@@ -1,5 +1,6 @@
 package io.github.membertracker.domain.model;
 
+import io.github.membertracker.domain.enumeration.MemberStatus;
 import io.github.membertracker.domain.enumeration.PaymentMethod;
 import io.github.membertracker.domain.exception.MemberDomainException;
 import org.junit.jupiter.api.Test;
@@ -151,5 +152,46 @@ class MemberTest {
         assertThat(changed).isTrue();
         assertThat(m.getConsecutiveMonthsMissed()).isEqualTo(2);
         assertThat(m.getLastMissedCountMonth()).isEqualTo(YearMonth.of(2026, 10));
+    }
+
+    @Test
+    void newMemberHasTheStatusMember() {
+        assertThat(newMember().getStatus()).isEqualTo(MemberStatus.MEMBER);
+        assertThat(new Member().getStatus()).isEqualTo(MemberStatus.MEMBER);
+    }
+
+    @Test
+    void activeIsDerivedFromTheStatus() {
+        Member m = newMember();
+        for (MemberStatus status : MemberStatus.values()) {
+            m.setStatus(status);
+            assertThat(m.isActive()).as(status.name()).isEqualTo(status == MemberStatus.MEMBER);
+        }
+    }
+
+    @Test
+    void activate_fromEveryOtherStatus_makesAMemberAndResetsTheCounter() {
+        for (MemberStatus from : new MemberStatus[] {MemberStatus.INACTIVE, MemberStatus.DECEASED, MemberStatus.TRANSFERRED}) {
+            Member m = newMember();
+            m.setStatus(from);
+            m.setConsecutiveMonthsMissed(3);
+
+            m.activate();
+
+            assertThat(m.getStatus()).as(from.name()).isEqualTo(MemberStatus.MEMBER);
+            assertThat(m.getConsecutiveMonthsMissed()).as(from.name()).isZero();
+        }
+    }
+
+    @Test
+    void deactivate_fromAnotherStatusMakesInactiveAndKeepsTheCounter() {
+        Member m = newMember();
+        m.setStatus(MemberStatus.TRANSFERRED);
+        m.setConsecutiveMonthsMissed(3);
+
+        m.deactivate();
+
+        assertThat(m.getStatus()).isEqualTo(MemberStatus.INACTIVE);
+        assertThat(m.getConsecutiveMonthsMissed()).isEqualTo(3);
     }
 }

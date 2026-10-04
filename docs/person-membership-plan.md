@@ -151,9 +151,9 @@ Rollback in this repo means: run the `--rollback` statements by hand on the targ
 
 | Step | Name | Risk | Size | GATE | Status |
 |---|---|---|---|---|---|
-| 1 | Extract `MemberPersistenceMapper` | low | ~5 files, ~150 lines | none | todo |
-| 2 | Email optional and shareable | medium | ~14 files, ~250 lines | e | todo |
-| 3 | Add `status` (expand, dual-write `active`) | medium | ~10 files, ~200 lines | c, g | todo |
+| 1 | Extract `MemberPersistenceMapper` | low | ~5 files, ~150 lines | none | done |
+| 2 | Email optional and shareable | medium | ~14 files, ~250 lines | e | done |
+| 3 | Add `status` (expand, dual-write `active`) | medium | ~10 files, ~200 lines | c, g | done |
 | 4 | Read by status, archived hidden | medium | ~14 files, ~200 lines | c | todo |
 | 5 | Archive instead of delete (C9) | medium | ~10 files, ~220 lines | d | todo |
 | 6 | Frontend speaks `status` | low | 8 files, ~150 lines | c | todo |

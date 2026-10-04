@@ -1,10 +1,12 @@
 package io.github.membertracker.infrastructure.persistence.mapper;
 
+import io.github.membertracker.domain.enumeration.MemberStatus;
 import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.infrastructure.persistence.entity.MemberEntity;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -21,7 +23,8 @@ class MemberPersistenceMapperTest {
         member.setLastPaymentDate(LocalDate.of(2026, 8, 3));
         member.setConsecutiveMonthsMissed(2);
         member.setLastMissedCountMonth(YearMonth.of(2026, 9));
-        member.setActive(false);
+        member.setStatus(MemberStatus.INACTIVE);
+        member.setArchivedAt(LocalDateTime.of(2026, 9, 30, 10, 15));
         return member;
     }
 
@@ -40,6 +43,7 @@ class MemberPersistenceMapperTest {
 
         assertThat(entity.getLastMissedCountMonth()).isEqualTo("2026-09");
         assertThat(entity.isActive()).isFalse();
+        assertThat(entity.getStatus()).isEqualTo("INACTIVE");
     }
 
     @Test
@@ -72,5 +76,34 @@ class MemberPersistenceMapperTest {
         assertThat(recipient.getLastPaymentDate()).isNull();
         assertThat(recipient.getConsecutiveMonthsMissed()).isZero();
         assertThat(recipient.getLastMissedCountMonth()).isNull();
+    }
+
+    @Test
+    void activeIsWrittenAsTheStatusImpliesForAllFiveStatusesAndTheTwoNeverDisagree() {
+        for (MemberStatus status : MemberStatus.values()) {
+            Member member = fullMember();
+            member.setStatus(status);
+
+            MemberEntity entity = MemberPersistenceMapper.toEntity(member);
+
+            assertThat(entity.getStatus()).as(status.name()).isEqualTo(status.name());
+            assertThat(entity.isActive()).as(status.name()).isEqualTo(status.countsForDues());
+            Member back = MemberPersistenceMapper.toDomain(entity);
+            assertThat(back.getStatus()).as(status.name()).isEqualTo(status);
+            assertThat(back.isActive()).as(status.name()).isEqualTo(entity.isActive());
+            assertThat(MemberPersistenceMapper.toRecipient(entity).isActive()).as(status.name()).isEqualTo(status.countsForDues());
+        }
+    }
+
+    @Test
+    void theStatusColumnWinsWhenTheLegacyActiveColumnIsStale() {
+        MemberEntity entity = MemberPersistenceMapper.toEntity(fullMember());
+        entity.setStatus("DECEASED");
+        entity.setActive(true);
+
+        Member member = MemberPersistenceMapper.toDomain(entity);
+
+        assertThat(member.getStatus()).isEqualTo(MemberStatus.DECEASED);
+        assertThat(member.isActive()).isFalse();
     }
 }

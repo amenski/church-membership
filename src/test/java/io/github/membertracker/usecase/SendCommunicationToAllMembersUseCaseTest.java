@@ -1,5 +1,6 @@
 package io.github.membertracker.usecase;
 
+import io.github.membertracker.domain.enumeration.MemberStatus;
 import io.github.membertracker.domain.enumeration.ActivityType;
 import io.github.membertracker.domain.exception.CommunicationDomainException;
 import io.github.membertracker.domain.model.Communication;
@@ -70,7 +71,7 @@ class SendCommunicationToAllMembersUseCaseTest {
     private Member member(long id, String name, boolean active) {
         Member m = new Member(name, name.toLowerCase() + "@example.com", "+1234567890");
         m.setId(id);
-        m.setActive(active);
+        m.setStatus(active ? MemberStatus.MEMBER : MemberStatus.INACTIVE);
         return m;
     }
 

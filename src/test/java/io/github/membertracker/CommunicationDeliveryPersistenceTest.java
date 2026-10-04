@@ -1,5 +1,6 @@
 package io.github.membertracker;
 
+import io.github.membertracker.domain.enumeration.MemberStatus;
 import com.jayway.jsonpath.JsonPath;
 import io.github.membertracker.domain.model.Communication;
 import io.github.membertracker.domain.model.Member;
@@ -227,9 +228,9 @@ class CommunicationDeliveryPersistenceTest {
 
     @Test
     void sendToAllWithNoActiveMembersIsA400AndStoresNothing() throws Exception {
-        alice.setActive(false);
+        alice.setStatus(MemberStatus.INACTIVE);
         memberRepository.save(alice);
-        bob.setActive(false);
+        bob.setStatus(MemberStatus.INACTIVE);
         memberRepository.save(bob);
 
         mockMvc.perform(post("/api/communications/send-to-all").with(user("staff@example.com").roles("STAFF")).with(csrf())
@@ -248,7 +249,7 @@ class CommunicationDeliveryPersistenceTest {
         alice.setConsecutiveMonthsMissed(2);
         memberRepository.save(alice);
         bob.setConsecutiveMonthsMissed(3);
-        bob.setActive(false);
+        bob.setStatus(MemberStatus.INACTIVE);
         memberRepository.save(bob);
         aliceSucceedsBobFails();
 

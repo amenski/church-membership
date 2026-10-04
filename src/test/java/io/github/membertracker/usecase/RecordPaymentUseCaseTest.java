@@ -1,5 +1,6 @@
 package io.github.membertracker.usecase;
 
+import io.github.membertracker.domain.enumeration.MemberStatus;
 import io.github.membertracker.domain.enumeration.ActivityType;
 import io.github.membertracker.domain.enumeration.PaymentMethod;
 import io.github.membertracker.domain.exception.MemberDomainException;
@@ -157,7 +158,7 @@ class RecordPaymentUseCaseTest {
 
     @Test
     void paymentForAnInactiveMemberIsRejectedAndNothingIsSaved() {
-        stored.setActive(false);
+        stored.setStatus(MemberStatus.INACTIVE);
 
         assertThatThrownBy(() -> useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now(), null, null))
                 .isInstanceOf(MemberDomainException.class)
@@ -202,7 +203,7 @@ class RecordPaymentUseCaseTest {
     @Test
     void savesTheMemberLoadedFromTheRepository() {
         stored.setName("Stored Name");
-        stored.setActive(true);
+        stored.setStatus(MemberStatus.MEMBER);
 
         useCase.invoke(1L, 25.0, PaymentMethod.CASH, YearMonth.now(), null, null);
 

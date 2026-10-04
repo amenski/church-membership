@@ -19,7 +19,7 @@ src/main/java/io/github/membertracker/
 ├── domain/
 │   ├── model/          Member, Payment, User, Communication, MessageDelivery, ActivityLogEntry
 │   ├── valueobject/    Email
-│   ├── enumeration/    PaymentMethod, UserRole, CommunicationType, ActivityType
+│   ├── enumeration/    PaymentMethod, UserRole, CommunicationType, ActivityType, MemberStatus
 │   ├── exception/      DomainException + Member/Payment/User subclasses
 │   ├── repository/     Repository interfaces (incl. ActivityLogRepository)
 │   └── service/        Ports: CurrentActor (who is acting, implemented in infrastructure/security)
@@ -132,4 +132,5 @@ frontend/src/
 | 2026-10 | YearMonth is stored as YYYY-MM text through an attribute converter | The column is VARCHAR(7); without a converter Hibernate serialised the value as binary and failed on MySQL | In use |
 | 2026-10 | CSV exports are built in memory and returned as a plain response, UTF-8 with BOM | Streaming gained nothing at this size and hung behind the dev proxy; the BOM makes Excel read Amharic names | In use |
 | 2026-10 | Audit entries are written best-effort inside the use cases through a CurrentActor port | A failing audit write must not block the action; the domain stays free of Spring Security | In use |
+| 2026-10 | Membership status (MEMBER, INACTIVE, DECEASED, TRANSFERRED, ARCHIVED) is stored on the member; `active` is kept in step by the mapper until the contract step | Dues, reminders and messages need more than on/off; the migration must stay reversible | In use |
 | 2026-10 | Roles ADMIN > STAFF > VOLUNTEER > MEMBER with `RoleHierarchy` | Replaces ADMIN/MANAGER/USER and the planned TREASURER/VIEWER | Done (3cf5d84; frontend routes in this change) |
