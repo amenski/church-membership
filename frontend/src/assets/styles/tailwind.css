@@ -43,7 +43,7 @@
   --color-clay-line: #FECACA;
 
   --font-*: initial;
-  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: "IBM Plex Sans", "Noto Sans Ethiopic", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-ethiopic: "Noto Sans Ethiopic", "Abyssinian SIL", sans-serif;
 
   /* 12 / 13 / 14 / 16 / 18 / 22 / 28 px: a dense UI ramp, not a print one */
@@ -80,6 +80,7 @@
     font-family: var(--font-sans);
     font-size: 0.875rem;
     line-height: 1.5;
+    font-variant-numeric: tabular-nums;
     -webkit-font-smoothing: antialiased;
   }
   h1, h2, h3, h4, h5, h6 {

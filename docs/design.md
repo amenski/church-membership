@@ -54,8 +54,11 @@ for surfaces.
 
 ## Type
 
-Inter (npm `@fontsource/inter`, weights 400/500/600), self-hosted, no CDN. The Amharic wordmark
-ፈለገ ሰላም uses Noto Sans Ethiopic (700) and is the only place that family appears.
+IBM Plex Sans (npm `@fontsource/ibm-plex-sans`, weights 400/500/600), self-hosted, no CDN, with
+tabular figures on (`font-variant-numeric: tabular-nums` on `body`) so columns of numbers line up.
+Noto Sans Ethiopic (400/500/600, plus 700 for the wordmark) follows it in the font stack, so Amharic
+names and text render in a matching face; the browser fetches the Ethiopic files only when a page
+holds Ethiopic characters. The wordmark ፈለገ ሰላም is set in Noto Sans Ethiopic 700.
 
 Scale: 12 / 13 / 14 / 16 / 18 / 22 / 28 px (`text-xs` … `text-3xl`). Body is 14px. Headings are
 the same family at weight 600 with a slight negative tracking; there is no display face. Table
@@ -179,5 +182,6 @@ Every list has an empty state that names the next step, and every screen that lo
 |---|---|---|---|
 | 2026-10 | The landing page was removed; `/` redirects to `/login` and the guard sends a signed-in visitor to their role home | The product is an internal tool; a marketing splash was a dead end that only held a Sign-in button | In use |
 | 2026-10 | Alegreya and Alegreya Sans were replaced by Inter, and the woven-band strip, the dues meter and the only keyframe were removed | A dense admin reads better in one UI sans with no decorative signature; the Overview now leads with stat tiles | In use |
+| 2026-10 | The UI font changed from Inter to IBM Plex Sans, with Noto Sans Ethiopic as the Amharic fallback and tabular numbers on | The approved mockup is set in IBM Plex Sans; tabular figures keep the dues and amounts columns aligned | In use |
 | 2026-10 | `bootstrap-icons` was replaced by an inline-SVG `Icon` component | One icon font shipped 314 KB for ~15 glyphs | In use |
 | 2026-10 | The two-density tokens were kept rather than collapsed to one scale | Sign-in and a MEMBER's profile are still comfortable, and the tokens are the lever for that | In use |
