@@ -23,6 +23,12 @@ const routes = [
     meta: { requiresAuth: true, requiresRole: 'VOLUNTEER', title: 'Members' }
   },
   {
+    path: '/members/:id',
+    name: 'member',
+    component: () => import('../views/MemberDetailView.vue'),
+    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER', title: 'Member' }
+  },
+  {
     path: '/households',
     name: 'households',
     component: () => import('../views/HouseholdsView.vue'),

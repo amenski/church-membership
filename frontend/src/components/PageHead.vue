@@ -3,6 +3,7 @@
     <div>
       <h1 class="m-0 text-2xl font-semibold text-ink">{{ title }}</h1>
       <p v-if="lead" class="mt-0.5 mb-0 text-sm text-muted">{{ lead }}</p>
+      <div v-if="$slots.meta" class="mt-1"><slot name="meta" /></div>
     </div>
     <div v-if="$slots.actions" class="flex flex-wrap gap-2"><slot name="actions" /></div>
   </header>

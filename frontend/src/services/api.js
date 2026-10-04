@@ -305,6 +305,11 @@ const apiService = {
     return this.get('/members', params)
   },
 
+  // GET /members/{id}: 404 for an unknown id, and for an archived member unless the caller is an ADMIN
+  async getMember(id) {
+    return this.get(`/members/${id}`)
+  },
+
   async createMember(member) {
     return this.post('/members', member)
   },
@@ -385,6 +390,11 @@ const apiService = {
   // Payments API
   async getPayments(params = {}) {
     return this.get('/payments', params)
+  },
+
+  // GET /payments/member/{id}: every payment of one member, 404 like getMember
+  async getPaymentsByMember(memberId) {
+    return this.get(`/payments/member/${memberId}`)
   },
 
   async createPayment(payment) {
