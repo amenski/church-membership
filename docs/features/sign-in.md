@@ -5,7 +5,7 @@ How staff, volunteers and members sign in, stay signed in, and get sent to the r
 ## Who can do what
 | Task | Minimum role | Screen / endpoint |
 |------|--------------|-------------------|
-| See the landing page | none (signed out only) | `/` (`frontend/src/router/index.js:6-11`) |
+| Reach sign-in from the root | none | `/` redirects to `/login` (`frontend/src/router/index.js:6-9`) |
 | Sign in | none (signed out only) | `/login` (`router/index.js:48-53`), `POST /api/auth/login` |
 | Stay signed in | any signed-in user | cookies, `POST /api/auth/refresh` |
 | Sign out | any signed-in user | Sign out button in the left rail's user block (`frontend/src/App.vue:67-69`), `POST /api/auth/logout` |
@@ -58,7 +58,7 @@ The auth endpoints have no `@PreAuthorize`; `/api/auth/**` is public (`infrastru
 5. A wrong current password on a password change counts toward the same lock.
 
 ### What a signed-out visitor sees
-1. `/` shows a quiet welcome: the Felege Selam wordmark, one line ("Membership and dues for the church community."), a Sign in button and the note "Accounts are set up by the church office." (`frontend/src/views/LandingView.vue:2-10`). There is no Register button: registration is disabled and `/register` is not a route.
+1. `/` redirects to `/login`; a visitor who is already signed in is sent on to their role home by the guard. There is no Register button: registration is disabled and `/register` is not a route.
 
 ## Rules
 - Roles rank MEMBER < VOLUNTEER < STAFF < ADMIN on the client (`authStore.js:20-29`); route `requiresRole` is a minimum (`router/index.js:109`).

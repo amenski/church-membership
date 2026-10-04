@@ -32,7 +32,7 @@ Role view of the screen:
 3. Overdue members: ACTIVE members whose missed-months counter is 1 or more (`GetDashboardStatsUseCase.java:30`; counter rules in [payment-reminders.md](payment-reminders.md)). An inactive member is never counted, so this number, the list below and the dues meter agree.
 4. This month's revenue: the sum of payment amounts whose billing month (the `period`) is the current month (`GetDashboardStatsUseCase.java:31`).
 - Revenue follows the billing month, not the day the money was recorded: a payment made today for last month is not counted; a payment made earlier for this month is. The Payments screen's "This month" figure uses the same rule, so the two agree ([payments.md](payments.md)).
-- The screen builds its hero from these: "N of M active members are paid up" with M = active members and N = M minus the overdue members on the list (`Dashboard.vue:129-140`), drawn as the dues meter, one segment per active member (capped at 40). With no active members it says so instead. Total members and the overdue count are not shown.
+- The screen leads with four `StatTile`s built from these: Active members, Paid up (active members minus the overdue members on the list), Behind (the overdue count) and This month's payments. With no active members the overdue list shows its empty state instead. Total members are not shown separately.
 - "This month's payments" and "Active members" are a quiet row below the list (`Dashboard.vue:42-51`). Amounts are formatted as US dollars with two decimals by the shared `formatMoney` (`frontend/src/utils/index.js:42`).
 
 ### Recent payments

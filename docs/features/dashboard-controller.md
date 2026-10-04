@@ -25,7 +25,7 @@ Use case `GetDashboardStatsUseCase` (returns a `DashboardStats` record: four que
 | `monthlyRevenue` | sum of `amount` where the billing `period` is the current month; always a double (`0.0` when there are no payments) | `PaymentRepository.sumAmountByPeriod(YearMonth.now())`, a SQL `SUM` |
 
 - Revenue is by billing `period`, not `paymentDate`: a payment made today for last month is excluded; an advance payment for this month made earlier is included.
-- Overdue is a stored counter, not computed here; it is raised once per member per month by the monthly `UpdateMissingPaymentCountersUseCase` (`src/main/java/io/github/membertracker/usecase/UpdateMissingPaymentCountersUseCase.java`). A member who is behind but not dues-paying (inactive, deceased, transferred) or archived is not counted, so the card, the overdue list and the dues meter agree.
+- Overdue is a stored counter, not computed here; it is raised once per member per month by the monthly `UpdateMissingPaymentCountersUseCase` (`src/main/java/io/github/membertracker/usecase/UpdateMissingPaymentCountersUseCase.java`). A member who is behind but not dues-paying (inactive, deceased, transferred) or archived is not counted, so the stat tiles and the overdue list agree.
 
 ## Recent payments
 - `GetRecentPaymentsUseCase.invoke(10)` -> `PaymentRepository.findRecent(10)`: newest `paymentDate` first, then newest id, limited in SQL.

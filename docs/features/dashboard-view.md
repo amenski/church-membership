@@ -2,15 +2,15 @@
 
 `frontend/src/views/Dashboard.vue`
 
-Home screen (nav label "Overview"): a "Who needs a call" hero (the sentence "N of M active members are paid up", the dues meter, the list of active members who are behind, each with a Send reminder link), a quiet row with this month's payments and active members, then ruled lists of recent payments and recent activity, each with a plain empty state. Styled with Tailwind utilities and the small components `PageHead`, `SectionTitle`, `RuledList`/`RuledRow`, `StatusLabel`, `TextButton`, `EmptyNote`, `AlertBanner` and `DuesMeter` (see [../design.md](../design.md)). Route `/dashboard` (`frontend/src/router/index.js:12-17`), minimum role VOLUNTEER; `homePath` for VOLUNTEER and above (`frontend/src/stores/authStore.js:41`). Guards: [../authentication.md](../authentication.md).
+Home screen (nav label "Overview"): a row of four `StatTile`s (Active members, Paid up, Behind, This month), then "Needs a reminder" — the active members who are behind, each with a Send reminder link — then ruled lists of recent payments and recent activity, each with a plain empty state. Styled with Tailwind utilities and the small components `PageHead`, `SectionTitle`, `StatTile`, `RuledList`/`RuledRow`, `StatusLabel`, `TextButton`, `EmptyNote` and `AlertBanner` (see [../design.md](../design.md)). Route `/dashboard` (`frontend/src/router/index.js:12-17`), minimum role VOLUNTEER; `homePath` for VOLUNTEER and above (`frontend/src/stores/authStore.js:41`). Guards: [../authentication.md](../authentication.md).
 
 ## State
 No Pinia store for data; Options API local `data()` (`frontend/src/views/Dashboard.vue:112-127`), with `authStore` / `appStore` from `setup()` (`:103-111`).
 - `stats` -> `{totalMembers, activeMembers, overdueMembers, monthlyRevenue}`, initial zeros
 - `recentPayments`, `overdueMembers`, `activities` -> arrays from the dashboard endpoints
 - `remindingIds` -> member ids with a send-reminder request in flight (disables that row's button)
-- `loaded`, `loadError` -> `loaded` turns true once the first load finished (the hero shows nothing before that, so a zero never flashes); `loadError` shows an alert and the error also goes to `console.error`
-- Computed (`:128-141`): `activeCount` (from `stats.activeMembers`), `behindMembers` (the overdue members, kept to those with `active` as a safeguard, longest overdue first; the endpoint is active-only), `paidCount` = `activeCount` minus `behindMembers.length`, never below 0. `DuesMeter` takes `activeCount` and `paidCount`; with no active members the meter is replaced by an empty state.
+- `loaded`, `loadError` -> `loaded` turns true once the first load finished (a "Loading overview..." line shows before that, so a zero never flashes); `loadError` shows an alert and the error also goes to `console.error`
+- Computed (`:128-141`): `activeCount` (from `stats.activeMembers`), `behindMembers` (the overdue members, kept to those with `active` as a safeguard, longest overdue first; the endpoint is active-only), `paidCount` = `activeCount` minus `behindMembers.length`, never below 0. The four `StatTile`s take `activeCount`, `paidCount`, `behindMembers.length` and `stats.monthlyRevenue`; with no active members the reminder list shows its empty state instead.
 
 ## Actions
 - `loadData()` (`:146`) -> `Promise.all` of 4 calls, then assigns all state; runs on `created` (`:142-144`) and after a successful reminder. One failure aborts the whole assignment (nothing updates).

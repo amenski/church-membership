@@ -99,19 +99,21 @@ frontend/src/
 ├── stores/       Pinia stores: auth, app (notifications)
 ├── services/     api.js — the only Axios instance
 ├── router/       Routes and auth guards
+├── ui/           classes.js — the class strings the views share
 ├── utils/        Generic helpers (formatDate, formatMoney, …)
 └── i18n.js       Translations (one locale so far)
 ```
 
 - Shared state goes in `stores/`. There is no `composables/` folder: it was removed in a dead-code cleanup.
 - All HTTP calls go through `services/api.js`.
-- Styling is Tailwind utilities written in the templates (no class prefix, no `<style>` blocks); tokens and base rules are in `assets/styles/tailwind.css`, shared patterns are components. See [design.md](design.md#styling-system).
+- Styling is Tailwind utilities written in the templates (no class prefix, no `<style>` blocks); tokens and base rules are in `assets/styles/tailwind.css`, shared class strings in `ui/classes.js`, shared patterns are components. See [design.md](design.md).
 - Notifications use `appStore.addNotification({ message, type, duration })`.
 
 ## Decisions
 
 | Date | Decision | Why | Status |
 |------|----------|-----|--------|
+| 2026-10 | The frontend is a dense admin dashboard: Inter, one accent, inline-SVG icons, no icon or serif font, no landing page, and the Overview leads with stat tiles | The product is an internal tool used weekly; decoration cost bytes and reading time | In use. See [design.md](design.md) |
 | 2025-09 | Stateless JWT in HttpOnly cookies | Tokens stay out of JavaScript; no session store | In use. Details in [authentication.md](authentication.md) |
 | 2026-02 | Hybrid domain model (models + policies + use cases) | Avoids an anemic model without putting volatile rules in entities | Removed: the policy was never wired in; see git history (`chore: remove unused use cases, the membership policy and PhoneNumber`) |
 | 2026-02 | Money as `Double`, not `BigDecimal` | Simpler arithmetic and JSON | **Under review:** the [functionality audit](functionality-audit.md) recommends going back to `BigDecimal` before adding funds and receipts |

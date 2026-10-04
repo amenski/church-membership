@@ -21,6 +21,7 @@ Full setup, build and deployment steps are in [docs/development.md](docs/develop
 |-----|---------------|
 | [docs/development.md](docs/development.md) | Setting up, running, building or deploying |
 | [docs/architecture.md](docs/architecture.md) | Deciding where new code goes; checking past design decisions |
+| [docs/design.md](docs/design.md) | Building or restyling a screen: tokens, density, layout and components |
 | [docs/authentication.md](docs/authentication.md) | Working on login, sessions, cookies, roles or permissions |
 | [docs/email.md](docs/email.md) | Configuring SMTP or changing how messages go out |
 
