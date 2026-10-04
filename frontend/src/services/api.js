@@ -341,6 +341,35 @@ const apiService = {
     return this.delete(`/households/${id}`)
   },
 
+  // People API: anyone on the register. A person with no membership is a dependent (withoutMembership: true lists only them)
+  async getPeople(params = {}) {
+    return this.get('/people', params)
+  },
+
+  async getPerson(id) {
+    return this.get(`/people/${id}`)
+  },
+
+  // Creates a person with no membership; the Members list is untouched until startMembership
+  async createPerson(person) {
+    return this.post('/people', person)
+  },
+
+  // householdId absent leaves the household as it is; null removes the person from it
+  async updatePerson(id, person) {
+    return this.put(`/people/${id}`, person)
+  },
+
+  // 409 PERSON_002 when the person has a membership
+  async deletePerson(id) {
+    return this.delete(`/people/${id}`)
+  },
+
+  // body {status: MEMBER | INACTIVE, joinDate}, both optional; 409 PERSON_001 when already a member
+  async startMembership(id, membership = {}) {
+    return this.post(`/people/${id}/membership`, membership)
+  },
+
   async exportMembers(ids = []) {
     if (ids.length > 0) {
       return this.post('/members/export', { ids }, { responseType: 'blob' })
