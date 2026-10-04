@@ -5,7 +5,7 @@ describe('deliverySummaryParts', () => {
   it('joins sent and delivered and tones each word', () => {
     expect(deliverySummaryParts({ sent: 0, failed: 1, pending: 1, delivered: 8 })).toEqual([
       { key: 'sent', text: '8 sent', tone: 'paid' },
-      { key: 'failed', text: '1 failed', tone: 'inactive' },
+      { key: 'failed', text: '1 failed', tone: 'danger' },
       { key: 'pending', text: '1 pending', tone: 'behind' }
     ])
   })
@@ -48,7 +48,7 @@ describe('deliveryStatus and countDeliveries', () => {
   it('maps each status to a tone and a word', () => {
     expect(deliveryStatus('SENT')).toEqual({ tone: 'paid', label: 'Sent' })
     expect(deliveryStatus('DELIVERED')).toEqual({ tone: 'paid', label: 'Delivered' })
-    expect(deliveryStatus('FAILED')).toEqual({ tone: 'inactive', label: 'Failed' })
+    expect(deliveryStatus('FAILED')).toEqual({ tone: 'danger', label: 'Failed' })
     expect(deliveryStatus('PENDING')).toEqual({ tone: 'behind', label: 'Pending' })
   })
 

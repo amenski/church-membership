@@ -197,13 +197,12 @@ Two densities share one palette and one type family. They are plain CSS custom p
 | `--card-pad` | 16px | 16px (24px from 768px) |
 | `--text-body` / `--lh-body` | 16px / 22px | 18px / 26px |
 | `--text-label` / `--lh-label` | 14px / 18px | 15px / 20px |
-| `--text-title` / `--lh-title` | 18px / 24px | 20px / 26px |
 
 - **Dense:** staff screens (Overview, Members, Payments, Messages, Activity). **Comfortable:** guests (landing, sign-in) and a MEMBER's Profile (which follows `data-density`, so staff see the same page dense).
 - `App.vue` sets `data-density` on the shell root: `comfortable` when signed out or when the role is MEMBER, otherwise `dense`. `LandingView` and `LoginView` render outside the rail shell and set `data-density="comfortable"` on their own root.
 - Inputs never go below 16px text (iOS zooms the page on smaller). The primary action on a comfortable screen is 48px and full width on mobile.
 - Status, as before, is a dot plus a word, never plain coloured text. Every list has an empty state that names the next step. A switch's whole row is the click target (wrap it in a label). Disabled means a light fill, muted text and the real `disabled` attribute.
-- T1 defined and plumbed the tokens. The Overview keeps its own sizes (it must look exactly as before); Members, Payments and Messages consume them (`h-(--control-h)` for the filter controls, `min-h-(--row-h)` for table rows, `text-(length:--text-body)`). Dialogs are teleported to `body`, outside `data-density`, so their controls keep fixed sizes (`BaseInput`, `BaseSelect`, `BaseTextarea`).
+- T1 defined and plumbed the tokens. `BaseButton` consumes them too: `primary` and `danger` hold `--control-primary-h` (48px when comfortable), `secondary` `--control-h`, and `size="sm"` stays padding-sized. `min-height` never shrinks a button, so dense screens are unchanged. The Overview keeps its own sizes (its lists use `RuledRow`'s fixed 56px row; it must look exactly as before); Members, Payments and Messages consume them (`h-(--control-h)` for the filter controls, `min-h-(--row-h)` for table rows, `text-(length:--text-body)`), and the Households mobile list row uses `min-h-(--list-row-h)`. Dialogs are teleported to `body`, outside `data-density`, so their controls keep fixed sizes (`BaseInput`, `BaseSelect`, `BaseTextarea`).
 
 ## Dialog rules
 

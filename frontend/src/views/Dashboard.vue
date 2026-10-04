@@ -5,41 +5,40 @@
     <AlertBanner v-if="loadError">
       The overview did not load. Reload the page, or sign in again if it keeps happening.
     </AlertBanner>
+    <p v-else-if="!loaded" class="m-0 py-4 text-(length:--text-body) text-muted" role="status">Loading overview...</p>
 
     <!-- The thesis: who needs a call -->
-    <section class="pb-6" aria-labelledby="hero-title">
+    <section v-if="loaded" class="pb-6" aria-labelledby="hero-title">
       <SectionTitle id="hero-title">Who needs a call</SectionTitle>
 
-      <template v-if="loaded">
-        <template v-if="activeCount > 0">
-          <p class="mt-0 mb-6 font-display text-3xl leading-[1.15] text-balance max-sm:text-2xl">
-            <span :class="FIGURE">{{ paidCount }}</span> of
-            <span :class="FIGURE">{{ activeCount }}</span> active members are paid up
-          </p>
-          <DuesMeter :total="activeCount" :paid="paidCount" />
-        </template>
-        <EmptyNote v-else>No active members yet. Add the first one under Members.</EmptyNote>
-
-        <RuledList v-if="behindMembers.length" class="mt-6">
-          <RuledRow v-for="member in behindMembers" :key="member.id">
-            <span class="min-w-0 flex-auto [overflow-wrap:anywhere] max-sm:basis-full">{{ member.name }}</span>
-            <StatusLabel tone="behind" class="min-w-42 max-sm:min-w-0 max-sm:flex-auto">{{ monthsBehind(member.consecutiveMonthsMissed) }}</StatusLabel>
-            <TextButton
-              v-if="authStore.isStaff"
-              :disabled="remindingIds.includes(member.id)"
-              @click="sendReminder(member)"
-            >
-              Send reminder
-              <span class="sr-only">to {{ member.name }}</span>
-            </TextButton>
-          </RuledRow>
-        </RuledList>
-        <EmptyNote v-else-if="activeCount > 0">No overdue members. Everyone is paid up for this month.</EmptyNote>
+      <template v-if="activeCount > 0">
+        <p class="mt-0 mb-6 font-display text-3xl leading-[1.15] text-balance max-sm:text-2xl">
+          <span :class="FIGURE">{{ paidCount }}</span> of
+          <span :class="FIGURE">{{ activeCount }}</span> active members are paid up
+        </p>
+        <DuesMeter :total="activeCount" :paid="paidCount" />
       </template>
+      <EmptyNote v-else>No active members yet. Add the first one under Members.</EmptyNote>
+
+      <RuledList v-if="behindMembers.length" class="mt-6">
+        <RuledRow v-for="member in behindMembers" :key="member.id">
+          <span class="min-w-0 flex-auto [overflow-wrap:anywhere] max-sm:basis-full">{{ member.name }}</span>
+          <StatusLabel tone="behind" class="min-w-42 max-sm:min-w-0 max-sm:flex-auto">{{ monthsBehind(member.consecutiveMonthsMissed) }}</StatusLabel>
+          <TextButton
+            v-if="authStore.isStaff"
+            :disabled="remindingIds.includes(member.id)"
+            @click="sendReminder(member)"
+          >
+            Send reminder
+            <span class="sr-only">to {{ member.name }}</span>
+          </TextButton>
+        </RuledRow>
+      </RuledList>
+      <EmptyNote v-else-if="activeCount > 0">No overdue members. Everyone is paid up for this month.</EmptyNote>
     </section>
 
     <!-- Quiet secondary figures -->
-    <dl class="mt-6 mb-10 flex border-y border-rule py-4">
+    <dl v-if="loaded" class="mt-6 mb-10 flex border-y border-rule py-4">
       <div class="flex-1 px-6 first:pl-0 not-first:border-l not-first:border-rule max-sm:px-3 max-sm:first:pl-0">
         <dt class="text-base font-medium text-muted">This month's payments</dt>
         <dd :class="[FIGURE, 'm-0 text-2xl leading-[1.3]']">{{ formatMoney(stats.monthlyRevenue) }}</dd>
@@ -50,7 +49,7 @@
       </div>
     </dl>
 
-    <div class="grid grid-cols-1 gap-12 lg:grid-cols-2">
+    <div v-if="loaded" class="grid grid-cols-1 gap-12 lg:grid-cols-2">
       <section class="min-w-0" aria-labelledby="payments-title">
         <SectionTitle id="payments-title">Recent payments</SectionTitle>
         <RuledList v-if="recentPayments.length">

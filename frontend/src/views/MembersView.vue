@@ -65,7 +65,8 @@
 
     <!-- Empty states -->
     <div v-if="showingArchived && !source.length">
-      <EmptyNote>{{ archivedLoaded ? 'No archived members.' : 'Loading archived members...' }}</EmptyNote>
+      <p v-if="!archivedLoaded" class="m-0 py-4 text-(length:--text-body) text-muted" role="status">Loading archived members...</p>
+      <EmptyNote v-else>No archived members.</EmptyNote>
       <BaseButton variant="secondary" class="mt-2" @click="clearFilters">Back to all members</BaseButton>
     </div>
     <div v-else-if="loaded && !loadError && !members.length">

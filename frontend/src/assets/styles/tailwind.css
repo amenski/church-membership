@@ -124,8 +124,6 @@
     --lh-body: 22px;
     --text-label: 14px;
     --lh-label: 18px;
-    --text-title: 18px;
-    --lh-title: 24px;
   }
   [data-density="comfortable"] {
     --control-h: 44px;
@@ -137,8 +135,6 @@
     --lh-body: 26px;
     --text-label: 15px;
     --lh-label: 20px;
-    --text-title: 20px;
-    --lh-title: 26px;
   }
   @media (min-width: 768px) {
     [data-density="comfortable"] { --card-pad: 24px; }

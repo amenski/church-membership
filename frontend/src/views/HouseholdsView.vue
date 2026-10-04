@@ -67,7 +67,7 @@
       <!-- Below md: the same rows, stacked -->
       <ul class="m-0 list-none border-t border-rule p-0 md:hidden">
         <li v-for="household in visibleHouseholds" :key="household.id" class="border-b border-rule">
-          <button type="button" class="flex min-h-14 w-full cursor-pointer items-center justify-between gap-3 border-0 bg-transparent px-0 py-3 text-left font-sans text-(length:--text-body) text-ink" @click="openDetail(household)">
+          <button type="button" class="flex min-h-(--list-row-h) w-full cursor-pointer items-center justify-between gap-3 border-0 bg-transparent px-0 py-3 text-left font-sans text-(length:--text-body) text-ink" @click="openDetail(household)">
             <span class="min-w-0">
               <span :class="[NAME, 'block']">{{ household.name }}</span>
               <span v-if="household.city" class="block text-sm text-muted [overflow-wrap:anywhere]">{{ household.city }}</span>

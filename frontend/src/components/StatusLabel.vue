@@ -10,7 +10,7 @@
 const TONES = {
   paid: 'text-fern-text',
   behind: 'text-ochre-text',
-  inactive: 'text-clay',
+  danger: 'text-clay',
   muted: 'text-muted'
 }
 

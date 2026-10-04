@@ -9,10 +9,11 @@ export const STATUS_LABELS = {
   ARCHIVED: 'Archived'
 }
 
-// StatusLabel tones: a member who is paid is fern; Inactive keeps its old clay; the rest are muted
+// StatusLabel tones: a member who is paid is fern; every other status is neutral. An inactive
+// member is routine, not an error, so it must not borrow the clay (danger) tone.
 const TONES = {
   MEMBER: 'paid',
-  INACTIVE: 'inactive',
+  INACTIVE: 'muted',
   DECEASED: 'muted',
   TRANSFERRED: 'muted',
   ARCHIVED: 'muted'

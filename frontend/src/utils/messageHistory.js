@@ -15,13 +15,13 @@ export function attemptsLabel(n) {
 /**
  * The delivery counts of one message as words with a tone for StatusLabel: "8 sent" (sent plus
  * delivered, both mean the mail left), "1 failed", "1 pending". Zero counts are left out.
- * @returns {{ key: string, text: string, tone: 'paid'|'inactive'|'behind' }[]}
+ * @returns {{ key: string, text: string, tone: 'paid'|'danger'|'behind' }[]}
  */
 export function deliverySummaryParts(summary) {
   const { sent = 0, delivered = 0, failed = 0, pending = 0 } = summary || {}
   const parts = [
     { key: 'sent', count: sent + delivered, word: 'sent', tone: 'paid' },
-    { key: 'failed', count: failed, word: 'failed', tone: 'inactive' },
+    { key: 'failed', count: failed, word: 'failed', tone: 'danger' },
     { key: 'pending', count: pending, word: 'pending', tone: 'behind' }
   ]
   return parts.filter(part => part.count > 0).map(({ key, count, word, tone }) => ({ key, text: `${count} ${word}`, tone }))
@@ -32,7 +32,7 @@ export function deliveryStatus(status) {
   switch (status) {
     case 'SENT': return { tone: 'paid', label: 'Sent' }
     case 'DELIVERED': return { tone: 'paid', label: 'Delivered' }
-    case 'FAILED': return { tone: 'inactive', label: 'Failed' }
+    case 'FAILED': return { tone: 'danger', label: 'Failed' }
     case 'PENDING': return { tone: 'behind', label: 'Pending' }
     default: return { tone: 'behind', label: status || '' }
   }

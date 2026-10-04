@@ -26,10 +26,10 @@ describe('labels and tones', () => {
     expect(statusLabel('SOMETHING')).toBe('SOMETHING')
     expect(statusLabel(undefined)).toBe('')
   })
-  it('uses the paid tone for Member, the old clay for Inactive and muted for the rest', () => {
+  it('uses the paid tone for Member and a neutral tone for every other status', () => {
     expect(statusTone('MEMBER')).toBe('paid')
-    expect(statusTone('INACTIVE')).toBe('inactive')
-    expect(['DECEASED', 'TRANSFERRED', 'ARCHIVED', 'UNKNOWN'].map(statusTone)).toEqual(['muted', 'muted', 'muted', 'muted'])
+    expect(['INACTIVE', 'DECEASED', 'TRANSFERRED', 'ARCHIVED', 'UNKNOWN'].map(statusTone))
+      .toEqual(['muted', 'muted', 'muted', 'muted', 'muted'])
   })
 })
 

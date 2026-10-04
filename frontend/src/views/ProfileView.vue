@@ -54,7 +54,7 @@
               </div>
             </div>
             <div>
-              <BaseButton type="submit" :disabled="saving" :aria-busy="saving ? 'true' : undefined" class="min-h-(--control-primary-h) max-sm:w-full">
+              <BaseButton type="submit" :disabled="saving" :aria-busy="saving ? 'true' : undefined" class="max-sm:w-full">
                 {{ saving ? 'Saving...' : 'Save changes' }}
               </BaseButton>
             </div>
@@ -64,7 +64,7 @@
         <section :class="CARD" aria-labelledby="password-title">
           <SectionTitle id="password-title">Password</SectionTitle>
           <p class="mt-0 mb-4 text-(length:--text-body) leading-(--lh-body)">Use at least 8 characters with an uppercase letter, a lowercase letter, a number and a special character.</p>
-          <BaseButton variant="secondary" class="min-h-(--control-h) max-sm:w-full" @click="openPasswordDialog">Change password</BaseButton>
+          <BaseButton variant="secondary" class="max-sm:w-full" @click="openPasswordDialog">Change password</BaseButton>
         </section>
       </template>
     </div>
