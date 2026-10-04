@@ -114,7 +114,7 @@ Utilities read them with `h-(--control-h)`, `min-h-(--row-h)`, `p-(--card-pad)`,
 
 - `Icon` holds the whole icon set as inline SVG path data — no icon font, and only the glyphs named
   reach the bundle.
-- `StatTile` is the one place a large figure is styled; it sits inside a `<dl>`.
+- `StatTile` is the one place a large figure is styled; it sits inside a `<dl>`. `slim` shrinks it (20px figure, less padding) for the Overview's facts strip.
 - `StatusLabel` is a coloured dot **plus a word**, never colour alone. Tones: `paid` (fern),
   `behind` (ochre), `danger` (clay), `muted` (neutral — inactive, transferred, deceased, archived).
 
@@ -131,6 +131,8 @@ existing ones, and state is carried by fill and border pattern as well as colour
 | due now (current month, unpaid) | `paper` with a 2px `ochre-edge` outline | Due now, unpaid |
 | not a member yet, or not owing dues | dashed `field` border | Not a member that month |
 | unpaid, no longer counted by the server | dashed `field` border | Unpaid, no longer counted |
+
+The Overview ledger uses the compact strip for every member who is behind or has not paid this month; the "Call this week" panel sits beside it.
 
 Sizes: `compact` 10x18px with a 2px gap (table rows), `large` 20x26px with a 3px gap and the month
 initial underneath (phone cards, initial is `aria-hidden`). Each square has a visually hidden

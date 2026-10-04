@@ -18,6 +18,9 @@ Payments page, built on Tailwind and the shared components: a "Record payment" d
 - Server errors (`showSaveError`): `error.fieldErrors` `[{ field, message }]` go under their fields; a 400 without a field goes into an `AlertBanner` at the top of the dialog and an error toast "Could not record payment" (no toast for 403, the shared API handler already shows one). The dialog stays open on failure.
 - Success closes the dialog, resets the form (month and date back to the defaults), reloads the history and shows the toast "Payment recorded" ("Jane Smith, Mar 2024: $50.00").
 
+## Deep link
+`/payments?memberId=<id>` (the Members phone card's Record payment link) opens the Record payment dialog with that member chosen. After the first load `openForQueryMember` removes the parameter from the URL (`router.replace`), so a reload or closing the dialog does not reopen it, then, for STAFF and above only, opens the dialog and sets `form.memberId` when the id is an active member (a member who does not owe dues leaves the select on "Choose a member"). A VOLUNTEER, or a failed load, just gets the plain screen. The rest of the screen is unchanged by the redesign: the dark-teal rail only changes the frame around it.
+
 ## Receipt dialog
 `BaseModal` sm titled "Receipt R-000012". Shows Receipt, Member, Month covered, Paid on, Method, Notes (only when present) and the Amount, inside a plain element (`receiptContent`) that html2pdf captures: only token hex colours, no tinted or blended colours. "Download PDF" imports `html2pdf.js` on first click, letter portrait, file `receipt-R-000012.pdf` (`PaymentsView.vue:362-380`); "Close" closes it. A PDF failure shows the toast "Could not create the PDF".
 

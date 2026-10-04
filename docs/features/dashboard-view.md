@@ -2,19 +2,18 @@
 
 `frontend/src/views/Dashboard.vue`
 
-Home screen (nav label "Overview"): a row of four `StatTile`s (Active members, Paid up, Behind, This month), then "Needs a reminder" — the active members who are behind, each with a Send reminder link — then ruled lists of recent payments and recent activity, each with a plain empty state. Styled with Tailwind utilities and the small components `PageHead`, `SectionTitle`, `StatTile`, `RuledList`/`RuledRow`, `StatusLabel`, `TextButton`, `EmptyNote` and `AlertBanner` (see [../design.md](../design.md)). Route `/dashboard` (`frontend/src/router/index.js:12-17`), minimum role VOLUNTEER; `homePath` for VOLUNTEER and above (`frontend/src/stores/authStore.js:41`). Guards: [../authentication.md](../authentication.md).
+Home screen (nav label "Overview"), top to bottom: a slim facts strip of four `StatTile`s (`slim`: Active members, Paid up, Behind, This month); then two columns from `lg` up. Left, the **dues ledger** ("Dues by member"): every active member who is behind or has not paid the current month, most behind first (then by name), each row the name as stored (Amharic or Latin), the compact `YearStrip` and "N months behind" (or "Due this month" for someone not behind yet but unpaid this month), under a "Nov to Oct" column header. Right, **Call this week**: the three members furthest behind with months behind, a Call `tel:` link when the member has a phone, and Send reminder (STAFF+) which links to `/communications` (it no longer sends an email from here). Under it, Recent payments. Below both, "Collected by month" and Recent activity side by side. Each list has a plain empty state. Below `sm` a ledger row wraps: name and months behind on one line, the strip under it. Styled with Tailwind utilities and the small components `PageHead`, `SectionTitle`, `StatTile`, `YearStrip`, `RuledList`/`RuledRow`, `StatusLabel`, `TextButton`, `EmptyNote` and `AlertBanner` (see [../design.md](../design.md)). Route `/dashboard` (`frontend/src/router/index.js:12-17`), minimum role VOLUNTEER; `homePath` for VOLUNTEER and above (`frontend/src/stores/authStore.js:41`). Guards: [../authentication.md](../authentication.md).
 
 ## State
 No Pinia store for data; Options API local `data()` (`frontend/src/views/Dashboard.vue:112-127`), with `authStore` / `appStore` from `setup()` (`:103-111`).
 - `stats` -> `{totalMembers, activeMembers, overdueMembers, monthlyRevenue}`, initial zeros
-- `recentPayments`, `overdueMembers`, `activities` -> arrays from the dashboard endpoints
-- `remindingIds` -> member ids with a send-reminder request in flight (disables that row's button)
+- `recentPayments`, `activities` -> arrays from the dashboard endpoints; `members` -> `GET /members` (all members, with phone, join date and `consecutiveMonthsMissed`); `paidByMember` -> `Map` of member id to paid `yyyy-MM` periods from `GET /payments` (`paidMonthsByMember`), `null` when that call failed (the strips then show a muted dash and only members with a missed count are listed); `today`
 - `loaded`, `loadError` -> `loaded` turns true once the first load finished (a "Loading overview..." line shows before that, so a zero never flashes); `loadError` shows an alert and the error also goes to `console.error`
-- Computed (`:128-141`): `activeCount` (from `stats.activeMembers`), `behindMembers` (the overdue members, kept to those with `active` as a safeguard, longest overdue first; the endpoint is active-only), `paidCount` = `activeCount` minus `behindMembers.length`, never below 0. The four `StatTile`s take `activeCount`, `paidCount`, `behindMembers.length` and `stats.monthlyRevenue`; with no active members the reminder list shows its empty state instead.
+- Computed: `activeCount` (from `stats.activeMembers`), `behindMembers` (members with status MEMBER and `consecutiveMonthsMissed` above 0, longest first; this replaced the overdue-members call), `callList` (the first three), `ledgerRows` (MEMBER status and either behind or, when the payments loaded, no payment for the current month; most behind first, then by name), `paidCount` = `activeCount` minus `behindMembers.length`, never below 0. The month squares follow the rule in [../design.md](../design.md#year-strip) and `frontend/src/utils/yearStrip.js`, the same as the Members screen.
 
 ## Actions
-- `loadData()` (`:146`) -> `Promise.all` of 4 calls, then assigns all state; runs on `created` (`:142-144`) and after a successful reminder. One failure aborts the whole assignment (nothing updates).
-- `sendReminder(member)` (`:175`) -> `api.sendToMember(member.id, buildReminderRequest(member))` (the body has `type: 'REMINDER'`, so the message is stored as a reminder), toasts success or the server error (both titled "Send reminder", `:181`, `:189`), then `loadData()`.
+- `loadData()` -> `Promise.all` of 4 calls (stats, recent payments, members, activities), then assigns all state, then loads "collected by month" and the paid months (each fails on its own without hiding the rest); runs on `created`. One failure of the first four aborts the whole assignment (nothing updates).
+- Send reminder is a link to `/communications`; the Overview no longer sends mail itself.
 - `formatDate(date)` (`:172`) -> `new Date(date).toLocaleDateString()`
 - `formatMoney(amount)` (shared, `frontend/src/utils/index.js:42`, exposed from `setup()` at `:108`) -> US dollars with two decimals; the same helper formats the Payments screen
 
@@ -23,20 +22,19 @@ No Pinia store for data; Options API local `data()` (`frontend/src/views/Dashboa
 |---------------|---------|---------|
 | `getDashboardStats` (`frontend/src/services/api.js:472`) | GET `/dashboard/stats` | [dashboard-controller.md](dashboard-controller.md) |
 | `getRecentPayments` (`:522`) | GET `/dashboard/recent-payments` | same |
-| `getOverdueMembers` (`:526`) | GET `/dashboard/overdue-members` | same |
+| `getMembers` | GET `/members` (VOLUNTEER+) | [member-controller.md](member-controller.md) |
+| `getPayments` | GET `/payments` (VOLUNTEER+), for the year strips | [payment-controller.md](payment-controller.md) |
 | `getRecentActivities` (`:530`) | GET `/dashboard/recent-activities` | same |
-| `sendToMember` (`:423`) | POST `/communications/send-to-member/{memberId}` | `src/main/java/io/github/membertracker/infrastructure/CommunicationController.java:104` (STAFF+) |
 
 Methods return `response.data` (`frontend/src/services/api.js:285-288`).
 
 ## Errors
 - 401: api.js interceptor refreshes the token, retries, else clears auth and redirects (`frontend/src/services/api.js:105-171`; see [../authentication.md](../authentication.md)).
-- Load failures: an alert at the top ("The overview did not load. Reload the page, or sign in again if it keeps happening.", `:5-7`) and a console log (`:166`). Send-reminder failures show an error toast with the server message (`:186-192`). The server no longer answers 200 with zeros when it fails: a failure is a 500 and reaches this banner.
+- Load failures: an alert at the top ("The overview did not load. Reload the page, or sign in again if it keeps happening.") and a console log. The server no longer answers 200 with zeros when it fails: a failure is a 500 and reaches this banner.
 - A role-denied visit to another page lands here (VOLUNTEER and above) with an "Access denied" warning toast raised by the router guard (`frontend/src/router/index.js:108-118`); the URL has no query parameter and this view reads nothing.
 
 ## Side effects
-- "Send reminder" sends one real email to that member through the backend (background thread); the response returns before delivery, so a `SENT`/`FAILED` result is only visible via the deliveries endpoint.
-- The button is rendered only for STAFF+ (`:28`), matching the server's `hasRole('STAFF')`.
+None: the screen only reads. Send reminder and Call are plain links.
 
 ## Gotchas
 - The dashboard endpoints no longer catch exceptions (see [dashboard-controller.md](dashboard-controller.md#errors)), so the error alert also covers a server failure.

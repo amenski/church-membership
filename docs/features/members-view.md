@@ -52,7 +52,7 @@ All in `frontend/src/utils/memberFilters.js`; all filters are ANDed.
 - Data: `api.getPayments()` (`GET /api/payments`, VOLUNTEER+) loads in parallel with the members and after every reload; `paidMonthsByMember` groups `payment.period` ("yyyy-MM") by `payment.member.id`. No backend change. If that call fails the strip cells show a muted dash and the rest of the screen works. It returns every payment, which is fine at this size; a per-member endpoint is the next step if the list grows large.
 - Desktop: a column "Nov to Oct, one square a month" (the range follows the current month) with the compact `YearStrip`, before Dues. Sorting and filters are unchanged (the column is not sortable).
 - Rule: see [../design.md](../design.md#year-strip) and the header of `frontend/src/utils/yearStrip.js`. Red squares are capped at the server's `consecutiveMonthsMissed`, so the strip and "N months behind" cannot disagree.
-- Below md each member is a card: name, email, household, status, dues text, phone and join date, the More menu, the large strip with month initials, then Call (`tel:`, shown with a phone) and Record payment (STAFF+, members who owe dues; links to `/payments`, no member preselected yet), both 44px high.
+- Below md each member is a card: name, email, household, status, dues text, phone and join date, the More menu, the large strip with month initials, then Call (`tel:`, shown with a phone) and Record payment (STAFF+, members who owe dues; links to `/payments?memberId=<id>`, which opens the dialog with that member chosen), both 44px high.
 
 ## Actions
 - `loadMembers` -> `api.getMembers()`, sets `members`, sets `loadError` on failure. Runs in `created`, after every save, archive or toggle, and from "Try again".
