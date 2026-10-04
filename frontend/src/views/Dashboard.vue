@@ -9,10 +9,18 @@
 
     <template v-if="loaded">
       <dl class="m-0 mb-6 grid grid-cols-2 gap-2 lg:grid-cols-4">
-        <StatTile slim label="Active members" :value="activeCount" />
-        <StatTile slim label="Paid up" :value="paidCount" :hint="`of ${activeCount}`" tone="paid" />
-        <StatTile slim label="Behind" :value="behindMembers.length" tone="behind" />
-        <StatTile slim label="This month" :value="formatMoney(stats.monthlyRevenue)" />
+        <StatTile slim :label="`Collected in ${monthName}`" :value="formatMoney(stats.monthlyRevenue)" />
+        <StatTile slim label="Paid up" :value="paidCount" :hint="`of ${activeCount} members`" tone="paid" />
+        <StatTile slim label="Behind on dues" :value="behindMembers.length" :hint="behindHint" tone="behind" />
+        <StatTile
+          v-if="failedReminders !== null"
+          slim
+          label="Reminders"
+          :value="failedReminders"
+          hint="failed to deliver."
+          :tone="failedReminders > 0 ? 'danger' : 'default'"
+          to="/communications"
+        />
       </dl>
 
       <div class="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start">
@@ -213,6 +221,7 @@ export default {
       members: [],
       paidByMember: null,
       today: localISODate(),
+      failedReminders: null,
       wide: false,
       wideQuery: null,
       activities: []
@@ -224,6 +233,16 @@ export default {
     },
     currentMonth() {
       return this.today.slice(0, 7)
+    },
+    monthName() {
+      const [year, month] = this.currentMonth.split('-').map(Number)
+      return new Date(year, month - 1, 1).toLocaleDateString(undefined, { month: 'long' })
+    },
+    // "5 members, 12 months unpaid": the server's per-member counts added up
+    behindHint() {
+      const members = this.behindMembers.length
+      const months = this.behindMembers.reduce((sum, member) => sum + member.consecutiveMonthsMissed, 0)
+      return `${members === 1 ? 'member' : 'members'}, ${months} ${months === 1 ? 'month' : 'months'} unpaid`
     },
     ledgerGrid() {
       return this.wide ? LEDGER_GRID_WIDE : LEDGER_GRID
@@ -310,7 +329,7 @@ export default {
         this.activities = activitiesRes
         this.today = localISODate()
         this.loadError = false
-        await Promise.all([this.loadCollected(), this.loadPaidMonths()])
+        await Promise.all([this.loadCollected(), this.loadPaidMonths(), this.loadFailedReminders()])
       } catch (error) {
         console.error('Error loading dashboard data:', error)
         this.loadError = true
@@ -325,6 +344,18 @@ export default {
       } catch (error) {
         console.error('Error loading payments for the year strip:', error)
         this.paidByMember = null
+      }
+    },
+    // Reminder deliveries that failed, from the per-message summaries the Messages screen lists. A failure only hides the tile.
+    async loadFailedReminders() {
+      try {
+        const messages = await api.getCommunications()
+        this.failedReminders = (Array.isArray(messages) ? messages : [])
+          .filter(message => message.type === 'REMINDER')
+          .reduce((sum, message) => sum + (message.deliverySummary?.failed || 0), 0)
+      } catch (error) {
+        console.error('Error loading reminder deliveries:', error)
+        this.failedReminders = null
       }
     },
     async loadCollected() {
