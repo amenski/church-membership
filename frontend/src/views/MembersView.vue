@@ -114,6 +114,10 @@
               <StatusLabel :tone="statusTone(member.status)">{{ statusLabel(member.status) }}</StatusLabel>
             </td>
             <td :class="[TD, 'whitespace-nowrap']">
+              <YearStrip v-if="paidByMember" v-bind="stripProps(member)" />
+              <span v-else class="text-muted"><span aria-hidden="true">&ndash;</span><span class="sr-only">Months paid did not load</span></span>
+            </td>
+            <td :class="[TD, 'whitespace-nowrap']">
               <span :class="duesClass(member)">
                 <template v-if="countsForDues(member)">{{ duesText(member) }}</template>
                 <template v-else><span aria-hidden="true">&ndash;</span><span class="sr-only">Not tracked while {{ statusLabel(member.status).toLowerCase() }}</span></template>
@@ -126,22 +130,33 @@
         </tbody>
       </table>
 
-      <!-- Below md: the same rows, stacked -->
-      <ul class="m-0 list-none border-t border-rule p-0 md:hidden">
-        <li v-for="member in filteredMembers" :key="member.id" class="flex items-start justify-between gap-2 border-b border-rule py-3">
-          <div class="min-w-0 flex-1">
-            <div :class="NAME">{{ member.name }}</div>
-            <div v-if="member.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
-            <div v-if="member.householdName" class="text-sm text-muted [overflow-wrap:anywhere]"><Icon name="home" :size="14" class="mr-1" /><span class="sr-only">Household: </span>{{ member.householdName }}</div>
-            <div class="mt-1 flex flex-wrap items-center gap-x-4">
-              <StatusLabel :tone="statusTone(member.status)">{{ statusLabel(member.status) }}</StatusLabel>
-              <span v-if="countsForDues(member)" :class="duesClass(member)">{{ duesText(member) }}</span>
+      <!-- Below md: one card per member -->
+      <ul class="m-0 flex list-none flex-col gap-3 p-0 md:hidden">
+        <li v-for="member in filteredMembers" :key="member.id" class="flex flex-col gap-3 rounded-lg border border-rule bg-paper px-4 py-3.5">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0 flex-1">
+              <div :class="[NAME, 'text-xl']">{{ member.name }}</div>
+              <div v-if="member.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
+              <div v-if="member.householdName" class="text-sm text-muted [overflow-wrap:anywhere]"><Icon name="home" :size="14" class="mr-1" /><span class="sr-only">Household: </span>{{ member.householdName }}</div>
+              <div class="mt-1 flex flex-wrap items-center gap-x-4">
+                <StatusLabel :tone="statusTone(member.status)">{{ statusLabel(member.status) }}</StatusLabel>
+                <span v-if="countsForDues(member)" :class="[duesClass(member), 'text-lg']">{{ duesText(member) }}</span>
+              </div>
+              <div class="mt-1 text-sm text-muted tabular-nums">
+                <template v-if="member.phone">{{ member.phone }} &middot; </template>Joined {{ formatMemberDate(member.joinDate) }}
+              </div>
             </div>
-            <div class="mt-1 text-sm text-muted tabular-nums">
-              <template v-if="member.phone">{{ member.phone }} &middot; </template>Joined {{ formatMemberDate(member.joinDate) }}
-            </div>
+            <ActionMenu v-if="authStore.isStaff" :label="`More actions for ${member.name}`" :items="menuItems(member)" @select="key => onMenuSelect(key, member)" />
           </div>
-          <ActionMenu v-if="authStore.isStaff" :label="`More actions for ${member.name}`" :items="menuItems(member)" @select="key => onMenuSelect(key, member)" />
+          <YearStrip v-if="paidByMember" size="large" v-bind="stripProps(member)" />
+          <div v-if="member.phone || (authStore.isStaff && countsForDues(member))" class="flex gap-2">
+            <a v-if="member.phone" :href="`tel:${member.phone.replace(/[^+\d]/g, '')}`" :class="[PHONE_ACTION, 'flex-1 border border-field bg-paper text-ink hover:border-teal hover:bg-teal-tint']">
+              <Icon name="phone" :size="18" />Call<span class="sr-only"> {{ member.name }}</span>
+            </a>
+            <router-link v-if="authStore.isStaff && countsForDues(member)" to="/payments" :class="[PHONE_ACTION, 'flex-[1.4] border border-teal bg-teal text-paper hover:bg-teal-hover']">
+              Record payment<span class="sr-only"> for {{ member.name }}</span>
+            </router-link>
+          </div>
         </li>
       </ul>
     </template>
@@ -198,6 +213,7 @@ import { useAppStore } from '../stores/appStore'
 import { useAuthStore } from '../stores/authStore'
 import { downloadBlob, formatDate, isValidEmail, localISODate } from '@/utils'
 import { monthsBehind } from '@/utils/dues'
+import { paidMonthsByMember, stripRangeLabel } from '@/utils/yearStrip'
 import { filterMembers, sortMembers, exportIds } from '@/utils/memberFilters'
 import { buildMemberRequest } from '@/utils/memberPayload'
 import { NEW_MEMBER_STATUS_OPTIONS, STATUS_OPTIONS, countsForDues, isArchived, statusLabel, statusTone } from '@/utils/memberStatus'
@@ -211,15 +227,18 @@ import EmptyNote from '@/components/EmptyNote.vue'
 import Icon from '@/components/Icon.vue'
 import PageHead from '@/components/PageHead.vue'
 import StatusLabel from '@/components/StatusLabel.vue'
+import YearStrip from '@/components/YearStrip.vue'
 import TextButton from '@/components/TextButton.vue'
 import { CONTROL, LABEL, NAME, SORT_BUTTON, TABLE, TABLE_TH as TH, TABLE_TD as TD } from '@/ui/classes'
 
+// A 44px tap target for the card's two actions
+const PHONE_ACTION = 'flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-lg font-medium no-underline'
 const EMPTY_FILTERS = { search: '', status: 'ALL', paymentStatus: 'ALL', joinedFrom: '', joinedTo: '' }
 const EMPTY_ERRORS = { name: '', email: '', phone: '', joinDate: '', householdId: '' }
 
 export default {
   name: 'MembersView',
-  components: { ActionMenu, AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, EmptyNote, Icon, PageHead, StatusLabel, TextButton },
+  components: { ActionMenu, AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, EmptyNote, Icon, PageHead, StatusLabel, TextButton, YearStrip },
   setup() {
     return {
       appStore: useAppStore(),
@@ -229,6 +248,7 @@ export default {
   data() {
     return {
       members: [],
+      paidByMember: null,
       archivedMembers: [],
       archivedLoaded: false,
       loaded: false,
@@ -249,6 +269,7 @@ export default {
       deleting: false,
       deleteError: '',
       today: localISODate(),
+      PHONE_ACTION,
       TABLE,
       LABEL,
       CONTROL,
@@ -303,6 +324,7 @@ export default {
         { label: 'Phone' },
         { label: 'Joined', sortKey: 'joinDate' },
         { label: 'Status' },
+        { label: `${stripRangeLabel(this.today.slice(0, 7))}, one square a month` },
         { label: 'Dues', sortKey: 'consecutiveMonthsMissed' }
       ]
     }
@@ -316,7 +338,7 @@ export default {
     // /households links to a member's name: show that search
     const search = this.$route?.query?.search
     if (typeof search === 'string') this.filters.search = search
-    await this.loadMembers()
+    await Promise.all([this.loadMembers(), this.loadPayments()])
   },
   methods: {
     async loadMembers() {
@@ -333,6 +355,25 @@ export default {
         this.loaded = true
       }
     },
+    // The paid months behind the year strip: one existing call, grouped by member. A failure only hides the strips.
+    async loadPayments() {
+      try {
+        this.paidByMember = paidMonthsByMember(await api.getPayments())
+      } catch (error) {
+        console.error('Error loading payments for the year strip:', error)
+        this.paidByMember = null
+      }
+    },
+    stripProps(member) {
+      return {
+        joinDate: member.joinDate || '',
+        paidMonths: this.paidByMember.get(member.id) || new Set(),
+        currentMonth: this.today.slice(0, 7),
+        monthsMissed: member.consecutiveMonthsMissed || 0,
+        countsForDues: countsForDues(member),
+        label: `Dues for ${member.name}, last 12 months`
+      }
+    },
     async loadArchived() {
       try {
         const data = await api.getMembers({ archived: true })
@@ -347,7 +388,7 @@ export default {
     },
     // after a change: the normal list, and the archived one when it is on screen
     async reloadLists() {
-      await this.loadMembers()
+      await Promise.all([this.loadMembers(), this.loadPayments()])
       if (this.showingArchived) await this.loadArchived()
     },
     setSort(key) {

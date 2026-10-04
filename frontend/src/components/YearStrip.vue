@@ -1,7 +1,7 @@
 <template>
   <div role="group" :aria-label="label" :class="['flex', large ? 'gap-[3px]' : 'gap-0.5']">
     <div v-for="cell in cells" :key="cell.month" :class="['flex flex-col items-center', large && 'gap-[3px]']">
-      <span :class="[BOX, large ? 'h-[26px] w-5 rounded-[3px]' : 'h-[18px] w-2.5 rounded-xs', SQUARES[cell.state]]" aria-hidden="true"></span>
+      <span :class="[BOX, large ? 'h-[26px] w-5 rounded-[3px]' : 'h-[18px] w-2.5 rounded-[2px]', SQUARES[cell.state]]" aria-hidden="true"></span>
       <span v-if="large" class="text-xs leading-none text-muted" aria-hidden="true">{{ cell.initial }}</span>
       <span class="sr-only">{{ cell.name }}: {{ cell.label }}</span>
     </div>
