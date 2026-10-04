@@ -46,6 +46,12 @@
           <option value="OVERDUE">Behind</option>
         </select>
       </div>
+      <div class="md:w-40">
+        <label for="filter-sort" :class="LABEL">Sort by</label>
+        <select id="filter-sort" :value="sort.key" :class="CONTROL" @change="setSortOption($event.target.value)">
+          <option v-for="option in SORT_OPTIONS" :key="option.key" :value="option.key">{{ option.label }}</option>
+        </select>
+      </div>
       <button
         type="button"
         class="col-span-2 flex min-h-11 cursor-pointer items-center gap-2 border-0 bg-transparent p-0 text-left font-medium text-teal hover:text-teal-hover md:hidden"
@@ -181,10 +187,13 @@
         </thead>
         <tbody>
           <tr v-for="member in filteredMembers" :key="member.id" class="h-(--row-h) border-b border-rule">
-            <td :class="[TD, 'max-w-0 w-[34%]']">
+            <td :class="[TD, 'max-w-0 w-[26%]']">
               <div :class="NAME"><router-link :to="`/members/${member.id}`">{{ member.name }}</router-link></div>
               <div v-if="member.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
-              <div v-if="member.householdName" class="text-sm text-muted [overflow-wrap:anywhere]"><Icon name="home" :size="14" class="mr-1" /><span class="sr-only">Household: </span>{{ member.householdName }}</div>
+            </td>
+            <td :class="[TD, 'max-w-0 w-[14%] [overflow-wrap:anywhere]']">
+              <template v-if="member.householdName">{{ member.householdName }}</template>
+              <span v-else class="text-muted"><span aria-hidden="true">&ndash;</span><span class="sr-only">No household</span></span>
             </td>
             <td :class="[TD, 'whitespace-nowrap']">
               <template v-if="member.phone">{{ member.phone }}</template>
@@ -204,6 +213,7 @@
                 <template v-else><span aria-hidden="true">&ndash;</span><span class="sr-only">Not tracked while {{ statusLabel(member.status).toLowerCase() }}</span></template>
               </span>
             </td>
+            <td :class="[TD, 'whitespace-nowrap']">{{ member.lastPaymentDate ? formatMemberDate(member.lastPaymentDate) : 'Never' }}</td>
             <td v-if="authStore.isStaff" :class="[TD, 'text-right']">
               <ActionMenu :label="`More actions for ${member.name}`" :items="menuItems(member)" @select="key => onMenuSelect(key, member)" />
             </td>
@@ -224,7 +234,7 @@
                 <span v-if="countsForDues(member)" :class="[duesClass(member), 'text-lg']">{{ duesText(member) }}</span>
               </div>
               <div class="mt-1 text-sm text-muted tabular-nums">
-                <template v-if="member.phone">{{ member.phone }} &middot; </template>Joined {{ formatMemberDate(member.joinDate) }}
+                <template v-if="member.phone">{{ member.phone }} &middot; </template>Joined {{ formatMemberDate(member.joinDate) }} &middot; Last paid {{ member.lastPaymentDate ? formatMemberDate(member.lastPaymentDate) : 'never' }}
               </div>
             </div>
             <ActionMenu v-if="authStore.isStaff" :label="`More actions for ${member.name}`" :items="menuItems(member)" @select="key => onMenuSelect(key, member)" />
@@ -291,6 +301,13 @@ const PHONE_ACTION = 'flex min-h-11 items-center justify-center gap-2 rounded-md
 const DELETE_BUTTON = 'inline-flex cursor-pointer items-center justify-center rounded-sm border border-clay bg-paper font-medium leading-normal text-clay hover:bg-clay-tint disabled:pointer-events-none disabled:border-rule disabled:text-muted disabled:opacity-65'
 // One button of the Status segmented control; segmentShape rounds the two ends and joins the borders
 const SEGMENT = 'relative -ml-px first:ml-0 inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1 border px-3 text-base font-medium whitespace-nowrap md:min-h-(--control-h)'
+// The Sort by control: the first click on a header starts ascending, but here "Most behind" and
+// "Joined" mean the most behind and the newest first
+const SORT_OPTIONS = [
+  { key: 'name', label: 'Name', direction: 'asc' },
+  { key: 'consecutiveMonthsMissed', label: 'Most behind', direction: 'desc' },
+  { key: 'joinDate', label: 'Joined', direction: 'desc' }
+]
 const EMPTY_FILTERS = { search: '', status: 'ALL', paymentStatus: 'ALL', joinedFrom: '', joinedTo: '' }
 
 export default {
@@ -312,7 +329,7 @@ export default {
       loadError: false,
       filters: { ...EMPTY_FILTERS },
       datesOpen: false,
-      sort: { key: null, direction: 'asc' },
+      sort: { key: 'name', direction: 'asc' },
       formOpen: false,
       focusStatus: false,
       editingMember: null,
@@ -333,6 +350,7 @@ export default {
       SORT_BUTTON,
       NAME,
       SEGMENT,
+      SORT_OPTIONS,
       countsForDues,
       statusLabel,
       statusTone
@@ -374,11 +392,13 @@ export default {
     columns() {
       return [
         { label: 'Name', sortKey: 'name' },
+        { label: 'Household' },
         { label: 'Phone' },
         { label: 'Joined', sortKey: 'joinDate' },
         { label: 'Status' },
         { label: `${stripRangeLabel(this.today.slice(0, 7))}, one square a month` },
-        { label: 'Dues', sortKey: 'consecutiveMonthsMissed' }
+        { label: 'Dues', sortKey: 'consecutiveMonthsMissed' },
+        { label: 'Last paid' }
       ]
     }
   },
@@ -451,6 +471,9 @@ export default {
       } else {
         this.sort = { key, direction: 'asc' }
       }
+    },
+    setSortOption(key) {
+      this.sort = { key, direction: SORT_OPTIONS.find(option => option.key === key).direction }
     },
     ariaSort(key) {
       if (!key) return undefined
