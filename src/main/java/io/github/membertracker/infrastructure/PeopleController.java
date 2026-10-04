@@ -94,10 +94,13 @@ public class PeopleController {
     @Operation(summary = "Update a person; a person with a membership keeps the member rows in step (STAFF+)")
     public ResponseEntity<PersonResponse> updatePerson(@PathVariable @Positive Long id,
                                                        @Valid @RequestBody PersonRequest request) {
+        // Check first, like the member endpoint: a non-admin must not edit an archived person and then get a 404.
+        if (getPersonByIdUseCase.invoke(id).filter(PeopleController::visible).isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
         Optional<Person> updated = updatePersonUseCase.invoke(id, request.getName(), request.getEmail(),
                 request.getPhone(), request.getBirthDate(), request.isHouseholdIdSet(), request.getHouseholdId());
         return updated
-                .filter(PeopleController::visible)
                 .map(PersonResponse::of)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
