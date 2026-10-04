@@ -36,6 +36,7 @@ Overviews explain a feature to people (who can do what, how it works, rules, kno
 | My dues (member self-service) | [my-dues](docs/features/my-dues.md) | same page | same page |
 | Profile and password | [profile](docs/features/profile.md) | [user-controller](docs/features/user-controller.md) | [profile-view](docs/features/profile-view.md) |
 | Members | [members](docs/features/members.md) | [member-controller](docs/features/member-controller.md) | [members-view](docs/features/members-view.md) |
+| Member detail page | [member-detail-view](docs/features/member-detail-view.md) | same page | same page |
 | Households | [households](docs/features/households.md) | same page | same page (Screen) |
 | People (members and dependents) | [people](docs/features/people.md) | same page | none yet (step 11 pending) |
 | Payments | [payments](docs/features/payments.md) | [payment-controller](docs/features/payment-controller.md) | [payments-view](docs/features/payments-view.md) |

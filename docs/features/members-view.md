@@ -23,8 +23,8 @@ Options API component; local `data()`, not the Pinia store.
 | `filters` | `search`, `status` (ALL, MEMBER, INACTIVE, DECEASED, TRANSFERRED, ARCHIVED), `paymentStatus` (ALL/CURRENT/OVERDUE, shown as "Dues": All / Paid up / Behind), `joinedFrom`, `joinedTo` |
 | `datesOpen` | Below md the date pair sits under a "More filters" disclosure (`aria-expanded`); from md up it is always visible |
 | `sort` | `{key, direction}`; `key` null = server order |
-| `memberForm`, `editingMember`, `formOpen`, `saving`, `formError`, `formErrors` | Add/edit dialog: `name`, `email`, `phone`, `joinDate`, `status`; `editingMember` null = add mode (the Status select then offers only Member and Inactive, as the server enforces); `formErrors` holds per-field messages, `formError` the banner message |
-| `selectedMember`, `deleteOpen`, `deleting`, `deleteError` | Archive dialog (the `delete*` names are kept) |
+| `formOpen`, `editingMember`, `focusStatus` | Add/edit dialog, which is `MemberFormDialog` (`frontend/src/components/MemberFormDialog.vue`, shared with [the member page](member-detail-view.md)): it owns the form, validation, household list and save; `editingMember` null = add mode (the Status select then offers only Member and Inactive, as the server enforces). The list reloads on its `saved` event |
+| `selectedMember`, `deleteOpen` | Archive dialog, which is `MemberArchiveDialog` (also shared with the member page); the list reloads on its `archived` event |
 | `filteredMembers` | `filterMembers` then `sortMembers` |
 | `hasActiveFilters` | Any filter differs from its default; shows "Clear filters" |
 
@@ -41,6 +41,7 @@ All in `frontend/src/utils/memberFilters.js`; all filters are ANDed.
 | Sort toggle | Same key flips asc/desc; new key starts asc. Headers are buttons with `aria-sort` and a caret |
 
 ## Table and list
+- The name (table and phone card, not the Archived view) links to the member's own page, `/members/:id` ([member-detail-view](member-detail-view.md)).
 - From md up: a `<table>` with columns Name (name with the email beneath), Phone, Joined, Status (`StatusLabel` from `status`: "Member" fern, "Inactive" clay, "Deceased", "Transferred", "Archived" muted), Dues and, for STAFF+, a final actions cell.
 - Dues: "Paid up" (fern text) or "N months behind" (ochre text, `monthsBehind`, so "1 month behind"). For any other status the cell shows a muted en dash (screen readers get "Not tracked while inactive", "while deceased" ...); no "Paid up" or "N months behind".
 - Below md the table becomes a list of cards (see Year strip and phone cards). For a member who is not MEMBER the dues word is left out there.

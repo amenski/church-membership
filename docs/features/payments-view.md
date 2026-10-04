@@ -25,10 +25,12 @@ Below `lg` the same `BaseModal` is a full-screen sheet (`sheet` prop, see [../de
 - Unlike the mockup the Member select stays (the Payments tab opens the sheet with no member); the deep link below fills it.
 
 ## Deep link
+`/payments?search=<name>` (the member page's "All payments") starts with that text in the member search filter.
+
 `/payments?memberId=<id>` (the Members phone card's Record payment link) opens the Record payment dialog with that member chosen. After the first load `openForQueryMember` removes the parameter from the URL (`router.replace`), so a reload or closing the dialog does not reopen it, then, for STAFF and above only, opens the dialog and sets `form.memberId` when the id is an active member (a member who does not owe dues leaves the select on "Choose a member"). A VOLUNTEER, or a failed load, just gets the plain screen. The rest of the screen is unchanged by the redesign: the dark-teal rail only changes the frame around it.
 
 ## Receipt dialog
-`BaseModal` sm titled "Receipt R-000012". Shows Receipt, Member, Month covered, Paid on, Method, Notes (only when present) and the Amount, inside a plain element (`receiptContent`) that html2pdf captures: only token hex colours, no tinted or blended colours. "Download PDF" imports `html2pdf.js` on first click, letter portrait, file `receipt-R-000012.pdf` (`PaymentsView.vue:362-380`); "Close" closes it. A PDF failure shows the toast "Could not create the PDF".
+`ReceiptDialog` (`frontend/src/components/ReceiptDialog.vue`, also used by [the member page](member-detail-view.md)): a `BaseModal` sm titled "Receipt R-000012". Shows Receipt, Member, Month covered, Paid on, Method, Notes (only when present) and the Amount, inside a plain element (`receiptContent`) that html2pdf captures: only token hex colours, no tinted or blended colours. "Download PDF" imports `html2pdf.js` on first click, letter portrait, file `receipt-R-000012.pdf` (`PaymentsView.vue:362-380`); "Close" closes it. A PDF failure shows the toast "Could not create the PDF".
 
 ## Endpoints
 Calls made through `frontend/src/services/api.js`:
@@ -43,7 +45,7 @@ Calls made through `frontend/src/services/api.js`:
 Backend: [payment-controller.md](payment-controller.md). Rules the server enforces: any past month up to 10 years back is valid (a future month is a 400); `paymentDate` is optional, must not be in the future, and a back-dated payment never moves the member's last-payment date backwards; an INACTIVE member is refused with `MEMBER_008` ("Member '<name>' is inactive. Reactivate the member before recording a payment."); a second payment for the same member and month is refused ("Member '<name>' already has a payment recorded for period <YYYY-MM>"). The request shapes are tested against the shared fixtures `src/test/resources/contracts/record-payment-request.json` and `record-payment-request-backfill.json` (`frontend/src/__tests__/utils/paymentPayload.test.js`).
 
 ## State and helpers
-Local component `data()` (`frontend/src/views/PaymentsView.vue:235-252`): `members`, `payments` (forced to `[]` when the response is not an array), `loaded`, `loadError`, `filters` (`search`, `method`), `recordOpen`, `form`, `formError`, `formErrors`, `saving`, `today`, `selectedPayment`, `receiptOpen`, `downloading`. `setup()` exposes the stores and the formatting helpers (`PaymentsView.vue:217-234`).
+Local component `data()` (`frontend/src/views/PaymentsView.vue:235-252`): `members`, `payments` (forced to `[]` when the response is not an array), `loaded`, `loadError`, `filters` (`search`, `method`), `recordOpen`, `form`, `formError`, `formErrors`, `saving`, `today`, `selectedPayment`, `receiptOpen`. `setup()` exposes the stores and the formatting helpers (`PaymentsView.vue:217-234`).
 
 Pure helpers in `frontend/src/utils/paymentHistory.js` (tested in `frontend/src/__tests__/utils/paymentHistory.test.js`): `paymentsSummary(payments, currentPeriod)`, `periodLabel('2026-10')` -> "Oct 2026", `receiptNumber(payment)` -> `R-` plus the id padded to 6 digits (derived: the backend has no receipt number), `methodLabel`, `sortPayments`, `filterPayments`. `formatMoney` lives in `frontend/src/utils/index.js:42` and is shared with the Overview. `PAYMENT_METHODS` is in `frontend/src/utils/paymentPayload.js:1-9`.
 

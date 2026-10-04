@@ -159,7 +159,8 @@ The Overview ledger lists every member who is behind or has not paid this month;
 
 Sizes: `compact` 10x18px with a 2px gap (table rows), `large` 20x26px with a 3px gap and the month
 initial underneath (phone cards, initial is `aria-hidden`), `ledger` 28px squares with a 4px gap and
-no initials (the parent draws the month names once above the column). Each square has a visually hidden
+no initials (the parent draws the month names once above the column), `detail` 44x36px squares with the month name
+above each, 12 to a row (`months=24` draws two rows with a caption such as "Nov 2024 to Oct 2025"; the member page, from `lg`). Each square has a visually hidden
 "Oct 2026: Paid"; the container is a `role="group"` named per member.
 
 Rule (also in the util header): a past unpaid month on or after the join month is "missed" only for
