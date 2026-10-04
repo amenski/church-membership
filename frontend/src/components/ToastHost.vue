@@ -1,6 +1,6 @@
 <template>
-  <!-- Bottom of the screen on every size: below the mobile top bar, within thumb reach -->
-  <div class="pointer-events-none fixed inset-x-0 bottom-0 z-[1300] flex flex-col gap-3 p-4 sm:left-auto sm:w-[26rem]">
+  <!-- Top of the screen on phones (the bottom holds the page's action buttons), bottom from sm up -->
+  <div class="pointer-events-none fixed inset-x-0 top-0 z-[1300] flex flex-col gap-3 p-4 sm:top-auto sm:bottom-0 sm:left-auto sm:w-[26rem]">
     <TransitionGroup
       enter-active-class="motion-safe:transition motion-safe:duration-200 motion-safe:ease-out"
       enter-from-class="opacity-0 motion-safe:translate-y-2"

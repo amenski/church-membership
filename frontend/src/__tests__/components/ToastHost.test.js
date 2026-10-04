@@ -113,4 +113,13 @@ describe('ToastHost', () => {
     await wrapper.vm.$nextTick()
     expect(toasts()).toHaveLength(0)
   })
+
+  it('sits at the top on phones and at the bottom from sm up', () => {
+    mountHost()
+    const classes = wrapper.get('div').classes()
+    expect(classes).toContain('top-0')
+    expect(classes).toContain('sm:top-auto')
+    expect(classes).toContain('sm:bottom-0')
+    expect(classes).not.toContain('bottom-0')
+  })
 })
