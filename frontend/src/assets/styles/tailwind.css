@@ -27,6 +27,8 @@
   --color-rail-line: #1B4B4A;
   --color-rail-text: #CFE3E0;
   --color-rail-muted: #9FBFBB;
+  /* The lighter teal of a paid square on the rail colour (the sign-in brand strip): a graphic fill, never text */
+  --color-rail-accent: #2DB5A8;
   /* Semantic status only, never decoration: fern is paid/success, ochre is behind/warning, clay is danger */
   --color-fern: #15803D;
   --color-fern-text: #166534;

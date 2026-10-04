@@ -1,13 +1,36 @@
 <template>
-  <div data-density="comfortable" class="flex min-h-screen flex-col items-center justify-center gap-6 bg-mist px-4 py-6">
-    <div class="flex flex-col items-center">
-      <span class="font-ethiopic text-2xl leading-tight font-bold text-teal">ፈለገ ሰላም</span>
-      <span class="text-sm font-semibold text-ink">Felege Selam</span>
-    </div>
+  <div data-density="comfortable" class="flex min-h-screen flex-col bg-mist lg:flex-row">
+    <!-- The congregation: a short header below lg, the left half from lg. Nothing in it takes focus. -->
+    <section
+      aria-label="Felege Selam"
+      class="bg-rail px-6 pt-10 pb-7 text-paper lg:flex lg:flex-1 lg:flex-col lg:justify-between lg:p-12 xl:px-[72px] xl:py-16"
+    >
+      <!-- Decorative: the dues year strip, ten paid, one behind, one due now -->
+      <div class="hidden flex-col gap-3.5 lg:flex" aria-hidden="true">
+        <div class="grid w-full max-w-[474px] grid-cols-12 gap-1.5">
+          <span
+            v-for="(state, index) in BRAND_STRIP"
+            :key="index"
+            :class="['box-border block h-11 rounded-[5px]', state]"
+          ></span>
+        </div>
+        <p class="m-0 max-w-[36ch] text-lg leading-normal text-rail-text">
+          One square a month. Solid is paid, hatched is behind, an outline is due now.
+        </p>
+      </div>
 
-    <div class="w-full max-w-sm rounded-md border border-rule bg-paper">
-      <div class="p-5">
-        <h1 class="mt-0 mb-5 text-xl font-semibold text-ink">Sign in</h1>
+      <div>
+        <div class="font-ethiopic text-[36px] leading-tight font-bold lg:text-[56px] lg:leading-[1.2] xl:text-[72px]">ፈለገ ሰላም</div>
+        <div class="mt-0.5 text-lg font-medium text-rail-text lg:mt-2 lg:text-2xl lg:text-paper">Felege Selam</div>
+        <p class="m-0 mt-5 hidden max-w-[34ch] text-lg leading-relaxed text-rail-text lg:block">
+          The church office keeps members, dues, payments and messages in one place.
+        </p>
+      </div>
+    </section>
+
+    <div class="flex flex-1 flex-col items-center gap-4 px-4 pt-6 pb-8 max-lg:justify-start lg:justify-center lg:px-6 lg:py-12">
+      <div class="w-full max-w-sm rounded-lg border border-rule bg-paper px-4 py-5 lg:rounded-md lg:p-7">
+        <h1 class="mt-0 mb-5 text-2xl font-semibold text-ink">Sign in</h1>
 
         <form @submit.prevent="handleLogin">
           <AlertBanner v-if="sessionExpired" tone="warning" role="status">Your session expired. Sign in again.</AlertBanner>
@@ -22,6 +45,7 @@
               v-model="form.email"
               label="Email"
               type="email"
+              class="max-lg:min-h-12"
               :error="errors.email"
               autocomplete="username"
               :disabled="isAuthLoading"
@@ -36,6 +60,7 @@
               v-model="form.password"
               label="Password"
               type="password"
+              class="max-lg:min-h-12"
               :error="errors.password"
               autocomplete="current-password"
               :disabled="isAuthLoading"
@@ -44,7 +69,7 @@
           </div>
 
           <!-- Submit Button -->
-          <BaseButton type="submit" class="w-full" :disabled="isAuthLoading || !isFormValid">
+          <BaseButton type="submit" class="w-full max-lg:min-h-12" :disabled="isAuthLoading || !isFormValid">
             <span
               v-if="isAuthLoading"
               class="mr-2 inline-block size-4 rounded-full border-2 border-current border-r-transparent align-[-0.125em] motion-safe:animate-spin"
@@ -54,10 +79,10 @@
           </BaseButton>
         </form>
       </div>
-    </div>
 
-    <!-- Registration is disabled: accounts are created by the church office -->
-    <p class="m-0 text-center text-sm text-muted">Accounts are set up by the church office.</p>
+      <!-- Registration is disabled: accounts are created by the church office -->
+      <p class="m-0 text-center text-base text-muted lg:text-sm">Accounts are set up by the church office.</p>
+    </div>
   </div>
 </template>
 
@@ -69,10 +94,14 @@ import { useAppStore } from '../stores/appStore'
 import AlertBanner from '@/components/AlertBanner.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import BaseInput from '@/components/BaseInput.vue'
+import { SQUARES } from '@/utils/yearStrip'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const appStore = useAppStore()
+
+// The brand strip on the left panel: ten paid squares, one behind (hatched), one due now (outlined); decorative
+const BRAND_STRIP = [...Array(10).fill('bg-rail-accent'), SQUARES.missed, SQUARES.due]
 
 // Sent here by a session that ended (api.js, router guard): say so before they sign in
 const sessionExpired = router.currentRoute.value.query.session === 'expired'
