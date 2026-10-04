@@ -140,22 +140,6 @@ api.interceptors.response.use(
           // Store may not be available
         }
 
-        // Tell the user only if they were signed in; a first-time visitor's
-        // initial auth check failing is not a "session expired" event
-        try {
-          const appStore = useAppStore()
-          if (wasAuthenticated && appStore && appStore.addNotification) {
-            appStore.addNotification({
-              type: 'error',
-              title: 'Session Expired',
-              message: 'Your session has expired. Please log in again.',
-              duration: 5000
-            })
-          }
-        } catch (e) {
-          // Store may not be available
-        }
-
         // Clear any stored authentication state
         localStorage.removeItem('user')
         sessionStorage.removeItem('user')

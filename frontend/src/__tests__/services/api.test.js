@@ -69,14 +69,13 @@ describe('api response interceptor', () => {
     expect(addNotification).not.toHaveBeenCalled()
   })
 
-  it('401 with failed refresh while signed in shows one Session Expired', async () => {
+  it('401 with failed refresh while signed in signs out without a toast (the login page explains)', async () => {
     signIn()
     respondWith({ '/members': 401, '/auth/refresh': 401 })
 
     await expect(axiosInstance.get('/members')).rejects.toBeDefined()
 
-    expect(addNotification).toHaveBeenCalledTimes(1)
-    expect(addNotification).toHaveBeenCalledWith(expect.objectContaining({ title: 'Session Expired' }))
+    expect(addNotification).not.toHaveBeenCalled()
     expect(useAuthStore().isAuthenticated).toBe(false)
   })
 
@@ -120,8 +119,7 @@ describe('api response interceptor', () => {
 
       await expect(axiosInstance.get('/members')).rejects.toBeDefined()
 
-      expect(addNotification).toHaveBeenCalledTimes(1)
-      expect(addNotification).toHaveBeenCalledWith(expect.objectContaining({ title: 'Session Expired' }))
+      expect(addNotification).not.toHaveBeenCalled()
       expect(stub.href).toBe('/login?session=expired')
     } finally {
       restore()

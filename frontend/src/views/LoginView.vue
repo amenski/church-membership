@@ -11,6 +11,8 @@
         <h1 class="mt-0 mb-6 font-display text-2xl leading-[1.2] font-bold text-ink">Sign in</h1>
 
         <form @submit.prevent="handleLogin">
+          <AlertBanner v-if="sessionExpired" tone="warning" role="status">Your session expired. Sign in again.</AlertBanner>
+
           <!-- Error Alert -->
           <AlertBanner v-if="authError">{{ authError }}</AlertBanner>
 
@@ -73,6 +75,9 @@ import WovenBand from '@/components/WovenBand.vue'
 const router = useRouter()
 const authStore = useAuthStore()
 const appStore = useAppStore()
+
+// Sent here by a session that ended (api.js, router guard): say so before they sign in
+const sessionExpired = router.currentRoute.value.query.session === 'expired'
 
 // Email validation helper
 const isValidEmail = (email) => {
@@ -174,16 +179,6 @@ const handleLogin = async () => {
     // Get redirect path from query parameter or default to dashboard
     const route = router.currentRoute.value
     const redirectPath = route.query.redirect || '/'
-
-    // Check for session expired message
-    if (route.query.session === 'expired') {
-      appStore.addNotification({
-        type: 'warning',
-        title: 'Session Expired',
-        message: 'Your previous session expired. Please sign in again.',
-        isToast: true
-      })
-    }
 
     // Redirect to intended destination
     router.push(decodeURIComponent(redirectPath))
