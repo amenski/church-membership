@@ -156,6 +156,8 @@ the most recent `consecutiveMonthsMissed` unpaid months, so the strip never show
 server's "N months behind". The current month is never missed (the server counts it on the 1st of
 next month). A member who is not a MEMBER shows no red or amber.
 
+`muted` (the Archived view): paid squares are `field` at 50% opacity instead of teal; missed and due also fall back to the dashed edge, so nothing is teal, red or amber. No new token.
+
 ## Dialog and interaction rules
 
 - Every dialog is a `BaseModal`: a 18px semibold title, a close button, one primary action in the

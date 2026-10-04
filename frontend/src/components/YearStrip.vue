@@ -1,7 +1,7 @@
 <template>
   <div role="group" :aria-label="label" :class="['flex', large ? 'gap-[3px]' : 'gap-0.5']">
     <div v-for="cell in cells" :key="cell.month" :class="['flex flex-col items-center', large && 'gap-[3px]']">
-      <span :class="[BOX, large ? 'h-[26px] w-5 rounded-[3px]' : 'h-[18px] w-2.5 rounded-[2px]', SQUARES[cell.state]]" aria-hidden="true"></span>
+      <span :class="[BOX, large ? 'h-[26px] w-5 rounded-[3px]' : 'h-[18px] w-2.5 rounded-[2px]', (muted ? MUTED_SQUARES : SQUARES)[cell.state]]" aria-hidden="true"></span>
       <span v-if="large" class="text-xs leading-none text-muted" aria-hidden="true">{{ cell.initial }}</span>
       <span class="sr-only">{{ cell.name }}: {{ cell.label }}</span>
     </div>
@@ -21,6 +21,9 @@ const SQUARES = {
   uncounted: 'border border-dashed border-field'
 }
 
+// The archived treatment: a paid month is a quiet grey (the field edge colour at half strength); nothing red or amber
+const MUTED_SQUARES = { ...SQUARES, paid: 'bg-field/50', missed: SQUARES.none, due: SQUARES.none }
+
 export default {
   name: 'YearStrip',
   props: {
@@ -29,11 +32,12 @@ export default {
     currentMonth: { type: String, required: true },
     monthsMissed: { type: Number, default: 0 },
     countsForDues: { type: Boolean, default: true },
+    muted: { type: Boolean, default: false },
     size: { type: String, default: 'compact', validator: value => ['compact', 'large'].includes(value) },
     label: { type: String, default: 'Dues, last 12 months' }
   },
   data() {
-    return { BOX, SQUARES }
+    return { BOX, SQUARES, MUTED_SQUARES }
   },
   computed: {
     large() {
