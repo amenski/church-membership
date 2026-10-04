@@ -158,7 +158,7 @@ Rollback in this repo means: run the `--rollback` statements by hand on the targ
 | 5 | Archive instead of delete (C9) | medium | ~10 files, ~220 lines | d | done |
 | 6 | Frontend speaks `status` | low | 8 files, ~150 lines | c | done |
 | 7 | Create `person` and `household` tables, unused | low | 1 migration | a, b | done |
-| 8 | Backfill person, dual-write | high | ~8 files, ~300 lines | g | todo |
+| 8 | Backfill person, dual-write | high | ~8 files, ~300 lines | g | done (code and migration 013 proven on a MySQL copy; the live demo database is not migrated yet, a human restart applies 013) |
 | 9 | Read name/email/phone from person | medium | ~6 files, ~120 lines | none | todo |
 | 10 | Households (API and UI) | medium | ~12 files, ~450 lines | a | todo |
 | 11 | People without a membership | medium | ~10 files, ~350 lines | f | todo |
@@ -279,6 +279,7 @@ Order: steps 1 to 6 need no new tables and already deliver C10 and C9. Steps 7 t
   ```
   Ids are preserved: `person.id = member.id`, so no payment or delivery row changes. MySQL InnoDB raises its AUTO_INCREMENT counter past an explicit id; check it (section 6). H2 may not: in tests create new rows after the backfill through the app, not SQL.
 - Backend: `PersonEntity`, `PersonJpaRepository`; `MemberEntity.person` as `@OneToOne(optional = false, cascade = ALL, fetch = EAGER)` on `person_id`; add `@EntityGraph`/join so `findAll` is one query, not 1 + N; the mapper writes name/email/phone to both `member` and `person` (dual-write); reads still from `member`. A new member creates its person first, in the same transaction (`@Transactional` on the repository `save`).
+- Built: `PersonEntity`, `PersonJpaRepository`, `MemberEntity.person`, `MemberPersistenceMapper.copyToPerson` and the transactional `MemberDbRepository.save` (all marked DUAL-WRITE, remove at step 12). The list queries in `MemberJpaRepository` carry `@EntityGraph(attributePaths = "person")` so a list is one joined query, not 1 + N. A permanent delete removes the person with the member (cascade). Proven by `PersonBackfillMigrationTest`, `PersonDualWriteTest` and the dry run in section 6.
 - Tests: `MemberCounterPersistenceTest`-style test: save a member, assert the person row exists with the same ids and values; update it, assert both change; H2 migration test (counts equal, `person_id = id`, no NULL).
 - Rollback: the rollback statements in reverse; person rows are copies, nothing lost.
 - Risk high: the first time a second table backs the member. The drift query (section 6) is the check; run it after the deploy and keep it in the runbook.
@@ -353,9 +354,19 @@ SELECT COUNT(*) FROM payment x LEFT JOIN member m ON m.id = x.member_id WHERE m.
 SELECT COUNT(*) FROM message_delivery d LEFT JOIN member m ON m.id = d.recipient_id WHERE m.id IS NULL;
 -- ids preserved
 SELECT COUNT(*) FROM member WHERE person_id <> id;                       -- only valid for backfilled rows; ignore for rows added after step 8
--- drift between legacy columns and person (steps 8 to 11)
-SELECT COUNT(*) FROM member m JOIN person p ON p.id = m.person_id
- WHERE NOT (m.name <=> p.name AND m.email <=> p.email AND m.phone <=> p.phone);
+-- drift between legacy columns and person (steps 8 to 11): must return NO rows (the same SQL is PersonDriftQuery in the tests)
+SELECT m.id AS member_id, m.person_id AS person_id, 'DRIFT' AS problem
+  FROM member m JOIN person p ON p.id = m.person_id
+ WHERE NOT (m.name = p.name
+        AND (m.email = p.email OR (m.email IS NULL AND p.email IS NULL))
+        AND (m.phone = p.phone OR (m.phone IS NULL AND p.phone IS NULL)))
+UNION ALL
+SELECT m.id, m.person_id, 'NO_PERSON' FROM member m LEFT JOIN person p ON p.id = m.person_id WHERE p.id IS NULL
+UNION ALL
+SELECT NULL, p.id, 'NO_MEMBER' FROM person p LEFT JOIN member m ON m.person_id = p.id WHERE m.id IS NULL;
+-- MySQL's default collation ignores case, so the query above cannot see a case-only difference; the stricter check is
+-- SELECT COUNT(*) FROM member m JOIN person p ON p.id = m.person_id
+--  WHERE NOT (BINARY m.name <=> BINARY p.name AND BINARY m.email <=> BINARY p.email AND BINARY m.phone <=> BINARY p.phone);
 -- status derived from active (steps 3 to 11)
 SELECT status, active, COUNT(*) FROM member GROUP BY status, active;     -- MEMBER/1 and INACTIVE/0 only
 -- auto-increment moved past the backfill
@@ -363,6 +374,8 @@ SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE TABLE_SCHEMA='felege_
 -- changesets applied
 SELECT ID, DATEEXECUTED FROM DATABASECHANGELOG ORDER BY ORDEREXECUTED DESC LIMIT 10;
 ```
+
+Step 8 dry run (4 October 2026, MySQL 8.4 copy of the demo database at migration 012, real Liquibase 4.29 run from a throwaway Java main against the copy, no `bootRun`): 11 members and 11 persons, `person_id = id` for all, drift query 0 rows, `AUTO_INCREMENT` of `person` 12, member/payment/delivery counts, the payment sum and the md5 of the payment and delivery data unchanged, the member rows (including `updated_at`) unchanged. Rolling back all six changesets returned a dump identical to the pre-013 dump except `person`'s `AUTO_INCREMENT=12` counter; re-applying gave the same result.
 
 Rollback rehearsal on the copy: run the `--rollback` statements of the step in reverse, delete its `DATABASECHANGELOG` rows, re-run the checks, then start the previous build against the copy. Do it once for steps 2, 8 and 12.
 

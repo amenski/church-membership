@@ -37,7 +37,7 @@ src/main/java/io/github/membertracker/
 └── utils/              CookieUtils, JwtUtils
 ```
 
-Database migrations: `src/main/resources/db/master.xml` and `db/sql/NNN.*.sql`. Migration 012 creates the empty `person` and `household` tables (unused until step 8 of the [person plan](person-membership-plan.md)).
+Database migrations: `src/main/resources/db/master.xml` and `db/sql/NNN.*.sql`. Migration 012 creates the empty `person` and `household` tables (step 7 of the [person plan](person-membership-plan.md)); migration 013 backfills one `person` per member (same id) and adds `member.person_id` (NOT NULL, unique, FK RESTRICT).
 
 ## Where logic belongs
 
@@ -136,4 +136,5 @@ frontend/src/
 | 2026-10 | Members are read by status: `findDuesPaying`/`countDuesPaying` (status MEMBER) drive dues, reminders, messages and payments; every list and count except `GET /api/members?archived=true` (ADMIN) hides ARCHIVED | One rule table (`MemberStatus`) instead of `active` checks scattered around | In use |
 | 2026-10 | Members are archived, not deleted; payments and deliveries use ON DELETE RESTRICT; a permanent delete is an admin API that refuses when history exists | A hard delete erased payment history (audit C9) | In use |
 | 2026-10 | `person` and `household` tables exist (migration 012) but no code reads or writes them until step 8; `person.email` is indexed, not unique | Expand first: the schema ships and is proven on a copy before any code depends on it | In use (empty, unused) |
+| 2026-10 | Every member save writes name, email and phone to both the legacy `member` columns and the linked `person` row (`MemberDbRepository.save`, `MemberPersistenceMapper.copyToPerson`); reads stay on the legacy columns until step 9; both go at step 12 | Expand, then contract: the two copies are proven equal (drift query in the plan, section 6) before reads move and before columns are dropped | In use |
 | 2026-10 | Roles ADMIN > STAFF > VOLUNTEER > MEMBER with `RoleHierarchy` | Replaces ADMIN/MANAGER/USER and the planned TREASURER/VIEWER | Done (3cf5d84; frontend routes in this change) |

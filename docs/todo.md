@@ -8,9 +8,9 @@ Done and removed from this list (October 2026): auth hardening (token types, ref
 
 ## (a) Next structural work
 
-[person-membership-plan.md](person-membership-plan.md), Phase 4: steps 1 to 7 are done; steps 8 to 12 are open and run in this order.
+[person-membership-plan.md](person-membership-plan.md), Phase 4: steps 1 to 8 are done in code; steps 9 to 12 are open and run in this order.
 
-- [ ] Step 8: backfill `person` and dual-write
+- [ ] Restart the demo backend on the new build so migration 013 runs on `felege_selam` (take a dump first, then run the drift query from plan section 6)
 - [ ] Step 9: read name, email and phone from `person`
 - [ ] Step 10: households (API and UI)
 - [ ] Step 11: people without a membership (children, dependents)
