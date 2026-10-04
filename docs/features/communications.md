@@ -17,8 +17,8 @@ Roles from `@PreAuthorize` and route meta; hierarchy ADMIN > STAFF > VOLUNTEER >
 
 Role view of the screen:
 - VOLUNTEER sees the list and the deliveries dialog, without the "New message" card and without "Retry" buttons (`frontend/src/views/CommunicationsView.vue:15`, `:349-351`).
-- STAFF and ADMIN see the compose card and "Retry" (`isStaff`, `frontend/src/stores/authStore.js:41`).
-- MEMBER cannot open the screen: the route guard shows an "Access denied" warning toast and sends them to their profile (`frontend/src/router/index.js:103-112`, `frontend/src/stores/authStore.js:43`); the API answers 403.
+- STAFF and ADMIN see the compose card and "Retry" (`isStaff`, `frontend/src/stores/authStore.js:39`).
+- MEMBER cannot open the screen: the route guard shows an "Access denied" warning toast and sends them to their profile (`frontend/src/router/index.js:103-112`, `frontend/src/stores/authStore.js:41`); the API answers 403.
 
 ## How it works
 ### View the list of sent messages
@@ -94,7 +94,7 @@ Role view of the screen:
 - The list and the dialog do not refresh by themselves; pending sends show only after a reload or reopening the dialog.
 - The screen sends every message as an ANNOUNCEMENT (the shared request builder has no type); only the Overview's reminder is stored as a REMINDER.
 - Only two audiences (everyone, behind) plus one member; no unsubscribe link or consent record; no durable queue ([../email.md](../email.md#known-gaps)).
-- `communicationStore.js` is unused ([communications-view.md](communications-view.md#gotchas)).
+- The unused `communicationStore.js` was removed in `chore(ui): remove dead frontend code` ([communications-view.md](communications-view.md#gotchas)).
 
 ## Related
 - [communication-controller.md](communication-controller.md): endpoints, errors, flows

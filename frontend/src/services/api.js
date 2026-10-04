@@ -334,25 +334,9 @@ const apiService = {
     })
   },
 
-  /**
-   * Generic PATCH request
-   */
-  async patch(url, data = {}, config = {}) {
-    return this.request({
-      method: 'patch',
-      url,
-      data,
-      ...config
-    })
-  },
-
   // Members API
   async getMembers(params = {}) {
     return this.get('/members', params)
-  },
-
-  async getMemberById(id) {
-    return this.get(`/members/${id}`)
   },
 
   async createMember(member) {
@@ -383,10 +367,6 @@ const apiService = {
     return this.get('/payments', params)
   },
 
-  async getMemberPayments(memberId) {
-    return this.get(`/payments/member/${memberId}`)
-  },
-
   async createPayment(payment) {
     return this.post('/payments', payment)
   },
@@ -398,10 +378,6 @@ const apiService = {
   // Communications API
   async getCommunications(params = {}) {
     return this.get('/communications', params)
-  },
-
-  async getCommunicationById(id) {
-    return this.get(`/communications/${id}`)
   },
 
   async getCommunicationDeliveries(id) {
@@ -487,33 +463,6 @@ const apiService = {
     return response.data
   },
 
-  // Utility methods
-  async healthCheck() {
-    const response = await api.get('/actuator/health')
-    return response.data
-  },
-
-  async getApiInfo() {
-    const response = await api.get('/actuator/info')
-    return response.data
-  },
-
-  // File upload helper
-  async uploadFile(url, file, onProgress = null) {
-    const formData = new FormData()
-    formData.append('file', file)
-
-    return this.request({
-      method: 'post',
-      url,
-      data: formData,
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      },
-      onUploadProgress: onProgress
-    })
-  },
-
   // Dashboard API
   async getDashboardStats() {
     return this.get('/dashboard/stats')
@@ -529,11 +478,6 @@ const apiService = {
 
   async getRecentActivities() {
     return this.get('/dashboard/recent-activities')
-  },
-
-  // Cancel token utility
-  createCancelToken() {
-    return axios.CancelToken.source()
   }
 }
 

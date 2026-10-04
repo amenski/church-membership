@@ -1,68 +1,12 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 
 /**
  * Application Store
- * Manages global application state, theme, user preferences, etc.
+ * Holds the notifications that ToastHost renders.
  */
 export const useAppStore = defineStore('app', () => {
-  // State
-  const isLoading = ref(false)
-  const loadingMessage = ref('')
-  const currentTheme = ref('light')
-  const language = ref('en')
-  const sidebarCollapsed = ref(false)
   const notifications = ref([])
-  const userPreferences = ref({
-    itemsPerPage: 10,
-    defaultView: 'dashboard',
-    enableNotifications: true,
-    autoRefresh: false,
-    refreshInterval: 30000 // 30 seconds
-  })
-
-  // Getters
-  const appVersion = computed(() => import.meta.env.VITE_APP_VERSION || '1.0.0')
-  const appTitle = computed(() => import.meta.env.VITE_APP_TITLE || 'Member Tracker')
-  const isDevelopment = computed(() => import.meta.env.DEV)
-  const isProduction = computed(() => import.meta.env.PROD)
-
-  const loadingProgress = computed(() => {
-    if (!isLoading.value) return 0
-    return 50 // Simulate progress, in real app this would be dynamic
-  })
-
-  const unreadNotifications = computed(() =>
-    (notifications.value || []).filter(notification => !notification.read)
-  )
-
-  // Actions
-  function setLoading(loading, message = '') {
-    isLoading.value = loading
-    loadingMessage.value = message
-  }
-
-  function toggleSidebar() {
-    sidebarCollapsed.value = !sidebarCollapsed.value
-  }
-
-  function setTheme(theme) {
-    if (!['light', 'dark', 'auto'].includes(theme)) {
-      console.warn(`Invalid theme: ${theme}`)
-      return
-    }
-
-    currentTheme.value = theme
-  }
-
-  function setLanguage(lang) {
-    if (!['en', 'es', 'fr'].includes(lang)) { // Add more languages as needed
-      console.warn(`Unsupported language: ${lang}`)
-      return
-    }
-
-    language.value = lang
-  }
 
   function addNotification(notification) {
     const newNotification = {
@@ -96,118 +40,9 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
-  function markNotificationAsRead(id) {
-    const notification = notifications.value.find(n => n.id === id)
-    if (notification && !notification.read) {
-      notification.read = true
-    }
-  }
-
-  function clearAllNotifications() {
-    notifications.value = []
-  }
-
-  function updateUserPreferences(newPreferences) {
-    userPreferences.value = {
-      ...userPreferences.value,
-      ...newPreferences
-    }
-
-    // Save to localStorage
-    savePreferencesToStorage()
-  }
-
-  function savePreferencesToStorage() {
-    try {
-      localStorage.setItem('memberTracker_preferences', JSON.stringify(userPreferences.value))
-    } catch (error) {
-      console.warn('Failed to save preferences to localStorage', error)
-    }
-  }
-
-  function loadPreferencesFromStorage() {
-    try {
-      const saved = localStorage.getItem('memberTracker_preferences')
-      if (saved) {
-        userPreferences.value = JSON.parse(saved)
-      }
-    } catch (error) {
-      console.warn('Failed to load preferences from localStorage', error)
-    }
-  }
-
-  // Keep reference to media query listener for cleanup
-  let themeMediaQuery = null
-  let themeListener = null
-
-  function initialize() {
-    // Load saved preferences
-    loadPreferencesFromStorage()
-
-    // Set up theme change listener for auto theme
-    if (currentTheme.value === 'auto' && typeof window !== 'undefined') {
-      themeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-      themeListener = () => setTheme('auto')
-      themeMediaQuery.addEventListener('change', themeListener)
-    }
-  }
-
-  function cleanup() {
-    // Clean up theme listener
-    if (themeMediaQuery && themeListener) {
-      themeMediaQuery.removeEventListener('change', themeListener)
-      themeMediaQuery = null
-      themeListener = null
-    }
-  }
-
-  function reset() {
-    isLoading.value = false
-    loadingMessage.value = ''
-    sidebarCollapsed.value = false
-    notifications.value = []
-
-    // Reset preferences to defaults but keep storage
-    userPreferences.value = {
-      itemsPerPage: 10,
-      defaultView: 'dashboard',
-      enableNotifications: true,
-      autoRefresh: false,
-      refreshInterval: 30000
-    }
-  }
-
-  // Expose state and actions
   return {
-    // State
-    isLoading,
-    loadingMessage,
-    currentTheme,
-    language,
-    sidebarCollapsed,
     notifications,
-    userPreferences,
-
-    // Getters
-    appVersion,
-    appTitle,
-    isDevelopment,
-    isProduction,
-    loadingProgress,
-    unreadNotifications,
-
-    // Actions
-    setLoading,
-    toggleSidebar,
-    setTheme,
-    setLanguage,
     addNotification,
-    removeNotification,
-    markNotificationAsRead,
-    clearAllNotifications,
-    updateUserPreferences,
-    initialize,
-    cleanup,
-    reset
+    removeNotification
   }
 })

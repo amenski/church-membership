@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { formatDate, localISODate, debounce, formatCurrency, formatMoney, isValidEmail, deepClone, downloadBlob } from '@/utils/index'
+import { formatDate, localISODate, formatMoney, isValidEmail, downloadBlob } from '@/utils/index'
 
 describe('formatDate', () => {
   it('uses the default format', () => {
@@ -48,58 +48,6 @@ describe('localISODate', () => {
   })
 })
 
-describe('debounce', () => {
-  afterEach(() => vi.useRealTimers())
-
-  it('calls once after the wait with the last arguments', () => {
-    vi.useFakeTimers()
-    const fn = vi.fn()
-    const d = debounce(fn, 100)
-    d(1); d(2); d(3)
-    expect(fn).not.toHaveBeenCalled()
-    vi.advanceTimersByTime(99)
-    expect(fn).not.toHaveBeenCalled()
-    vi.advanceTimersByTime(1)
-    expect(fn).toHaveBeenCalledTimes(1)
-    expect(fn).toHaveBeenCalledWith(3)
-  })
-
-  it('restarts the timer on each call', () => {
-    vi.useFakeTimers()
-    const fn = vi.fn()
-    const d = debounce(fn, 100)
-    d('a')
-    vi.advanceTimersByTime(80)
-    d('b')
-    vi.advanceTimersByTime(80)
-    expect(fn).not.toHaveBeenCalled()
-    vi.advanceTimersByTime(20)
-    expect(fn).toHaveBeenCalledWith('b')
-  })
-
-  it('defaults to 300ms', () => {
-    vi.useFakeTimers()
-    const fn = vi.fn()
-    debounce(fn)()
-    vi.advanceTimersByTime(299)
-    expect(fn).not.toHaveBeenCalled()
-    vi.advanceTimersByTime(1)
-    expect(fn).toHaveBeenCalledTimes(1)
-  })
-})
-
-describe('formatCurrency', () => {
-  it('formats USD by default', () => {
-    expect(formatCurrency(1234.5)).toBe('$1,234.50')
-  })
-  it('formats zero', () => {
-    expect(formatCurrency(0)).toBe('$0.00')
-  })
-  it('supports another currency', () => {
-    expect(formatCurrency(10, 'EUR')).toBe('€10.00')
-  })
-})
-
 describe('formatMoney', () => {
   it('formats USD with grouping and two decimals', () => {
     expect(formatMoney(1520)).toBe('$1,520.00')
@@ -118,16 +66,6 @@ describe('isValidEmail', () => {
   })
   it.each(['', 'plain', 'a@b', '@b.com', 'a@.com', 'a b@c.com', 'a@b .com'])('rejects %p', (e) => {
     expect(isValidEmail(e)).toBe(false)
-  })
-})
-
-describe('deepClone', () => {
-  it('produces an independent copy', () => {
-    const src = { a: 1, nested: { b: [1, 2] } }
-    const copy = deepClone(src)
-    expect(copy).toEqual(src)
-    copy.nested.b.push(3)
-    expect(src.nested.b).toEqual([1, 2])
   })
 })
 

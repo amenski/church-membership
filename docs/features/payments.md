@@ -12,7 +12,7 @@ Monthly membership dues: staff record who paid what for which month (and, for hi
 | Export payments to CSV | STAFF | "Export CSV" button (`PaymentsView.vue:4`), `GET /api/payments/export` (`PaymentController.java:86-102`) |
 | Delete or void a payment | nobody | not available |
 
-A VOLUNTEER sees the page without the "Record payment" and "Export CSV" buttons; STAFF and ADMIN see both (`isStaff`, `frontend/src/stores/authStore.js:41`). The server answers 403 to a VOLUNTEER's write or export.
+A VOLUNTEER sees the page without the "Record payment" and "Export CSV" buttons; STAFF and ADMIN see both (`isStaff`, `frontend/src/stores/authStore.js:39`). The server answers 403 to a VOLUNTEER's write or export.
 
 ## How it works
 ### View payment history
@@ -56,9 +56,9 @@ A VOLUNTEER sees the page without the "Record payment" and "Export CSV" buttons;
 ## Known issues
 - No way to correct a mistaken payment (wrong amount, wrong member). A void-with-audit-trail feature is future work: [payment-controller.md](payment-controller.md#gotchas), audit C7 in [../functionality-audit.md](../functionality-audit.md).
 - The missed-months counter is raised only by the monthly job through `Member.markMissedFor` (`Member.java:66-73`, [payment-reminder-scheduler.md](payment-reminder-scheduler.md)).
-- `frontend/src/stores/paymentStore.js` is unused: the view calls `api.js` directly; the store is only re-exported (`frontend/src/stores/index.js:4`) ([payments-view.md](payments-view.md#collaborators)).
+- The unused `paymentStore` was removed in `chore(ui): remove dead frontend code`; the view calls `api.js` directly ([payments-view.md](payments-view.md#collaborators)).
 - The page loads and lists every payment in the browser (no paging, no date range); the figures are computed from that list.
-- Amounts are `Double` and shown with a `$` sign (`Payment.java:30`, `frontend/src/utils/index.js:94`).
+- Amounts are `Double` and shown with a `$` sign (`Payment.java:30`, `frontend/src/utils/index.js:42`).
 - The receipt and the history read the nested member name and show "Unknown" if it is missing.
 - Member save and payment save are two separate calls in one use case (`RecordPaymentUseCase.java:54-55`); the use case class has no `@Transactional` (only `ChangePasswordUseCase` does), so a failure between the two saves could leave the member updated without a payment.
 

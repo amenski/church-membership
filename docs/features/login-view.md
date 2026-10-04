@@ -9,10 +9,10 @@ Via `frontend/src/services/api.js` (`baseURL` `/api`, `:6`; `withCredentials`, `
 
 | Call | Request | Used by |
 |------|---------|---------|
-| `login` (`api.js:428`) | `POST /auth/login` | `authStore.login` |
-| `logout` (`api.js:439`) | `POST /auth/logout` | `authStore.logout` |
-| `refreshToken` (`api.js:448`) | `POST /auth/refresh` | interceptor, `authStore.refreshToken` |
-| `getCurrentUser` (`api.js:466`) | `GET /users/me` | `authStore.checkAuth` |
+| `login` (`api.js:404`) | `POST /auth/login` | `authStore.login` |
+| `logout` (`api.js:415`) | `POST /auth/logout` | `authStore.logout` |
+| `refreshToken` (`api.js:424`) | `POST /auth/refresh` | interceptor |
+| `getCurrentUser` (`api.js:442`) | `GET /users/me` | `authStore.checkAuth` |
 
 ## State
 `authStore.js`:
@@ -26,16 +26,15 @@ Via `frontend/src/services/api.js` (`baseURL` `/api`, `:6`; `withCredentials`, `
 
 ## Actions
 Store:
-- `login(credentials)` (`:62`): validates email, lowercases it, calls api, sets `user`/`isAuthenticated`/`lastActivity`, starts the 30 s inactivity timer. Rethrows after setting `error`.
-- `logout()` (`:136`): stops timer, calls api, always `clearAuth()` even if the call fails.
-- `checkAuth()` (`:159`): runs once (cached by `authChecked`); `GET /users/me`; on any failure clears auth and returns null. Called by the router guard (`router/index.js:67`).
-- `refreshToken()` (`:183`): calls api; on failure `clearAuth()` and rethrows.
-- `hasRole(minRole)` (`:24`): rank compare `MEMBER < VOLUNTEER < STAFF < ADMIN` (`:21`); false when signed out or role unknown. Mirrors the backend hierarchy.
-- `isSessionExpired()` / `getTimeUntilExpiry()` (`:46`, `:50`): plain functions (read the clock each call).
-- `updateActivity()` (`:240`): bumps `lastActivity`; wired to mouse, key, scroll, touch by `initialize()` (`:280`).
-- `startSessionMonitoring()` (`:246`): every 30 s, calls `logout()` if idle past `sessionTimeout`.
-- `handleAuthError(err)` (`:210`): prefers ProblemDetail `detail`, else maps status to a message.
-- `clearAuth()`, `clearError()`, `setSessionTimeout()`, `forceLogout()`, `register()` (see Gotchas).
+- `login(credentials)` (`:60`): validates email, lowercases it, calls api, sets `user`/`isAuthenticated`/`lastActivity`, starts the 30 s inactivity timer. Rethrows after setting `error`.
+- `logout()` (`:100`): stops timer, calls api, always `clearAuth()` even if the call fails.
+- `checkAuth()` (`:123`): runs once (cached by `authChecked`); `GET /users/me`; on any failure clears auth and returns null. Called by the router guard (`router/index.js:67`).
+- `hasRole(minRole)` (`:23`): rank compare `MEMBER < VOLUNTEER < STAFF < ADMIN` (`:20`); false when signed out or role unknown. Mirrors the backend hierarchy.
+- `isSessionExpired()` / `getTimeUntilExpiry()` (`:44`, `:48`): plain functions (read the clock each call).
+- `updateActivity()` (`:190`): bumps `lastActivity`; wired to mouse, key, scroll, touch by `initialize()` (`:223`).
+- `startSessionMonitoring()` (`:196`): every 30 s, calls `logout()` if idle past `sessionTimeout`.
+- `handleAuthError(err)` (`:160`): prefers ProblemDetail `detail`, else maps status to a message.
+- `clearAuth()`, `clearError()`, `setSessionTimeout()`.
 
 View:
 - `handleLogin` (`LoginView.vue:141`): clears error, validates (email format and a non-empty password, no minimum length, `:112-139`), calls `authStore.login`, toasts, then `router.push` to `?redirect` or `/` (`:175-189`). Failure toasts `authStore.authError` (`:190-198`).
@@ -53,16 +52,15 @@ View:
 ## Errors
 Shown in the form alert (`LoginView.vue:15`) and a toast.
 - Client: "Email is required", "Please enter a valid email address", "Password is required" (`:112-130`).
-- Server: ProblemDetail `detail` shown verbatim (`authStore.js:215`). Backend login failures are 400, so the status-based fallbacks (`:219-236`) apply only when there is no `detail` (e.g. network error -> `error.message`).
+- Server: ProblemDetail `detail` shown verbatim (`authStore.js:165`). Backend login failures are 400, so the status-based fallbacks (`:219-236`) apply only when there is no `detail` (e.g. network error -> `error.message`).
 
 ## Side effects
-- `sessionStorage.auth_timestamp` set on login and refresh (`api.js:433`, `:453`); `user`/`auth_timestamp` removed on logout and refresh failure (`:442-444`, `:459-461`).
+- `sessionStorage.auth_timestamp` set on login and refresh (`api.js:409`, `:453`); `user`/`auth_timestamp` removed on logout and refresh failure (`:442-444`, `:459-461`).
 - Document-level activity listeners added by `initialize()` (never removed).
 - 30 s `setInterval` while signed in.
 
 ## Gotchas
 - Sessions renew: an expired access cookie gets a 401, the interceptor refreshes once and retries (`api.js:105-126`), so the 1 h client idle timeout is the limit. The "Access Denied" toast appears only for a real 403 (signed in, role too low), not for an expired session.
 - The "Session Expired" toast on `LoginView` fires only after a successful sign-in (`LoginView.vue:179-186`), not on arrival at `/login?session=expired`.
-- `clearErrorOnInput` is defined (`LoginView.vue:202`) but not bound to any input, so the error alert stays until the next submit.
-- `authStore.register` posts to `/v1/auth/register` (`authStore.js:113`), which becomes `/api/v1/auth/register`, not `/api/auth/register`; registration is disabled server-side anyway.
+- The error alert stays until the next submit (nothing clears it on typing). The unbound `clearErrorOnInput`, the dead `authStore.register` (it posted to a path that does not exist), `refreshToken` and `forceLogout` were removed in `chore(ui): remove dead frontend code`.
 - A locked account shows the same generic message as any failed sign-in (the lock ends after 15 minutes); too many failures give a 429 whose message the form shows.

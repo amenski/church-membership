@@ -15,10 +15,10 @@ Roles from `@PreAuthorize` and route meta; hierarchy ADMIN > STAFF > VOLUNTEER >
 | Send a reminder to one overdue member | STAFF | "Send reminder" button (`frontend/src/views/Dashboard.vue:27-34`), `POST /api/communications/send-to-member/{memberId}` (`src/main/java/io/github/membertracker/infrastructure/CommunicationController.java:104-120`) |
 
 Role view of the screen:
-- VOLUNTEER sees everything on the screen; the overdue rows have no "Send reminder" button (it needs `isStaff`, `Dashboard.vue:28`, `frontend/src/stores/authStore.js:41`).
+- VOLUNTEER sees everything on the screen; the overdue rows have no "Send reminder" button (it needs `isStaff`, `Dashboard.vue:28`, `frontend/src/stores/authStore.js:39`).
 - STAFF and ADMIN also see "Send reminder" on each overdue row.
 - MEMBER cannot open it: the route guard shows an "Access denied" warning toast and sends them to `/profile` (`frontend/src/router/index.js:102-112`). The four endpoints answer 403.
-- The dashboard is the home page for VOLUNTEER and above; MEMBER's home is `/profile` (`frontend/src/stores/authStore.js:43`). Opening `/` or `/login` while signed in also lands there (`frontend/src/router/index.js:90-96`).
+- The dashboard is the home page for VOLUNTEER and above; MEMBER's home is `/profile` (`frontend/src/stores/authStore.js:41`). Opening `/` or `/login` while signed in also lands there (`frontend/src/router/index.js:90-96`).
 
 ## How it works
 ### Load the dashboard
@@ -33,7 +33,7 @@ Role view of the screen:
 4. This month's revenue: the sum of payment amounts whose billing month (the `period`) is the current month (`GetDashboardStatsUseCase.java:31`).
 - Revenue follows the billing month, not the day the money was recorded: a payment made today for last month is not counted; a payment made earlier for this month is. The Payments screen's "This month" figure uses the same rule, so the two agree ([payments.md](payments.md)).
 - The screen builds its hero from these: "N of M active members are paid up" with M = active members and N = M minus the overdue members on the list (`Dashboard.vue:129-140`), drawn as the dues meter, one segment per active member (capped at 40). With no active members it says so instead. Total members and the overdue count are not shown.
-- "This month's payments" and "Active members" are a quiet row below the list (`Dashboard.vue:42-51`). Amounts are formatted as US dollars with two decimals by the shared `formatMoney` (`frontend/src/utils/index.js:94`).
+- "This month's payments" and "Active members" are a quiet row below the list (`Dashboard.vue:42-51`). Amounts are formatted as US dollars with two decimals by the shared `formatMoney` (`frontend/src/utils/index.js:42`).
 
 ### Recent payments
 1. The server returns the 10 newest payments, newest payment date first, then newest id, limited in the query (`DashboardController.java:36`, `:63-68`).

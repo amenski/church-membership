@@ -95,18 +95,16 @@ Current coverage: `RoleAuthorizationTest` and `ApplicationTests`. `ApplicationTe
 ```
 frontend/src/
 ├── views/        One component per page
-├── stores/       Pinia stores: auth, app, member, payment, communication
+├── stores/       Pinia stores: auth, app (notifications)
 ├── services/     api.js — the only Axios instance
 ├── router/       Routes and auth guards
-├── utils/        Generic helpers (formatDate, debounce, …)
-├── constants/    Shared constants
-├── plugin/       AxiosPlugin
+├── utils/        Generic helpers (formatDate, formatMoney, …)
 └── i18n.js       Translations (one locale so far)
 ```
 
 - Shared state goes in `stores/`. There is no `composables/` folder: it was removed in a dead-code cleanup.
 - All HTTP calls go through `services/api.js`.
-- Notifications use `appStore.addNotification({ message, type, duration })`. `showToast()` in `utils/index.js` is deprecated.
+- Notifications use `appStore.addNotification({ message, type, duration })`.
 
 ## Decisions
 

@@ -1,5 +1,2 @@
 export { useAuthStore } from './authStore'
 export { useAppStore } from './appStore'
-export { useMemberStore } from './memberStore'
-export { usePaymentStore } from './paymentStore'
-export { useCommunicationStore } from './communicationStore'

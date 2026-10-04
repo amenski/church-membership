@@ -72,7 +72,7 @@ All in `frontend/src/utils/memberFilters.js`; all filters are ANDed.
 - `useAppStore().addNotification` for toasts; `useAuthStore` for role gates.
 - `ActionMenu`, `BaseModal`, `PageHead`, `StatusLabel`, ... in `frontend/src/components/` (see [../design.md](../design.md)).
 - `formatDate`, `localISODate`, `downloadBlob`, `isValidEmail`: `frontend/src/utils/index.js`; `monthsBehind`: `frontend/src/utils/dashboardMeter.js`.
-- `memberStore` (`frontend/src/stores/memberStore.js`): not used by this view (only re-exported at `frontend/src/stores/index.js`). Its filters read `firstName`, `lastName`, `status`, `paymentStatus`, none of which `Member` has; it would not work against the current API.
+- `memberStore` (an unused, non-working store) was removed in `chore(ui): remove dead frontend code`.
 
 ## Errors
 - Load failure: banner with "Try again" (also `console.error`).

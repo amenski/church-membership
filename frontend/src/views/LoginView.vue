@@ -197,11 +197,4 @@ const handleLogin = async () => {
     })
   }
 }
-
-// Auto-clear error when user starts typing
-const clearErrorOnInput = () => {
-  if (authError.value) {
-    authStore.clearError()
-  }
-}
 </script>

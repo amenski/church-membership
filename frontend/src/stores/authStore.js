@@ -4,7 +4,7 @@ import apiService from '../services/api'
 
 /**
  * Authentication Store
- * Manages user authentication state, login, logout, and registration
+ * Manages user authentication state, login and logout
  */
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -13,7 +13,6 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoading = ref(false)
   const error = ref(null)
   const authChecked = ref(false)
-  const isInitializing = ref(false)
   const lastActivity = ref(null)
   const sessionTimeout = ref(60 * 60 * 1000) // 1 hour in milliseconds
   const refreshInterval = ref(null)
@@ -34,7 +33,6 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoggedIn = computed(() => isAuthenticated.value)
   const authError = computed(() => error.value)
   const isAuthLoading = computed(() => isLoading.value)
-  const hasAuthChecked = computed(() => authChecked.value)
 
   const userRole = computed(() => user.value?.role || null)
   const isAdmin = computed(() => user.value?.role === 'ADMIN')
@@ -99,40 +97,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function register(userData) {
-    try {
-      isLoading.value = true
-      error.value = null
-
-      // Validate email
-      if (!userData.email || !isValidEmail(userData.email)) {
-        throw new Error('Please enter a valid email address')
-      }
-
-      // Call registration API
-      const response = await apiService.post('/v1/auth/register', {
-        email: userData.email.trim().toLowerCase(),
-        password: userData.password,
-        firstName: userData.firstName?.trim(),
-        lastName: userData.lastName?.trim()
-      })
-
-      if (import.meta.env.DEV) {
-        console.log('User registration successful:', userData.email)
-      }
-
-      return response
-    } catch (err) {
-      error.value = handleAuthError(err)
-      if (import.meta.env.DEV) {
-        console.warn('User registration failed:', err.message)
-      }
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
-
   async function logout() {
     try {
       isLoading.value = true
@@ -177,20 +141,6 @@ export const useAuthStore = defineStore('auth', () => {
       return null
     } finally {
       authChecked.value = true
-    }
-  }
-
-  async function refreshToken() {
-    try {
-      const response = await apiService.refreshToken()
-      // Token refresh is handled by the interceptor, we just need to update user state if needed
-      if (response.user) {
-        user.value = response.user
-      }
-      return response
-    } catch (err) {
-      clearAuth()
-      throw err
     }
   }
 
@@ -269,13 +219,6 @@ export const useAuthStore = defineStore('auth', () => {
     sessionTimeout.value = timeoutMs
   }
 
-  function forceLogout() {
-    if (import.meta.env.DEV) {
-      console.warn('Force logout triggered')
-    }
-    logout()
-  }
-
   // Initialize store
   function initialize() {
     // Set up activity listeners
@@ -299,7 +242,6 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading,
     error,
     authChecked,
-    isInitializing,
     lastActivity,
     sessionTimeout,
 
@@ -308,7 +250,6 @@ export const useAuthStore = defineStore('auth', () => {
     isLoggedIn,
     authError,
     isAuthLoading,
-    hasAuthChecked,
     userRole,
     isAdmin,
     isStaff,
@@ -320,15 +261,12 @@ export const useAuthStore = defineStore('auth', () => {
     isSessionExpired,
     getTimeUntilExpiry,
     login,
-    register,
     logout,
     checkAuth,
-    refreshToken,
     clearAuth,
     clearError,
     handleAuthError,
     setSessionTimeout,
-    forceLogout,
     updateActivity,
     initialize
   }

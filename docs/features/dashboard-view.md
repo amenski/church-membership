@@ -2,7 +2,7 @@
 
 `frontend/src/views/Dashboard.vue`
 
-Home screen (nav label "Overview"): a "Who needs a call" hero (the sentence "N of M active members are paid up", the dues meter, the list of active members who are behind, each with a Send reminder link), a quiet row with this month's payments and active members, then ruled lists of recent payments and recent activity, each with a plain empty state. Styled with Tailwind utilities and the small components `PageHead`, `SectionTitle`, `RuledList`/`RuledRow`, `StatusLabel`, `TextButton`, `EmptyNote`, `AlertBanner` and `DuesMeter` (see [../design.md](../design.md)). Route `/dashboard` (`frontend/src/router/index.js:12-17`), minimum role VOLUNTEER; `homePath` for VOLUNTEER and above (`frontend/src/stores/authStore.js:43`). Guards: [../authentication.md](../authentication.md).
+Home screen (nav label "Overview"): a "Who needs a call" hero (the sentence "N of M active members are paid up", the dues meter, the list of active members who are behind, each with a Send reminder link), a quiet row with this month's payments and active members, then ruled lists of recent payments and recent activity, each with a plain empty state. Styled with Tailwind utilities and the small components `PageHead`, `SectionTitle`, `RuledList`/`RuledRow`, `StatusLabel`, `TextButton`, `EmptyNote`, `AlertBanner` and `DuesMeter` (see [../design.md](../design.md)). Route `/dashboard` (`frontend/src/router/index.js:12-17`), minimum role VOLUNTEER; `homePath` for VOLUNTEER and above (`frontend/src/stores/authStore.js:41`). Guards: [../authentication.md](../authentication.md).
 
 ## State
 No Pinia store for data; Options API local `data()` (`frontend/src/views/Dashboard.vue:112-127`), with `authStore` / `appStore` from `setup()` (`:103-111`).
@@ -16,12 +16,12 @@ No Pinia store for data; Options API local `data()` (`frontend/src/views/Dashboa
 - `loadData()` (`:146`) -> `Promise.all` of 4 calls, then assigns all state; runs on `created` (`:142-144`) and after a successful reminder. One failure aborts the whole assignment (nothing updates).
 - `sendReminder(member)` (`:175`) -> `api.sendToMember(member.id, buildReminderRequest(member))` (the body has `type: 'REMINDER'`, so the message is stored as a reminder), toasts success or the server error (both titled "Send reminder", `:181`, `:189`), then `loadData()`.
 - `formatDate(date)` (`:172`) -> `new Date(date).toLocaleDateString()`
-- `formatMoney(amount)` (shared, `frontend/src/utils/index.js:94`, exposed from `setup()` at `:108`) -> US dollars with two decimals; the same helper formats the Payments screen
+- `formatMoney(amount)` (shared, `frontend/src/utils/index.js:42`, exposed from `setup()` at `:108`) -> US dollars with two decimals; the same helper formats the Payments screen
 
 ## Collaborators
 | api.js method | Request | Backend |
 |---------------|---------|---------|
-| `getDashboardStats` (`frontend/src/services/api.js:518`) | GET `/dashboard/stats` | [dashboard-controller.md](dashboard-controller.md) |
+| `getDashboardStats` (`frontend/src/services/api.js:467`) | GET `/dashboard/stats` | [dashboard-controller.md](dashboard-controller.md) |
 | `getRecentPayments` (`:522`) | GET `/dashboard/recent-payments` | same |
 | `getOverdueMembers` (`:526`) | GET `/dashboard/overdue-members` | same |
 | `getRecentActivities` (`:530`) | GET `/dashboard/recent-activities` | same |

@@ -1,5 +1,5 @@
 <template>
-  <div id="app" :class="[themeClass, 'tw:min-h-screen']" :data-density="density">
+  <div id="app" class="tw:min-h-screen" :data-density="density">
     <!-- Signed in: slim top bar below lg, left rail from lg up (a drawer below lg) -->
     <template v-if="isAuthenticated">
       <header class="tw:sticky tw:top-0 tw:z-[1020] tw:flex tw:items-center tw:justify-between tw:border-b tw:border-rule tw:bg-paper tw:px-4 tw:py-2 tw:lg:hidden">
@@ -99,15 +99,6 @@ const route = useRoute()
 const rail = ref(null)
 const menuButton = ref(null)
 const railOpen = ref(false)
-
-const themeClass = computed(() => {
-  const theme = appStore.currentTheme
-  if (theme === 'dark') return 'data-bs-theme="dark"'
-  if (theme === 'auto') {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'data-bs-theme="dark"' : 'data-bs-theme="light"'
-  }
-  return 'data-bs-theme="light"'
-})
 
 const isAuthenticated = computed(() => authStore.isLoggedIn)
 const currentUser = computed(() => authStore.currentUser)

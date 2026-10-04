@@ -1,6 +1,6 @@
 # CommunicationsView
 
-`frontend/src/views/CommunicationsView.vue` (store: `frontend/src/stores/communicationStore.js`, see Gotchas)
+`frontend/src/views/CommunicationsView.vue` (no Pinia store for data)
 
 The Messages page: compose an email to members, see what was sent and inspect or retry deliveries. Route `/communications` (nav label and page title "Messages"), minimum role VOLUNTEER (`frontend/src/router/index.js:30-35`, guard `:102-103`); sending and retrying need STAFF and above on the server ([communication-controller.md](communication-controller.md), [../authentication.md](../authentication.md)). Built on Tailwind and the shared components.
 
@@ -49,11 +49,11 @@ Component `data()` (`views/CommunicationsView.vue:193-211`), not the Pinia store
 - Send endpoints: `sendToAllMembers`, `sendToOverdueMembers(months, payload)`, `sendToMember(memberId, payload)`, retry `retryDelivery(communicationId, deliveryId)`.
 
 ## Collaborators
-- API methods: `services/api.js:399-425` (`getCommunications`, `getCommunicationById`, `getCommunicationDeliveries`, `retryDelivery`, `sendToAllMembers`, `sendToOverdueMembers`, `sendToMember`); `request` returns `response.data` (`services/api.js:285-288`)
+- API methods: `services/api.js:379-401` (`getCommunications`, `getCommunicationDeliveries`, `retryDelivery`, `sendToAllMembers`, `sendToOverdueMembers`, `sendToMember`); `request` returns `response.data` (`services/api.js:285-288`)
 - `utils/communicationPayload.js` `buildCommunicationRequest` (frontend half of the shared contract fixture, `__tests__/utils/communicationPayload.test.js`)
 - `utils/audienceCount.js` and `utils/messageHistory.js` (`typeLabel`, `deliverySummaryParts`, `deliveryStatus`, `countDeliveries`, `sortMessages`), each with a test in `__tests__/utils/`
 - Components: `PageHead`, `SectionTitle`, `AlertBanner`, `BaseButton`, `BaseInput`, `BaseSelect`, `BaseTextarea`, `BaseModal`, `ConfirmDialog`, `StatusLabel`, `TextButton`, `EmptyNote`
-- `stores/authStore.js:41` `isStaff` (`hasRole('STAFF')`); `useAppStore().addNotification` for toasts
+- `stores/authStore.js:39` `isStaff` (`hasRole('STAFF')`); `useAppStore().addNotification` for toasts
 - Backend: [communication-controller.md](communication-controller.md)
 
 ## Errors
@@ -69,4 +69,4 @@ Component `data()` (`views/CommunicationsView.vue:193-211`), not the Pinia store
 - The dialog is a snapshot: sends deliver in the background, so `PENDING` rows do not update until the dialog is reopened.
 - The confirm count is computed from the loaded `members` list, so it matches the server only while that list is fresh (the server recomputes overdue members on send).
 - Without a mail server every send ends in FAILED deliveries (the demo stack has none), which is how Retry is reached.
-- `communicationStore.js` is not used by this view; it is only re-exported (`stores/index.js:5`). Its getters read `comm.status` (`stores/communicationStore.js:32`), which the backend `Communication` does not have, and `sendToAllMembers` / `sendToOverdueMembers` expect `result.communication` (`:147`, `:170`) while the API returns the communication directly. It has no delivery or retry actions and no `createCommunication`.
+- The unused, non-working `communicationStore.js` was removed in `chore(ui): remove dead frontend code`.

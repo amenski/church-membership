@@ -1,6 +1,6 @@
 # PaymentsView
 
-`frontend/src/views/PaymentsView.vue` (store: `frontend/src/stores/paymentStore.js`, not used by this view)
+`frontend/src/views/PaymentsView.vue` (no Pinia store for data)
 
 Payments page, built on Tailwind and the shared components: a "Record payment" dialog (STAFF and above), three quiet figures, a filterable history (ruled table from `md` up, stacked list below), a receipt dialog with PDF download, CSV export. Route `/payments`, minimum role VOLUNTEER (`frontend/src/router/index.js:24-29`; guard `frontend/src/router/index.js:102-103`, see [../authentication.md](../authentication.md)).
 
@@ -26,23 +26,23 @@ Calls made through `frontend/src/services/api.js`:
 
 | Method | Path | api.js | Used by |
 |--------|------|--------|---------|
-| GET | `/payments` | `frontend/src/services/api.js:382` | `loadData` |
-| GET | `/members` (STAFF and above only; a VOLUNTEER does not load it) | `frontend/src/services/api.js:350` | `loadData`, for the Member select |
-| POST | `/payments` (STAFF+) | `frontend/src/services/api.js:390` | `recordPayment` |
-| GET | `/payments/export` (blob, STAFF+) | `frontend/src/services/api.js:394` | `exportPayments` |
+| GET | `/payments` | `frontend/src/services/api.js:366` | `loadData` |
+| GET | `/members` (STAFF and above only; a VOLUNTEER does not load it) | `frontend/src/services/api.js:338` | `loadData`, for the Member select |
+| POST | `/payments` (STAFF+) | `frontend/src/services/api.js:370` | `recordPayment` |
+| GET | `/payments/export` (blob, STAFF+) | `frontend/src/services/api.js:374` | `exportPayments` |
 
 Backend: [payment-controller.md](payment-controller.md). Rules the server enforces: any past month up to 10 years back is valid (a future month is a 400); `paymentDate` is optional, must not be in the future, and a back-dated payment never moves the member's last-payment date backwards; an INACTIVE member is refused with `MEMBER_008` ("Member '<name>' is inactive. Reactivate the member before recording a payment."); a second payment for the same member and month is refused ("Member '<name>' already has a payment recorded for period <YYYY-MM>"). The request shapes are tested against the shared fixtures `src/test/resources/contracts/record-payment-request.json` and `record-payment-request-backfill.json` (`frontend/src/__tests__/utils/paymentPayload.test.js`).
 
 ## State and helpers
 Local component `data()` (`frontend/src/views/PaymentsView.vue:235-252`): `members`, `payments` (forced to `[]` when the response is not an array), `loaded`, `loadError`, `filters` (`search`, `method`), `recordOpen`, `form`, `formError`, `formErrors`, `saving`, `today`, `selectedPayment`, `receiptOpen`, `downloading`. `setup()` exposes the stores and the formatting helpers (`PaymentsView.vue:217-234`).
 
-Pure helpers in `frontend/src/utils/paymentHistory.js` (tested in `frontend/src/__tests__/utils/paymentHistory.test.js`): `paymentsSummary(payments, currentPeriod)`, `periodLabel('2026-10')` -> "Oct 2026", `receiptNumber(payment)` -> `R-` plus the id padded to 6 digits (derived: the backend has no receipt number), `methodLabel`, `sortPayments`, `filterPayments`. `formatMoney` lives in `frontend/src/utils/index.js:94` and is shared with the Overview. `PAYMENT_METHODS` is in `frontend/src/utils/paymentPayload.js:1-9`.
+Pure helpers in `frontend/src/utils/paymentHistory.js` (tested in `frontend/src/__tests__/utils/paymentHistory.test.js`): `paymentsSummary(payments, currentPeriod)`, `periodLabel('2026-10')` -> "Oct 2026", `receiptNumber(payment)` -> `R-` plus the id padded to 6 digits (derived: the backend has no receipt number), `methodLabel`, `sortPayments`, `filterPayments`. `formatMoney` lives in `frontend/src/utils/index.js:42` and is shared with the Overview. `PAYMENT_METHODS` is in `frontend/src/utils/paymentPayload.js:1-9`.
 
 ## Collaborators
 - `frontend/src/services/api.js` (default import)
 - `useAppStore().addNotification` for toasts, `useAuthStore().isStaff` for the buttons and the dialog
 - Components: `PageHead`, `AlertBanner`, `BaseButton`, `BaseInput`, `BaseSelect`, `BaseTextarea`, `BaseModal`, `EmptyNote`, `TextButton`
-- `usePaymentStore`: not imported by this view; only re-exported (`frontend/src/stores/index.js:4`), no consumer found.
+- The unused `paymentStore` was removed in `chore(ui): remove dead frontend code`; the view calls `api.js` directly.
 
 ## Side effects
 - Triggers a file download for CSV and PDF
@@ -51,4 +51,3 @@ Pure helpers in `frontend/src/utils/paymentHistory.js` (tested in `frontend/src/
 ## Gotchas
 - The table and receipt read the nested `payment.member?.name` (falls back to "Unknown").
 - The month input is a native `type="month"`; browsers without it show a text box, and the server still validates `YYYY-MM`.
-- The store's `filters.paymentMethod` comment lists `card` (`paymentStore.js:16`), which is not a backend method value.

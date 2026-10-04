@@ -81,7 +81,7 @@ This document tracks missing features, improvements, and technical debt in the M
 - [ ] **Communications and dashboard:** the delivery summary cards skip DELIVERED
 - [ ] **Communications (display):** the list screen must show the new `recipientCount` and `deliverySummary` fields (the Recipients column still shows "-" for everything except send-to-all, `CommunicationsView.vue:376`); the dashboard Send Reminder is stored as an announcement, not a REMINDER
 - [x] **Backend dead code removed (October 2026):** unused use cases, the membership policy, `PhoneNumber`, unused repository methods and exception factories, the HTML mail templates and Thymeleaf, and unused domain methods (`chore: remove unused ...` commits; recover from git history)
-- [ ] **Dead code to delete or wire in:** `memberStore`, `paymentStore`, `communicationStore`, `RegisterView.vue` (the backend half, `ProcessMemberPaymentUseCase`, `RegisterUserUseCase` and the policy, was removed in `chore: remove unused use cases, the membership policy and PhoneNumber`)
+- [x] **Dead frontend code removed:** `memberStore`, `paymentStore`, `communicationStore`, `RegisterView.vue`, `AxiosPlugin`, `constants/index.js`, unused `api.js`, `authStore`, `appStore`, `utils` and i18n members (`chore(ui): remove dead frontend code`; the backend half, `ProcessMemberPaymentUseCase`, `RegisterUserUseCase` and the policy, was removed in `chore: remove unused use cases, the membership policy and PhoneNumber`)
 
 ### Bugs found by tests (October 2026)
 - [x] Password change always failed (bcrypt hash checked against the strength rule) *(f26514e)*
