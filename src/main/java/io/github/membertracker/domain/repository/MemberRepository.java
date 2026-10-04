@@ -40,5 +40,12 @@ public interface MemberRepository {
 
     Member save(Member member);
 
+    /**
+     * Saves a new membership for a person who already exists (and has none): the member is linked to that person
+     * instead of a new person being created. Name, email and phone of the member are written to the legacy columns
+     * as {@link #save(Member)} does; the person's own values and household are not changed.
+     */
+    Member saveForPerson(Long personId, Member member);
+
     void deleteById(Long id);
 }

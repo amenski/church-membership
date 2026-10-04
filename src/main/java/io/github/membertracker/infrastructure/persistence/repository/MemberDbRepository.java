@@ -20,10 +20,13 @@ public class MemberDbRepository implements MemberRepository {
 
     private final MemberJpaRepository memberJpaRepository;
     private final HouseholdJpaRepository householdJpaRepository;
+    private final PersonJpaRepository personJpaRepository;
 
-    public MemberDbRepository(MemberJpaRepository memberJpaRepository, HouseholdJpaRepository householdJpaRepository) {
+    public MemberDbRepository(MemberJpaRepository memberJpaRepository, HouseholdJpaRepository householdJpaRepository,
+                              PersonJpaRepository personJpaRepository) {
         this.memberJpaRepository = memberJpaRepository;
         this.householdJpaRepository = householdJpaRepository;
+        this.personJpaRepository = personJpaRepository;
     }
 
     private static final String MEMBER = MemberStatus.MEMBER.name();
@@ -93,6 +96,17 @@ public class MemberDbRepository implements MemberRepository {
         }
         MemberPersistenceMapper.copyToPerson(member, person);
         person.setHousehold(resolveHousehold(member.getHouseholdId(), isStored ? person.getHousehold() : null));
+        entity.setPerson(person);
+        return MemberPersistenceMapper.toDomain(memberJpaRepository.save(entity));
+    }
+
+    /** A new membership for a stored person: same entity as {@link #save}, linked to that person's row (step 11). */
+    @Override
+    @Transactional
+    public Member saveForPerson(Long personId, Member member) {
+        PersonEntity person = personJpaRepository.findById(personId)
+                .orElseThrow(() -> new IllegalStateException("Person not found"));
+        MemberEntity entity = MemberPersistenceMapper.toEntity(member);
         entity.setPerson(person);
         return MemberPersistenceMapper.toDomain(memberJpaRepository.save(entity));
     }

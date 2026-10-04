@@ -32,16 +32,7 @@ public class SaveMemberUseCase {
      */
     public Member invoke(String name, String email, String phone, LocalDate joinDate, MemberStatus status,
                          Long householdId) {
-        if (status == MemberStatus.DECEASED || status == MemberStatus.TRANSFERRED || status == MemberStatus.ARCHIVED) {
-            throw MemberDomainException.statusNotAllowed("A new member can only be MEMBER or INACTIVE.");
-        }
-        Member member = new Member(name, email, phone);
-        if (joinDate != null) {
-            member.setJoinDate(joinDate);
-        }
-        if (status != null) {
-            member.setStatus(status);
-        }
+        Member member = newMember(name, email, phone, joinDate, status);
         member.setHouseholdId(householdId);
         Member saved = memberRepository.save(member);
         recordActivity.record(ActivityType.MEMBER_CREATED, "Member " + saved.getName() + " was added",
@@ -52,5 +43,20 @@ public class SaveMemberUseCase {
                     "MEMBER", saved.getId());
         }
         return saved;
+    }
+
+    /** The rules of a new membership, shared with {@link StartMembershipUseCase}: counters zero, join date today unless given. */
+    static Member newMember(String name, String email, String phone, LocalDate joinDate, MemberStatus status) {
+        if (status == MemberStatus.DECEASED || status == MemberStatus.TRANSFERRED || status == MemberStatus.ARCHIVED) {
+            throw MemberDomainException.statusNotAllowed("A new member can only be MEMBER or INACTIVE.");
+        }
+        Member member = new Member(name, email, phone);
+        if (joinDate != null) {
+            member.setJoinDate(joinDate);
+        }
+        if (status != null) {
+            member.setStatus(status);
+        }
+        return member;
     }
 }

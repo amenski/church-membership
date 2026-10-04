@@ -88,6 +88,16 @@ public final class MemberPersistenceMapper {
     }
 
     /**
+     * DUAL-WRITE, remove at plan step 12: the other direction of {@link #copyToPerson}. A person edited on its own
+     * (PersonDbRepository.save) rewrites the legacy columns of its membership from the person's values.
+     */
+    public static void copyToLegacyColumns(PersonEntity person, MemberEntity member) {
+        member.setName(person.getName());
+        member.setEmail(person.getEmail());
+        member.setPhone(person.getPhone());
+    }
+
+    /**
      * The short form kept on a message delivery: id, name, email, phone and status (so {@code active}) only,
      * so the delivery JSON carries no join date or counters.
      */

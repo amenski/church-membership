@@ -10,9 +10,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+import java.time.LocalDate;
+
 /**
- * Persistence only, no domain class yet (person/membership plan). Name, email and phone are written through from the
- * member (and read back, step 9); the household is the person's own; birth_date and the timestamps are left to the database.
+ * A person: a membership's person (name, email and phone are written through from the member and read back, step 9) or
+ * a dependent with no member row (step 11). The household and the birth date are the person's own; the timestamps are
+ * left to the database.
  */
 @Entity
 @Table(name = "person")
@@ -30,6 +33,9 @@ public class PersonEntity {
 
     @Column(length = 20)
     private String phone;
+
+    @Column(name = "birth_date")
+    private LocalDate birthDate;
 
     /**
      * The household (household_id, nullable, ON DELETE SET NULL). EAGER so a member's household name travels with it;
@@ -69,6 +75,14 @@ public class PersonEntity {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public LocalDate getBirthDate() {
+        return birthDate;
+    }
+
+    public void setBirthDate(LocalDate birthDate) {
+        this.birthDate = birthDate;
     }
 
     public HouseholdEntity getHousehold() {
