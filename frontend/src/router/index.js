@@ -22,6 +22,12 @@ const routes = [
     meta: { requiresAuth: true, requiresRole: 'VOLUNTEER' }
   },
   {
+    path: '/households',
+    name: 'households',
+    component: () => import('../views/HouseholdsView.vue'),
+    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER' }
+  },
+  {
     path: '/payments',
     name: 'payments',
     component: () => import('../views/PaymentsView.vue'),

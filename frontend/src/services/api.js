@@ -336,6 +336,29 @@ const apiService = {
     return this.delete(`/members/${id}`)
   },
 
+  // Households API: the list carries only name, city and member count; the detail adds address, notes and members
+  async getHouseholds() {
+    return this.get('/households')
+  },
+
+  async getHousehold(id) {
+    return this.get(`/households/${id}`)
+  },
+
+  async createHousehold(household) {
+    return this.post('/households', household)
+  },
+
+  // PUT replaces every field: an optional field left out is cleared
+  async updateHousehold(id, household) {
+    return this.put(`/households/${id}`, household)
+  },
+
+  // 409 HOUSEHOLD_002 while anyone is assigned to it
+  async deleteHousehold(id) {
+    return this.delete(`/households/${id}`)
+  },
+
   async exportMembers(ids = []) {
     if (ids.length > 0) {
       return this.post('/members/export', { ids }, { responseType: 'blob' })
