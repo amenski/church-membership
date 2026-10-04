@@ -45,6 +45,15 @@ Open **http://localhost:3000**. Vite proxies `/api/*` to the backend (`frontend/
 | `cd frontend && npm run build` | Frontend production build into `frontend/dist` |
 | `cd frontend && npm run preview` | Serve the frontend build locally |
 
+### Coverage
+
+| Command | Report |
+|---------|--------|
+| `./gradlew test` (JaCoCo report runs after the tests; `./gradlew jacocoTestReport` alone also runs `test` first) | `build/reports/jacoco/test/html/index.html` and `build/reports/jacoco/test/jacocoTestReport.xml` |
+| `cd frontend && npm run coverage` (Vitest with `@vitest/coverage-v8`) | `frontend/coverage/index.html` |
+
+Neither command enforces a threshold, so coverage never fails a build.
+
 ### API documentation
 
 Swagger works only with the `dev` profile.
