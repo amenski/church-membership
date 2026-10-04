@@ -13,7 +13,7 @@
       </AlertBanner>
 
       <template v-else>
-        <section :class="CARD" aria-labelledby="details-title">
+        <section :class="[CARD, 'mb-6']" aria-labelledby="details-title">
           <SectionTitle id="details-title">Your details</SectionTitle>
 
           <dl class="m-0 mb-1 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-(length:--text-body) leading-(--lh-body)">
@@ -61,7 +61,7 @@
           </form>
         </section>
 
-        <section :class="CARD" aria-labelledby="password-title">
+        <section :class="[CARD, 'mb-6']" aria-labelledby="password-title">
           <SectionTitle id="password-title">Password</SectionTitle>
           <p class="mt-0 mb-4 text-(length:--text-body) leading-(--lh-body)">Use at least 8 characters with an uppercase letter, a lowercase letter, a number and a special character.</p>
           <BaseButton variant="secondary" class="max-sm:w-full" @click="openPasswordDialog">Change password</BaseButton>
@@ -107,9 +107,9 @@ import BaseModal from '@/components/BaseModal.vue'
 import PageHead from '@/components/PageHead.vue'
 import SectionTitle from '@/components/SectionTitle.vue'
 
+import { CARD, LABEL } from '@/ui/classes'
+
 const BIO_MAX = 500
-const CARD = 'mb-6 rounded-md border border-rule bg-paper p-(--card-pad)'
-const LABEL = 'mb-1 inline-block text-base font-medium text-ink'
 
 export default {
   name: 'ProfileView',

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <label :for="id" class="mb-1 inline-block text-base font-medium text-ink">{{ label }}</label>
+    <label :for="id" class="mb-1 block text-xs font-medium text-muted">{{ label }}</label>
     <input
       v-bind="$attrs"
       :id="id"
@@ -10,17 +10,17 @@
       :aria-invalid="error ? 'true' : undefined"
       :aria-describedby="describedBy"
       :class="[
-        'block w-full rounded-md border bg-paper px-3 py-2 text-lg leading-normal text-ink',
-        'placeholder:text-muted placeholder:opacity-80',
+        'block w-full rounded-sm border bg-paper px-2.5 py-1.5 text-lg text-ink',
+        'placeholder:text-muted',
         'focus:border-teal focus:outline-2 focus:outline-offset-1 focus:outline-teal',
         'disabled:bg-mist disabled:text-muted',
         error ? 'border-clay' : 'border-field'
       ]"
       @input="$emit('update:modelValue', $event.target.value)"
     />
-    <p v-if="dateText" :id="`${id}-date`" class="mt-1 mb-0 text-[0.9375rem] text-muted">{{ dateText }}</p>
-    <p v-if="hint" :id="`${id}-hint`" class="mt-1 mb-0 text-[0.9375rem] text-muted">{{ hint }}</p>
-    <p v-if="error" :id="`${id}-error`" class="mt-1 mb-0 text-[0.9375rem] text-clay">{{ error }}</p>
+    <p v-if="dateText" :id="`${id}-date`" class="mt-1 mb-0 text-xs text-muted">{{ dateText }}</p>
+    <p v-if="hint" :id="`${id}-hint`" class="mt-1 mb-0 text-xs text-muted">{{ hint }}</p>
+    <p v-if="error" :id="`${id}-error`" class="mt-1 mb-0 text-xs text-clay">{{ error }}</p>
   </div>
 </template>
 

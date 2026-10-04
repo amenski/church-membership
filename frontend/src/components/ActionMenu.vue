@@ -7,7 +7,7 @@
       :aria-expanded="open ? 'true' : 'false'"
       :aria-controls="open ? menuId : undefined"
       :aria-label="label"
-      class="flex size-11 cursor-pointer items-center justify-center rounded-md border border-transparent bg-transparent text-muted hover:border-field hover:bg-teal-tint hover:text-ink md:size-(--control-h)"
+      class="flex size-9 cursor-pointer items-center justify-center rounded-sm border border-transparent bg-transparent text-muted hover:border-field hover:bg-teal-tint hover:text-ink"
       :class="open ? 'border-field bg-teal-tint text-ink' : ''"
       @click="toggle"
       @keydown="onTriggerKeydown"

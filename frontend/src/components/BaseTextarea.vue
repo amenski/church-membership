@@ -1,6 +1,6 @@
 <template>
   <div>
-    <label :for="id" class="mb-1 inline-block text-base font-medium text-ink">{{ label }}</label>
+    <label :for="id" class="mb-1 block text-xs font-medium text-muted">{{ label }}</label>
     <textarea
       v-bind="$attrs"
       :id="id"
@@ -9,13 +9,13 @@
       :aria-invalid="error ? 'true' : undefined"
       :aria-describedby="describedBy"
       :class="[
-        'block w-full resize-y rounded-md border bg-paper px-3 py-2 text-lg leading-normal text-ink',
+        'block w-full resize-y rounded-sm border bg-paper px-2.5 py-1.5 text-lg text-ink',
         'focus:border-teal focus:outline-2 focus:outline-offset-1 focus:outline-teal',
         error ? 'border-clay' : 'border-field'
       ]"
       @input="$emit('update:modelValue', $event.target.value)"
     ></textarea>
-    <div class="mt-1 flex justify-between gap-4 text-[0.9375rem]">
+    <div class="mt-1 flex justify-between gap-4 text-xs">
       <div class="min-w-0">
         <p v-if="hint" :id="`${id}-hint`" class="m-0 text-muted">{{ hint }}</p>
         <p v-if="error" :id="`${id}-error`" class="m-0 text-clay">{{ error }}</p>

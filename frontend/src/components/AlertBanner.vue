@@ -1,5 +1,5 @@
 <template>
-  <div :class="['mb-4 rounded-md border px-4 py-3 text-base', TONES[tone]]" role="alert">
+  <div :class="['mb-4 rounded-sm border px-3 py-2 text-sm', TONES[tone]]" role="alert">
     <slot />
   </div>
 </template>

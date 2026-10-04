@@ -84,7 +84,7 @@
       </p>
 
       <!-- md and up: ruled table -->
-      <table class="hidden w-full border-collapse text-left text-(length:--text-body) tabular-nums md:table">
+      <table :class="TABLE">
         <caption class="sr-only">Members</caption>
         <thead>
           <tr class="border-b border-rule">
@@ -212,13 +212,7 @@ import Icon from '@/components/Icon.vue'
 import PageHead from '@/components/PageHead.vue'
 import StatusLabel from '@/components/StatusLabel.vue'
 import TextButton from '@/components/TextButton.vue'
-
-const LABEL = 'mb-1 block text-(length:--text-label) leading-(--lh-label) font-medium text-muted'
-const CONTROL = 'block h-(--control-h) w-full rounded-md border border-field bg-paper px-3 text-(length:--text-body) text-ink placeholder:text-muted placeholder:opacity-80 focus:border-teal focus:outline-2 focus:outline-offset-1 focus:outline-teal'
-const TH = 'px-3 py-2 text-[0.9375rem] font-medium text-muted first:pl-0 last:pr-0'
-const TD = 'px-3 py-2 align-middle first:pl-0 last:pr-0'
-const SORT_BUTTON = '-mx-1 inline-flex cursor-pointer items-center gap-1 rounded-md border-0 bg-transparent px-1 py-1 font-sans text-[0.9375rem] font-medium text-muted hover:text-ink'
-const NAME = 'font-sans font-medium text-ink [overflow-wrap:anywhere]'
+import { CONTROL, LABEL, NAME, SORT_BUTTON, TABLE, TABLE_TH as TH, TABLE_TD as TD } from '@/ui/classes'
 
 const EMPTY_FILTERS = { search: '', status: 'ALL', paymentStatus: 'ALL', joinedFrom: '', joinedTo: '' }
 const EMPTY_ERRORS = { name: '', email: '', phone: '', joinDate: '', householdId: '' }
@@ -255,6 +249,7 @@ export default {
       deleting: false,
       deleteError: '',
       today: localISODate(),
+      TABLE,
       LABEL,
       CONTROL,
       TH,

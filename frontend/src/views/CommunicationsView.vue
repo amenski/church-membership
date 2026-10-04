@@ -12,7 +12,7 @@
     <!-- One reading column for the form and the history -->
     <div class="max-w-176">
       <!-- Compose (STAFF and above) -->
-      <section v-if="authStore.isStaff" :class="CARD" aria-labelledby="compose-title">
+      <section v-if="authStore.isStaff" :class="[CARD, 'mb-6']" aria-labelledby="compose-title">
         <SectionTitle id="compose-title">New message</SectionTitle>
         <AlertBanner v-if="sendError">{{ sendError }}</AlertBanner>
         <form class="flex flex-col gap-4" novalidate @submit.prevent="askToSend">
@@ -171,7 +171,7 @@ import SectionTitle from '@/components/SectionTitle.vue'
 import StatusLabel from '@/components/StatusLabel.vue'
 import TextButton from '@/components/TextButton.vue'
 
-const CARD = 'mb-10 rounded-md border border-rule bg-paper p-(--card-pad)'
+import { CARD } from '@/ui/classes'
 const MESSAGE_MAX = 5000
 const SUBJECT_MAX = 200
 const EMPTY_ERRORS = { monthsOverdue: '', memberId: '', subject: '', message: '' }

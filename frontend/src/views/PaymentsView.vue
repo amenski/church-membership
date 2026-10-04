@@ -64,7 +64,7 @@
       </p>
 
       <!-- md and up: ruled table -->
-      <table class="hidden w-full border-collapse text-left text-(length:--text-body) tabular-nums md:table">
+      <table :class="TABLE">
         <caption class="sr-only">Payment history, newest first</caption>
         <thead>
           <tr class="border-b border-rule">
@@ -192,12 +192,7 @@ import Icon from '@/components/Icon.vue'
 import PageHead from '@/components/PageHead.vue'
 import TextButton from '@/components/TextButton.vue'
 
-const LABEL = 'mb-1 block text-(length:--text-label) leading-(--lh-label) font-medium text-muted'
-const CONTROL = 'block h-(--control-h) w-full rounded-md border border-field bg-paper px-3 text-(length:--text-body) text-ink placeholder:text-muted placeholder:opacity-80 focus:border-teal focus:outline-2 focus:outline-offset-1 focus:outline-teal'
-const TH = 'px-3 py-2 text-[0.9375rem] font-medium text-muted first:pl-0 last:pr-0'
-const TD = 'px-3 py-2 align-middle first:pl-0 last:pr-0'
-// Big figures: tabular so the digits line up column-wise
-const FIGURE = 'font-semibold tabular-nums'
+import { CONTROL, FIGURE, LABEL, TABLE, TABLE_TH as TH, TABLE_TD as TD } from '@/ui/classes'
 
 const NOTES_MAX = 500
 const EMPTY_ERRORS = { memberId: '', period: '', paymentDate: '', amount: '', paymentMethod: '', notes: '' }
@@ -225,6 +220,7 @@ export default {
       methodLabel,
       periodLabel,
       receiptNumber,
+      TABLE,
       LABEL,
       CONTROL,
       TH,

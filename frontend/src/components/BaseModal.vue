@@ -24,7 +24,7 @@
             WIDTH[size] || WIDTH.md
           ]"
         >
-          <div class="flex items-start justify-between gap-4 border-b border-rule px-6 py-4">
+          <div class="flex items-start justify-between gap-4 border-b border-rule px-4 py-3">
             <h2 :id="titleId" class="m-0 text-lg leading-tight font-semibold text-ink">{{ title }}</h2>
             <button
               type="button"
@@ -35,10 +35,10 @@
               <Icon name="x" :size="16" />
             </button>
           </div>
-          <div class="overflow-y-auto p-6">
+          <div class="overflow-y-auto p-4">
             <slot />
           </div>
-          <div v-if="$slots.footer" class="flex flex-wrap justify-end gap-2 border-t border-rule px-6 py-3">
+          <div v-if="$slots.footer" class="flex flex-wrap justify-end gap-2 border-t border-rule px-4 py-3">
             <slot name="footer" />
           </div>
         </div>

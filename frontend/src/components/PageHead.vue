@@ -1,8 +1,8 @@
 <template>
-  <header class="mb-10 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+  <header class="mb-6 flex flex-wrap items-end justify-between gap-x-4 gap-y-3 border-b border-rule pb-4">
     <div>
       <h1 class="m-0 text-2xl font-semibold text-ink">{{ title }}</h1>
-      <p v-if="lead" class="mt-1 mb-0 text-base text-muted">{{ lead }}</p>
+      <p v-if="lead" class="mt-0.5 mb-0 text-sm text-muted">{{ lead }}</p>
     </div>
     <div v-if="$slots.actions" class="flex flex-wrap gap-2"><slot name="actions" /></div>
   </header>

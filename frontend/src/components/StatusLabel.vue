@@ -1,6 +1,6 @@
 <template>
-  <span :class="['inline-flex items-center gap-2 font-medium', TONES[tone]]">
-    <span class="size-2 shrink-0 rounded-full bg-current" aria-hidden="true"></span>
+  <span :class="['inline-flex items-center gap-1.5 text-sm font-medium', TONES[tone]]">
+    <span class="size-1.5 shrink-0 rounded-full bg-current" aria-hidden="true"></span>
     <slot />
   </span>
 </template>
