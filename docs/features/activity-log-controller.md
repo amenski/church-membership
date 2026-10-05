@@ -40,5 +40,5 @@ None; the endpoint only reads.
 - Writes are best effort: a failed audit write is logged at WARN and swallowed, so an action can exist without an entry.
 - No emails or phone numbers are stored, only names; an entry about a deleted member keeps the name it had.
 - There is no retention or deletion job; the table only grows.
-- Failed sign-ins and reads are not recorded (see [activity.md](activity.md#what-is-not-recorded)).
+- Failed sign-ins and reads are not recorded (see [activity.md](activity.md#what-is-deliberately-not-recorded)).
 - `limit` is applied after sorting in the database, so a larger limit only costs more rows, not a different order.

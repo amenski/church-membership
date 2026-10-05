@@ -1,6 +1,8 @@
+> Finished 5 October 2026 (batches 1 to 3 built and the app now follows the boards). Kept for history. Current docs: [design.md](../design.md), [todo.md](../todo.md).
+
 # Design Todo: all pages
 
-*Written 4 October 2026. This is the plan for the design mockup only. App code is not part of it. The app backlog stays in [todo.md](todo.md).*
+*Written 4 October 2026. This is the plan for the design mockup only. App code is not part of it. The app backlog stays in [todo.md](../todo.md).*
 
 Mockup: https://claude.ai/artifact/CBK4edth9DXvAqxfo4ZN9V (canvas "MemberTracker redesign", private). Source files live in the session scratchpad under `mt/project/` (`canvas.json` plus one `.dc.html` per artboard), so republish from there with the same `url`.
 
@@ -130,4 +132,4 @@ Built: StaffPhoneMembers, StaffPhonePay, StaffPhoneMore (3.1), MembersArchived (
 ## Out of scope
 
 - Any change to `frontend/`, `src/main/`, migrations, or tests.
-- Phase 4 steps 11 and 12 (see [todo.md](todo.md) and [person-membership-plan.md](person-membership-plan.md)); they start only after the design is approved and you say so.
+- Phase 4 steps 11 and 12 (see [todo.md](../todo.md) and [person-membership-plan.md](person-membership-plan.md)); they start only after the design is approved and you say so.

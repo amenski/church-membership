@@ -39,6 +39,6 @@ No endpoint was added.
 The activity log is ADMIN only and `GET /api/activity-log` takes only `limit` (max 200): there is no per-member filter. Filtering the latest 200 entries in the browser would silently miss older ones, so the History card is left out until the endpoint accepts `entityType` and `entityId`.
 
 ## Known issues
-- The page has no Amharic name above the Latin one: the data has one name field (see design-gaps).
+- The page has no Amharic name above the Latin one: the data has one name field (a decision listed in [todo.md](../todo.md)).
 - The Household card links to `/households?id=<householdId>`; the Households screen chooses that household (there is no `/households/:id` route).
 - Names in the Archived list of Members do not link here.

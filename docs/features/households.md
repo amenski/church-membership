@@ -1,6 +1,6 @@
 # Households
 
-A household groups the people of one family or one address: a name, an optional address and free notes. A member points to a household through their person (`person.household_id`); a household never owns dues (they stay per membership, decision f of the [person plan](../person-membership-plan.md)) and has no head of household (decision a). This page covers the API and the screens (step 10); the household detail also lists people without a membership and lets staff add, edit and promote them (step 11, [people.md](people.md)).
+A household groups the people of one family or one address: a name, an optional address and free notes. A member points to a household through their person (`person.household_id`); a household never owns dues (they stay per membership, decision f of the [person plan](../archive/person-membership-plan.md)) and has no head of household (decision a). This page covers the API and the screens (step 10); the household detail also lists people without a membership and lets staff add, edit and promote them (step 11, [people.md](people.md)).
 
 ## Who can do what
 Roles from `@PreAuthorize`; hierarchy ADMIN > STAFF > VOLUNTEER > MEMBER.
@@ -110,4 +110,4 @@ Code: `frontend/src/views/HouseholdsView.vue` (route `/households`, minimum role
 ## Related
 - [members.md](members.md): the `householdId` field of a member
 - [people.md](people.md): the people of a household, dependents included
-- [activity.md](activity.md), [../person-membership-plan.md](../person-membership-plan.md), [../architecture.md](../architecture.md)
+- [activity.md](activity.md), [../person-membership-plan.md](../archive/person-membership-plan.md), [../architecture.md](../architecture.md)

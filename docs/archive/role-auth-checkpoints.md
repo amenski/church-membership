@@ -1,3 +1,5 @@
+> Finished 5 October 2026 (C1 to C10 done). Kept for history. Current docs: [authentication.md](../authentication.md#roles-and-permissions).
+
 # Role-Based Authorization Checkpoints
 
 ## Progress Tracking
@@ -62,4 +64,4 @@
 
 ---
 
-Current permissions and hierarchy: see [authentication.md](authentication.md#roles-and-permissions).
+Current permissions and hierarchy: see [authentication.md](../authentication.md#roles-and-permissions).

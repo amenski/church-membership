@@ -37,7 +37,7 @@ src/main/java/io/github/membertracker/
 └── utils/              CookieUtils, JwtUtils
 ```
 
-Database migrations: `src/main/resources/db/master.xml` and `db/sql/NNN.*.sql`. Migration 012 creates the empty `person` and `household` tables (step 7 of the [person plan](person-membership-plan.md)); migration 013 backfills one `person` per member (same id) and adds `member.person_id` (NOT NULL, unique, FK RESTRICT).
+Database migrations: `src/main/resources/db/master.xml` and `db/sql/NNN.*.sql`. Migration 012 creates the empty `person` and `household` tables (step 7 of the [person plan](archive/person-membership-plan.md)); migration 013 backfills one `person` per member (same id) and adds `member.person_id` (NOT NULL, unique, FK RESTRICT).
 
 ## Where logic belongs
 

@@ -1,6 +1,6 @@
 # People
 
-A **person** is anyone on the register: a member or a dependent with no membership (a child, a spouse who pays no dues, a visitor not yet counted). A person's own fields are name, optional email, phone, birth date and household; the membership is separate and optional. This page covers the API and the screen (step 11 of the [person plan](../person-membership-plan.md)).
+A **person** is anyone on the register: a member or a dependent with no membership (a child, a spouse who pays no dues, a visitor not yet counted). A person's own fields are name, optional email, phone, birth date and household; the membership is separate and optional. This page covers the API and the screen (step 11 of the [person plan](../archive/person-membership-plan.md)).
 
 Dues, reminders, messages, payments, member exports and every dashboard count stay on **memberships** (decision f: dues are per membership, a household never pays once). A person with no membership appears in none of them, and a person with a membership appears through it — so a dependent never leaks into a members-only number.
 
@@ -115,4 +115,4 @@ Code: `frontend/src/views/HouseholdsView.vue` (the household detail panel), `fro
 ## Related
 - [members.md](members.md): memberships and the member API
 - [households.md](households.md): a household now lists its people, dependents included
-- [activity.md](activity.md), [../person-membership-plan.md](../person-membership-plan.md), [../architecture.md](../architecture.md)
+- [activity.md](activity.md), [../person-membership-plan.md](../archive/person-membership-plan.md), [../architecture.md](../architecture.md)

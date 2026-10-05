@@ -1,3 +1,5 @@
+> Finished 5 October 2026 (steps 1 to 12 done, migrations 009 to 014). Kept for history. Current docs: [architecture.md](../architecture.md), [features/people.md](../features/people.md), [features/households.md](../features/households.md), [features/members.md](../features/members.md).
+
 # Person / Household / Membership: plan
 
 Read at commit `2b079ee` (working tree: migration 007 present, 008 being added). Migration numbers below start at 009: run `ls src/main/resources/db/sql` first and shift them if the folder has moved on. Never edit an applied file (checksum).

@@ -54,4 +54,3 @@ Overviews explain a feature to people (who can do what, how it works, rules, kno
 |-----|------------|
 | [docs/todo.md](docs/todo.md) | Live backlog |
 | [docs/functionality-audit.md](docs/functionality-audit.md) | Audit from 3 October 2026: maturity scores, critical defects (C1–C10), roadmap |
-| [docs/role-auth-checkpoints.md](docs/role-auth-checkpoints.md) | Progress tracker for the `feature/role-auth` branch |

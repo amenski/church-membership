@@ -71,7 +71,7 @@ All are RFC 7807 `ProblemDetail` ([../architecture.md](../architecture.md)), exc
 
 ## Gotchas
 - Audit C9 is closed: no endpoint erases payments or deliveries any more. A PUT on an archived member by STAFF is a 404 (only an ADMIN can see or restore one); restoring to MEMBER resets the missed-months counter, to INACTIVE keeps it frozen.
-- Email is optional and not unique since migration `009` (audit C10): two members can share an address and a member can have none. Rolling migration 009 back fails while any row has a NULL or a duplicate email, on purpose. A child added without an email counts as a member until the status step of the [person/membership plan](../person-membership-plan.md): they appear behind on dues unless marked inactive.
+- Email is optional and not unique since migration `009` (audit C10): two members can share an address and a member can have none. Rolling migration 009 back fails while any row has a NULL or a duplicate email, on purpose. A child added without an email counts as a member until the status step of the [person/membership plan](../archive/person-membership-plan.md): they appear behind on dues unless marked inactive.
 - 404 responses are empty bodies, not `ProblemDetail` (`MemberController.java:87`, `:118`, `:129`).
 - `active` no longer exists: not in the JSON, not in `MemberRequest`, not in the CSV, not in the database (migration `014`). Reactivating is `status: MEMBER` and resets the missed-months counter.
 - There is no email lookup any more (`findByEmailIgnoreCase`/`existsByEmailIgnoreCase` were removed with the duplicate check); the `member.email` column and its `idx_member_email_lookup` index were dropped by migration `014` (email lives on `person`, which keeps `idx_person_email`).

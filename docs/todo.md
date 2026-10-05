@@ -8,7 +8,7 @@ Done and removed from this list (October 2026): auth hardening (token types, ref
 
 ## (a) Next structural work
 
-[person-membership-plan.md](person-membership-plan.md), Phase 4: steps 1 to 11 are done and step 12 is done in code (migration 014 waits for the owner to run it on the demo database).
+[person-membership-plan.md](archive/person-membership-plan.md), Phase 4: steps 1 to 11 are done and step 12 is done in code (migration 014 waits for the owner to run it on the demo database).
 
 - [x] Restart the demo backend on the new build so migration 013 runs on `felege_selam` and step 9 starts reading `person` (done 4 October 2026: 11 members, 11 people, drift 0)
 - [x] Step 10: households (API and UI)

@@ -1,3 +1,5 @@
+> Finished 5 October 2026 (every gap is built or decided). Kept for history. Current docs: [design.md](../design.md), [todo.md](../todo.md); the two gaps still open (a second name field, dues amount setting) are listed in the todo.
+
 # Design gaps: app against the artifact
 
 *Audited 4 October 2026 in Chrome: the running app (localhost:3000, 1440 px) against the artifact boards. Artifact: https://claude.ai/artifact/CBK4edth9DXvAqxfo4ZN9V (version 9, five pages). Plan: [design-todo.md](design-todo.md).*
@@ -20,7 +22,7 @@ Rail, Sign in, Overview ledger and facts strip, Call this week, phone tab bar, M
 - ~~**F** Row checkboxes and a bulk bar (Send message, Export selected, Mark inactive, Archive). Medium.~~ **Done** (4 October 2026), STAFF+ (Archive ADMIN). Send message links to /communications without preselecting: Messages has no member parameter yet.
 - ~~**F** Household column and Last paid column. Small.~~ **Done** (4 October 2026).
 - ~~**F** Sort by Most behind. Small.~~ **Done** (4 October 2026): a Sort by select (Name, Most behind, Joined), also on phones.
-- ~~**S** Member detail page (desktop and phone): two-year ledger, payments, history, household card. Names do not link anywhere today. Large.~~ **Done** (4 October 2026): `/members/:id`, see [features/member-detail-view.md](features/member-detail-view.md). Names in Members and the Overview ledger link to it. The History card is not built: the activity log is ADMIN only and has no per-member filter.
+- ~~**S** Member detail page (desktop and phone): two-year ledger, payments, history, household card. Names do not link anywhere today. Large.~~ **Done** (4 October 2026): `/members/:id`, see [features/member-detail-view.md](../features/member-detail-view.md). Names in Members and the Overview ledger link to it. The History card is not built: the activity log is ADMIN only and has no per-member filter.
 - **V** Amharic name above the Latin name: the data has one name field. Needs a decision (a second name field or none).
 
 ### Households

@@ -19,7 +19,7 @@ The findings below are kept as written at audit time. This table says where each
 | C7 Payment delete deletes nothing | Done (endpoint removed) | `2d0383f` |
 | C8 Member edit accepts system fields | Done | `605e51a` |
 | C9 Deleting a member erases payments | Done (archive; foreign keys RESTRICT) | `abc6164` |
-| C10 Email required and unique, no household | Email part done; households open | `9cc0d61`; steps 7 to 12 of [person-membership-plan.md](person-membership-plan.md) |
+| C10 Email required and unique, no household | Email part done; households open | `9cc0d61`; steps 7 to 12 of [person-membership-plan.md](archive/person-membership-plan.md) |
 | CSRF off, default secrets and credentials | Done | `d4c5c0b`, `aff5705`, `5efd8cf`, `db563d5` |
 | No HTTPS configuration | Done (Caddy, security headers) | `723c489`, `c107b09` |
 | Lockout permanent, login throttling | Done | `6398240` |
@@ -163,7 +163,7 @@ Hard delete with `ON DELETE CASCADE` removes all payments and delivery history. 
 A unique, required email per member blocks children and shared inboxes, and there is no household table. Every people feature on the roadmap depends on changing this.
 `Member.java` · `idx_member_email`
 
-> **Status (Oct 2026):** the email part is fixed: email is optional and not unique (migration `009`). There is still no household table: see [person-membership-plan.md](person-membership-plan.md).
+> **Status (Oct 2026):** the email part is fixed: email is optional and not unique (migration `009`). There is still no household table: see [person-membership-plan.md](archive/person-membership-plan.md).
 
 ## 4. Other gaps
 

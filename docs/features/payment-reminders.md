@@ -41,7 +41,7 @@ Example with the default threshold 3, for a member who paid through September an
 3. The next monthly run only counts a month the member did not pay. See [payments.md](payments.md).
 
 ### Reactivating clears the counter
-1. Switching an inactive member to active (Members screen, status button or edit form) resets the counter to 0 (`Member.java:73-79`, `src/main/java/io/github/membertracker/usecase/UpdateMemberUseCase.java:41-49`). See [members.md](members.md#deactivate-or-reactivate).
+1. Switching an inactive member to active (Members screen, status button or edit form) resets the counter to 0 (`Member.java:73-79`, `src/main/java/io/github/membertracker/usecase/UpdateMemberUseCase.java:41-49`). See [members.md](members.md#mark-inactive-or-active).
 2. Deactivating does not change the counter. Inactive members are not counted and not reminded by the jobs.
 
 ### What the admin sees

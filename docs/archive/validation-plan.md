@@ -1,3 +1,5 @@
+> Finished 5 October 2026 (validation and the global exception handler are in place). Kept for history. Current docs: [architecture.md](../architecture.md#validation-and-errors).
+
 # API Validation Plan
 
 ## Current State
