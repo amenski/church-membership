@@ -128,7 +128,7 @@
       <div v-if="canSelect" class="contents lg:pointer-events-none lg:fixed lg:right-0 lg:bottom-4 lg:left-[232px] lg:z-[1050] lg:block lg:px-6">
         <Transition enter-active-class="lg:transition lg:duration-150 lg:ease-out motion-reduce:transition-none" enter-from-class="lg:translate-y-3 lg:opacity-0">
           <div v-if="selectedMembers.length" role="region" aria-label="Selected members" class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-teal-line bg-teal-tint px-4 py-2.5 max-lg:sticky max-lg:top-14 max-lg:z-30 max-lg:mb-4 lg:pointer-events-auto lg:mx-auto lg:max-w-[960px] lg:border-rule lg:bg-paper lg:shadow-modal">
-            <span class="text-base font-semibold text-teal">{{ selectedMembers.length }} selected</span>
+            <span class="text-base font-semibold text-teal">{{ selectionText }}</span>
             <span class="min-w-0 text-sm text-ink [overflow-wrap:anywhere]">{{ selectedNames }}</span>
             <TextButton @click="selectedIds = []">Clear selection</TextButton>
             <div class="flex flex-wrap gap-2 md:ml-auto">
@@ -142,7 +142,7 @@
       </div>
       <label v-if="canSelect" class="mb-2 flex min-h-11 cursor-pointer items-center gap-3 text-base text-ink lg:hidden">
         <input type="checkbox" :class="CHECKBOX_PHONE" :checked="allSelected" :indeterminate="someSelected" @change="toggleAll($event.target.checked)">
-        Select all {{ filteredMembers.length }} shown
+        Select all {{ pagedMembers.length }} on this page
       </label>
 
       <!-- Archived (ADMIN only): what is hidden, with the two things an administrator can do about it -->
@@ -164,7 +164,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="member in filteredMembers" :key="member.id" class="border-b border-rule align-top">
+            <tr v-for="member in pagedMembers" :key="member.id" class="border-b border-rule align-top">
               <td :class="[TD, 'max-w-0 w-[26%] py-3']">
                 <div :class="[NAME, 'text-muted']">{{ member.name }}</div>
                 <div v-if="member.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
@@ -195,7 +195,7 @@
         </table>
 
         <ul class="m-0 grid list-none grid-cols-1 gap-3 p-0 md:grid-cols-2 lg:hidden">
-          <li v-for="member in filteredMembers" :key="member.id" class="flex flex-col gap-3 rounded-lg border border-rule bg-paper px-4 py-3.5">
+          <li v-for="member in pagedMembers" :key="member.id" class="flex flex-col gap-3 rounded-lg border border-rule bg-paper px-4 py-3.5">
             <div class="min-w-0">
               <div :class="[NAME, 'text-xl text-muted']">{{ member.name }}</div>
               <div v-if="member.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
@@ -218,6 +218,7 @@
             </div>
           </li>
         </ul>
+        <Pager v-bind="pagerProps" class="mt-4" @update:page="setPage" @update:page-size="setPageSize" />
       </template>
 
       <!-- lg and up: the table in a bordered card (grey header row, hairline between rows, footer line). Between lg and xl it keeps a
@@ -229,7 +230,7 @@
             <thead>
               <tr class="border-b border-rule">
                 <th v-if="canSelect" scope="col" :class="[CARD_TH, 'w-8']">
-                  <input type="checkbox" :class="CHECKBOX" :checked="allSelected" :indeterminate="someSelected" :aria-label="`Select all ${filteredMembers.length} shown`" @change="toggleAll($event.target.checked)">
+                  <input type="checkbox" :class="CHECKBOX" :checked="allSelected" :indeterminate="someSelected" :aria-label="`Select all ${pagedMembers.length} on this page`" @change="toggleAll($event.target.checked)">
                 </th>
                 <th v-for="column in columns" :key="column.label" scope="col" :aria-sort="ariaSort(column.sortKey)" :class="[CARD_TH, column.class]">
                   <button v-if="column.sortKey" type="button" :class="SORT_BUTTON" @click="setSort(column.sortKey)">
@@ -242,7 +243,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="member in filteredMembers" :key="member.id" :class="['h-(--row-h) border-b border-rule', isSelected(member) ? 'bg-teal-tint' : '']">
+              <tr v-for="member in pagedMembers" :key="member.id" :class="['h-(--row-h) border-b border-rule', isSelected(member) ? 'bg-teal-tint' : '']">
                 <td v-if="canSelect" :class="CARD_TD">
                   <input type="checkbox" :class="CHECKBOX" :checked="isSelected(member)" :aria-label="`Select ${member.name}`" @change="toggleSelected(member, $event.target.checked)">
                 </td>
@@ -277,16 +278,14 @@
               </tr>
             </tbody>
           </table>
-          <div class="flex flex-wrap justify-between gap-x-4 gap-y-2 px-4 py-3 text-sm text-muted">
-            <span>{{ filteredMembers.length }} of {{ source.length }} members</span>
-            <span>Dates and counts as of {{ asOfText }}</span>
-          </div>
+          <Pager v-bind="pagerProps" class="px-4 py-3" @update:page="setPage" @update:page-size="setPageSize" />
+          <div :class="['px-4 text-right text-sm text-muted', pagerShown ? 'pb-3' : 'py-3']">Dates and counts as of {{ asOfText }}</div>
         </div>
       </div>
 
       <!-- Below lg: one card per member, two across from md -->
       <ul v-if="!showingArchived" class="m-0 grid list-none grid-cols-1 gap-3 p-0 md:grid-cols-2 lg:hidden">
-        <li v-for="member in filteredMembers" :key="member.id" class="flex flex-col gap-3 rounded-lg border border-rule bg-paper px-4 py-3.5">
+        <li v-for="member in pagedMembers" :key="member.id" class="flex flex-col gap-3 rounded-lg border border-rule bg-paper px-4 py-3.5">
           <div class="flex items-start justify-between gap-2">
             <label v-if="canSelect" class="-ml-2 -mt-1.5 flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center">
               <input type="checkbox" :class="CHECKBOX_PHONE" :checked="isSelected(member)" :aria-label="`Select ${member.name}`" @change="toggleSelected(member, $event.target.checked)">
@@ -316,6 +315,7 @@
           </div>
         </li>
       </ul>
+      <Pager v-if="!showingArchived" v-bind="pagerProps" class="mt-4 lg:hidden" @update:page="setPage" @update:page-size="setPageSize" />
     </template>
 
     <!-- Add and edit -->
@@ -368,6 +368,8 @@ import { monthsBehind } from '@/utils/dues'
 import { paidMonthsByMember, stripRangeLabel } from '@/utils/yearStrip'
 import { STATUS_SEGMENTS, filterMembers, sortMembers, statusCounts, exportIds } from '@/utils/memberFilters'
 import { membersCsv } from '@/utils/memberCsv'
+import { clampPage, pageSlice, PAGE_SIZES } from '@/utils/paging'
+import { queryPaging } from '@/utils/queryPaging'
 import { buildMemberRequest } from '@/utils/memberPayload'
 import { countsForDues, statusLabel, statusTone } from '@/utils/memberStatus'
 import ActionMenu from '@/components/ActionMenu.vue'
@@ -379,6 +381,7 @@ import Icon from '@/components/Icon.vue'
 import MemberArchiveDialog from '@/components/MemberArchiveDialog.vue'
 import MemberFormDialog from '@/components/MemberFormDialog.vue'
 import PageHead from '@/components/PageHead.vue'
+import Pager from '@/components/Pager.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import StatusLabel from '@/components/StatusLabel.vue'
 import YearStrip from '@/components/YearStrip.vue'
@@ -402,10 +405,20 @@ const SORT_OPTIONS = [
 const CHECKBOX = 'h-4 w-4 cursor-pointer accent-teal'
 const CHECKBOX_PHONE = 'h-5 w-5 cursor-pointer accent-teal'
 const EMPTY_FILTERS = { search: '', status: 'ALL', paymentStatus: 'ALL', joinedFrom: '', joinedTo: '' }
+// /members?dues= (the Overview's "See all" link) and the Dues filter's own values
+const DUES_FILTER = { behind: 'OVERDUE', paid: 'CURRENT', all: 'ALL' }
+const DUES_QUERY = { OVERDUE: 'behind', CURRENT: 'paid' }
+// the opening filters: the search (/households links to a member's name) and the dues (the Overview's "See all") a link carries
+const filtersFromQuery = (query) => ({
+  ...EMPTY_FILTERS,
+  search: typeof query?.search === 'string' ? query.search : '',
+  paymentStatus: DUES_FILTER[query?.dues] || 'ALL'
+})
 
 export default {
   name: 'MembersView',
-  components: { ActionMenu, AlertBanner, BaseButton, ConfirmDialog, EmptyNote, Icon, MemberArchiveDialog, MemberFormDialog, PageHead, StatusBadge, StatusLabel, TextButton, YearStrip },
+  mixins: [queryPaging()],
+  components: { ActionMenu, AlertBanner, BaseButton, ConfirmDialog, EmptyNote, Icon, MemberArchiveDialog, MemberFormDialog, PageHead, Pager, StatusBadge, StatusLabel, TextButton, YearStrip },
   setup() {
     return {
       appStore: useAppStore(),
@@ -420,7 +433,7 @@ export default {
       archivedLoaded: false,
       loaded: false,
       loadError: false,
-      filters: { ...EMPTY_FILTERS },
+      filters: filtersFromQuery(this.$route?.query),
       filtersOpen: false,
       moreOpen: false,
       sort: { key: 'name', direction: 'asc' },
@@ -476,18 +489,43 @@ export default {
       const filtered = filterMembers(this.source, this.filters)
       return this.sort.key ? sortMembers(filtered, this.sort.key, this.sort.direction) : filtered
     },
-    // Selecting is for STAFF+ and for the normal list; only the rows on screen count as selected
+    // a page beyond the last shows as the last
+    currentPage() {
+      return clampPage(this.page, this.filteredMembers.length, this.pageSize)
+    },
+    // the rows on screen: one page of the sorted, filtered list
+    pagedMembers() {
+      return pageSlice(this.filteredMembers, this.currentPage, this.pageSize)
+    },
+    pagerProps() {
+      return { page: this.currentPage, pageSize: this.pageSize, total: this.filteredMembers.length }
+    },
+    pagerShown() {
+      return this.filteredMembers.length > Math.min(...PAGE_SIZES)
+    },
+    // changes to what the list holds or how it is ordered: back to page 1
+    listKey() {
+      return `${JSON.stringify(this.filters)}|${this.sort.key}|${this.sort.direction}`
+    },
+    // Selecting is for STAFF+ and for the normal list. The selection spans pages (what a filter hides is not selected);
+    // the header checkbox and "Select all" act on the page on screen only
     canSelect() {
       return this.authStore.isStaff && !this.showingArchived
     },
     selectedMembers() {
       return this.canSelect ? this.filteredMembers.filter(member => this.selectedIds.includes(member.id)) : []
     },
+    selectedOnPage() {
+      return this.canSelect ? this.pagedMembers.filter(member => this.selectedIds.includes(member.id)) : []
+    },
+    selectedOffPage() {
+      return this.selectedMembers.length - this.selectedOnPage.length
+    },
     allSelected() {
-      return this.canSelect && this.selectedMembers.length === this.filteredMembers.length
+      return this.canSelect && this.pagedMembers.length > 0 && this.selectedOnPage.length === this.pagedMembers.length
     },
     someSelected() {
-      return this.selectedMembers.length > 0 && !this.allSelected
+      return this.selectedOnPage.length > 0 && !this.allSelected
     },
     // Mark inactive only changes a Member: an inactive, transferred or deceased one is left as it is
     inactiveTargets() {
@@ -503,8 +541,12 @@ export default {
       const names = this.selectedMembers.map(member => member.name)
       return names.length > 3 ? `${names.slice(0, 3).join(', ')} and ${names.length - 3} more` : names.join(', ')
     },
+    // "3 selected" or, when some are on other pages, "5 selected, 2 not on this page"
+    selectionText() {
+      return `${this.selectedMembers.length} selected${this.selectedOffPage ? `, ${this.selectedOffPage} not on this page` : ''}`
+    },
     selectionAnnouncement() {
-      return this.selectedMembers.length ? `${this.selectedMembers.length} selected` : ''
+      return this.selectedMembers.length ? this.selectionText : ''
     },
     countText() {
       const noun = this.showingArchived ? 'archived member' : 'member'
@@ -545,18 +587,31 @@ export default {
     'filters.status'(status) {
       if (status === 'ARCHIVED' && this.authStore.isAdmin) this.loadArchived()
     },
+    listKey() {
+      this.resetPage()
+    },
+    // the list changed length (loaded, a member archived): a page beyond the last becomes the last
+    'filteredMembers.length'(length) {
+      if (this.loaded) this.settlePage(length)
+    },
+    // the Overview's "See all" links /members?dues=behind while this screen may already be open
+    '$route.query.dues'(dues) {
+      const paymentStatus = DUES_FILTER[dues]
+      if (paymentStatus && paymentStatus !== this.filters.paymentStatus) this.filters.paymentStatus = paymentStatus
+    },
     // the top bar search pushes /members?search= while this screen is already open
     '$route.query.search'(search) {
       if (typeof search === 'string') this.filters.search = search
     }
   },
   async created() {
-    // /households links to a member's name: show that search
-    const search = this.$route?.query?.search
-    if (typeof search === 'string') this.filters.search = search
     await Promise.all([this.loadMembers(), this.loadPayments()])
   },
   methods: {
+    // the Dues filter rides in the URL beside page and size (omitted for All dues)
+    pagingExtraQuery() {
+      return { dues: DUES_QUERY[this.filters.paymentStatus] }
+    },
     async loadMembers() {
       try {
         const data = await api.getMembers()
@@ -623,9 +678,9 @@ export default {
         ? [...this.selectedIds, member.id]
         : this.selectedIds.filter(id => id !== member.id)
     },
-    // the header checkbox: every row on screen, nothing hidden by a filter
+    // the header checkbox: the rows on this page only; what was selected on other pages stays as it is
     toggleAll(checked) {
-      const shown = this.filteredMembers.map(member => member.id)
+      const shown = this.pagedMembers.map(member => member.id)
       this.selectedIds = checked
         ? [...new Set([...this.selectedIds, ...shown])]
         : this.selectedIds.filter(id => !shown.includes(id))
