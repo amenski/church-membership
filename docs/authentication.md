@@ -27,7 +27,16 @@ All paths are under `/api`. Only `/api/auth/**` is public; everything else requi
 | PUT | `/api/users/me/profile` | Update own profile |
 | PUT | `/api/users/me/password` | Change own password |
 
-Registration was disabled in February 2026 (commit `5356063`). There is no admin API for users yet, so accounts are created in SQL. Seed users are in `src/main/resources/db/sql/002.sample-data.sql`.
+Registration was disabled in February 2026 (commit `5356063`). There is no admin API for users yet, so accounts are created in SQL, except the first one:
+
+**First administrator.** A production database has no users (the sample users in `002.sample-data.sql` are loaded only by the `dev` profile, through the Liquibase context `dev`). At startup `BootstrapAdminRunner` calls `BootstrapFirstAdminUseCase` with `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` (`app.bootstrap.admin-email` and `app.bootstrap.admin-password`, empty by default). The rule:
+
+- It acts only while the users table is empty. If any user exists it does nothing, so the variables can stay in place, but the operator removes `BOOTSTRAP_ADMIN_PASSWORD` after the first start.
+- It creates one enabled `ADMIN`, with the password BCrypt-hashed by the same encoder as every other password (cost 12).
+- The email must be valid (`Email.of`) and the password must meet the password rule below (`User.validatePasswordStrength`). An invalid value, or only one of the two variables set, stops startup with a message naming the variable; the password is never in a message or a log. The only log line is `Created the first administrator <email>`.
+- It writes no activity-log entry: that needs a new activity type and a frontend label.
+
+Steps are in [development.md](development.md#first-start).
 
 ### Cookies
 
@@ -69,7 +78,7 @@ CORS allows credentials, but the allowed origins are hard-coded in two places: `
 
 - Passwords are hashed with BCrypt, cost 12.
 - A new password must be 8 characters or more and at most 72 UTF-8 bytes (BCrypt ignores anything longer), with an uppercase letter, a lowercase letter, a digit and a special character (`User.validatePasswordStrength`). Special means any character that is not a letter, digit or whitespace, so `-`, `_`, `#` and `.` count; spaces are allowed but do not count as special. The web form checks the same rule (`frontend/src/utils/passwordRules.js`).
-- When the user changes their password the current one must be given and match; there is no minimum length on it, so the seeded 5-character admin password can be replaced. A wrong current password is a 400 "Current password is incorrect"; a weak new one is a 400 with the rule text.
+- When the user changes their password the current one must be given and match; there is no minimum length on it, so an older, shorter password (such as the dev sample admin's) can be replaced. A wrong current password is a 400 "Current password is incorrect"; a weak new one is a 400 with the rule text.
 - Changing the password ends every other session: tokens issued before the change are rejected (see the token claims above). `PUT /api/users/me/password` answers with fresh `sid` and `sid_refresh` cookies, so the browser that changed the password stays signed in. The change time is stored in whole seconds, as token issue times are.
 - Five failed attempts lock the account for 15 minutes, and the lock ends by itself (`users.locked_until`, changeset 006). A lock with no `locked_until` (set by hand or an old row) stays permanent until someone clears `account_non_locked` in the database.
 - A wrong current password on a password change counts toward the same lock as a wrong sign-in password.

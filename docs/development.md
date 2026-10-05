@@ -33,7 +33,7 @@ npm run dev
 
 Open **http://localhost:3000**. Vite proxies `/api/*` to the backend (`frontend/vite.config.js`).
 
-**Sign in:** self-registration is disabled. Seed users are in `src/main/resources/db/sql/002.sample-data.sql`. The passwords given in its comments have not been checked against the hashes.
+**Sign in:** self-registration is disabled. The `dev` profile loads sample data, including two users (`admin@membertracker.com` and `testuser@membertracker.com`) from `src/main/resources/db/sql/002.sample-data.sql`, but the passwords written in that file's comments do not match the stored hashes (sign-in with them fails), so set a password first: [Create a login](#create-a-login). A production database starts empty instead: see [First start](#first-start).
 
 > `./gradlew :frontend:vueRunDev` runs `npm run dev`, the same as the npm command above. There is no lint script.
 
@@ -90,7 +90,7 @@ From `frontend/.env.example`:
 
 ```bash
 docker compose up -d --wait   # first start downloads the image, creates the database, and returns when it is healthy
-./gradlew bootRun             # dev profile; Liquibase creates the schema and sample data
+./gradlew bootRun             # dev profile; Liquibase creates the schema and loads the sample data (context dev)
 ```
 
 | Command | What it does |
@@ -141,7 +141,7 @@ A backup on the same disk does not protect against losing the disk; keep a copy 
 
 #### Create a login
 
-The seeded user hashes in `002.sample-data.sql` do not match their comments, so create a login yourself. Generate a BCrypt hash:
+For local development only. The sample users in `002.sample-data.sql` (loaded by the `dev` profile) have hashes that do not match the passwords in their comments, so give one of them a password. A production database has no sample users: use [First start](#first-start) there. Generate a BCrypt hash:
 
 ```bash
 htpasswd -bnBC 12 "" 'YourPassword1!' | tr -d ':\n' | sed 's/^\$2y/\$2a/'
@@ -182,6 +182,23 @@ java -jar target/membertracker.jar \
   --spring.datasource.password=change-me
 ```
 
+### First start
+
+A production database starts **empty**: no users, members, payments or messages. The sample data (`002.sample-data.sql`) is tagged with the Liquibase context `dev`. The default profile runs the context `prod` (`spring.liquibase.contexts=prod`) and skips it, while the `dev` profile runs the context `dev` and loads it. Every other migration runs in both. (Do not clear `spring.liquibase.contexts` in production: with no context at all Liquibase runs every changeset, the sample data included.)
+
+Registration is disabled, so the first administrator comes from the environment. Set both variables in the env file for the first start:
+
+```bash
+BOOTSTRAP_ADMIN_EMAIL=owner@example.org
+BOOTSTRAP_ADMIN_PASSWORD=<a strong password>
+```
+
+1. Start the app. Liquibase creates the schema, then the app creates one enabled `ADMIN` with that email and the password, BCrypt-hashed, and logs `Created the first administrator owner@example.org` (the password is never logged).
+2. Sign in with that email and password, then **remove the `BOOTSTRAP_ADMIN_PASSWORD` line** from the env file and restart. The variables are used only while the users table is empty, so leaving them is harmless, but a password in a file is a risk you do not need.
+3. Change the password under Profile if you like. Other accounts are added in SQL for now (there is no user admin screen; see [authentication.md](authentication.md#endpoints)).
+
+The password follows the same rule as every password: 8 to 72 characters (bytes), with an uppercase letter, a lowercase letter, a digit and a special character. The email must be a valid address. If either is invalid, or only one of the two is set while the users table is empty, the app refuses to start with a message that names the variable (`BOOTSTRAP_ADMIN_PASSWORD is not strong enough: ...`) and never prints the password. With no users and neither variable set the app starts and logs a warning that nobody can sign in; set both and restart.
+
 ### Environment variables
 
 The default profile has no secret defaults: it refuses to start if a required variable is missing. The `dev` profile carries local-only values, so `./gradlew bootRun` works without any setup. The production JAR needs the environment.
@@ -191,6 +208,8 @@ The default profile has no secret defaults: it refuses to start if a required va
 | `DB_USERNAME` | yes | Database user |
 | `DB_PASSWORD` | yes | Database password |
 | `JWT_SECRET` | yes | Token signing key, at least 32 characters. Startup fails with a clear message if it is shorter |
+| `BOOTSTRAP_ADMIN_EMAIL` | first start only | Email of the first administrator. Used only while the users table is empty; see [First start](#first-start) |
+| `BOOTSTRAP_ADMIN_PASSWORD` | first start only | Password of the first administrator (8 to 72 characters with upper, lower, digit and special). **Remove it after the first start** |
 | `DB_URL` | no | JDBC URL. Default `jdbc:mysql://localhost:3306/felege_selam?serverTimezone=UTC` |
 | `COOKIE_SECURE` | no | Default `true`: auth cookies are sent only over HTTPS. The `dev` profile sets `false` (local http). Set `false` only for a plain-http test |
 | `TRUSTED_PROXIES` | no | Regex of the peers allowed to set the client IP through `X-Forwarded-For` (used by the sign-in throttle). Default loopback only (`127\.0\.0\.1\|::1\|0:0:0:0:0:0:0:1`), right for Caddy on the same host. If the proxy is another container, set it to the proxy's address or subnet regex |
@@ -210,7 +229,7 @@ After=mysql.service
 [Service]
 User=appuser
 WorkingDirectory=/opt/membertracker
-EnvironmentFile=/opt/membertracker/membertracker.env   # DB_USERNAME, DB_PASSWORD, JWT_SECRET
+EnvironmentFile=/opt/membertracker/membertracker.env   # DB_USERNAME, DB_PASSWORD, JWT_SECRET (+ BOOTSTRAP_ADMIN_* on the first start only)
 ExecStart=/usr/bin/java -jar /opt/membertracker/membertracker.jar
 Restart=on-failure
 RestartSec=10
@@ -272,7 +291,8 @@ volumes:
 - [ ] `DB_USERNAME` and `DB_PASSWORD` set from the environment (not `root/password`); the default JDBC URL has no `useSSL=false`
 - [ ] CORS origins changed in **both** `SecurityConfig` and `WebMvcConfig`. They are hard-coded to localhost.
 - [ ] SQL logging stays off: `spring.jpa.show-sql=false` in the default profile (only `dev` turns it on)
-- [ ] Don't enable the `dev` profile in production (it turns on Swagger and SQL logging)
+- [ ] Don't enable the `dev` profile in production (it turns on Swagger and SQL logging, and loads the sample users, members and payments)
+- [ ] First start: `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` set, the administrator can sign in, then **`BOOTSTRAP_ADMIN_PASSWORD` removed** from the env file (see [First start](#first-start))
 - [ ] Mail settings provided (see [email.md](email.md))
 - [ ] Daily database backups
 - [ ] JVM memory set, for example `-Xms512m -Xmx1024m`
@@ -283,8 +303,8 @@ Open security items are tracked in [functionality-audit.md](functionality-audit.
 
 | File | Contents |
 |------|----------|
-| `src/main/resources/application.properties` | Default (production) config: database, auth, mail, church info. Secrets come from the environment, no defaults |
-| `src/main/resources/application-dev.properties` | `dev` profile: local-only database and JWT values, SQL logging, Swagger |
+| `src/main/resources/application.properties` | Default (production) config: database, auth, mail, church info, Liquibase context `prod`, the first-administrator variables. Secrets come from the environment, no defaults |
+| `src/main/resources/application-dev.properties` | `dev` profile: local-only database and JWT values, SQL logging, Swagger, Liquibase context `dev` (loads the sample data) |
 | `frontend/vite.config.js` | Dev server port 3000 and `/api` proxy |
 | `src/main/java/.../infrastructure/config/SecurityConfig.java` | Security filter chain and CORS for the API |
 | `src/main/java/.../infrastructure/config/WebMvcConfig.java` | Static file serving with SPA fallback, plus a second CORS mapping |
@@ -297,6 +317,8 @@ Spring also maps environment variables onto any property (for example `SERVER_PO
 |---------|-----|
 | Port already in use | Backend: `server.port`. Frontend: `server.port` in `vite.config.js`. |
 | Cannot connect to the database | Check MySQL is running, the `felege_selam` database exists, and the credentials are right |
+| Startup stops with `BOOTSTRAP_ADMIN_...` | The first-administrator value is missing or invalid (the message names the variable). Fix it, or unset both variables if the database already has users |
+| Nobody can sign in on a new production database | The users table is empty and `BOOTSTRAP_ADMIN_EMAIL` / `BOOTSTRAP_ADMIN_PASSWORD` were not set. Set both and restart (see [First start](#first-start)) |
 | Migration fails on startup | Check the `DATABASECHANGELOG` table and the startup log. Never edit a changeset that has already run; add a new `NNN.*.sql` file. |
 | CORS error in development | Use http://localhost:3000 (the Vite proxy) rather than calling `:8080` directly |
 | `Module not found` in the frontend | Run `npm install` in `frontend/` |

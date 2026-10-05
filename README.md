@@ -10,11 +10,11 @@ docker compose up -d --wait                 # MySQL on :3306, data kept in ./dat
 cd frontend && npm install && npm run dev   # frontend on http://localhost:3000
 ```
 
-`bootRun` uses the `dev` profile automatically; a production JAR needs `DB_USERNAME`, `DB_PASSWORD` and `JWT_SECRET` in the environment.
+`bootRun` uses the `dev` profile automatically, which loads sample data (members, payments, messages and two sample users). A production JAR starts with an empty database and needs `DB_USERNAME`, `DB_PASSWORD` and `JWT_SECRET` in the environment, plus `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` for the first start to create the first administrator ([First start](docs/development.md#first-start)).
 
 `docker-compose.yml` runs only the database, with the dev profile's credentials; copy `.env.example` to `.env` to change them. Without Docker, any MySQL 8 with a `felege_selam` database works.
 
-Self-registration is disabled and the seeded password hashes do not match their comments, so create a login first: [docs/development.md](docs/development.md#create-a-login). Full setup, build and deployment steps are in the same file.
+Self-registration is disabled and the sample users' password hashes do not match the passwords in their comments, so give one a password first: [docs/development.md](docs/development.md#create-a-login). Full setup, build and deployment steps are in the same file.
 
 ## Documentation
 
