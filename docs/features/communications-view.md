@@ -13,7 +13,7 @@ Paths below are relative to `frontend/src/`.
   - For behind: "At least this many months behind" (number, min 1, default 1). For one member: "Member" (the searchable `MemberPicker` over ACTIVE members only, see [payments-view.md](payments-view.md#record-payment-dialog); the paid months for its "Due this month" and "Paid up" badges are the ones loaded for the year strips, so without them a row only shows "N months behind"). The old " (no email)" suffix on the options is gone: choosing a member with no email shows "This member has no email address." under the field when sending.
   - "Subject" (up to 200 characters), "Message" (up to 5000, counter) with the helper line "Write {{member_name}} to insert each member's name."
   - The send button reads "Send to N people" ("Send to 1 person"; busy label "Sending..."). N is the number of recipients who will get an email. When anyone is skipped, a note beside it says so ("1 person has no email and will be skipped.", or "N people will be skipped." when a shared address is involved).
-- **Who gets this card**, beside the form from the `lg` breakpoint (two columns, the form wide and the card 28rem) and stacked below it on smaller screens (STAFF and above only). It is computed on the client from the members list and the payments list (`api.getPayments`, grouped by `paidMonthsByMember`, the same way the Members screen does); no new endpoint. A payments failure only hides the strips.
+- **Who gets this card**, beside the form from the `lg` breakpoint (two columns, the form wide and the card 28rem) and stacked below it on smaller screens (STAFF and above only). It is computed on the client from the members list and the paid months of the last 12 (`api.getPaidMonths(12)`, `GET /api/payments/paid-months`, turned into a member-to-months map by `paidMonthsFromMap`, the same way the Members screen does); the browser never downloads the payments. A paid-months failure only hides the strips.
   - A count line: "3 members owe 2 or more months. 2 of them have an email." (Everyone: "12 active members. 10 of them have an email."; one member: "Choose a member to see who gets this." until one is picked).
   - One row per recipient (a scrolling list, up to 32rem high): name, "N months behind" or "Paid up" (`monthsBehind`, `utils/dues.js`), the compact `YearStrip`, and a badge: "Will get the email" (fern, with the address), "Skipped, no email" (ochre, with "Call <phone> instead" as a `tel:` link, or "No phone on file"), or "Skipped, shares an address" (grey, "<name> gets the one copy"). Behind on dues is ordered furthest behind first, Everyone by name.
   - A note: "Members without an email are never sent a message."
@@ -43,7 +43,7 @@ Component `data()` (`views/CommunicationsView.vue:197-215`), not the Pinia store
 | Method | Does |
 |--------|------|
 | `loadData` | `api.getMembers`, `api.getCommunications` and `loadPayments` (STAFF and above for the first and last) in parallel |
-| `loadPayments`, `stripProps` | `api.getPayments` into `paidByMember`; the props of a recipient's `YearStrip` |
+| `loadPayments`, `stripProps` | `api.getPaidMonths(12)` into `paidByMember`; the props of a recipient's `YearStrip` |
 | `refreshMessages` (`:256`) | reloads only the history, after a send or a retry |
 | `validateForm`, `askToSend` (`:273`, `:286`) | checks the fields, stops at 0 recipients, otherwise opens the confirm dialog |
 | `sendMessage` (`:295`) | body from `buildCommunicationRequest` (`{ title, messageContent }`, the type is left to the server, so ANNOUNCEMENT); ALL -> `api.sendToAllMembers(payload)`; behind -> `api.sendToOverdueMembers(months, payload)`; one -> `api.sendToMember(memberId, payload)`. Success: closes the dialog, clears the form, toast "Sending started" ("N members will get it in the next few minutes. Check the delivery status below."), reloads the history |
@@ -77,7 +77,7 @@ Component `data()` (`views/CommunicationsView.vue:197-215`), not the Pinia store
 
 ## Gotchas
 - The dialog is a snapshot: sends deliver in the background, so `PENDING` rows do not update until the dialog is reopened.
-- The confirm count and the preview are computed from the loaded `members` list, so they match the server only while that list is fresh (the server recomputes overdue members on send). The strips need the payments list; without it the rows show no strip.
+- The confirm count and the preview are computed from the loaded `members` list, so they match the server only while that list is fresh (the server recomputes overdue members on send). The strips need the paid months; without them the rows show no strip.
 - The preview of Everyone lists every active member (a scrolling list); the strip is 12 small squares per row, so a large congregation renders that many rows.
 - "Delivered" is the word for SENT and DELIVERED alike: SENT means the mail left our server, which is as far as the app can tell.
 - Without a mail server every send ends in FAILED deliveries (the demo stack has none), which is how Retry is reached.

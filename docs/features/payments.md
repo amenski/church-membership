@@ -5,9 +5,9 @@ Monthly membership dues: staff record who paid what for which month (and, for hi
 ## Who can do what
 | Task | Minimum role | Screen / endpoint |
 |------|--------------|-------------------|
-| View payment history and figures | VOLUNTEER | `/payments` (`frontend/src/router/index.js:24-29`), `GET /api/payments` (`src/main/java/io/github/membertracker/infrastructure/PaymentController.java:75-80`) |
-| Read one page of payments, or which months each member paid | VOLUNTEER | `GET /api/payments/page`, `GET /api/payments/paid-months` (`PaymentController.java:82-102`); API only so far, for screens that should not download every payment: [payment-controller.md](payment-controller.md#paged-list-get-apipaymentspage) |
-| View one payment, or one member's payments | VOLUNTEER | `GET /api/payments/{id}` (`PaymentController.java:104-112`), `GET /api/payments/member/{memberId}` (`PaymentController.java:114-121`); API only, no screen uses them |
+| View payment history and figures | VOLUNTEER | `/payments` (`frontend/src/router/index.js:24-29`), `GET /api/payments/page`, `GET /api/payments/summary` (`src/main/java/io/github/membertracker/infrastructure/PaymentController.java`); the plain `GET /api/payments` list is no longer read by any screen |
+| Read one page of payments, or which months each member paid | VOLUNTEER | `GET /api/payments/page`, `GET /api/payments/paid-months` (`PaymentController.java:82-102`); used by Payments (the page) and by the year strips on Members, Overview, Messages, Households and the member picker (the months), so no screen downloads every payment: [payment-controller.md](payment-controller.md#paged-list-get-apipaymentspage) |
+| View one payment, or one member's payments | VOLUNTEER | `GET /api/payments/{id}` (`PaymentController.java:104-112`), `GET /api/payments/member/{memberId}` (`PaymentController.java:114-121`); the member page lists one member's payments, and the Record payment dialog reads them to prefill the amount; nothing reads one payment by id |
 | Record a payment | STAFF | "Record payment" button and dialog on `/payments` (`frontend/src/views/PaymentsView.vue:4`), `POST /api/payments` (`PaymentController.java:123-130`) |
 | Open a receipt, download it as PDF | VOLUNTEER | the receipt number ("R-000012") on a history row |
 | Export payments to CSV | STAFF | "Export CSV" button (`PaymentsView.vue:4`), `GET /api/payments/export` (`PaymentController.java:132-151`) |
@@ -17,9 +17,9 @@ A VOLUNTEER sees the page without the "Record payment" and "Export CSV" buttons;
 
 ## How it works
 ### View payment history
-1. Open Payments. The page loads all payments, and for STAFF and above all members (for the dialog's Member select), at once (`PaymentsView.vue:283-299`).
-2. Three figures are computed in the browser from the loaded payments (`paymentsSummary`, `frontend/src/utils/paymentHistory.js:12-26`) and shown as dollars: "This month" (payments whose billing month, the `period`, is the current month), "All time" and "Average payment". "This month" follows the billing month, the same as the Overview, so the two agree ([dashboard.md](dashboard.md)).
-3. The history is a ruled table from `md` up and a stacked list below it. Columns: Paid on, Member, Month covered ("Oct 2026"), Method (label), Amount (right aligned), Receipt. Newest first by paid-on date, then id (`sortPayments`, `paymentHistory.js:44-50`). Filters: search by member name and a Method select; "Clear filters" appears when one is set; a count line reads "32 payments" or "3 of 32 payments".
+1. Open Payments. The page loads one page of the history (`GET /api/payments/page`, 25 rows, newest first), the three figures (`GET /api/payments/summary`) and, for STAFF and above, the members (for the dialog's Member select), at once. Page, size, search, method and sort are in the URL (`?page=&size=&search=&method=&sort=`).
+2. Three figures come from the server (`GET /api/payments/summary`, one aggregate query) and are shown as dollars: "This month" (payments whose billing month, the `period`, is the current month), "All time" and "Average payment". "This month" follows the billing month, the same as the Overview, so the two agree ([dashboard.md](dashboard.md)).
+3. The history is a ruled table from `md` up and a stacked list below it. Columns: Paid on, Member, Month covered ("Oct 2026"), Method (label), Amount (right aligned), Receipt. Newest first by paid-on date, then id by default; the Paid on, Member, Month and Amount headers sort it on the server (`sort`). Filters: search by member name or receipt number (after 300 ms without typing) and a Method select; "Clear filters" appears when one is set; a count line reads "32 payments" or "3 of 32 payments", and the pager (25 rows a page, 10, 25, 50 or 100) pages the result.
 4. Empty states: "No payments yet. Record the first one." (with a button for STAFF and above); "No payments match these filters." with "Clear filters"; on a load failure a banner with "Try again".
 
 ### Record a payment
@@ -58,7 +58,7 @@ A VOLUNTEER sees the page without the "Record payment" and "Export CSV" buttons;
 - No way to correct a mistaken payment (wrong amount, wrong member). A void-with-audit-trail feature is future work: [payment-controller.md](payment-controller.md#gotchas), audit C7 in [../functionality-audit.md](../functionality-audit.md).
 - The missed-months counter is raised only by the monthly job through `Member.markMissedFor` (`Member.java:66-73`, [payment-reminder-scheduler.md](payment-reminder-scheduler.md)).
 - The unused `paymentStore` was removed in `chore(ui): remove dead frontend code`; the view calls `api.js` directly ([payments-view.md](payments-view.md#collaborators)).
-- The page loads and lists every payment in the browser (no paging, no date range); the figures are computed from that list. The server can now page and filter (`GET /api/payments/page`) and answer "who paid which months" (`/paid-months`), but no screen uses them yet; `GET /api/payments` stays for the exports and the screens that still need every payment.
+- The history is paged, searched, filtered and sorted by the server (no date range filter yet); the figures come from `GET /api/payments/summary`. `GET /api/payments` is still there but no screen reads it; the CSV export builds from the same repository call.
 - Amounts are `Double` and shown with a `$` sign (`Payment.java:30`, `frontend/src/utils/index.js:42`).
 - The receipt and the history read the nested member name and show "Unknown" if it is missing.
 - Member save and payment save are two separate calls in one use case (`RecordPaymentUseCase.java:59-60`); the use case class has no `@Transactional` (only `ChangePasswordUseCase` does), so a failure between the two saves could leave the member updated without a payment.

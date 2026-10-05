@@ -141,7 +141,7 @@ Utilities read them with `h-(--control-h)`, `min-h-(--row-h)`, `p-(--card-pad)`,
 
 `PageHead`, `SectionTitle`, `BaseButton`, `BaseInput`, `BaseSelect`, `BaseTextarea`, `BaseModal`,
 `ConfirmDialog`, `ActionMenu`, `AlertBanner`, `EmptyNote`, `StatusLabel`, `StatusBadge`, `YearStrip`, `TextButton`, `StatTile`, `CollectedChart`,
-`Pager`, `Icon`, `RuledList`/`RuledRow`, `BrandMark`, `RailLink`, `ToastHost`.
+`Pager`, `SortButton`, `Icon`, `RuledList`/`RuledRow`, `BrandMark`, `RailLink`, `ToastHost`.
 
 - `Icon` holds the whole icon set as inline SVG path data — no icon font, and only the glyphs named
   reach the bundle.
@@ -186,12 +186,12 @@ next month). A member who is not a MEMBER shows no red or amber.
 
 ## Pager
 
-`Pager` (`components/Pager.vue`, logic in `utils/paging.js`, URL state in `utils/queryPaging.js`) pages every list that can grow and is already in the browser: Members, the Households list, Sent messages and a message's deliveries. Payments will page on the server and keeps its own bar until then.
+`Pager` (`components/Pager.vue`, logic in `utils/paging.js`, URL state in `utils/queryPaging.js`) pages every list that can grow: Members, the Households list, Sent messages and a message's deliveries page a list that is already in the browser (the caller slices it with `pageSlice`); Payments pages on the server. The Pager only needs `page`, `pageSize` and `total`, so the two modes are the same component: in server mode the caller passes the server's `totalElements`, keeps the last total while the next page loads, and asks the server for the slice.
 - **Looks**: one `<nav aria-label="Pagination">` row. Left, "Showing 26 to 50 of 134" (`aria-live="polite"`). Right, a "Rows per page" select (10, 25, 50, 100; the label is visible) and a list of buttons: Previous, the numbered pages, Next. The numbers are at most 7 items with an ellipsis ("1 ... 4 5 6 ... 12"); the first and last page are always there; the current page is the filled teal button with `aria-current="page"`; Previous and Next are `disabled` at the ends. Buttons and the select are 44px high below `lg` and the control height (32px) from `lg`; select text is 16px below `lg`. Colours and borders are the segmented control's, no new token. The row wraps; below `sm` the numbers give way to "Page 4 of 12" between Previous and Next (seven 44px buttons do not fit a phone), and `compact` (a dialog, or a 22rem column) does the same at any width.
 - **Where it sits**: a table card's footer (`px-4 py-3`, above any "as of" line), under a stacked card list or a list outside a card (the caller passes the spacing as `class`; the pager draws none). It replaces a footer's "N of N" count line.
-- **Defaults**: 25 rows a page (Members), 10 (Households, sizes 10, 25 and 50; Sent messages), 25 inside a dialog. A list that is cut to a short head with a link (the Overview ledger, 10 rows) does not page.
-- **Hidden** when the whole list fits in the smallest size (10 rows or fewer); with more rows than that but no more than the current size it shows only the count line, with no select or buttons.
-- **URL**: a list on a screen keeps `?page=2&size=50` (left out at page 1 and the screen's default size) with `router.replace`, so Back and a refresh keep the place and other query keys (`?id=`, `?dues=`) stay. Changing a filter, search, sort or tab goes back to page 1; a page beyond the last becomes the last. A dialog's pager has no URL state.
+- **Defaults**: 25 rows a page (Members, Payments), 10 (Households, sizes 10, 25 and 50; Sent messages), 25 inside a dialog. A list that is cut to a short head with a link (the Overview ledger, 10 rows) does not page.
+- **Hidden** when the whole list fits in the smallest size (10 rows or fewer). With more rows than that the count line and the "Rows per page" select are always there, even when everything fits the current size (so a user who chose 100 can go back to 10, and is never trapped); the Previous, numbered and Next buttons only show when there is more than one page.
+- **URL**: a list on a screen keeps `?page=2&size=50` (left out at page 1 and the screen's default size) with `router.replace`, so Back and a refresh keep the place and other query keys (`?id=`, `?dues=`) stay. Changing a filter, search, sort or tab goes back to page 1; a page beyond the last becomes the last. A dialog's pager has no URL state. A **server-paged** screen (Payments) also keeps its search, filter and sort in the URL (`?page=&size=&search=&method=&sort=`, each left out at its default) through the screen's `pagingExtraQuery()`, sends them to the server, and: waits 300 ms after the last key before it searches, ignores an answer that is older than the newest request, keeps the old rows on screen dimmed (`opacity-60`, `aria-busy`) while the next page loads, and has an empty state, and an error state with Try again. Sortable column headers are `SortButton`s with `aria-sort` on the `th`.
 - **Emits** `update:page` and `update:pageSize`; the page and size are the caller's.
 
 ## Dialog and interaction rules
