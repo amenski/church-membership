@@ -37,10 +37,7 @@ Role view of the screen:
 - "This month's payments" and "Active members" are a quiet row below the list (`Dashboard.vue:42-51`). Amounts are formatted as US dollars with two decimals by the shared `formatMoney` (`frontend/src/utils/index.js:42`).
 
 ### Collected by month
-1. Under the stat tiles, a "Collected by month" section draws 12 horizontal bars, oldest month at the top, from `GET /api/dashboard/collected-by-month` (`Dashboard.vue`, `collectedRows`). The month is the billing month (`period`), like "This month".
-2. Each row shows the month, a bar scaled to the largest month, and the amount at the end of the row as text (US dollars, `formatMoney`). The bars are decorative (`aria-hidden`); the text carries the numbers for screen readers. The bar is the theme's teal; no chart library.
-3. The last row is the current month: a lighter bar and "in progress", because it is still being collected.
-4. The chart loads after the other four requests. If it fails, only this section shows an error with "Try again" (`loadCollected`); the rest of the overview stays. With no payments in the 12 months it says so and points to Payments.
+Not on the Overview any more: the 12-month chart (`GET /api/dashboard/collected-by-month`) is on Payments, see [payments-view.md](payments-view.md). "Collected in <month>" stays in the facts strip.
 
 ### Recent payments
 1. The server returns the 10 newest payments, newest payment date first, then newest id, limited in the query (`DashboardController.java:36`, `:63-68`).

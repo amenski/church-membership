@@ -141,7 +141,7 @@ Utilities read them with `h-(--control-h)`, `min-h-(--row-h)`, `p-(--card-pad)`,
 
 - `Icon` holds the whole icon set as inline SVG path data — no icon font, and only the glyphs named
   reach the bundle.
-- `CollectedChart` is the "Collected by month" card body (twelve horizontal bars, the current month paler): it loads `GET /api/dashboard/collected-by-month` itself and owns its error and empty states. The Overview and Payments both use it.
+- `CollectedChart` is the "Collected by month" card (it carries its own `CARD` frame): twelve vertical columns, oldest to newest, amount above and month below, the current month hatched with a teal outline and "in progress" in a line under the chart, a visually hidden table for screen readers, abbreviated amounts ("$1.3k") below `md` so 12 columns fit a phone. It loads `GET /api/dashboard/collected-by-month` itself and owns its error and empty states. Only Payments uses it; the Overview has no chart.
 - `StatTile` is the one place a large figure is styled; it sits inside a `<dl>`. `slim` shrinks it (20px figure, less padding) for the Overview's facts strip, whose tiles are Collected in <month>, Paid up (N of M members), Behind on dues (N members, X months unpaid) and Reminders (failed deliveries, with a Review link to Messages). Payments uses the same slim tiles for its three figures. There is no "expected" amount: the app has no dues amount to compare with.
 - `StatusLabel` is a coloured dot **plus a word**, never colour alone. Tones: `paid` (fern),
   `behind` (ochre), `danger` (clay), `muted` (neutral — inactive, transferred, deceased, archived).
@@ -161,7 +161,7 @@ existing ones, and state is carried by fill and border pattern as well as colour
 | not a member yet, or not owing dues | dashed `field` border | Not a member that month |
 | unpaid, no longer counted by the server | dashed `field` border | Unpaid, no longer counted |
 
-The Overview ledger lists every member who is behind or has not paid this month; the "Call this week" panel sits beside it. From the 2xl breakpoint (1400px) it is the "Dues by month" grid: `ledger` squares, a header row of month names, the legend (Paid, Missed, Due now, Not a member) at the card's top right and a footer row "Members who paid" (dues-paying members with a payment in each month). Below 1400px and on phones it keeps the compact strip.
+The Overview ledger lists every member who is behind or has not paid this month; from `xl` (1200px) the "Call this week" and "Latest payments" cards sit beside it and Recent activity under it, below `xl` all four cards are one full-width column. Every block on the Overview is a `CARD` (same border, radius and padding as the ledger). From the 2xl breakpoint (1400px) it is the "Dues by month" grid: `ledger` squares, a header row of month names, the legend (Paid, Missed, Due now, Not a member) at the card's top right and a footer row "Members who paid" (dues-paying members with a payment in each month). Below 1400px and on phones it keeps the compact strip.
 
 Sizes: `compact` 10x18px with a 2px gap (table rows), `large` 20x26px with a 3px gap and the month
 initial underneath (phone cards, initial is `aria-hidden`), `ledger` 28px squares with a 4px gap and
