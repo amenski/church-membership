@@ -10,7 +10,7 @@ Paths below are relative to `frontend/src/`.
 - Page head "Messages", lead "Email members and see what was delivered." From `lg` the head is the full-width band (title only, no lead) with the content in a padded area under it (see [../design.md](../design.md#layout)).
 - **New message card (STAFF and above only; a VOLUNTEER sees no form):**
   - "Send to": "Everyone", "Behind on dues" or "One member" (all three map onto the existing send endpoints; the backend needed no change).
-  - For behind: "At least this many months behind" (number, min 1, default 1). For one member: "Member" (select of ACTIVE members only, sorted by name).
+  - For behind: "At least this many months behind" (number, min 1, default 1). For one member: "Member" (the searchable `MemberPicker` over ACTIVE members only, see [payments-view.md](payments-view.md#record-payment-dialog); the paid months for its "Due this month" and "Paid up" badges are the ones loaded for the year strips, so without them a row only shows "N months behind"). The old " (no email)" suffix on the options is gone: choosing a member with no email shows "This member has no email address." under the field when sending.
   - "Subject" (up to 200 characters), "Message" (up to 5000, counter) with the helper line "Write {{member_name}} to insert each member's name."
   - The send button reads "Send to N people" ("Send to 1 person"; busy label "Sending..."). N is the number of recipients who will get an email. When anyone is skipped, a note beside it says so ("1 person has no email and will be skipped.", or "N people will be skipped." when a shared address is involved).
 - **Who gets this card**, beside the form from the `lg` breakpoint (two columns, the form wide and the card 28rem) and stacked below it on smaller screens (STAFF and above only). It is computed on the client from the members list and the payments list (`api.getPayments`, grouped by `paidMonthsByMember`, the same way the Members screen does); no new endpoint. A payments failure only hides the strips.
@@ -27,7 +27,7 @@ Component `data()` (`views/CommunicationsView.vue:197-215`), not the Pinia store
 
 | Field | Meaning |
 |-------|---------|
-| `members` | loaded for STAFF and above only: the "One member" select, the preview card and the recipient count |
+| `members` | loaded for STAFF and above only: the "One member" picker, the preview card and the recipient count |
 | `paidByMember`, `today` | memberId -> Set of paid months (null until loaded or when the payments call fails), and the current day, for the strips |
 | `communications` | rows of the history (list items carry `recipientCount` and `deliverySummary`, not the deliveries) |
 | `loaded`, `loadError` | first load finished, and failed |
@@ -60,7 +60,7 @@ Component `data()` (`views/CommunicationsView.vue:197-215`), not the Pinia store
 - `utils/audiencePreview.js` (`previewRecipients`, `sendableCount`, `previewSummary`, `skippedNote`, `skippedSentence`, `personLabel`; no test yet); it shares `emailKey` with `utils/audienceCount.js`, whose `audienceCount` the view no longer calls (its test remains)
 - `utils/messageHistory.js` (`attemptsLabel`, `typeLabel`, `deliverySummaryParts`, `deliveryStatus`, `countDeliveries`, `sortMessages`, `failedFirst`), with a test in `__tests__/utils/`
 - `utils/yearStrip.js` (`paidMonthsByMember`) and `utils/dues.js` (`monthsBehind`)
-- Components: `PageHead`, `SectionTitle`, `AlertBanner`, `BaseButton`, `BaseInput`, `BaseSelect`, `BaseTextarea`, `BaseModal`, `ConfirmDialog`, `StatusLabel`, `StatusBadge`, `YearStrip`, `TextButton`, `EmptyNote`
+- Components: `PageHead`, `SectionTitle`, `AlertBanner`, `BaseButton`, `BaseInput`, `BaseSelect`, `MemberPicker`, `BaseTextarea`, `BaseModal`, `ConfirmDialog`, `StatusLabel`, `StatusBadge`, `YearStrip`, `TextButton`, `EmptyNote`
 - `stores/authStore.js:39` `isStaff` (`hasRole('STAFF')`); `useAppStore().addNotification` for toasts
 - Backend: [communication-controller.md](communication-controller.md)
 

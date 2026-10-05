@@ -180,6 +180,10 @@ next month). A member who is not a MEMBER shows no red or amber.
 
 `muted` (the Archived view): paid squares are `field` at 50% opacity instead of teal; missed and due also fall back to the dashed edge, so nothing is teal, red or amber. No new token.
 
+## Member picker
+
+`MemberPicker` (`components/MemberPicker.vue`, search in `utils/memberSearch.js`) replaces a native select wherever a member is chosen from a long list (Record payment, Messages "One member"). It is a text input with `role="combobox"` and a listbox (ARIA 1.2: `aria-expanded`, `aria-controls`, `aria-activedescendant`), the same border, 16px text, focus ring and clay error line as `BaseInput`. The input is 44px high below `lg` and the 32px control height from `lg`; result rows are at least 44px below `lg`. The list shows at most 8 rows, each the name, a muted line (household, phone) and a `StatusBadge` for the dues state: "N months behind" clay, "Due this month" ochre, "Paid up" fern, so the word always carries the meaning. The chosen member shows as the read-only input value with a clear button (44px below `lg`). The list is fixed under the input, in the dialog element when there is one (so `aria-modal` does not hide it and the scrolling dialog body does not clip it), and flips above the input when there is more room there. Arrow keys, Home, End, Enter and Escape follow the combobox pattern; Escape closes only the list when it is open. No new tokens.
+
 ## Dialog and interaction rules
 
 - Every dialog is a `BaseModal`: a 18px semibold title, a close button, one primary action in the
