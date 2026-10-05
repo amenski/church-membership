@@ -45,6 +45,8 @@ Open **http://localhost:3000**. Vite proxies `/api/*` to the backend (`frontend/
 | `cd frontend && npm run build` | Frontend production build into `frontend/dist` |
 | `cd frontend && npm run preview` | Serve the frontend build locally |
 
+`npm test` mounts every component with a shared setup file (`frontend/src/__tests__/setup.js`) that installs the **English** catalogue. The app itself defaults to Amharic, so a suite that mounts without it would assert Amharic labels; a test that calls `vi.resetModules()` (the router guard does) has to pin the locale again itself.
+
 ### Coverage
 
 | Command | Report |

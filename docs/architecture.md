@@ -80,7 +80,9 @@ public Payment invoke(Long memberId, Double amount, PaymentMethod paymentMethod,
 - **Use cases:** integration tests covering the whole workflow.
 - **Controllers:** MockMvc tests for every role against every endpoint group (`RoleAuthorizationTest`, every role against every endpoint group).
 
-Backend: 748 tests, 1 skipped (`ApplicationTests`, disabled), and frontend: 326 tests, as of the last full run on 5 October 2026 (`./gradlew test`, `npm test` in `frontend/`). `RoleAuthorizationTest` covers every role against every endpoint group.
+Backend: 821 tests, 1 skipped (`ApplicationTests`, disabled), and frontend: 335 tests in 33 files, as of the last full run on 5 October 2026 (`./gradlew test`, `npm test` in `frontend/`). `RoleAuthorizationTest` covers every role against every endpoint group.
+
+Vitest mounts every component with a shared `src/__tests__/setup.js` that installs the **English** catalogue (`config.global.plugins`), and pins the app's own instance to `en` too — the app defaults to Amharic, so without it every suite that asserts a label would assert Amharic. A test that calls `vi.resetModules()` (the router guard does) throws that instance away and must re-pin it.
 
 ## Validation and errors
 
@@ -111,6 +113,7 @@ frontend/src/
 - Styling is Tailwind utilities written in the templates (no class prefix, no `<style>` blocks); tokens and base rules are in `assets/styles/tailwind.css`, shared class strings in `ui/classes.js`, shared patterns are components. See [design.md](design.md).
 - Notifications use `appStore.addNotification({ message, type, duration })`.
 - User-visible words live in `locales/`, never in a component or a util: see [features/i18n.md](features/i18n.md).
+- `stores/authStore.js` and `services/api.js` import each other (`api.js` uses both stores, the auth store calls the service), so `stores/index.js` and `authStore.js` land in different chunks and Rollup prints a circular-dependency warning at build time. It is long-standing and harmless as it stands — every use is inside a function, nothing at module scope — but a new module-level read across that edge would break, and the warning is the only sign.
 
 ## Decisions
 
@@ -140,6 +143,7 @@ frontend/src/
 | 2026-10 | YearMonth is stored as YYYY-MM text through an attribute converter | The column is VARCHAR(7); without a converter Hibernate serialised the value as binary and failed on MySQL | In use |
 | 2026-10 | CSV exports are built in memory and returned as a plain response, UTF-8 with BOM | Streaming gained nothing at this size and hung behind the dev proxy; the BOM makes Excel read Amharic names | In use |
 | 2026-10 | Audit entries are written best-effort inside the use cases through a CurrentActor port | A failing audit write must not block the action; the domain stays free of Spring Security | In use |
+| 2026-10 | The UI language is a column on the user (`users.language`, migration `015`) saved through its own `PUT /api/users/me/language`, not through the profile PUT | The profile PUT reads an absent `phone` or `bio` as "clear this", and the sign-in response carries only the email and role, so a client sending a language through it would send nulls for both and wipe them | In use. Amharic is the default; every word lives in `frontend/src/locales/`. See [features/i18n.md](features/i18n.md) |
 | 2026-10 | Membership status (MEMBER, INACTIVE, DECEASED, TRANSFERRED, ARCHIVED) is stored on the member; the old `active` flag and column are gone (migration `014`, step 12) | Dues, reminders and messages need more than on/off; the migration must stay reversible | In use |
 | 2026-10 | Members are read by status: `findDuesPaying`/`countDuesPaying` (status MEMBER) drive dues, reminders, messages and payments; every list and count except `GET /api/members?archived=true` (ADMIN) hides ARCHIVED | One rule table (`MemberStatus`) instead of `active` checks scattered around | In use |
 | 2026-10 | Members are archived, not deleted; payments and deliveries use ON DELETE RESTRICT; a permanent delete is an admin API that refuses when history exists | A hard delete erased payment history (audit C9) | In use |
