@@ -7,7 +7,7 @@ Members screen ("Members": "Everyone on the register: who is paid up and who is 
 ## Who sees what
 | Role | Sees |
 |------|------|
-| VOLUNTEER | Read-only list, filters, no "Add member" / "Export CSV" buttons, no actions column |
+| VOLUNTEER | Read-only list, filters, no "Add member" / "Export CSV" buttons (header, or the phone count line), no actions column |
 | STAFF | Plus "Add member", "Export CSV", row checkboxes with the selection bar (Send message, Export selected, Mark inactive), and a More menu per row: Edit, Mark inactive/Mark active, Change status... |
 | ADMIN | Plus Archive in the row menu and in the selection bar, the "Archived" segment, and the Archived view with Restore and Delete for good |
 
@@ -21,7 +21,8 @@ Options API component; local `data()`, not the Pinia store.
 | `members` | Full list from `GET /members`; `[]` on load error |
 | `loaded`, `loadError` | First load finished; the last load failed (shows an `AlertBanner` with "Try again") |
 | `filters` | `search`, `status` (ALL, MEMBER, INACTIVE, DECEASED, TRANSFERRED, ARCHIVED; set by the segmented control), `paymentStatus` (ALL/CURRENT/OVERDUE, shown as "Dues": All / Paid up / Behind), `joinedFrom`, `joinedTo` |
-| `datesOpen` | Below md the date pair sits under a "More filters" disclosure (`aria-expanded`); from md up it is always visible |
+| `filtersOpen` | Below md Dues, Sort by and the date pair sit under one "Filters" disclosure button (`aria-expanded`, `aria-controls="filter-panel"`), closed by default; from md up they are always in the row |
+| `panelFilterCount` | How many of Dues and the two dates are set; the phone button reads "Filters (2)" and turns teal when it is above 0. Status and search stay in view, so they are not counted; Sort by is not a filter |
 | `sort` | `{key, direction}`; starts at `name` ascending. Set by a column header or by the "Sort by" select (see Client-side filter and sort) |
 | `selectedIds`, `bulkAction`, `bulkBusy` | The ticked members (by id), which bulk confirm dialog is open (`inactive`, `archive`, or null), and a bulk run in progress. See Selection and bulk actions |
 | `formOpen`, `editingMember`, `focusStatus` | Add/edit dialog, which is `MemberFormDialog` (`frontend/src/components/MemberFormDialog.vue`, shared with [the member page](member-detail-view.md)): it owns the form, validation, household list and save; `editingMember` null = add mode (the Status select then offers only Member and Inactive, as the server enforces). The list reloads on its `saved` event |
@@ -43,7 +44,15 @@ All in `frontend/src/utils/memberFilters.js`; all filters are ANDed.
 | Sort by select | In the filter row on every width (phones have no headers): Name (ascending), Most behind (`consecutiveMonthsMissed`, descending, so the most behind first; members who are not MEMBER last), Joined (`joinDate`, descending, newest first). It shares `sort` with the headers, so both stay in step. Last paid, Phone and Household are not sortable |
 
 ### Status segmented control
-A `role="group"` "Filter by status" of buttons with `aria-pressed`, above the other filters: All, Member, Inactive, Transferred, Deceased and, for ADMIN only, Archived. Each shows its count, from the loaded `members` (`statusCounts` in `memberFilters.js`); "All" leaves out any member whose status is ARCHIVED, and the counts ignore the other filters. The Archived count shows only once the archived list has loaded (it loads when the segment is first chosen), and choosing it shows the Archived view. On a phone the row scrolls sideways and each button is 44px high. Search (`?search=`), Dues, Sort by and the date filters sit beside it unchanged.
+A `role="group"` "Filter by status" of buttons with `aria-pressed`, above the other filters: All, Member, Inactive, Transferred, Deceased and, for ADMIN only, Archived. Each shows its count, from the loaded `members` (`statusCounts` in `memberFilters.js`); "All" leaves out any member whose status is ARCHIVED, and the counts ignore the other filters. The Archived count shows only once the archived list has loaded (it loads when the segment is first chosen), and choosing it shows the Archived view. On a phone the row scrolls sideways and each button is 44px high. Search (`?search=`), Dues, Sort by and the date filters sit beside it unchanged from md up.
+
+### Phone header and filters (below md)
+Sized to the phone board (title row, search, one chips row, then cards), so the first member card is on the first screen at 390x844:
+- Header: `PageHead compact`: no subtitle, tighter spacing, the title and a 44px "Add member" (STAFF+) on one row. "Export CSV" is not in the header here.
+- Order: the status control, then the search (44px high, label visually hidden, placeholder kept) with the "Filters" button (44px) beside it. The panel under them (`#filter-panel`, a two-column grid) holds Dues, Sort by, Joined from and Joined to.
+- "Clear filters" shows whenever any filter is set (search and status included), open or closed, as a 44px text button under the form.
+- "Export CSV" (STAFF+) is a text button at the right of the count line ("N members") above the cards; same `exportMembers`, so it exports what is filtered. From md up that line has no button and Export CSV stays in the header.
+- The "Select all N shown" row, the card checkboxes and the `aria-live` count are unchanged.
 
 ## Table and list
 - The name (table and phone card, not the Archived view) links to the member's own page, `/members/:id` ([member-detail-view](member-detail-view.md)).

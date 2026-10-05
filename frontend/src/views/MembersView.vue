@@ -1,11 +1,12 @@
 <template>
   <div>
-    <PageHead title="Members" lead="Everyone on the register: who is paid up and who is behind.">
+    <PageHead title="Members" lead="Everyone on the register: who is paid up and who is behind." compact>
       <template v-if="authStore.isStaff" #actions>
-        <BaseButton variant="secondary" @click="exportMembers">
+        <!-- below md Export CSV sits in the count line under the filters -->
+        <BaseButton variant="secondary" class="max-md:hidden" @click="exportMembers">
           <Icon name="download" :size="16" class="mr-1.5" />Export CSV
         </BaseButton>
-        <BaseButton @click="showAddModal">
+        <BaseButton class="max-md:min-h-11" @click="showAddModal">
           <Icon name="plus" :size="16" class="mr-1.5" />Add member
         </BaseButton>
       </template>
@@ -18,8 +19,9 @@
       </div>
     </AlertBanner>
 
-    <!-- Filters: one compact row from md up; the date pair folds away on a phone -->
-    <form v-if="members.length || showingArchived" class="mb-6 grid grid-cols-2 gap-3 md:flex md:flex-wrap md:items-end" role="search" aria-label="Filter members" @submit.prevent>
+    <!-- Filters: one compact row from md up. On a phone: status, then search beside one "Filters" button
+         that opens Dues, Sort by and the date pair; closed until asked for -->
+    <form v-if="members.length || showingArchived" class="mb-3 grid grid-cols-[minmax(0,1fr)_auto] gap-3 md:mb-6 md:flex md:flex-wrap md:items-end" role="search" aria-label="Filter members" @submit.prevent>
       <div class="col-span-2 overflow-x-auto md:basis-full md:overflow-visible">
         <div role="group" aria-label="Filter by status" class="inline-flex">
           <button
@@ -34,35 +36,35 @@
           </button>
         </div>
       </div>
-      <div class="col-span-2 md:col-span-1 md:min-w-60 md:flex-1">
-        <label for="filter-search" :class="LABEL">Search</label>
-        <input id="filter-search" v-model="filters.search" type="search" placeholder="Search name, email or phone" autocomplete="off" :class="CONTROL">
-      </div>
-      <div class="md:w-40">
-        <label for="filter-dues" :class="LABEL">Dues</label>
-        <select id="filter-dues" v-model="filters.paymentStatus" :class="CONTROL">
-          <option value="ALL">All</option>
-          <option value="CURRENT">Paid up</option>
-          <option value="OVERDUE">Behind</option>
-        </select>
-      </div>
-      <div class="md:w-40">
-        <label for="filter-sort" :class="LABEL">Sort by</label>
-        <select id="filter-sort" :value="sort.key" :class="CONTROL" @change="setSortOption($event.target.value)">
-          <option v-for="option in SORT_OPTIONS" :key="option.key" :value="option.key">{{ option.label }}</option>
-        </select>
+      <div class="md:min-w-60 md:flex-1">
+        <label for="filter-search" :class="[LABEL, 'max-md:sr-only']">Search</label>
+        <input id="filter-search" v-model="filters.search" type="search" placeholder="Search name, email or phone" autocomplete="off" :class="[CONTROL, 'max-md:h-11']">
       </div>
       <button
         type="button"
-        class="col-span-2 flex min-h-11 cursor-pointer items-center gap-2 border-0 bg-transparent p-0 text-left font-medium text-teal hover:text-teal-hover md:hidden"
-        aria-controls="filter-dates"
-        :aria-expanded="datesOpen ? 'true' : 'false'"
-        @click="datesOpen = !datesOpen"
+        :class="['flex h-11 cursor-pointer items-center gap-1.5 rounded-sm border px-3 text-base font-medium whitespace-nowrap md:hidden', panelFilterCount ? 'border-teal bg-teal-tint text-teal' : 'border-field bg-paper text-ink hover:border-teal hover:bg-teal-tint']"
+        aria-controls="filter-panel"
+        :aria-expanded="filtersOpen ? 'true' : 'false'"
+        @click="filtersOpen = !filtersOpen"
       >
-        <Icon :name="datesOpen ? 'chevron-up' : 'chevron-down'" :size="16" />
-        {{ datesOpen ? 'Fewer filters' : 'More filters' }}<template v-if="!datesOpen && dateFilterCount"> ({{ dateFilterCount }} set)</template>
+        Filters<template v-if="panelFilterCount"> ({{ panelFilterCount }})</template>
+        <Icon :name="filtersOpen ? 'chevron-up' : 'chevron-down'" :size="16" />
       </button>
-      <div id="filter-dates" :class="datesOpen ? 'contents' : 'hidden md:contents'">
+      <div id="filter-panel" :class="filtersOpen ? 'col-span-2 grid grid-cols-2 gap-3 md:contents' : 'hidden md:contents'">
+        <div class="md:w-40">
+          <label for="filter-dues" :class="LABEL">Dues</label>
+          <select id="filter-dues" v-model="filters.paymentStatus" :class="CONTROL">
+            <option value="ALL">All</option>
+            <option value="CURRENT">Paid up</option>
+            <option value="OVERDUE">Behind</option>
+          </select>
+        </div>
+        <div class="md:w-40">
+          <label for="filter-sort" :class="LABEL">Sort by</label>
+          <select id="filter-sort" :value="sort.key" :class="CONTROL" @change="setSortOption($event.target.value)">
+            <option v-for="option in SORT_OPTIONS" :key="option.key" :value="option.key">{{ option.label }}</option>
+          </select>
+        </div>
         <div class="md:w-40">
           <label for="filter-from" :class="LABEL">Joined from</label>
           <input id="filter-from" v-model="filters.joinedFrom" type="date" :class="CONTROL">
@@ -72,7 +74,7 @@
           <input id="filter-to" v-model="filters.joinedTo" type="date" :class="CONTROL">
         </div>
       </div>
-      <TextButton v-if="hasActiveFilters && filteredMembers.length" class="col-span-2 text-left md:col-span-1 md:py-1.5" @click="clearFilters">Clear filters</TextButton>
+      <TextButton v-if="hasActiveFilters && filteredMembers.length" class="col-span-2 text-left max-md:min-h-11 md:col-span-1 md:py-1.5" @click="clearFilters">Clear filters</TextButton>
     </form>
 
     <!-- Empty states -->
@@ -91,9 +93,13 @@
     </div>
 
     <template v-if="filteredMembers.length">
-      <p class="mt-0 mb-2 text-sm text-muted" aria-live="polite">
-        {{ countText }}
-      </p>
+      <div class="mb-2 flex items-center justify-between gap-3">
+        <p class="m-0 text-sm text-muted" aria-live="polite">
+          {{ countText }}
+        </p>
+        <!-- phones only: on md and up Export CSV is in the page header -->
+        <TextButton v-if="authStore.isStaff" class="-my-2.5 min-h-11 md:hidden" @click="exportMembers">Export CSV</TextButton>
+      </div>
 
       <!-- Selection (STAFF+): the live region speaks the count, the bar holds what can be done with those members -->
       <p class="sr-only" role="status" aria-live="polite">{{ selectionAnnouncement }}</p>
@@ -380,7 +386,7 @@ export default {
       loaded: false,
       loadError: false,
       filters: { ...EMPTY_FILTERS },
-      datesOpen: false,
+      filtersOpen: false,
       sort: { key: 'name', direction: 'asc' },
       selectedIds: [],
       bulkAction: null,
@@ -473,8 +479,10 @@ export default {
       const f = this.filters
       return !!f.search.trim() || f.status !== 'ALL' || f.paymentStatus !== 'ALL' || !!f.joinedFrom || !!f.joinedTo
     },
-    dateFilterCount() {
-      return (this.filters.joinedFrom ? 1 : 0) + (this.filters.joinedTo ? 1 : 0)
+    // what the phone "Filters" button holds that is set: Dues and the two dates (status and search stay in view)
+    panelFilterCount() {
+      const f = this.filters
+      return (f.paymentStatus !== 'ALL' ? 1 : 0) + (f.joinedFrom ? 1 : 0) + (f.joinedTo ? 1 : 0)
     },
     columns() {
       return [
