@@ -21,4 +21,5 @@
     <include file="db/sql/012.create-person-household.sql"/>
     <include file="db/sql/013.backfill-person-from-member.sql"/>
     <include file="db/sql/014.drop-legacy-member-columns.sql"/>
+    <include file="db/sql/015.add-user-language.sql"/>
 </databaseChangeLog>

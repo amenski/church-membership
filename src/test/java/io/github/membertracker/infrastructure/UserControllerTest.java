@@ -12,6 +12,7 @@ import io.github.membertracker.usecase.ChangePasswordUseCase;
 import io.github.membertracker.utils.CookieUtils;
 import io.github.membertracker.usecase.GetCurrentUserUseCase;
 import io.github.membertracker.usecase.LoadUserByUsernameUseCase;
+import io.github.membertracker.usecase.UpdateUserLanguageUseCase;
 import io.github.membertracker.usecase.UpdateUserProfileUseCase;
 import io.github.membertracker.usecase.RecordActivityUseCase;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,6 +54,7 @@ class UserControllerTest {
     @MockitoBean private RecordActivityUseCase recordActivityUseCase;
     @MockitoBean private GetCurrentUserUseCase getCurrentUserUseCase;
     @MockitoBean private UpdateUserProfileUseCase updateUserProfileUseCase;
+    @MockitoBean private UpdateUserLanguageUseCase updateUserLanguageUseCase;
     @MockitoBean private ChangePasswordUseCase changePasswordUseCase;
 
     private User principal;
@@ -198,12 +200,48 @@ class UserControllerTest {
     @Test
     void meGives200() throws Exception {
         when(getCurrentUserUseCase.execute("member@example.com")).thenReturn(
-            new UserResponseDto(7L, "member@example.com", true, "MEMBER", "Ada", "Lovelace", null, null));
+            new UserResponseDto(7L, "member@example.com", true, "MEMBER", "Ada", "Lovelace", null, null, "am"));
 
         mockMvc.perform(get("/api/users/me").with(user(principal)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.email").value("member@example.com"))
-            .andExpect(jsonPath("$.role").value("MEMBER"));
+            .andExpect(jsonPath("$.role").value("MEMBER"))
+            .andExpect(jsonPath("$.language").value("am"));
+    }
+
+    @Test
+    void savingALanguageGives200WithTheProfileBack() throws Exception {
+        User saved = new User(Email.of("member@example.com"), "irrelevant");
+        saved.setId(7L);
+        saved.setLanguage("en");
+        when(updateUserLanguageUseCase.execute(7L, "en")).thenReturn(saved);
+
+        mockMvc.perform(put("/api/users/me/language").with(csrf()).with(user(principal))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"language\":\"en\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.language").value("en"));
+
+        verify(updateUserLanguageUseCase).execute(7L, "en");
+    }
+
+    @Test
+    void aLanguageTheUiDoesNotShipIsRejectedBeforeTheUseCase() throws Exception {
+        mockMvc.perform(put("/api/users/me/language").with(csrf()).with(user(principal))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"language\":\"fr\"}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.errors[?(@.field == 'language')]").isNotEmpty());
+
+        verifyNoInteractions(updateUserLanguageUseCase);
+    }
+
+    @Test
+    void savingALanguageWithoutSignInGives401Problem() throws Exception {
+        mockMvc.perform(put("/api/users/me/language").with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content("{\"language\":\"en\"}"))
+            .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(updateUserLanguageUseCase);
     }
 
     @Test

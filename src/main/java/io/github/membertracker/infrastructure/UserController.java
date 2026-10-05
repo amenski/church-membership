@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.github.membertracker.infrastructure.dto.ChangePasswordRequest;
 import io.github.membertracker.infrastructure.dto.UpdateUserProfileRequest;
+import io.github.membertracker.infrastructure.dto.UpdateUserLanguageRequest;
 import io.github.membertracker.infrastructure.dto.UserResponseDto;
 import io.github.membertracker.infrastructure.handler.ProblemDetails;
 import io.github.membertracker.infrastructure.config.AuthProperties;
@@ -14,6 +15,7 @@ import io.github.membertracker.utils.CookieUtils;
 import io.github.membertracker.utils.JwtUtils;
 import io.github.membertracker.usecase.GetCurrentUserUseCase;
 import io.github.membertracker.usecase.RecordActivityUseCase;
+import io.github.membertracker.usecase.UpdateUserLanguageUseCase;
 import io.github.membertracker.usecase.UpdateUserProfileUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
@@ -36,6 +38,7 @@ public class UserController {
 
     private final GetCurrentUserUseCase getCurrentUserUseCase;
     private final UpdateUserProfileUseCase updateUserProfileUseCase;
+    private final UpdateUserLanguageUseCase updateUserLanguageUseCase;
     private final ChangePasswordUseCase changePasswordUseCase;
     private final CookieUtils cookieUtils;
     private final AuthProperties authProperties;
@@ -43,11 +46,13 @@ public class UserController {
 
     public UserController(GetCurrentUserUseCase getCurrentUserUseCase,
                          UpdateUserProfileUseCase updateUserProfileUseCase,
+                         UpdateUserLanguageUseCase updateUserLanguageUseCase,
                          ChangePasswordUseCase changePasswordUseCase,
                          CookieUtils cookieUtils, AuthProperties authProperties,
                          RecordActivityUseCase recordActivityUseCase) {
         this.getCurrentUserUseCase = getCurrentUserUseCase;
         this.updateUserProfileUseCase = updateUserProfileUseCase;
+        this.updateUserLanguageUseCase = updateUserLanguageUseCase;
         this.changePasswordUseCase = changePasswordUseCase;
         this.cookieUtils = cookieUtils;
         this.authProperties = authProperties;
@@ -97,7 +102,35 @@ public class UserController {
             updatedUser.getFirstName(),
             updatedUser.getLastName(),
             updatedUser.getPhone(),
-            updatedUser.getBio()
+            updatedUser.getBio(),
+            updatedUser.getLanguage()
+        ));
+    }
+
+    @PutMapping("/me/language")
+    @Operation(summary = "Save the UI language on the account (any signed-in user)")
+    public ResponseEntity<?> updateLanguage(@Valid @RequestBody UpdateUserLanguageRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated() ||
+            authentication.getPrincipal() instanceof String) {
+            return unauthorized();
+        }
+
+        User userDetails = (User) authentication.getPrincipal();
+
+        User updatedUser = updateUserLanguageUseCase.execute(userDetails.getId(), request.getLanguage());
+
+        return ResponseEntity.ok(new UserResponseDto(
+            updatedUser.getId(),
+            updatedUser.getEmailValue(),
+            updatedUser.isEnabled(),
+            updatedUser.getRole().name(),
+            updatedUser.getFirstName(),
+            updatedUser.getLastName(),
+            updatedUser.getPhone(),
+            updatedUser.getBio(),
+            updatedUser.getLanguage()
         ));
     }
 

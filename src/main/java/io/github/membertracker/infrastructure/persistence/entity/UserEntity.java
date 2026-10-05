@@ -58,6 +58,10 @@ public class UserEntity {
     @Column(length = 500)
     private String bio;
 
+    /** The UI language the user chose: 'am' or 'en'. Not null; the app's default is the column default. */
+    @Column(nullable = false, length = 5)
+    private String language = "am";
+
     public UserEntity() {
     }
 
@@ -202,5 +206,13 @@ public class UserEntity {
 
     public void setBio(String bio) {
         this.bio = bio;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
     }
 }

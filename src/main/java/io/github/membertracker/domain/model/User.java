@@ -41,6 +41,12 @@ public class User implements UserDetails {
     private String phone;
     private String bio;
 
+    /** The UI language this account reads: Amharic or English. Never null. */
+    private String language = LANGUAGE_AMHARIC;
+
+    public static final String LANGUAGE_AMHARIC = "am";
+    public static final String LANGUAGE_ENGLISH = "en";
+
     // Password rule: 8 characters minimum, 72 UTF-8 bytes maximum (BCrypt's limit)
     private static final int PASSWORD_MIN_LENGTH = 8;
     private static final int PASSWORD_MAX_BYTES = 72;
@@ -202,7 +208,37 @@ public class User implements UserDetails {
         this.bio = bio;
     }
 
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language != null ? language : LANGUAGE_AMHARIC;
+    }
+
     // Business Logic Methods
+
+    /**
+     * The language this account reads. Only the two the UI ships are accepted; anything else is left
+     * as it was, so a stray value from an old client cannot blank out the choice.
+     * @return true when the language changed
+     */
+    public boolean changeLanguage(String language) {
+        if (language == null || !isSupportedLanguage(language)) {
+            return false;
+        }
+        if (language.equals(this.language)) {
+            return false;
+        }
+        this.language = language;
+        this.updatedAt = LocalDateTime.now();
+        return true;
+    }
+
+    /** The languages the UI ships. Keep in step with frontend/src/i18n.js SUPPORTED_LOCALES. */
+    public static boolean isSupportedLanguage(String language) {
+        return LANGUAGE_AMHARIC.equals(language) || LANGUAGE_ENGLISH.equals(language);
+    }
 
     /**
      * Validates if a password meets the strength requirements.

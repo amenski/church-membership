@@ -90,6 +90,7 @@ public class UserDbRepository implements UserRepository {
         user.setLastName(entity.getLastName());
         user.setPhone(entity.getPhone());
         user.setBio(entity.getBio());
+        user.setLanguage(entity.getLanguage());
         return user;
     }
 
@@ -111,6 +112,7 @@ public class UserDbRepository implements UserRepository {
         entity.setLastName(user.getLastName());
         entity.setPhone(user.getPhone());
         entity.setBio(user.getBio());
+        entity.setLanguage(user.getLanguage());
         return entity;
     }
 }

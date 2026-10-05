@@ -9,11 +9,12 @@ public class UserResponseDto {
     private String lastName;
     private String phone;
     private String bio;
+    private String language;
 
     // Constructors
     public UserResponseDto() {}
 
-    public UserResponseDto(Long id, String email, boolean enabled, String role, String firstName, String lastName, String phone, String bio) {
+    public UserResponseDto(Long id, String email, boolean enabled, String role, String firstName, String lastName, String phone, String bio, String language) {
         this.id = id;
         this.email = email;
         this.enabled = enabled;
@@ -22,6 +23,7 @@ public class UserResponseDto {
         this.lastName = lastName;
         this.phone = phone;
         this.bio = bio;
+        this.language = language;
     }
 
     // Getters and Setters
@@ -87,5 +89,13 @@ public class UserResponseDto {
 
     public void setBio(String bio) {
         this.bio = bio;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
     }
 }

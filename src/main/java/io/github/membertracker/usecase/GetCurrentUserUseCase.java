@@ -25,7 +25,8 @@ public class GetCurrentUserUseCase {
                 user.getFirstName(),
                 user.getLastName(),
                 user.getPhone(),
-                user.getBio()
+                user.getBio(),
+                user.getLanguage()
         );
     }
 }

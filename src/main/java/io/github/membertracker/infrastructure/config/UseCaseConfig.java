@@ -58,6 +58,7 @@ import io.github.membertracker.usecase.SendCommunicationToAllMembersUseCase;
 import io.github.membertracker.usecase.SendCommunicationToMembersUseCase;
 import io.github.membertracker.usecase.SendPaymentRemindersUseCase;
 import io.github.membertracker.usecase.UpdateMissingPaymentCountersUseCase;
+import io.github.membertracker.usecase.UpdateUserLanguageUseCase;
 import io.github.membertracker.usecase.UpdateUserProfileUseCase;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -96,6 +97,11 @@ public class UseCaseConfig {
     @Bean
     public UpdateUserProfileUseCase updateUserProfileUseCase(UserRepository userRepository) {
         return new UpdateUserProfileUseCase(userRepository);
+    }
+
+    @Bean
+    public UpdateUserLanguageUseCase updateUserLanguageUseCase(UserRepository userRepository) {
+        return new UpdateUserLanguageUseCase(userRepository);
     }
 
     @Bean
