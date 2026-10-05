@@ -1,6 +1,11 @@
 <template>
-  <div>
-    <PageHead title="Activity" lead="Who changed or exported what, newest first. Only administrators can see this." />
+  <!-- From lg the header is a full-width band, so the page's own padding (App.vue) is dropped here and the content area below carries it -->
+  <div class="lg:max-w-none! lg:p-0!">
+    <PageHead title="Activity" lead="Who changed or exported what, newest first. Only administrators can see this." band />
+
+    <div class="lg:mx-auto lg:max-w-[1400px] lg:px-8 lg:pt-6 lg:pb-10">
+    <!-- the band has no lead, so from lg the line sits here, as on the board -->
+    <p class="mt-0 mb-4 hidden text-sm text-muted lg:block">Who changed or exported what, newest first. Only administrators can see this.</p>
 
     <AlertBanner v-if="loadError">
       <div class="flex flex-wrap items-center justify-between gap-3">
@@ -12,10 +17,10 @@
     <p v-if="!loaded" class="m-0 py-4 text-(length:--text-body) text-muted" role="status">Loading activity...</p>
 
     <!-- Filter -->
-    <form v-if="entries.length" class="mb-6 grid grid-cols-1 gap-3 md:flex md:flex-wrap md:items-end" role="search" aria-label="Filter activity" @submit.prevent>
+    <form v-if="entries.length" class="mb-6 grid grid-cols-1 gap-3 md:flex md:flex-wrap md:items-end lg:mb-4 lg:items-center lg:gap-x-4" role="search" aria-label="Filter activity" @submit.prevent>
       <div class="md:w-64">
-        <label for="filter-type" :class="LABEL">Show</label>
-        <select id="filter-type" v-model="type" :class="CONTROL">
+        <label for="filter-type" :class="[LABEL, 'lg:sr-only']">Show</label>
+        <select id="filter-type" v-model="type" :class="[CONTROL, 'lg:text-sm']">
           <option value="ALL">All activity</option>
           <option v-for="item in ACTIVITY_TYPES" :key="item.value" :value="item.value">{{ item.label }}</option>
         </select>
@@ -66,6 +71,7 @@
       </BaseButton>
       <p v-else-if="entries.length >= MAX_LIMIT" ref="endNote" tabindex="-1" class="m-0 text-sm text-muted">This is the most the screen shows: the latest {{ MAX_LIMIT }} entries.</p>
       <p v-else ref="endNote" tabindex="-1" class="m-0 text-sm text-muted">That is everything recorded so far.</p>
+    </div>
     </div>
   </div>
 </template>
