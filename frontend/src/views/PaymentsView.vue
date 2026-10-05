@@ -26,7 +26,7 @@
     </dl>
 
     <!-- The last twelve months, the same chart as the Overview -->
-    <CollectedChart v-if="payments.length" ref="chart" :class="[CARD, 'mb-6']" />
+    <CollectedChart v-if="payments.length" ref="chart" class="mb-6" />
 
     <!-- Filters -->
     <form v-if="payments.length" class="mb-6 grid grid-cols-2 gap-3 md:flex md:flex-wrap md:items-end" role="search" aria-label="Filter payments" @submit.prevent>
@@ -171,7 +171,7 @@ import ReceiptDialog from '@/components/ReceiptDialog.vue'
 import TextButton from '@/components/TextButton.vue'
 import YearStrip from '@/components/YearStrip.vue'
 
-import { CARD, CONTROL, LABEL, TABLE, TABLE_TH as TH, TABLE_TD as TD } from '@/ui/classes'
+import { CONTROL, LABEL, TABLE, TABLE_TH as TH, TABLE_TD as TD } from '@/ui/classes'
 
 const NOTES_MAX = 500
 const EMPTY_ERRORS = { memberId: '', period: '', paymentDate: '', amount: '', paymentMethod: '', notes: '' }
@@ -202,7 +202,6 @@ export default {
       periodLabel,
       receiptNumber,
       TABLE,
-      CARD,
       LABEL,
       CONTROL,
       TH,
