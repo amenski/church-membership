@@ -152,10 +152,7 @@
       <AlertBanner v-if="formError">{{ formError }}</AlertBanner>
       <EmptyNote v-if="!activeMembers.length">There are no active members to record a payment for. Add or reactivate a member first.</EmptyNote>
       <form v-else id="payment-form" class="flex flex-col gap-4" novalidate @submit.prevent="recordPayment">
-        <BaseSelect id="payment-member" v-model="form.memberId" label="Member" class="max-lg:min-h-12" :error="formErrors.memberId">
-          <option value="" disabled>Choose a member</option>
-          <option v-for="member in activeMembers" :key="member.id" :value="String(member.id)">{{ member.name }}</option>
-        </BaseSelect>
+        <MemberPicker id="payment-member" v-model="form.memberId" label="Member" class="max-lg:min-h-12" :members="activeMembers" :paid-by-member="paidByMember" :current-month="currentPeriod" :error="formErrors.memberId" />
         <!-- Phone sheet only: what the chosen member owes, from the same year strip as the Members list -->
         <section v-if="selectedMember" :aria-label="`${selectedMember.name}, dues`" class="flex flex-col gap-2.5 rounded-lg border border-rule bg-paper px-4 py-3.5 lg:hidden">
           <div class="text-xl font-medium [overflow-wrap:anywhere]">{{ selectedMember.name }}</div>
@@ -207,6 +204,7 @@ import BaseTextarea from '@/components/BaseTextarea.vue'
 import CollectedChart from '@/components/CollectedChart.vue'
 import EmptyNote from '@/components/EmptyNote.vue'
 import Icon from '@/components/Icon.vue'
+import MemberPicker from '@/components/MemberPicker.vue'
 import StatTile from '@/components/StatTile.vue'
 import PageHead from '@/components/PageHead.vue'
 import ReceiptDialog from '@/components/ReceiptDialog.vue'
@@ -233,7 +231,7 @@ const emptyForm = () => ({
 
 export default {
   name: 'PaymentsView',
-  components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, BaseTextarea, CollectedChart, EmptyNote, Icon, PageHead, ReceiptDialog, StatTile, TextButton, YearStrip },
+  components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, BaseTextarea, CollectedChart, EmptyNote, Icon, MemberPicker, PageHead, ReceiptDialog, StatTile, TextButton, YearStrip },
   setup() {
     return {
       appStore: useAppStore(),
@@ -270,6 +268,8 @@ export default {
       today: localISODate(),
       selectedPayment: null,
       receiptOpen: false,
+      // the amount the last chosen member's most recent payment put in the field; a different value there was typed by the user
+      prefilledAmount: '',
       wide: true
     }
   },
@@ -314,8 +314,10 @@ export default {
   },
   watch: {
     // On the phone sheet the month covered starts at the oldest month the member has not paid
-    'form.memberId'() {
+    // and the amount starts at what that member paid last
+    'form.memberId'(memberId) {
       if (!this.wide && this.owed.oldest) this.form.period = this.owed.oldest
+      this.prefillAmount(memberId)
     },
     // a link to /payments?search= while this screen is already open
     '$route.query.search'(search) {
@@ -383,8 +385,16 @@ export default {
       this.openRecord()
       if (this.activeMembers.some(member => String(member.id) === String(memberId))) this.form.memberId = String(memberId)
     },
+    // Only an empty Amount, or one this method filled, is replaced: what the user typed stays
+    prefillAmount(memberId) {
+      if (this.form.amount !== '' && this.form.amount !== this.prefilledAmount) return
+      const last = memberId ? this.sortedPayments.find(payment => String(payment.member?.id) === memberId) : null
+      this.prefilledAmount = last ? String(last.amount) : ''
+      this.form.amount = this.prefilledAmount
+    },
     openRecord() {
       this.form = emptyForm()
+      this.prefilledAmount = ''
       this.today = localISODate()
       this.formError = ''
       this.formErrors = { ...EMPTY_ERRORS }
