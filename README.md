@@ -24,6 +24,7 @@ Self-registration is disabled and the sample users' password hashes do not match
 |-----|---------------|
 | [docs/development.md](docs/development.md) | Setting up, running or building; the deployment reference (variables, Caddy, systemd, production checklist) |
 | [docs/deploy-linux.md](docs/deploy-linux.md) | Putting MemberTracker on one Linux machine, in Docker or as a jar under systemd: install, database, HTTPS, firewall, backups, updates |
+| [docs/deploy-example-home-server.md](docs/deploy-example-home-server.md) | The same route on a real shared home server behind Nginx Proxy Manager: decisions, steps, what went wrong |
 | [docs/architecture.md](docs/architecture.md) | Deciding where new code goes; checking past design decisions |
 | [docs/design.md](docs/design.md) | Building or restyling a screen: tokens, density, layout and components |
 | [docs/authentication.md](docs/authentication.md) | Working on login, sessions, cookies, roles or permissions |
