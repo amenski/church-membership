@@ -1,0 +1,127 @@
+# MemberTracker on a server that runs Docker: MySQL and the app in one stack. The step-by-step guide
+# is docs/deploy-linux.md ("Docker"). docker-compose.yml stays the development file (MySQL only).
+#
+#   cp deploy/server.env.example .env       # then fill it in (every variable is explained there)
+#   docker compose -f docker-compose.server.yml up -d --build --wait
+#
+# Compose reads the settings from the .env file next to this file. Nothing here is published to the
+# network except the app on 127.0.0.1:${APP_PORT:-8080}: put a reverse proxy (Caddy, nginx) in front
+# of it, or attach the app to your proxy's network (see "Optional: your own reverse proxy" below).
+name: membertracker
+
+services:
+  mysql:
+    image: mysql:8.4
+    # A fixed name keeps deploy/backup-mysql.sh and the docker exec commands in the docs working.
+    container_name: membertracker-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
+      MYSQL_DATABASE: felege_selam
+      # The image creates this login on the first start (empty data folder) with all rights on
+      # felege_selam and nothing else. The app uses it, never root. Like the root password, these
+      # apply only to a new data folder: changing them in .env later does not change the database.
+      MYSQL_USER: ${DB_USERNAME:-membertracker}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+00:00
+    # No ports: MySQL is reachable only from containers on this stack's network (the app).
+    volumes:
+      - ${MYSQL_DATA_DIR:-/srv/membertracker/mysql}:/var/lib/mysql
+    healthcheck:
+      # 127.0.0.1 (TCP), because the temporary server that runs during first-time setup has
+      # networking off; this passes only once the real server is up.
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  app:
+    build: .
+    image: membertracker:local
+    container_name: membertracker-app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      # The database: the mysql service, with the least-privilege login created above.
+      DB_URL: jdbc:mysql://mysql:3306/felege_selam?serverTimezone=UTC
+      DB_USERNAME: ${DB_USERNAME:-membertracker}
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      # Compose refuses to start without it. At least 32 characters: openssl rand -base64 48
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      # true: the session cookies are sent over https only. False only for plain http on a trusted network.
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      # The app must listen on every interface inside its container. It is still reachable only
+      # through the loopback port published below.
+      SERVER_ADDRESS: 0.0.0.0
+      # Which peers may set the client address through X-Forwarded-For (a regex, used by the
+      # sign-in throttle). The app's own default trusts loopback only, but from a published port
+      # (and from another container) the app sees the Docker bridge address, such as 172.18.0.1,
+      # never 127.0.0.1: with the default, every visitor behind your proxy would share one client
+      # address and one throttle. So this stack trusts loopback and the private ranges Docker
+      # hands out to bridge networks (172.16.0.0/12, and 192.168.0.0/16 for custom pools). That is
+      # safe here because nothing outside this machine can open a connection to the app: the port
+      # is on 127.0.0.1 and the networks are internal to Docker. Trusting a peer only lets it
+      # choose the address the sign-in throttle counts for it (the per-email limit and the account
+      # lock do not use it). If your proxy is on another range (such as 10.0.0.0/8) set
+      # TRUSTED_PROXIES in .env to its address; if you publish the app on a LAN address, set it
+      # to the proxy's address only.
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-127\.0\.0\.1|::1|0:0:0:0:0:0:0:1|172\.(1[6-9]|2[0-9]|3[01])\.\d+\.\d+|192\.168\.\d+\.\d+}
+      # First start only: the first administrator. Remove BOOTSTRAP_ADMIN_PASSWORD from .env afterwards.
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
+      # Email, optional. A name with no value passes the variable through from .env when it is set
+      # there and leaves it out otherwise, so the app's own defaults apply (docs/email.md).
+      MAIL_FROM:
+      MAIL_HOST:
+      MAIL_PORT:
+      MAIL_USERNAME:
+      MAIL_PASSWORD:
+      MAIL_AUTH:
+      MAIL_STARTTLS:
+      # The monthly reminder jobs (6:00 and 9:00 on the 1st) run in this time zone, e.g. Europe/Rome.
+      TZ: ${TZ:-UTC}
+    ports:
+      # Loopback only. Change the host port with APP_PORT.
+      - "127.0.0.1:${APP_PORT:-8080}:8080"
+    # The health check is the image's (it asks the home page).
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    # The heap is 75% of this (the image sets -XX:MaxRAMPercentage=75).
+    mem_limit: ${APP_MEM_LIMIT:-768m}
+    # networks: [default, proxy]   # uncomment with the proxy network below
+
+# Optional: your own reverse proxy that already runs in Docker, on a network that exists
+# (docker network ls). Uncomment this block and the `networks:` line on the app service above
+# (keep `default`: it is how the app reaches MySQL), set PROXY_NETWORK in .env, then
+# `docker compose -f docker-compose.server.yml up -d`. The proxy then reaches the app as
+# membertracker-app:8080 on that network, so you can delete the `ports:` entry of the app and
+# publish nothing at all. TRUSTED_PROXIES must cover the proxy's address on that network
+# (the default above does for the usual 172.x and 192.168.x Docker ranges).
+#
+#   Nginx Proxy Manager: Hosts > Proxy Hosts > Add. Scheme http, Forward Hostname membertracker-app,
+#     Forward Port 8080, SSL tab: request a certificate and Force SSL.
+#   Caddy (in Docker), in its Caddyfile:    members.example.org { reverse_proxy membertracker-app:8080 }
+#   Traefik, labels on the app service (adjust the entrypoint, resolver and network name):
+#     labels:
+#       - traefik.enable=true
+#       - traefik.docker.network=${PROXY_NETWORK}
+#       - traefik.http.routers.membertracker.rule=Host(`members.example.org`)
+#       - traefik.http.routers.membertracker.entrypoints=websecure
+#       - traefik.http.routers.membertracker.tls.certresolver=letsencrypt
+#       - traefik.http.services.membertracker.loadbalancer.server.port=8080
+#
+# networks:
+#   proxy:
+#     external: true
+#     name: ${PROXY_NETWORK}
