@@ -2,9 +2,222 @@
 
 *Last checked against the code: 5 October 2026.*
 
-A checklist for running MemberTracker on one Linux machine you control, such as a home or office server. Follow it from top to bottom. Every step has the exact command and a "You should see" line: if you do not see it, stop and look at [When something is wrong](#when-something-is-wrong). The reference tables (every variable, the Caddyfile, the first-start rules) stay in [development.md](development.md#deploy).
+A checklist for running MemberTracker on one Linux machine you control, such as a home or office server. There are two ways: **everything in Docker** (the first section, recommended if the machine already runs Docker) or **the jar under systemd** (the numbered steps after it). Follow the one you pick from top to bottom. Every step has the exact command and a "You should see" line: if you do not see it, stop and look at [When something is wrong](#when-something-is-wrong). The reference tables (every variable, the Caddyfile, the first-start rules) stay in [development.md](development.md#deploy).
 
 Commands use Debian or Ubuntu. Package names differ between releases, so where a name is not found, search for it (`apt search jre`).
+
+## Docker (recommended if the server already runs Docker)
+
+One compose file runs MySQL and the app, built from this repository. Nothing but your reverse proxy needs to be installed besides Docker: no Java on the server, no jar to copy, no systemd unit. If you prefer the jar under systemd, skip to [the other way](#the-other-way-the-jar-under-systemd).
+
+```
+browser --> your proxy (Caddy, nginx, NPM, Traefik) --> membertracker-app (127.0.0.1:8080, or the proxy network) --> membertracker-mysql (no published port)
+```
+
+The app container runs as an unprivileged user with a read-only filesystem, no Linux capabilities and a 768 MB memory limit, and it connects with its own MySQL login (rights on `felege_selam` only), never root. MySQL has no published port: only the app can reach it. The files `Dockerfile`, `docker-compose.server.yml` and `deploy/server.env.example` are the whole setup. `docker-compose.yml` stays the development file (MySQL only).
+
+**[server]** means run it on the Linux machine. Commands use Ubuntu.
+
+### D1. Check Docker and get the code [server]
+
+```bash
+docker --version
+docker compose version
+git --version
+```
+
+You should see a Docker version and `Docker Compose version v2...` (2.1 or later; `up --wait` needs it). If something is missing: `sudo apt install -y docker.io docker-compose-v2 git`, or the repository from <https://docs.docker.com/engine/install/>.
+
+```bash
+sudo git clone <the repository address> /opt/membertracker
+sudo mkdir -p /srv/membertracker/mysql /srv/membertracker/backups
+sudo chmod 700 /srv/membertracker/backups
+cd /opt/membertracker
+```
+
+Use `/opt/membertracker` unless you have a reason not to: the backup script looks for `.env` there. The database files will be in `/srv/membertracker/mysql`, the backups in `/srv/membertracker/backups`. Every command below runs in `/opt/membertracker`, and `sudo` is only needed if your login is not in the `docker` group.
+
+### D2. The settings file [server]
+
+```bash
+sudo cp deploy/server.env.example .env
+sudo chmod 600 .env
+sudo sed -i \
+  -e "s|^MYSQL_ROOT_PASSWORD=.*|MYSQL_ROOT_PASSWORD=$(openssl rand -hex 24)|" \
+  -e "s|^DB_PASSWORD=.*|DB_PASSWORD=$(openssl rand -hex 24)|" \
+  -e "s|^JWT_SECRET=.*|JWT_SECRET=$(openssl rand -base64 48)|" .env
+sudo nano .env
+```
+
+The `sed` fills the three secrets with random values (nobody types them; they are in this file, so keep a copy of it in a password manager). In the editor set:
+
+| Variable | Value |
+|----------|-------|
+| `BOOTSTRAP_ADMIN_EMAIL` | the email of the first administrator |
+| `BOOTSTRAP_ADMIN_PASSWORD` | a strong password: 8 to 72 characters with an uppercase letter, a lowercase letter, a digit and a special character. In single quotes if it has a `$`, `#` or space. First start only (D4) |
+| `COOKIE_SECURE` | uncomment and set `false` only if people will open the site over plain http. With https keep `true` |
+| `TZ` | uncomment and set your time zone, for example `Europe/Rome`: the monthly reminder jobs run at 6:00 and 9:00 in it |
+| `MAIL_*` (optional) | Email to members; nothing is sent until these are set. See [email.md](email.md#configuration) |
+
+Every variable is explained in the file. Check that the secrets are filled in:
+
+```bash
+sudo grep -c -E '^(MYSQL_ROOT_PASSWORD|DB_PASSWORD)=[0-9a-f]{48}$|^JWT_SECRET=.{64}$' .env
+```
+
+You should see `3`. Compose refuses to start while `MYSQL_ROOT_PASSWORD`, `DB_PASSWORD` or `JWT_SECRET` is empty. The two database passwords are given to MySQL when it creates its data folder, so they cannot be changed in `.env` afterwards: see the table at the end of this section.
+
+### D3. Build and start [server]
+
+```bash
+sudo docker compose -f docker-compose.server.yml up -d --build --wait
+sudo docker compose -f docker-compose.server.yml ps
+```
+
+The first run downloads the base images and builds the app (Gradle, Node and the npm packages are fetched inside the build, so it needs the internet and takes a few minutes; later builds reuse the layers). You should see `membertracker-mysql` and `membertracker-app`, both `Up ... (healthy)`, the app on `127.0.0.1:8080->8080/tcp` and MySQL with no host port (`3306/tcp` only).
+
+### D4. The first administrator [server]
+
+```bash
+sudo docker compose -f docker-compose.server.yml logs app | grep -E 'Started Application|Created the first administrator'
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/api/users/me
+```
+
+You should see `Started Application in ... seconds`, `Created the first administrator owner@example.org` and `401` (the app is up and asks for a sign-in). Sign in once (D6), then remove the first-start password and recreate the app:
+
+```bash
+sudo sed -i '/^BOOTSTRAP_ADMIN_PASSWORD=/d' .env
+sudo docker compose -f docker-compose.server.yml up -d --wait
+sudo docker compose -f docker-compose.server.yml logs app | grep -c 'Created the first administrator'
+```
+
+You should see `0`: the new container has no such line, and `BOOTSTRAP_ADMIN_PASSWORD` is gone from `.env`. (Leaving `BOOTSTRAP_ADMIN_EMAIL` is harmless.) There is no password reset yet, so keep the password somewhere safe.
+
+### D5. The front door [server]
+
+Pick one.
+
+**1. A proxy on this machine (Caddy, nginx) in front of the published port.** The app listens on `127.0.0.1:8080` only (change the host port with `APP_PORT` in `.env`). Install Caddy and use `deploy/Caddyfile` exactly as in [step 9](#9-caddy-the-address-people-open-server-options-a-and-b) (it already proxies to `127.0.0.1:8080`), with `COOKIE_SECURE=true`. For nginx, proxy to `http://127.0.0.1:8080` and send `X-Forwarded-For` and `X-Forwarded-Proto` (`proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; proxy_set_header X-Forwarded-Proto $scheme;`). Open ports 80 and 443 as in [step 10](#10-firewall-server). Docker's own rules bypass ufw, which is why this stack publishes only on `127.0.0.1`.
+
+**2. A proxy that already runs in Docker (Nginx Proxy Manager, Traefik, Caddy in a container).** Put the app on the proxy's network instead of a host port. At the end of `docker-compose.server.yml` is a commented block for it, with an example for each of the three proxies. In short:
+
+1. `docker network ls` shows the proxy's network name. Add `PROXY_NETWORK=<that name>` to `.env`.
+2. In `docker-compose.server.yml` uncomment the `networks:` block at the end and the `# networks: [default, proxy]` line on the `app` service (keep `default`: it is how the app reaches MySQL). Optionally delete the `ports:` entry of the app, so that nothing at all is published.
+3. `sudo docker compose -f docker-compose.server.yml up -d --wait`, then point the proxy at `membertracker-app`, port `8080`, scheme http.
+4. `TRUSTED_PROXIES` must cover the proxy's address on that network. The default covers loopback, `172.16.0.0/12` and `192.168.0.0/16`, which is what Docker hands out unless you changed its address pools. If your proxy network is in another range, set `TRUSTED_PROXIES` in `.env` to the proxy's address, in single quotes with escaped dots: `TRUSTED_PROXIES='10\.20\.0\.5'`. Otherwise the app sees the proxy as the client and every visitor shares one sign-in throttle.
+
+Keep `COOKIE_SECURE=true` with https. The reason for each part of `TRUSTED_PROXIES` is in the comment in the compose file.
+
+**3. No proxy, plain http on a trusted network.** Not set up by default (the port is loopback only). Change the `ports:` line of the app to `"${APP_PORT:-8080}:8080"`, set `COOKIE_SECURE=false` and `TRUSTED_PROXIES='127\.0\.0\.1'` in `.env`, and allow the port to your own network only in ufw as in step 10, remembering that Docker bypasses ufw for published ports. Passwords and cookies cross the network unencrypted: never on the internet.
+
+### D6. Sign in and check [server]
+
+Open the address (or `http://127.0.0.1:8080` through an SSH tunnel: `ssh -L 8080:127.0.0.1:8080 admin@SERVER`) and run the checks of [step 12](#12-sign-in-and-check). Then check what listens where:
+
+```bash
+sudo docker port membertracker-mysql
+sudo docker port membertracker-app
+sudo docker exec membertracker-app id
+sudo docker inspect -f 'readonly={{.HostConfig.ReadonlyRootfs}} caps_dropped={{.HostConfig.CapDrop}}' membertracker-app
+```
+
+You should see nothing for MySQL, `8080/tcp -> 127.0.0.1:8080` for the app, `uid=10001(app)` and `readonly=true caps_dropped=[ALL]`. From another computer, `nc -zv SERVER-IP 3306` and `nc -zv SERVER-IP 8080` must fail.
+
+### D7. Starts by itself after a reboot [server]
+
+Both containers have `restart: unless-stopped`, so they come back when Docker does:
+
+```bash
+sudo docker inspect -f '{{.Name}} {{.HostConfig.RestartPolicy.Name}}' membertracker-app membertracker-mysql
+systemctl is-enabled docker
+```
+
+You should see `unless-stopped` twice and `enabled`. After a reboot, `sudo docker ps --format '{{.Names}} {{.Status}}'` shows both `(healthy)` within a minute or two. The app waits for MySQL to be healthy before it starts.
+
+### D8. Back up [server]
+
+The nightly script and the restore test are the ones in [step 11](#11-back-up-server): the container is called `membertracker-mysql` here too, and the script reads `MYSQL_ROOT_PASSWORD` from `/opt/membertracker/.env`, which is the `.env` of D2. If you cloned somewhere else, run it as `ENV_FILE=/path/to/.env /path/to/deploy/backup-mysql.sh`, in cron too.
+
+```bash
+sudo /opt/membertracker/deploy/backup-mysql.sh
+```
+
+You should see `backup-mysql: wrote /srv/membertracker/backups/felege_selam-...sql.gz (... bytes), keeping the newest 14`. Then add the cron line of step 11. Copy the backups off the machine regularly, as described there.
+
+### D9. Logs
+
+```bash
+sudo docker compose -f docker-compose.server.yml logs -f app
+sudo docker compose -f docker-compose.server.yml logs --since 1h app
+sudo docker compose -f docker-compose.server.yml logs mysql
+```
+
+Docker keeps the newest 30 MB of each container's log (3 files of 10 MB).
+
+### D10. Updating and rolling back
+
+1. Back up first, because a new version can change the database: `sudo /opt/membertracker/deploy/backup-mysql.sh`. Note the file name it prints.
+2. Keep the running image as the way back, then fetch and rebuild:
+
+   ```bash
+   cd /opt/membertracker
+   sudo docker tag membertracker:local membertracker:previous
+   git log --oneline -1                  # note this commit too
+   sudo git pull
+   sudo docker compose -f docker-compose.server.yml up -d --build --wait
+   sudo docker compose -f docker-compose.server.yml logs --tail 30 app
+   ```
+
+   You should see `Started Application` and no `ERROR`. Only the app is rebuilt and replaced (MySQL keeps running unless its image or settings changed). A release that needs a new variable stops with a message that names it (compose says `required variable ... is missing`): add it to `.env` (see `deploy/server.env.example`) and run `up -d` again. `sudo docker image prune -f` removes the old, unused image layers afterwards.
+
+**Rollback** (the new version misbehaves). Everything entered after the dump of step 1 is lost if you restore it; if the release did not change the database you can skip the restore and only put the old image back.
+
+```bash
+sudo -v   # asks for your password now, so the commands below do not stop to ask
+cd /opt/membertracker
+sudo docker compose -f docker-compose.server.yml stop app
+sudo docker exec membertracker-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot -e "DROP DATABASE felege_selam; CREATE DATABASE felege_selam"'
+sudo gzip -dc /srv/membertracker/backups/felege_selam-YYYYMMDD-HHMMSS.sql.gz | sudo docker exec -i membertracker-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot felege_selam'
+sudo docker tag membertracker:previous membertracker:local
+sudo docker compose -f docker-compose.server.yml up -d --no-build --wait
+sudo docker compose -f docker-compose.server.yml logs --tail 15 app
+```
+
+Use the file name from step 1. You should see `Started Application`. `--no-build` makes compose run the image you just retagged instead of building the current code. The `membertracker` login keeps its rights, because dropping a database does not remove the grants. Also `sudo git checkout <the commit you noted>` so that the folder matches what runs, and `sudo git checkout main` before the next update. To pin a version for good, build it once, tag it (`docker tag membertracker:local membertracker:2026-10-05`), and set `image: membertracker:2026-10-05` on the app service (the `build:` line can stay: `up -d` without `--build` never rebuilds an image that exists).
+
+### D11. Building for another CPU
+
+`docker compose ... up -d --build` builds for the CPU of the machine it runs on, so building on the server always fits. To build elsewhere (a faster computer with another CPU) name the platform of the server, then move the image:
+
+```bash
+# [computer]
+docker build --platform linux/amd64 -t membertracker:local .
+docker save membertracker:local | gzip > membertracker-image.tar.gz
+scp membertracker-image.tar.gz admin@SERVER:
+# [server]
+gzip -dc ~/membertracker-image.tar.gz | sudo docker load
+cd /opt/membertracker && sudo docker compose -f docker-compose.server.yml up -d --no-build --wait
+```
+
+Use `linux/arm64` for a Raspberry Pi or another ARM server. The base images exist for both. Building for a foreign CPU runs the whole build under emulation and is slow (many minutes); the simplest fix is to build on the server.
+
+### Docker: when something is wrong
+
+| Symptom | Cause and fix |
+|---------|---------------|
+| `required variable JWT_SECRET is missing a value` (or `MYSQL_ROOT_PASSWORD`, `DB_PASSWORD`) | The variable is empty or missing in `.env`. Compose reads `.env` from the folder of the compose file: run the command in `/opt/membertracker` |
+| `Access denied for user 'membertracker'` in the app log | `DB_PASSWORD` (or `DB_USERNAME`) in `.env` differs from what the data folder was created with: MySQL sets the login and the passwords only for an empty data folder. Put the old value back, or change the password inside MySQL: `sudo docker exec membertracker-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot -e "ALTER USER \"membertracker\"@\"%\" IDENTIFIED BY \"NEW_PASSWORD\""'` and then set the same in `.env` |
+| `membertracker-app` is `unhealthy` or restarts | `sudo docker compose -f docker-compose.server.yml logs --tail 80 app`. The usual messages are in the table at the end of this guide (`JWT_SECRET must be at least 32 characters`, `BOOTSTRAP_ADMIN_PASSWORD is not strong enough`) |
+| `Communications link failure` once or twice at the start | The app waits for MySQL to be healthy, so this means MySQL restarted. `sudo docker compose -f docker-compose.server.yml ps` and the MySQL log |
+| `Bind for 127.0.0.1:8080 failed: port is already allocated` | Another program has 8080: set `APP_PORT=8081` in `.env` (and in your proxy), then `up -d` |
+| Proxy shows 502 | The app is down, or the proxy cannot reach it: `curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/api/users/me` must print `401`. On a proxy network, check that both containers are on it: `sudo docker network inspect <network> \| grep -E 'Name|membertracker'` |
+| Sign-in does nothing over http | `COOKIE_SECURE=true` (the default) sends cookies browsers drop on plain http. Set it to `false` in `.env` for a plain-http setup and run `up -d` |
+| The app killed with exit code 137 | Out of memory under the 768 MB limit (`sudo docker inspect -f '{{.State.OOMKilled}}' membertracker-app` prints `true`). Raise `APP_MEM_LIMIT` in `.env`, for example `1g`, and run `up -d` |
+| The build fails downloading something | The build needs the internet (Gradle, npm). Check the server's DNS and proxy settings and run it again: finished layers are kept |
+
+## The other way: the jar under systemd
+
+The rest of this guide installs the jar as a systemd service with MySQL in Docker (compose file `docker-compose.yml`). Use it when the machine has no Docker to spare for the app, or you want Java and systemd to supervise it. Do not run both ways on one machine at the same time: they use the same `membertracker-mysql` container name and the same data folder.
 
 ```
 browser --> Caddy (ports 80 and 443) --> MemberTracker (127.0.0.1:8080) --> MySQL in Docker (127.0.0.1:3306)
