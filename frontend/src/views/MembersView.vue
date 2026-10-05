@@ -2,11 +2,11 @@
   <div>
     <PageHead title="Members" lead="Everyone on the register: who is paid up and who is behind." compact>
       <template v-if="authStore.isStaff" #actions>
-        <!-- below md Export CSV sits in the count line under the filters -->
-        <BaseButton variant="secondary" class="max-md:hidden" @click="exportMembers">
+        <!-- below lg Export CSV sits in the count line under the filters -->
+        <BaseButton variant="secondary" class="max-lg:hidden" @click="exportMembers">
           <Icon name="download" :size="16" class="mr-1.5" />Export CSV
         </BaseButton>
-        <BaseButton class="max-md:min-h-11" @click="showAddModal">
+        <BaseButton class="max-lg:min-h-11" @click="showAddModal">
           <Icon name="plus" :size="16" class="mr-1.5" />Add member
         </BaseButton>
       </template>
@@ -19,10 +19,10 @@
       </div>
     </AlertBanner>
 
-    <!-- Filters: one compact row from md up. On a phone: status, then search beside one "Filters" button
+    <!-- Filters: one compact row from lg up. On a phone or tablet: status, then search beside one "Filters" button
          that opens Dues, Sort by and the date pair; closed until asked for -->
-    <form v-if="members.length || showingArchived" class="mb-3 grid grid-cols-[minmax(0,1fr)_auto] gap-3 md:mb-6 md:flex md:flex-wrap md:items-end" role="search" aria-label="Filter members" @submit.prevent>
-      <div class="col-span-2 overflow-x-auto md:basis-full md:overflow-visible">
+    <form v-if="members.length || showingArchived" class="mb-3 grid grid-cols-[minmax(0,1fr)_auto] gap-3 lg:mb-6 lg:flex lg:flex-wrap lg:items-end" role="search" aria-label="Filter members" @submit.prevent>
+      <div class="col-span-2 overflow-x-auto lg:basis-full lg:overflow-visible">
         <div role="group" aria-label="Filter by status" class="inline-flex">
           <button
             v-for="segment in statusSegments"
@@ -36,13 +36,13 @@
           </button>
         </div>
       </div>
-      <div class="md:min-w-60 md:flex-1">
-        <label for="filter-search" :class="[LABEL, 'max-md:sr-only']">Search</label>
-        <input id="filter-search" v-model="filters.search" type="search" placeholder="Search name, email or phone" autocomplete="off" :class="[CONTROL, 'max-md:h-11']">
+      <div class="lg:min-w-60 lg:flex-1">
+        <label for="filter-search" :class="[LABEL, 'max-lg:sr-only']">Search</label>
+        <input id="filter-search" v-model="filters.search" type="search" placeholder="Search name, email or phone" autocomplete="off" :class="[CONTROL, 'max-lg:h-11']">
       </div>
       <button
         type="button"
-        :class="['flex h-11 cursor-pointer items-center gap-1.5 rounded-sm border px-3 text-base font-medium whitespace-nowrap md:hidden', panelFilterCount ? 'border-teal bg-teal-tint text-teal' : 'border-field bg-paper text-ink hover:border-teal hover:bg-teal-tint']"
+        :class="['flex h-11 cursor-pointer items-center gap-1.5 rounded-sm border px-3 text-base font-medium whitespace-nowrap lg:hidden', panelFilterCount ? 'border-teal bg-teal-tint text-teal' : 'border-field bg-paper text-ink hover:border-teal hover:bg-teal-tint']"
         aria-controls="filter-panel"
         :aria-expanded="filtersOpen ? 'true' : 'false'"
         @click="filtersOpen = !filtersOpen"
@@ -50,8 +50,8 @@
         Filters<template v-if="panelFilterCount"> ({{ panelFilterCount }})</template>
         <Icon :name="filtersOpen ? 'chevron-up' : 'chevron-down'" :size="16" />
       </button>
-      <div id="filter-panel" :class="filtersOpen ? 'col-span-2 grid grid-cols-2 gap-3 md:contents' : 'hidden md:contents'">
-        <div class="md:w-40">
+      <div id="filter-panel" :class="filtersOpen ? 'col-span-2 grid grid-cols-2 gap-3 lg:contents' : 'hidden lg:contents'">
+        <div class="lg:w-40">
           <label for="filter-dues" :class="LABEL">Dues</label>
           <select id="filter-dues" v-model="filters.paymentStatus" :class="CONTROL">
             <option value="ALL">All</option>
@@ -59,22 +59,22 @@
             <option value="OVERDUE">Behind</option>
           </select>
         </div>
-        <div class="md:w-40">
+        <div class="lg:w-40">
           <label for="filter-sort" :class="LABEL">Sort by</label>
           <select id="filter-sort" :value="sort.key" :class="CONTROL" @change="setSortOption($event.target.value)">
             <option v-for="option in SORT_OPTIONS" :key="option.key" :value="option.key">{{ option.label }}</option>
           </select>
         </div>
-        <div class="md:w-40">
+        <div class="lg:w-40">
           <label for="filter-from" :class="LABEL">Joined from</label>
           <input id="filter-from" v-model="filters.joinedFrom" type="date" :class="CONTROL">
         </div>
-        <div class="md:w-40">
+        <div class="lg:w-40">
           <label for="filter-to" :class="LABEL">Joined to</label>
           <input id="filter-to" v-model="filters.joinedTo" type="date" :class="CONTROL">
         </div>
       </div>
-      <TextButton v-if="hasActiveFilters && filteredMembers.length" class="col-span-2 text-left max-md:min-h-11 md:col-span-1 md:py-1.5" @click="clearFilters">Clear filters</TextButton>
+      <TextButton v-if="hasActiveFilters && filteredMembers.length" class="col-span-2 text-left max-lg:min-h-11 lg:col-span-1 lg:py-1.5" @click="clearFilters">Clear filters</TextButton>
     </form>
 
     <!-- Empty states -->
@@ -97,8 +97,8 @@
         <p class="m-0 text-sm text-muted" aria-live="polite">
           {{ countText }}
         </p>
-        <!-- phones only: on md and up Export CSV is in the page header -->
-        <TextButton v-if="authStore.isStaff" class="-my-2.5 min-h-11 md:hidden" @click="exportMembers">Export CSV</TextButton>
+        <!-- below lg only: from lg Export CSV is in the page header -->
+        <TextButton v-if="authStore.isStaff" class="-my-2.5 min-h-11 lg:hidden" @click="exportMembers">Export CSV</TextButton>
       </div>
 
       <!-- Selection (STAFF+): the live region speaks the count, the bar holds what can be done with those members -->
@@ -114,7 +114,7 @@
           <button v-if="authStore.isAdmin" type="button" :class="[DELETE_BUTTON, 'min-h-(--control-h) px-3 py-1.5 text-base']" @click="bulkAction = 'archive'">Archive</button>
         </div>
       </div>
-      <label v-if="canSelect" class="mb-2 flex min-h-11 cursor-pointer items-center gap-3 text-base text-ink md:hidden">
+      <label v-if="canSelect" class="mb-2 flex min-h-11 cursor-pointer items-center gap-3 text-base text-ink lg:hidden">
         <input type="checkbox" :class="CHECKBOX_PHONE" :checked="allSelected" :indeterminate="someSelected" @change="toggleAll($event.target.checked)">
         Select all {{ filteredMembers.length }} shown
       </label>
@@ -168,7 +168,7 @@
           </tbody>
         </table>
 
-        <ul class="m-0 flex list-none flex-col gap-3 p-0 md:hidden">
+        <ul class="m-0 grid list-none grid-cols-1 gap-3 p-0 md:grid-cols-2 lg:hidden">
           <li v-for="member in filteredMembers" :key="member.id" class="flex flex-col gap-3 rounded-lg border border-rule bg-paper px-4 py-3.5">
             <div class="min-w-0">
               <div :class="[NAME, 'text-xl text-muted']">{{ member.name }}</div>
@@ -194,8 +194,9 @@
         </ul>
       </template>
 
-      <!-- md and up: ruled table -->
-      <table v-else :class="TABLE">
+      <!-- lg and up: ruled table. Between lg and xl it keeps a minimum width and scrolls sideways inside its own box rather than squeezing the columns -->
+      <div v-else class="hidden overflow-x-auto lg:block">
+      <table :class="[TABLE, 'lg:min-w-[56rem] xl:min-w-0']">
         <caption class="sr-only">Members</caption>
         <thead>
           <tr class="border-b border-rule">
@@ -220,12 +221,14 @@
             <td :class="[TD, 'max-w-0 w-[26%]']">
               <div :class="NAME"><router-link :to="`/members/${member.id}`">{{ member.name }}</router-link></div>
               <div v-if="member.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
+              <!-- the Phone column is hidden between lg and xl: its number sits under the email instead -->
+              <div v-if="member.phone" class="whitespace-nowrap text-sm text-muted xl:hidden">{{ member.phone }}</div>
             </td>
             <td :class="[TD, 'max-w-0 w-[14%] [overflow-wrap:anywhere]']">
               <template v-if="member.householdName">{{ member.householdName }}</template>
               <span v-else class="text-muted"><span aria-hidden="true">&ndash;</span><span class="sr-only">No household</span></span>
             </td>
-            <td :class="[TD, 'whitespace-nowrap']">
+            <td :class="[TD, 'whitespace-nowrap max-xl:hidden']">
               <template v-if="member.phone">{{ member.phone }}</template>
               <span v-else class="text-muted"><span aria-hidden="true">&ndash;</span><span class="sr-only">No phone</span></span>
             </td>
@@ -250,9 +253,10 @@
           </tr>
         </tbody>
       </table>
+      </div>
 
-      <!-- Below md: one card per member -->
-      <ul v-if="!showingArchived" class="m-0 flex list-none flex-col gap-3 p-0 md:hidden">
+      <!-- Below lg: one card per member, two across from md -->
+      <ul v-if="!showingArchived" class="m-0 grid list-none grid-cols-1 gap-3 p-0 md:grid-cols-2 lg:hidden">
         <li v-for="member in filteredMembers" :key="member.id" class="flex flex-col gap-3 rounded-lg border border-rule bg-paper px-4 py-3.5">
           <div class="flex items-start justify-between gap-2">
             <label v-if="canSelect" class="-ml-2 -mt-1.5 flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center">
@@ -348,14 +352,14 @@ import PageHead from '@/components/PageHead.vue'
 import StatusLabel from '@/components/StatusLabel.vue'
 import YearStrip from '@/components/YearStrip.vue'
 import TextButton from '@/components/TextButton.vue'
-import { CONTROL, LABEL, NAME, SORT_BUTTON, TABLE, TABLE_TH as TH, TABLE_TD as TD } from '@/ui/classes'
+import { CONTROL, LABEL, NAME, SORT_BUTTON, TABLE_FROM_LG as TABLE, TABLE_TH as TH, TABLE_TD as TD } from '@/ui/classes'
 
 // A 44px tap target for the card's two actions
 const PHONE_ACTION = 'flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-lg font-medium no-underline'
 // "Delete for good": an outline in clay (the dialog holds the solid danger button)
 const DELETE_BUTTON = 'inline-flex cursor-pointer items-center justify-center rounded-sm border border-clay bg-paper font-medium leading-normal text-clay hover:bg-clay-tint disabled:pointer-events-none disabled:border-rule disabled:text-muted disabled:opacity-65'
 // One button of the Status segmented control; segmentShape rounds the two ends and joins the borders
-const SEGMENT = 'relative -ml-px first:ml-0 inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1 border px-3 text-base font-medium whitespace-nowrap md:min-h-(--control-h)'
+const SEGMENT = 'relative -ml-px first:ml-0 inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1 border px-3 text-base font-medium whitespace-nowrap lg:min-h-(--control-h)'
 // The Sort by control: the first click on a header starts ascending, but here "Most behind" and
 // "Joined" mean the most behind and the newest first
 const SORT_OPTIONS = [
@@ -488,7 +492,7 @@ export default {
       return [
         { label: 'Name', sortKey: 'name' },
         { label: 'Household' },
-        { label: 'Phone' },
+        { label: 'Phone', class: 'max-xl:hidden' },
         { label: 'Joined', sortKey: 'joinDate' },
         { label: 'Status' },
         { label: `${stripRangeLabel(this.today.slice(0, 7))}, one square a month` },

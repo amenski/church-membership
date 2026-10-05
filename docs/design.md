@@ -126,9 +126,9 @@ Utilities read them with `h-(--control-h)`, `min-h-(--row-h)`, `p-(--card-pad)`,
   church office at the bottom; the right half the form card centred, with the "Accounts are set up by the
   church office." note under it. Below `lg`: a short `rail` header (Amharic name 36px, "Felege Selam"),
   then the card; inputs and button 48px, inputs 16px. Text on the rail is `rail-text` (10.87) or white.
-- **Page header**: `PageHead` (title, optional lead, action slot) with a rule under it. `compact` is the phone header (below `md` only): the lead is hidden, spacing is tighter and the action is centred on the title, so a list screen's first card shows on the first screen; a secondary action moves into the screen body. Members uses it.
+- **Page header**: `PageHead` (title, optional lead, action slot) with a rule under it. `compact` is the phone and tablet header (below `lg` only, the same breakpoint as Members' stacked cards): the lead is hidden, spacing is tighter and the action is centred on the title, so a list screen's first card shows on the first screen; a secondary action moves into the screen body. Members uses it.
 - Tables repeat the same shape: `ui/classes.js` `TABLE` / `TABLE_TH` / `TABLE_TD`, rows at
-  `--row-h`, with a stacked card list below `md` for the table screens (Members, Payments).
+  `--row-h`, with a stacked card list below `md` for the table screens (Payments); Members keeps its cards up to `lg` (`TABLE_FROM_LG`; two columns from `md`) because the table needs more than the page beside the rail has at 768px to 991px.
 - **Households** is the exception: from `lg` a master-detail page, the list on the left (22rem) and the chosen household on the
   right in the page (address, notice, members with strips, people without a membership), chosen by `?id=` in the URL; below `lg`
   the list and the household are one screen each, with an "All households" link back.

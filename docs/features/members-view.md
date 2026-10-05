@@ -21,7 +21,7 @@ Options API component; local `data()`, not the Pinia store.
 | `members` | Full list from `GET /members`; `[]` on load error |
 | `loaded`, `loadError` | First load finished; the last load failed (shows an `AlertBanner` with "Try again") |
 | `filters` | `search`, `status` (ALL, MEMBER, INACTIVE, DECEASED, TRANSFERRED, ARCHIVED; set by the segmented control), `paymentStatus` (ALL/CURRENT/OVERDUE, shown as "Dues": All / Paid up / Behind), `joinedFrom`, `joinedTo` |
-| `filtersOpen` | Below md Dues, Sort by and the date pair sit under one "Filters" disclosure button (`aria-expanded`, `aria-controls="filter-panel"`), closed by default; from md up they are always in the row |
+| `filtersOpen` | Below lg (phone and tablet) Dues, Sort by and the date pair sit under one "Filters" disclosure button (`aria-expanded`, `aria-controls="filter-panel"`), closed by default; from lg up they are always in the row |
 | `panelFilterCount` | How many of Dues and the two dates are set; the phone button reads "Filters (2)" and turns teal when it is above 0. Status and search stay in view, so they are not counted; Sort by is not a filter |
 | `sort` | `{key, direction}`; starts at `name` ascending. Set by a column header or by the "Sort by" select (see Client-side filter and sort) |
 | `selectedIds`, `bulkAction`, `bulkBusy` | The ticked members (by id), which bulk confirm dialog is open (`inactive`, `archive`, or null), and a bulk run in progress. See Selection and bulk actions |
@@ -44,23 +44,24 @@ All in `frontend/src/utils/memberFilters.js`; all filters are ANDed.
 | Sort by select | In the filter row on every width (phones have no headers): Name (ascending), Most behind (`consecutiveMonthsMissed`, descending, so the most behind first; members who are not MEMBER last), Joined (`joinDate`, descending, newest first). It shares `sort` with the headers, so both stay in step. Last paid, Phone and Household are not sortable |
 
 ### Status segmented control
-A `role="group"` "Filter by status" of buttons with `aria-pressed`, above the other filters: All, Member, Inactive, Transferred, Deceased and, for ADMIN only, Archived. Each shows its count, from the loaded `members` (`statusCounts` in `memberFilters.js`); "All" leaves out any member whose status is ARCHIVED, and the counts ignore the other filters. The Archived count shows only once the archived list has loaded (it loads when the segment is first chosen), and choosing it shows the Archived view. On a phone the row scrolls sideways and each button is 44px high. Search (`?search=`), Dues, Sort by and the date filters sit beside it unchanged from md up.
+A `role="group"` "Filter by status" of buttons with `aria-pressed`, above the other filters: All, Member, Inactive, Transferred, Deceased and, for ADMIN only, Archived. Each shows its count, from the loaded `members` (`statusCounts` in `memberFilters.js`); "All" leaves out any member whose status is ARCHIVED, and the counts ignore the other filters. The Archived count shows only once the archived list has loaded (it loads when the segment is first chosen), and choosing it shows the Archived view. On a phone the row scrolls sideways and each button is 44px high. Search (`?search=`), Dues, Sort by and the date filters sit beside it unchanged from lg up.
 
-### Phone header and filters (below md)
-Sized to the phone board (title row, search, one chips row, then cards), so the first member card is on the first screen at 390x844:
+### Phone and tablet header and filters (below lg)
+Breakpoints: the screen switches between stacked cards and the table at `lg` (992px), not `md`. The fixed rail takes 232px from `lg`, so a 768px tablet has the full width but the table's ten columns need more than that; below `lg` the tablet gets the phone layout (cards two across from `md`, one column below). Sized to the phone board (title row, search, one chips row, then cards), so the first member card is on the first screen at 390x844:
 - Header: `PageHead compact`: no subtitle, tighter spacing, the title and a 44px "Add member" (STAFF+) on one row. "Export CSV" is not in the header here.
 - Order: the status control, then the search (44px high, label visually hidden, placeholder kept) with the "Filters" button (44px) beside it. The panel under them (`#filter-panel`, a two-column grid) holds Dues, Sort by, Joined from and Joined to.
 - "Clear filters" shows whenever any filter is set (search and status included), open or closed, as a 44px text button under the form.
-- "Export CSV" (STAFF+) is a text button at the right of the count line ("N members") above the cards; same `exportMembers`, so it exports what is filtered. From md up that line has no button and Export CSV stays in the header.
+- "Export CSV" (STAFF+) is a text button at the right of the count line ("N members") above the cards; same `exportMembers`, so it exports what is filtered. From lg up that line has no button and Export CSV stays in the header.
 - The "Select all N shown" row, the card checkboxes and the `aria-live` count are unchanged.
 
 ## Table and list
 - The name (table and phone card, not the Archived view) links to the member's own page, `/members/:id` ([member-detail-view](member-detail-view.md)).
-- From md up: a `<table>` with columns, for STAFF+ a checkbox first, then Name (name with the email beneath), Household (name, or a muted dash), Phone, Joined, Status (`StatusLabel` from `status`: "Member" fern, "Inactive" clay, "Deceased", "Transferred", "Archived" muted), the year strip, Dues, Last paid (`lastPaymentDate` as a date, "Never" when none) and, for STAFF+, a final actions cell.
+- From lg up: a `<table>` with columns, for STAFF+ a checkbox first, then Name (name with the email beneath), Household (name, or a muted dash), Phone, Joined, Status (`StatusLabel` from `status`: "Member" fern, "Inactive" clay, "Deceased", "Transferred", "Archived" muted), the year strip, Dues, Last paid (`lastPaymentDate` as a date, "Never" when none) and, for STAFF+, a final actions cell.
 - Dues: "Paid up" (fern text) or "N months behind" (ochre text, `monthsBehind`, so "1 month behind"). For any other status the cell shows a muted en dash (screen readers get "Not tracked while inactive", "while deceased" ...); no "Paid up" or "N months behind".
-- Below md the table becomes a list of cards (see Year strip and phone cards). For a member who is not MEMBER the dues word is left out there.
+- Below lg the table becomes a list of cards (see Year strip and phone cards). For a member who is not MEMBER the dues word is left out there.
 - Dates use `formatDate(date, 'MMM d, yyyy')`; a `YYYY-MM-DD` string is read as a local day, so it never shifts by a day west of UTC (`frontend/src/utils/index.js`).
-- Below md the "Sort by" select stands in for the headers.
+- Below lg the "Sort by" select stands in for the headers.
+- Between lg and xl (992px to 1199px, where the page beside the rail is 712px to 920px) the Phone column is hidden and the number sits under the email in the Name cell, and the table has a 56rem minimum width inside an `overflow-x-auto` box, so it scrolls sideways in its own box instead of squeezing the columns or the page. From xl the table is as before.
 - A member's household is its own column in the table (phone cards keep it under the name with the house icon); the add and edit dialog has a "Household" select that sends `householdId` only once touched (see [households](households.md#screen)).
 
 ## Year strip and phone cards
@@ -68,12 +69,12 @@ Sized to the phone board (title row, search, one chips row, then cards), so the 
 - `YearStrip` takes a `muted` prop (used by the Archived view): paid squares are grey (`field` at half strength), and no square is red or amber.
 - Desktop: a column "Nov to Oct, one square a month" (the range follows the current month) with the compact `YearStrip`, before Dues. Sorting and filters are unchanged (the column is not sortable).
 - Rule: see [../design.md](../design.md#year-strip) and the header of `frontend/src/utils/yearStrip.js`. Red squares are capped at the server's `consecutiveMonthsMissed`, so the strip and "N months behind" cannot disagree.
-- Below md each member is a card: name, email, household, status, dues text, phone, join date and last paid ("Last paid never" when none), a 44px selection checkbox (STAFF+), the More menu, the large strip with month initials, then Call (`tel:`, shown with a phone) and Record payment (STAFF+, members who owe dues; links to `/payments?memberId=<id>`, which opens the Record payment sheet with that member chosen and the oldest unpaid month filled in, see [payments-view](payments-view.md#record-payment-on-a-phone)), both 44px high. The last card clears the bottom tab bar (`main` carries the bar's padding below `lg`).
+- Below lg each member is a card (two across from md, one column below): name, email, household, status, dues text, phone, join date and last paid ("Last paid never" when none), a 44px selection checkbox (STAFF+), the More menu, the large strip with month initials, then Call (`tel:`, shown with a phone) and Record payment (STAFF+, members who owe dues; links to `/payments?memberId=<id>`, which opens the Record payment sheet with that member chosen and the oldest unpaid month filled in, see [payments-view](payments-view.md#record-payment-on-a-phone)), both 44px high. The last card clears the bottom tab bar (`main` carries the bar's padding below `lg`).
 
 ## Archived view (ADMIN only)
 - Status filter "Archived" loads `GET /api/members?archived=true` (see Filters). The count line reads "N archived members".
 - A note first: "Archived members are hidden from the lists, dues, reminders and messages. Their payments and messages are kept. Only administrators see this view."
-- From md up a table: Member (name in muted ink, email beneath), Household ("None" without one), the year strip in its `muted` treatment, Last paid (`lastPaymentDate`, "Never"), Archived (`archivedAt` as a date; the API does not say who archived, so no "by"), and the actions Restore and Delete for good. Below md each member is a card with the large muted strip and the same two buttons at 44px.
+- From lg up a table: Member (name in muted ink, email beneath), Household ("None" without one), the year strip in its `muted` treatment, Last paid (`lastPaymentDate`, "Never"), Archived (`archivedAt` as a date; the API does not say who archived, so no "by"), and the actions Restore and Delete for good. Below lg each member is a card with the large muted strip and the same two buttons at 44px.
 - Delete for good opens `ConfirmDialog` "Delete <name> for good?" (cannot be undone; only works for a member with no payments and no messages), confirm button "Delete for good" (danger, focus starts on Cancel).
 - The button is disabled with "Has payments, so it stays archived" when the payments already loaded for the strips include that member (`hasPayments`; `GET /api/payments` shows an ADMIN the payments of archived members). A member with messages but no payments is still enabled and the server's 409 decides.
 

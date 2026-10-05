@@ -11,7 +11,9 @@ export const CONTROL = 'block h-(--control-h) w-full rounded-sm border border-fi
 
 /** The desktop table, its header cells and its body cells (the rows carry the rules). */
 export const TABLE = 'hidden w-full border-collapse text-left text-base tabular-nums md:table'
-export const TABLE_TH = 'pb-2 pr-3 text-xs font-medium text-muted first:pl-0 last:pr-0'
+/** The same table for a screen whose stacked cards stay up to `lg` (Members: the rail leaves under 760px of page at 992px). */
+export const TABLE_FROM_LG = 'hidden w-full border-collapse text-left text-base tabular-nums lg:table'
+export const TABLE_TH ='pb-2 pr-3 text-xs font-medium text-muted first:pl-0 last:pr-0'
 export const TABLE_TD = 'py-0 pr-3 align-middle first:pl-0 last:pr-0'
 
 /** A clickable column header. */
