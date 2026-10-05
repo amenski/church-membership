@@ -2,7 +2,7 @@
 
 `src/main/java/io/github/membertracker/infrastructure/PaymentController.java`
 
-Membership-dues API: list (all, or one page), paid months, look up, record and export payments. Roles per endpoint below. The CSV export is STAFF and above (it carries every member's name and amounts).
+Membership-dues API: list (all, or one page), paid months, summary figures, look up, record and export payments. Roles per endpoint below. The CSV export is STAFF and above (it carries every member's name and amounts).
 
 Archived members: for a non-ADMIN caller a payment that embeds an ARCHIVED member keeps the member's id, name and status but loses the email and phone (`GET /api/payments`, `/page`, `/{id}`, and the dashboard's recent payments; `/paid-months` carries member ids and months only), and `/member/{memberId}` is a 404 as if the member did not exist (`ArchivedVisibility`, `ArchivedVisibilityTest`).
 
@@ -12,6 +12,7 @@ Archived members: for a non-ADMIN caller a payment that embeds an ARCHIVED membe
 | GET | `/api/payments` | VOLUNTEER+ (`PaymentController.java:75`) | none | `List<Payment>`: every payment, a plain array. Kept for the screens and exports that need all of them |
 | GET | `/api/payments/page` | VOLUNTEER+ (`PaymentController.java:82`) | query `page`, `size`, `search`, `method`, `sort` (see [Paged list](#paged-list-get-apipaymentspage)) | `{content, page, size, totalElements, totalPages}` |
 | GET | `/api/payments/paid-months` | VOLUNTEER+ (`PaymentController.java:97`) | query `months` (see [Paid months](#paid-months-get-apipaymentspaid-months)) | `{ "<memberId>": ["2026-09", "2026-10"], ... }` |
+| GET | `/api/payments/summary` | VOLUNTEER+ (`PaymentController.java:104`) | none | `{thisMonth, allTime, average, count}` (see [Summary](#summary-get-apipaymentssummary)) |
 | GET | `/api/payments/{id}` | VOLUNTEER+ (`PaymentController.java:104`) | path `id` > 0 | `Payment`, or 404 with empty body |
 | GET | `/api/payments/member/{memberId}` | VOLUNTEER+ (`PaymentController.java:114`) | path `memberId` > 0 | `List<Payment>`, or 404 with empty body if the member does not exist, or is archived and the caller is not an ADMIN |
 | POST | `/api/payments` | STAFF+ (`PaymentController.java:123`) | `RecordPaymentRequest` JSON, `@Valid` | 200 + saved `Payment` |
@@ -39,6 +40,9 @@ Response: `{"content": [ ...same objects as GET /api/payments... ], "page": 0, "
 - Response: a JSON object keyed by member id (a string, as JSON requires), each value the member's distinct `yyyy-MM` billing periods in the window, oldest first: `{"4": ["2026-08", "2026-10"], "7": ["2026-10"]}`. A member with no payment in the window is absent. A month paid twice (two payments for one period) appears once.
 - One grouped statement (`PaymentJpaRepository.findPaidMonthsBetween`), not one per member. Archived members are included, like `GET /api/payments`; the response holds ids and months, no contact details.
 
+### Summary (GET /api/payments/summary)
+`getPaymentSummary`: the three figures above the Payments history without downloading the list. `{"thisMonth": 47.0, "allTime": 147.0, "average": 16.33, "count": 9}`: `thisMonth` is the sum of the payments whose billing `period` is the current month (not the day they were entered, so a back-dated payment for an old month never counts and a late one for this month does), `allTime` the sum of every payment, `average` is `allTime / count` rounded to cents (0 with no payments), `count` the number of payments. Amounts are rounded to cents (`PaymentSummary.of`). One aggregate statement (`PaymentJpaRepository.summarize`, a `sum(case ...)`, a `sum` and a `count`); archived members' payments are counted like everywhere else. Tested in `PaymentPagingIntegrationTest`.
+
 ### Request body (POST)
 `RecordPaymentRequest` (`src/main/java/io/github/membertracker/infrastructure/dto/RecordPaymentRequest.java:15-29`):
 - `memberId`: required, positive. The member is loaded by id server-side; the client never sends a member object.
@@ -57,6 +61,7 @@ Example: `{"memberId": 1, "amount": 50.0, "paymentMethod": "CASH", "period": "20
 | Dependency | Used by | Ref |
 |------------|---------|-----|
 | `GetPaymentPageUseCase` | paged list | `src/main/java/io/github/membertracker/usecase/GetPaymentPageUseCase.java` (`PaymentRepository.findPage`, `PaymentPageQuery` and `PageResult` in `domain/model`) |
+| `GetPaymentSummaryUseCase` | summary | `src/main/java/io/github/membertracker/usecase/GetPaymentSummaryUseCase.java` (`PaymentRepository.summarize`, `PaymentSummary` in `domain/model`) |
 | `GetPaidMonthsUseCase` | paid months | `src/main/java/io/github/membertracker/usecase/GetPaidMonthsUseCase.java` (`PaymentRepository.findPaidMonthsBetween`) |
 | `GetAllPaymentsUseCase` | list, export | `src/main/java/io/github/membertracker/usecase/GetAllPaymentsUseCase.java:21` (`findAll`) |
 | `GetPaymentByIdUseCase` | get by id | `src/main/java/io/github/membertracker/usecase/GetPaymentByIdUseCase.java:22` |

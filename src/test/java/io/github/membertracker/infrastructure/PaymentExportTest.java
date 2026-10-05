@@ -38,6 +38,7 @@ class PaymentExportTest {
     @MockitoBean private GetAllPaymentsUseCase getAllPaymentsUseCase;
     @MockitoBean private GetPaymentPageUseCase getPaymentPageUseCase;
     @MockitoBean private GetPaidMonthsUseCase getPaidMonthsUseCase;
+    @MockitoBean private GetPaymentSummaryUseCase getPaymentSummaryUseCase;
     @MockitoBean private GetPaymentByIdUseCase getPaymentByIdUseCase;
     @MockitoBean private GetPaymentsByMemberUseCase getPaymentsByMemberUseCase;
     @MockitoBean private RecordPaymentUseCase recordPaymentUseCase;

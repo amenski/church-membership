@@ -55,4 +55,9 @@ public interface PaymentJpaRepository extends JpaRepository<PaymentEntity, Long>
 
     @Query("select coalesce(sum(p.amount), 0.0) from PaymentEntity p where p.period = :period")
     double sumAmountByPeriod(@Param("period") YearMonth period);
+
+    /** One row: the sum for {@code period}, the sum of everything, the number of payments. */
+    @Query("select coalesce(sum(case when p.period = :period then p.amount else 0.0 end), 0.0), "
+            + "coalesce(sum(p.amount), 0.0), count(p) from PaymentEntity p")
+    List<Object[]> summarize(@Param("period") YearMonth period);
 }

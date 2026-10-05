@@ -32,7 +32,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 /**
- * GET /api/payments/page and GET /api/payments/paid-months on in-memory H2 with the real controller, use cases and
+ * GET /api/payments/page, /paid-months and /summary on in-memory H2 with the real controller, use cases and
  * queries. Nine payments: Abebe Kebede (3), Berhane Tesfaye (2), Chaltu Abera (1), Dawit Kebede (1) and Gus Archived
  * (1, an ARCHIVED member), none of them for Nopay Nobody.
  */
@@ -338,5 +338,45 @@ class PaymentPagingIntegrationTest {
         assertBadRequest("/api/payments/paid-months?months=0", "months");
         assertBadRequest("/api/payments/paid-months?months=37", "months");
         mockMvc.perform(get("/api/payments/paid-months?months=x").with(as("ADMIN"))).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void summaryHasThisMonthAllTimeTheAverageToCentsAndTheCount() throws Exception {
+        String json = body("/api/payments/summary", "VOLUNTEER");
+
+        // This month: 10 + 30 + 7 (Abebe, Berhane, Gus); all time 147 over 9 payments; 147 / 9 = 16.33.
+        assertThat(((Number) JsonPath.read(json, "$.thisMonth")).doubleValue()).isEqualTo(47.0);
+        assertThat(((Number) JsonPath.read(json, "$.allTime")).doubleValue()).isEqualTo(147.0);
+        assertThat(((Number) JsonPath.read(json, "$.average")).doubleValue()).isEqualTo(16.33);
+        assertThat(((Number) JsonPath.read(json, "$.count")).longValue()).isEqualTo(9);
+    }
+
+    @Test
+    void summaryCountsTheBillingPeriodNotTheDayThePaymentWasEnteredAndIsOneStatement() throws Exception {
+        pay(dawit, NOW.minusMonths(5), 100.0, PaymentMethod.CASH, 0);   // entered today for an old month: not this month
+        pay(nopay, NOW, 3.0, PaymentMethod.CASH, 90);                    // entered long ago for this month: this month
+        Statistics statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
+        statistics.clear();
+
+        String json = body("/api/payments/summary", "VOLUNTEER");
+
+        assertThat(((Number) JsonPath.read(json, "$.thisMonth")).doubleValue()).isEqualTo(50.0);
+        assertThat(((Number) JsonPath.read(json, "$.allTime")).doubleValue()).isEqualTo(250.0);
+        assertThat(((Number) JsonPath.read(json, "$.count")).longValue()).isEqualTo(11);
+        assertThat(statistics.getPrepareStatementCount()).isEqualTo(1);
+    }
+
+    @Test
+    void summaryOfNoPaymentsIsZeroAndTheEndpointNeedsASignInAndTheVolunteerRole() throws Exception {
+        paymentJpaRepository.deleteAll();
+
+        String json = body("/api/payments/summary", "VOLUNTEER");
+
+        assertThat(((Number) JsonPath.read(json, "$.thisMonth")).doubleValue()).isZero();
+        assertThat(((Number) JsonPath.read(json, "$.allTime")).doubleValue()).isZero();
+        assertThat(((Number) JsonPath.read(json, "$.average")).doubleValue()).isZero();
+        assertThat(((Number) JsonPath.read(json, "$.count")).longValue()).isZero();
+        mockMvc.perform(get("/api/payments/summary")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/payments/summary").with(as("MEMBER"))).andExpect(status().isForbidden());
     }
 }

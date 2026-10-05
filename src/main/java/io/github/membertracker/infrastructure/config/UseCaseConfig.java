@@ -40,6 +40,7 @@ import io.github.membertracker.usecase.GetMemberByIdUseCase;
 import io.github.membertracker.usecase.GetMyDuesUseCase;
 import io.github.membertracker.usecase.GetMembersWithMissedPaymentsUseCase;
 import io.github.membertracker.usecase.GetPaidMonthsUseCase;
+import io.github.membertracker.usecase.GetPaymentSummaryUseCase;
 import io.github.membertracker.usecase.GetPaymentByIdUseCase;
 import io.github.membertracker.usecase.GetPaymentPageUseCase;
 import io.github.membertracker.usecase.GetCollectedByMonthUseCase;
@@ -234,6 +235,11 @@ public class UseCaseConfig {
     @Bean
     public GetPaidMonthsUseCase getPaidMonthsUseCase(PaymentRepository paymentRepository) {
         return new GetPaidMonthsUseCase(paymentRepository);
+    }
+
+    @Bean
+    public GetPaymentSummaryUseCase getPaymentSummaryUseCase(PaymentRepository paymentRepository) {
+        return new GetPaymentSummaryUseCase(paymentRepository);
     }
 
     @Bean

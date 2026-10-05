@@ -4,6 +4,7 @@ import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.model.PageResult;
 import io.github.membertracker.domain.model.Payment;
 import io.github.membertracker.domain.model.PaymentPageQuery;
+import io.github.membertracker.domain.model.PaymentSummary;
 import io.github.membertracker.domain.repository.PaymentRepository;
 import io.github.membertracker.infrastructure.persistence.entity.MemberEntity;
 import io.github.membertracker.infrastructure.persistence.entity.PaymentEntity;
@@ -99,6 +100,12 @@ public class PaymentDbRepository implements PaymentRepository {
             paidMonths.computeIfAbsent((Long) row[0], id -> new ArrayList<>()).add((YearMonth) row[1]);
         }
         return paidMonths;
+    }
+
+    @Override
+    public PaymentSummary summarize(YearMonth currentMonth) {
+        Object[] row = paymentJpaRepository.summarize(currentMonth).get(0);
+        return PaymentSummary.of(((Number) row[0]).doubleValue(), ((Number) row[1]).doubleValue(), ((Number) row[2]).longValue());
     }
 
     /** The chosen field first, then the newest id, so equal values never reorder between pages. */

@@ -4,6 +4,7 @@ import io.github.membertracker.domain.model.Member;
 import io.github.membertracker.domain.model.PageResult;
 import io.github.membertracker.domain.model.Payment;
 import io.github.membertracker.domain.model.PaymentPageQuery;
+import io.github.membertracker.domain.model.PaymentSummary;
 
 import java.time.YearMonth;
 import java.util.List;
@@ -33,6 +34,9 @@ public interface PaymentRepository {
      * members with none are absent. One grouped statement.
      */
     Map<Long, List<YearMonth>> findPaidMonthsBetween(YearMonth from, YearMonth to);
+
+    /** What was paid for {@code currentMonth} (by billing period), what was ever paid and the count: one aggregate statement. */
+    PaymentSummary summarize(YearMonth currentMonth);
 
     /** How many payments this member has, whatever their period. */
     long countByMemberId(Long memberId);

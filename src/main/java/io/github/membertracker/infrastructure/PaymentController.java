@@ -7,6 +7,7 @@ import io.github.membertracker.domain.exception.PaymentDomainException;
 import io.github.membertracker.domain.model.PageResult;
 import io.github.membertracker.domain.model.Payment;
 import io.github.membertracker.domain.model.PaymentPageQuery;
+import io.github.membertracker.domain.model.PaymentSummary;
 import io.github.membertracker.infrastructure.dto.RecordPaymentRequest;
 import io.github.membertracker.infrastructure.security.ArchivedVisibility;
 import io.swagger.v3.oas.annotations.Operation;
@@ -47,6 +48,7 @@ public class PaymentController {
     private final GetAllPaymentsUseCase getAllPaymentsUseCase;
     private final GetPaymentPageUseCase getPaymentPageUseCase;
     private final GetPaidMonthsUseCase getPaidMonthsUseCase;
+    private final GetPaymentSummaryUseCase getPaymentSummaryUseCase;
     private final GetPaymentByIdUseCase getPaymentByIdUseCase;
     private final GetPaymentsByMemberUseCase getPaymentsByMemberUseCase;
     private final RecordPaymentUseCase recordPaymentUseCase;
@@ -57,6 +59,7 @@ public class PaymentController {
     public PaymentController(GetAllPaymentsUseCase getAllPaymentsUseCase,
                             GetPaymentPageUseCase getPaymentPageUseCase,
                             GetPaidMonthsUseCase getPaidMonthsUseCase,
+                            GetPaymentSummaryUseCase getPaymentSummaryUseCase,
                             GetPaymentByIdUseCase getPaymentByIdUseCase,
                             GetPaymentsByMemberUseCase getPaymentsByMemberUseCase,
                             RecordPaymentUseCase recordPaymentUseCase,
@@ -65,6 +68,7 @@ public class PaymentController {
         this.getAllPaymentsUseCase = getAllPaymentsUseCase;
         this.getPaymentPageUseCase = getPaymentPageUseCase;
         this.getPaidMonthsUseCase = getPaidMonthsUseCase;
+        this.getPaymentSummaryUseCase = getPaymentSummaryUseCase;
         this.getPaymentByIdUseCase = getPaymentByIdUseCase;
         this.getPaymentsByMemberUseCase = getPaymentsByMemberUseCase;
         this.recordPaymentUseCase = recordPaymentUseCase;
@@ -99,6 +103,13 @@ public class PaymentController {
     @Operation(summary = "The months each member paid within the last N months (VOLUNTEER+)")
     public Map<Long, List<YearMonth>> getPaidMonths(@RequestParam(defaultValue = "12") @Min(1) @Max(36) int months) {
         return getPaidMonthsUseCase.invoke(months);
+    }
+
+    @GetMapping("/summary")
+    @PreAuthorize("hasRole('VOLUNTEER')")
+    @Operation(summary = "The payments page figures: this month, all time, average, count (VOLUNTEER+)")
+    public PaymentSummary getPaymentSummary() {
+        return getPaymentSummaryUseCase.invoke();
     }
 
     @GetMapping("/{id}")
