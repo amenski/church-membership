@@ -5,11 +5,12 @@ Monthly membership dues: staff record who paid what for which month (and, for hi
 ## Who can do what
 | Task | Minimum role | Screen / endpoint |
 |------|--------------|-------------------|
-| View payment history and figures | VOLUNTEER | `/payments` (`frontend/src/router/index.js:24-29`), `GET /api/payments` (`src/main/java/io/github/membertracker/infrastructure/PaymentController.java:56-61`) |
-| View one payment, or one member's payments | VOLUNTEER | `GET /api/payments/{id}` (`PaymentController.java:63-70`), `GET /api/payments/member/{memberId}` (`PaymentController.java:72-79`); API only, no screen uses them |
-| Record a payment | STAFF | "Record payment" button and dialog on `/payments` (`frontend/src/views/PaymentsView.vue:4`), `POST /api/payments` (`PaymentController.java:81-88`) |
+| View payment history and figures | VOLUNTEER | `/payments` (`frontend/src/router/index.js:24-29`), `GET /api/payments` (`src/main/java/io/github/membertracker/infrastructure/PaymentController.java:75-80`) |
+| Read one page of payments, or which months each member paid | VOLUNTEER | `GET /api/payments/page`, `GET /api/payments/paid-months` (`PaymentController.java:82-102`); API only so far, for screens that should not download every payment: [payment-controller.md](payment-controller.md#paged-list-get-apipaymentspage) |
+| View one payment, or one member's payments | VOLUNTEER | `GET /api/payments/{id}` (`PaymentController.java:104-112`), `GET /api/payments/member/{memberId}` (`PaymentController.java:114-121`); API only, no screen uses them |
+| Record a payment | STAFF | "Record payment" button and dialog on `/payments` (`frontend/src/views/PaymentsView.vue:4`), `POST /api/payments` (`PaymentController.java:123-130`) |
 | Open a receipt, download it as PDF | VOLUNTEER | the receipt number ("R-000012") on a history row |
-| Export payments to CSV | STAFF | "Export CSV" button (`PaymentsView.vue:4`), `GET /api/payments/export` (`PaymentController.java:90-109`) |
+| Export payments to CSV | STAFF | "Export CSV" button (`PaymentsView.vue:4`), `GET /api/payments/export` (`PaymentController.java:132-151`) |
 | Delete or void a payment | nobody | not available |
 
 A VOLUNTEER sees the page without the "Record payment" and "Export CSV" buttons; STAFF and ADMIN see both (`isStaff`, `frontend/src/stores/authStore.js:39`). The server answers 403 to a VOLUNTEER's write or export.
@@ -57,7 +58,7 @@ A VOLUNTEER sees the page without the "Record payment" and "Export CSV" buttons;
 - No way to correct a mistaken payment (wrong amount, wrong member). A void-with-audit-trail feature is future work: [payment-controller.md](payment-controller.md#gotchas), audit C7 in [../functionality-audit.md](../functionality-audit.md).
 - The missed-months counter is raised only by the monthly job through `Member.markMissedFor` (`Member.java:66-73`, [payment-reminder-scheduler.md](payment-reminder-scheduler.md)).
 - The unused `paymentStore` was removed in `chore(ui): remove dead frontend code`; the view calls `api.js` directly ([payments-view.md](payments-view.md#collaborators)).
-- The page loads and lists every payment in the browser (no paging, no date range); the figures are computed from that list.
+- The page loads and lists every payment in the browser (no paging, no date range); the figures are computed from that list. The server can now page and filter (`GET /api/payments/page`) and answer "who paid which months" (`/paid-months`), but no screen uses them yet; `GET /api/payments` stays for the exports and the screens that still need every payment.
 - Amounts are `Double` and shown with a `$` sign (`Payment.java:30`, `frontend/src/utils/index.js:42`).
 - The receipt and the history read the nested member name and show "Unknown" if it is missing.
 - Member save and payment save are two separate calls in one use case (`RecordPaymentUseCase.java:59-60`); the use case class has no `@Transactional` (only `ChangePasswordUseCase` does), so a failure between the two saves could leave the member updated without a payment.

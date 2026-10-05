@@ -126,6 +126,7 @@ frontend/src/
 | 2026-10 | OpenAPI/Swagger UI only under the dev profile | Public endpoint list helps attackers; devs still get docs | In use |
 | 2026-10 | All API errors are RFC 7807 ProblemDetail; no rejected values echoed | One format for the frontend; no input reflected back | In use |
 | 2026-10 | Member search, sort and filters stay in the browser | Under ~1,000 members the full list is ~200 kB; a paged API adds complexity for no visible gain | In use. Revisit above ~2,000 members |
+| 2026-10 | Payments gain `GET /api/payments/page` (search, method, sort, paging) and `GET /api/payments/paid-months`; the plain `GET /api/payments` list is kept for exports and the screens that need every payment | Payments grow every month and are the largest list; screens that only draw a table or a year strip should not download all of them | In use in the API; screens move over one by one. Members stay unpaged |
 | 2026-10 | Unauthenticated requests answer 401 (problem+json); 403 only for authenticated users lacking the role | The client refreshes the session on 401 | In use |
 | 2026-10 | The overdue counter is raised once per member per month by a monthly job (idempotent through member.last_missed_count_month) | A daily job would over-count; re-runs and restarts must be safe | In use |
 | 2026-10 | Members are written through MemberRequest; counters and payment dates are system-managed and never client-settable | Stops mass assignment; keeps the monthly job's marker intact | In use |
