@@ -216,8 +216,6 @@ import { CONTROL, LABEL, TABLE, TABLE_FROM_LG, TABLE_TH as TH, TABLE_TD as TD, T
 const NOTES_MAX = 500
 const EMPTY_ERRORS = { memberId: '', period: '', paymentDate: '', amount: '', paymentMethod: '', notes: '' }
 const EMPTY_FILTERS = { search: '', method: 'ALL' }
-// Same breakpoint as the shell (lg): below it the dialog is a full-screen sheet
-const WIDE = '(min-width: 62rem)'
 
 // Month and date default to now each time the dialog opens
 const emptyForm = () => ({
@@ -269,8 +267,7 @@ export default {
       selectedPayment: null,
       receiptOpen: false,
       // the amount the last chosen member's most recent payment put in the field; a different value there was typed by the user
-      prefilledAmount: '',
-      wide: true
+      prefilledAmount: ''
     }
   },
   computed: {
@@ -289,7 +286,7 @@ export default {
       return member ? owedSummary(stripCells(this.stripArgs(member))) : { oldest: '', sentence: '' }
     },
     periodHint() {
-      return !this.wide && this.owed.oldest && this.form.period === this.owed.oldest ? `${longMonth(this.owed.oldest)}, the oldest month not paid.` : ''
+      return this.owed.oldest && this.owed.oldest !== this.currentPeriod && this.form.period === this.owed.oldest ? `${longMonth(this.owed.oldest)}, the oldest month not paid.` : ''
     },
     activeMembers() {
       return this.members.filter(countsForDues).sort((a, b) => a.name.localeCompare(b.name))
@@ -313,10 +310,10 @@ export default {
     }
   },
   watch: {
-    // On the phone sheet the month covered starts at the oldest month the member has not paid
-    // and the amount starts at what that member paid last
+    // The month covered starts at the oldest month the member has not paid and the amount at what
+    // that member paid last. Only choosing a member sets them, so a month typed afterwards stays.
     'form.memberId'(memberId) {
-      if (!this.wide && this.owed.oldest) this.form.period = this.owed.oldest
+      if (this.owed.oldest) this.form.period = this.owed.oldest
       this.prefillAmount(memberId)
     },
     // a link to /payments?search= while this screen is already open
@@ -325,22 +322,13 @@ export default {
     }
   },
   async created() {
-    this.wideQuery = window.matchMedia?.(WIDE)
-    this.wide = this.wideQuery ? this.wideQuery.matches : true
-    this.wideQuery?.addEventListener('change', this.onWide)
     // a member's page links here with their name to show only their payments
     const search = this.$route?.query?.search
     if (typeof search === 'string') this.filters.search = search
     await this.loadData()
     this.openForQueryMember()
   },
-  beforeUnmount() {
-    this.wideQuery?.removeEventListener('change', this.onWide)
-  },
   methods: {
-    onWide(event) {
-      this.wide = event.matches
-    },
     stripArgs(member) {
       return {
         currentMonth: this.currentPeriod,
