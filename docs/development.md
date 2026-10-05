@@ -163,7 +163,7 @@ This builds the frontend (`:frontend:vueBuild`), copies it into the JAR's `/stat
 
 ## Deploy
 
-A step-by-step checklist for one Linux machine (install, database, service, Caddy, firewall, backups, updates, rollback) is in [deploy-linux.md](deploy-linux.md). The sections below are the reference.
+A step-by-step checklist for one Linux machine (everything in Docker, or the jar under systemd; install, database, Caddy, firewall, backups, updates, rollback) is in [deploy-linux.md](deploy-linux.md). The sections below are the reference.
 
 ### HTTPS (Caddy reverse proxy)
 
@@ -214,7 +214,7 @@ The default profile has no secret defaults and fails to start if a required vari
 | `BOOTSTRAP_ADMIN_PASSWORD` | first start only | Password of the first administrator (8 to 72 characters with upper, lower, digit and special). **Remove it after the first start** |
 | `DB_URL` | no | JDBC URL. Default `jdbc:mysql://localhost:3306/felege_selam?serverTimezone=UTC` |
 | `COOKIE_SECURE` | no | Default `true`: auth cookies are sent only over HTTPS. The `dev` profile sets `false` (local http). Set `false` only for a plain-http test |
-| `TRUSTED_PROXIES` | no | Regex of the peers allowed to set the client IP through `X-Forwarded-For` (used by the sign-in throttle). Default loopback only (`127\.0\.0\.1\|::1\|0:0:0:0:0:0:0:1`), right for Caddy on the same host. If the proxy is another container, set it to the proxy's address or subnet regex |
+| `TRUSTED_PROXIES` | no | Regex of the peers allowed to set the client IP through `X-Forwarded-For` (used by the sign-in throttle). Default loopback only (`127\.0\.0\.1\|::1\|0:0:0:0:0:0:0:1`), right for Caddy on the same host. If the proxy is another container, set it to the proxy's address or subnet regex. `docker-compose.server.yml` sets its own default: loopback plus `172.16.0.0/12` and `192.168.0.0/16`, because a published port and other containers show up as Docker bridge addresses |
 | `SERVER_ADDRESS` | no | Address to listen on. Default `127.0.0.1` (loopback, behind Caddy). Set `0.0.0.0` inside a container |
 | `COOKIE_SAMESITE`, `COOKIE_DOMAIN`, `ACCESS_TTL`, `REFRESH_TTL` | no | See [authentication.md](authentication.md#configuration) |
 | Mail variables | no | See [email.md](email.md#configuration) |
@@ -230,42 +230,9 @@ journalctl -u membertracker -f
 
 ### Docker
 
-The repo has no Dockerfile yet. A minimal one:
+The app has an image and a server stack: `Dockerfile` (multi-stage: the JDK builds the jar, front end included, then only the JRE and the jar go into the image, which runs as a non-root user with a health check on `/`), `docker-compose.server.yml` (MySQL and the app, MySQL with no published port and the app on `127.0.0.1` only, read-only root filesystem, no capabilities, 768 MB limit) and `deploy/server.env.example` (every variable of that stack). The steps, with checks, updates, rollback and backups, are in [deploy-linux.md](deploy-linux.md#docker-recommended-if-the-server-already-runs-docker). The app reads the same environment variables as the jar (table above); the compose file sets `DB_URL`, `SERVER_ADDRESS` and a `TRUSTED_PROXIES` that fits Docker networks.
 
-```dockerfile
-FROM eclipse-temurin:17-jre-alpine
-WORKDIR /app
-COPY target/membertracker.jar app.jar
-EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
-```
-
-An example compose file for the app and MySQL together (not in the repo; the `docker-compose.yml` in the repo runs only the database, see [MySQL with Docker Compose](#mysql-with-docker-compose)):
-
-```yaml
-services:
-  app:
-    image: membertracker:latest
-    ports: ["127.0.0.1:8080:8080"]
-    environment:
-      DB_URL: jdbc:mysql://db:3306/felege_selam?serverTimezone=UTC
-      DB_USERNAME: root
-      DB_PASSWORD: change-me
-      JWT_SECRET: replace-with-at-least-32-random-characters
-      SERVER_ADDRESS: 0.0.0.0   # inside the container
-      TRUSTED_PROXIES: 172\.20\.0\.\d+   # the proxy's address or subnet on the compose network (example)
-    depends_on: [db]
-    restart: unless-stopped
-  db:
-    image: mysql:8.0
-    environment:
-      MYSQL_ROOT_PASSWORD: change-me
-      MYSQL_DATABASE: felege_selam
-    volumes: [mysql-data:/var/lib/mysql]
-    restart: unless-stopped
-volumes:
-  mysql-data:
-```
+To build the image alone: `docker build -t membertracker:local .`. The build needs the internet and no Java or Node on your machine: the Gradle build downloads its own Node. The image keeps the dependency downloads in their own layers, so a code change rebuilds in about 15 seconds.
 
 ### Production checklist
 
