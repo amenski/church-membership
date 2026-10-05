@@ -20,6 +20,10 @@ Larger roadmap items that nobody has started (import, user management, password 
 
 ## (b) Small leftovers (each checked against the code on 5 October 2026)
 
+- [ ] The Amharic catalogue (`frontend/src/locales/am.js`) is machine-drafted and unreviewed: a native speaker must read it, church vocabulary first (see [features/i18n.md](features/i18n.md#the-amharic-catalogue-is-machine-drafted))
+- [ ] The backend's own strings are still English: activity-log descriptions, Bean Validation messages, domain exception messages and the emails. Translating them needs a Java `MessageSource` and a locale per request or per recipient; the frontend pass deliberately stopped at the UI
+- [ ] `docs/features/*-view.md` still list the hard-coded English copy that is now in `locales/`; those lists are out of date (12 files)
+
 - [ ] A signed-out load makes one 401 and one 400 probe. Kept on purpose: it is how an expired access cookie with a valid refresh cookie signs the user back in.
 - [ ] A durable send queue and an automatic later retry of FAILED deliveries (`SendCommunicationToAllMembersUseCase` and `SendCommunicationToMembersUseCase` each use a cached thread pool, so unsent mail is lost on a restart; only the manual Retry exists)
 - [ ] The Activity "Show more" stops at 200 entries (`@Max(200)` on `GET /api/activity-log`, `MAX_LIMIT` in `ActivityView.vue`); older entries cannot be reached

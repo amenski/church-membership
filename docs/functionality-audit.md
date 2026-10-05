@@ -180,7 +180,7 @@ A unique, required email per member blocks children and shared inboxes, and ther
 - ~~Payments are only accepted for the last 3 months~~ fixed: any month up to 10 years back, with an optional paid-on date
 - The frontend has no role-aware navigation, so users click into 403 screens
 - ~~The dashboard swallows errors and shows zeros, which hides outages~~ fixed: a failure is a 500 problem
-- English only: i18n is wired but has one locale (assumption: the congregation may prefer Amharic or Tigrinya)
+- ~~English only: i18n is wired but has one locale~~ fixed: the UI ships Amharic and English, Amharic by default with English as the fallback, and the choice is saved on the account (`PUT /api/users/me/language`). The Amharic catalogue is machine-drafted and needs a native speaker's review; the backend's own strings (validation errors, emails, activity descriptions) are not translated. See [features/i18n.md](features/i18n.md)
 - "Revenue" on the dashboard reads like a business, not a church
 
 ### Scalability limits

@@ -2,7 +2,7 @@
 
 `frontend/src/views/ProfileView.vue`
 
-"Profile" page ("Your details and password."): view and edit own name, phone, bio, and change password. Route `/profile`, any signed-in user (`requiresAuth`, `frontend/src/router/index.js`); a MEMBER's home is My dues, which links here. Guards: see [../authentication.md](../authentication.md). Built on Tailwind and the shared components (`PageHead`, `SectionTitle`, `BaseInput`, `BaseButton`, `BaseModal`, `AlertBanner`); no Bootstrap classes, JavaScript or scoped CSS. One column, max 640px, left aligned, two paper cards. It follows the shell's `data-density` (comfortable for a MEMBER: 48px primary button, full width below 640px; dense for staff).
+"Profile" page: view and edit own name, phone, bio, change password, and choose the UI language ([i18n](i18n.md)). Every word it shows comes from `frontend/src/locales/`, not from the template. Route `/profile`, any signed-in user (`requiresAuth`, `frontend/src/router/index.js`); a MEMBER's home is My dues, which links here. Guards: see [../authentication.md](../authentication.md). Built on Tailwind and the shared components (`PageHead`, `SectionTitle`, `BaseInput`, `BaseButton`, `BaseModal`, `AlertBanner`); no Bootstrap classes, JavaScript or scoped CSS. One column, max 640px, left aligned, two paper cards. It follows the shell's `data-density` (comfortable for a MEMBER: 48px primary button, full width below 640px; dense for staff).
 
 ## State
 Local `ref`s; no store of its own. Reads `useAuthStore().user` only as the initial `user` value.

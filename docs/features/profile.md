@@ -7,6 +7,7 @@ Every signed-in user views and edits their own name, phone and bio, and changes 
 |------|--------------|-------------------|
 | View own profile | MEMBER | `/profile`, `GET /api/users/me` |
 | Edit own name, phone, bio | MEMBER | `/profile` ("Your details" card, "Save changes"), `PUT /api/users/me/profile` |
+| Change the UI language | any role | the "Language" card on `/profile`, the rail or top bar, or the sign-in page; saved with `PUT /api/users/me/language` ([i18n](i18n.md)) |
 | Change own password | MEMBER | `/profile` ("Change password" button and dialog), `PUT /api/users/me/password` |
 | Edit email, role or another user | nobody | no UI or API |
 

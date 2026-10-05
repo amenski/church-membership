@@ -102,13 +102,15 @@ frontend/src/
 ├── router/       Routes and auth guards
 ├── ui/           classes.js — the class strings the views share
 ├── utils/        Helpers (formatDate, formatMoney, paging, member filters, …)
-└── i18n.js       Translations (one locale so far)
+├── i18n.js       The vue-i18n instance: SUPPORTED_LOCALES, DEFAULT_LOCALE and setLocale
+└── locales/      en.js and am.js — every user-visible word, in the same key order (see features/i18n.md)
 ```
 
 - Shared state goes in `stores/`. There is no `composables/` folder: it was removed in a dead-code cleanup.
 - All HTTP calls go through `services/api.js`.
 - Styling is Tailwind utilities written in the templates (no class prefix, no `<style>` blocks); tokens and base rules are in `assets/styles/tailwind.css`, shared class strings in `ui/classes.js`, shared patterns are components. See [design.md](design.md).
 - Notifications use `appStore.addNotification({ message, type, duration })`.
+- User-visible words live in `locales/`, never in a component or a util: see [features/i18n.md](features/i18n.md).
 
 ## Decisions
 

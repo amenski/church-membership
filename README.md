@@ -49,6 +49,7 @@ Overviews explain a feature to people (who can do what, how it works, rules, kno
 | Activity log | [activity](docs/features/activity.md) | [activity-log-controller](docs/features/activity-log-controller.md) | [activity-view](docs/features/activity-view.md) |
 | Dashboard | [dashboard](docs/features/dashboard.md) | [dashboard-controller](docs/features/dashboard-controller.md) | [dashboard-view](docs/features/dashboard-view.md) |
 | Payment reminders (scheduled) | [payment-reminders](docs/features/payment-reminders.md) | [payment-reminder-scheduler](docs/features/payment-reminder-scheduler.md) | none |
+| Languages (Amharic and English) | [i18n](docs/features/i18n.md) | [user-controller](docs/features/user-controller.md) | [i18n](docs/features/i18n.md) |
 
 **Planning**
 
