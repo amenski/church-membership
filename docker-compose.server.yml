@@ -38,6 +38,12 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+    # Docker keeps container logs forever by default: keep the newest 30 MB.
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
 
   app:
     build: .
@@ -99,6 +105,12 @@ services:
       - no-new-privileges:true
     # The heap is 75% of this (the image sets -XX:MaxRAMPercentage=75).
     mem_limit: ${APP_MEM_LIMIT:-768m}
+    # Docker keeps container logs forever by default: keep the newest 30 MB.
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
     # networks: [default, proxy]   # uncomment with the proxy network below
 
 # Optional: your own reverse proxy that already runs in Docker, on a network that exists
