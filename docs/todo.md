@@ -34,7 +34,8 @@ Larger roadmap items that nobody has started (import, user management, password 
 
 ## (c) Deferred by the owner
 
-- [ ] Docker for the app: a Dockerfile and an app image (the MySQL database already has `docker-compose.yml`, see [development.md](development.md#mysql-with-docker-compose))
+- [ ] Docker for the app: a Dockerfile and an app image (the app runs as a jar under systemd, see [deploy-linux.md](deploy-linux.md); only MySQL runs from `docker-compose.yml`, see [development.md](development.md#mysql-with-docker-compose))
 - [ ] CI pipeline, and Testcontainers for database tests
-- [ ] Monitoring: health checks, structured (JSON) logging, error tracking
-- [ ] Backup and recovery procedures
+- [ ] Monitoring: health checks, alerts (nothing watches the app, and a failed nightly backup only shows in `/var/log/membertracker-backup.log`), structured (JSON) logging, error tracking
+- [ ] Backups off the machine, automatically: the nightly dump (`deploy/backup-mysql.sh`, newest 14 kept) stays on the same disk, and copying it elsewhere is a manual weekly step (see [deploy-linux.md](deploy-linux.md#11-back-up-server))
+- [ ] A restore drill on the real server: the restore and rollback steps were tested, but not on the production machine with a real backup
