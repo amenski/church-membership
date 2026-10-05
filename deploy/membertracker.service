@@ -1,0 +1,40 @@
+# systemd unit for MemberTracker on one Linux machine. Install it as /etc/systemd/system/membertracker.service.
+# Steps: docs/deploy-linux.md
+#
+# MySQL runs in Docker (docker-compose.yml), outside systemd's control. After= only orders the start; it
+# does not wait until MySQL answers. If MySQL is not ready yet the app exits, and Restart=on-failure tries
+# again every 10 seconds until it connects. Requires=docker.service is left out on purpose: restarting
+# Docker would then stop the app too, and it would not come back by itself.
+#
+# systemd does not allow a comment at the end of a line, so every comment here is on its own line.
+
+[Unit]
+Description=MemberTracker
+After=network.target docker.service
+
+[Service]
+User=membertracker
+Group=membertracker
+WorkingDirectory=/opt/membertracker
+# DB_USERNAME, DB_PASSWORD, JWT_SECRET and the rest: see deploy/membertracker.env.example
+EnvironmentFile=/opt/membertracker/membertracker.env
+# Heap limit as in docs/development.md. Lower -Xmx on a machine with little memory (MySQL needs about 0.5 GB).
+ExecStart=/usr/bin/java -Xms512m -Xmx1024m -jar /opt/membertracker/membertracker.jar
+# A JVM stopped by SIGTERM (systemctl stop) exits with 143, which is a normal stop here.
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=10
+
+# Hardening. Each option is safe for this app because it only reads its jar, talks to MySQL and the mail
+# server over the network, and writes nothing to disk (logs go to the journal; Tomcat's temp files go to
+# /tmp, which PrivateTmp gives it privately).
+# The service user has no sudo or setuid use: a bug cannot gain more rights.
+NoNewPrivileges=true
+# /usr, /boot and /etc become read-only for the service (/opt stays as it is).
+ProtectSystem=full
+# /home, /root and /run/user are hidden; the jar lives in /opt.
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
