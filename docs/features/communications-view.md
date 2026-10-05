@@ -61,7 +61,7 @@ Component `data()` (`views/CommunicationsView.vue:197-215`), not the Pinia store
 - `utils/communicationPayload.js` `buildCommunicationRequest` (frontend half of the shared contract fixture, `__tests__/utils/communicationPayload.test.js`)
 - `utils/audiencePreview.js` (`previewRecipients`, `sendableCount`, `previewSummary`, `skippedNote`, `skippedSentence`, `personLabel`; no test yet); it shares `emailKey` with `utils/audienceCount.js`, whose `audienceCount` the view no longer calls (its test remains)
 - `utils/messageHistory.js` (`attemptsLabel`, `typeLabel`, `deliverySummaryParts`, `deliveryStatus`, `countDeliveries`, `sortMessages`, `failedFirst`), with a test in `__tests__/utils/`
-- `utils/yearStrip.js` (`paidMonthsByMember`) and `utils/dues.js` (`monthsBehind`)
+- `utils/yearStrip.js` (`paidMonthsFromMap`) and `utils/dues.js` (`monthsBehind`)
 - Components: `PageHead`, `SectionTitle`, `AlertBanner`, `BaseButton`, `BaseInput`, `BaseSelect`, `MemberPicker`, `BaseTextarea`, `BaseModal`, `ConfirmDialog`, `StatusLabel`, `StatusBadge`, `YearStrip`, `TextButton`, `EmptyNote`
 - `stores/authStore.js:39` `isStaff` (`hasRole('STAFF')`); `useAppStore().addNotification` for toasts
 - Backend: [communication-controller.md](communication-controller.md)
