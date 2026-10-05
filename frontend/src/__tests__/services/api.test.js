@@ -51,7 +51,9 @@ describe('api response interceptor', () => {
 
     expect(addNotification).toHaveBeenCalledTimes(1)
     expect(addNotification).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Access Denied', message: 'Role STAFF required' })
+      // one catalogue entry now serves both this toast and the router guard's, so the title is the
+      // guard's spelling
+      expect.objectContaining({ title: 'Access denied', message: 'Role STAFF required' })
     )
   })
 

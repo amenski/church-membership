@@ -43,7 +43,12 @@ const ICONS = {
   'layout-grid': ['M3 3h7v7H3z', 'M14 3h7v7h-7z', 'M3 14h7v7H3z', 'M14 14h7v7h-7z'],
   'chevron-up': ['M6 15l6-6 6 6'],
   'chevron-down': ['M6 9l6 6 6-6'],
-  'chevrons-up-down': ['M7 15l5 5 5-5', 'M7 9l5-5 5 5']
+  'chevrons-up-down': ['M7 15l5 5 5-5', 'M7 9l5-5 5 5'],
+  globe: [
+    'M2 12a10 10 0 1 0 20 0a10 10 0 1 0-20 0',
+    'M2 12h20',
+    'M12 2a15.3 15.3 0 0 1 4 10a15.3 15.3 0 0 1-4 10a15.3 15.3 0 0 1-4-10a15.3 15.3 0 0 1 4-10z'
+  ]
 }
 
 // Filled glyphs: a direction marker reads better solid than as a hairline

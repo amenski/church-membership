@@ -19,13 +19,19 @@ export function buildMembershipRequest(form) {
 }
 
 /** "11 years old" from a YYYY-MM-DD birth date (read as a calendar day, no time zone); '' when unknown or in the future. */
-export function ageText(birthDate, now = new Date()) {
+/**
+ * @param {string} birthDate "yyyy-MM-dd"
+ * @param {Function} t useI18n's t
+ * @param {Date} [now]
+ * @returns {string} '' when the date is missing or in the future
+ */
+export function ageText(birthDate, t, now = new Date()) {
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(birthDate || '')
   if (!match) return ''
   const [year, month, day] = match.slice(1).map(Number)
   const birthdayPassed = now.getMonth() + 1 > month || (now.getMonth() + 1 === month && now.getDate() >= day)
   const years = now.getFullYear() - year - (birthdayPassed ? 0 : 1)
   if (years < 0) return ''
-  if (years < 1) return 'under 1 year old'
-  return `${years} ${years === 1 ? 'year' : 'years'} old`
+  if (years < 1) return t('households.ageUnderOne')
+  return t('households.ageYears', years)
 }

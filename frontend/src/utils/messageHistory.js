@@ -1,39 +1,51 @@
 import { formatDate } from '@/utils'
 
-const TYPE_LABELS = { REMINDER: 'Reminder', ANNOUNCEMENT: 'Announcement', PERSONAL: 'Personal' }
+// The words live in locales/ (messages.*)
+const TYPE_KEYS = { REMINDER: 'messages.typeReminder', ANNOUNCEMENT: 'messages.typeAnnouncement', PERSONAL: 'messages.typePersonal' }
 
-/** A plain word for the message type; an unknown type shows as it came. */
-export function typeLabel(type) {
-  return TYPE_LABELS[type] || type || ''
+/** The i18n key of a message type's name; an unknown type is shown as it came. */
+export function typeKey(type) {
+  return TYPE_KEYS[type] || type || ''
 }
 
-/** "1 attempt", "3 attempts"; empty when none were made (or the count is unknown). */
-export function attemptsLabel(n) {
-  return n > 0 ? `${n} ${n === 1 ? 'attempt' : 'attempts'}` : ''
+/**
+ * "1 attempt", "3 attempts"; empty when none were made (or the count is unknown).
+ * @param {number} n
+ * @param {Function} t useI18n's t
+ */
+export function attemptsLabel(n, t) {
+  return n > 0 ? t('messages.attempts', n) : ''
 }
 
 /**
  * The delivery counts of one message as words with a tone for StatusBadge: "8 delivered" (sent plus
  * delivered, both mean the mail left), "1 failed", "1 pending". Zero counts are left out.
+ * @param {object} summary
+ * @param {Function} t useI18n's t
  * @returns {{ key: string, text: string, tone: 'paid'|'danger'|'behind' }[]}
  */
-export function deliverySummaryParts(summary) {
+export function deliverySummaryParts(summary, t) {
   const { sent = 0, delivered = 0, failed = 0, pending = 0 } = summary || {}
   const parts = [
-    { key: 'delivered', count: sent + delivered, word: 'delivered', tone: 'paid' },
-    { key: 'failed', count: failed, word: 'failed', tone: 'danger' },
-    { key: 'pending', count: pending, word: 'pending', tone: 'behind' }
+    { key: 'delivered', count: sent + delivered, text: t('messages.summaryDelivered', { n: sent + delivered }), tone: 'paid' },
+    { key: 'failed', count: failed, text: t('messages.summaryFailed', { n: failed }), tone: 'danger' },
+    { key: 'pending', count: pending, text: t('messages.summaryPending', { n: pending }), tone: 'behind' }
   ]
-  return parts.filter(part => part.count > 0).map(({ key, count, word, tone }) => ({ key, text: `${count} ${word}`, tone }))
+  return parts.filter(part => part.count > 0)
 }
 
-/** StatusLabel tone and word for one delivery status. SENT reads Delivered: the mail left, as the totals say. */
-export function deliveryStatus(status) {
+/**
+ * StatusLabel tone and word for one delivery status. SENT reads Delivered: the mail left, as the
+ * totals say.
+ * @param {string} status
+ * @param {Function} t useI18n's t
+ */
+export function deliveryStatus(status, t) {
   switch (status) {
-    case 'SENT': return { tone: 'paid', label: 'Delivered' }
-    case 'DELIVERED': return { tone: 'paid', label: 'Delivered' }
-    case 'FAILED': return { tone: 'danger', label: 'Failed' }
-    case 'PENDING': return { tone: 'behind', label: 'Pending' }
+    case 'SENT':
+    case 'DELIVERED': return { tone: 'paid', label: t('messages.delivered') }
+    case 'FAILED': return { tone: 'danger', label: t('messages.failed') }
+    case 'PENDING': return { tone: 'behind', label: t('messages.pending') }
     default: return { tone: 'behind', label: status || '' }
   }
 }

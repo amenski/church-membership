@@ -3,12 +3,12 @@
        select always show (a list that fits the current size must still be able to go back to a smaller one); the buttons only
        when the list needs more than one page. Works the same for a list in the browser and one the server pages: it only
        needs the total. The caller sets the padding (class falls through): a card footer is px-4 py-3, a list outside a card has none -->
-  <nav v-if="total > smallest" aria-label="Pagination" class="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 text-sm text-muted">
-    <p class="m-0 tabular-nums" aria-live="polite">Showing {{ range.from }} to {{ range.to }} of {{ total }}</p>
+  <nav v-if="total > smallest" :aria-label="$t('pager.pagination')" class="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 text-sm text-muted">
+    <p class="m-0 tabular-nums" aria-live="polite">{{ $t('pager.showing', { from: range.from, to: range.to, total }) }}</p>
 
     <div class="flex flex-wrap items-center gap-x-4 gap-y-3 max-sm:w-full max-sm:justify-between">
       <div class="flex items-center gap-2">
-        <label :for="`${uid}-size`" class="whitespace-nowrap">Rows per page</label>
+        <label :for="`${uid}-size`" class="whitespace-nowrap">{{ $t('pager.rowsPerPage') }}</label>
         <select
           :id="`${uid}-size`"
           :value="pageSize"
@@ -21,7 +21,7 @@
 
       <ul v-if="total > pageSize" class="m-0 flex list-none flex-wrap items-center gap-1 p-0">
         <li>
-          <button type="button" :class="BUTTON" :disabled="current <= 1" @click="go(current - 1)">Previous</button>
+          <button type="button" :class="BUTTON" :disabled="current <= 1" @click="go(current - 1)">{{ $t('pager.previous') }}</button>
         </li>
         <!-- below sm, and in a compact pager, the numbers give way to "Page 4 of 12": seven 44px buttons do not fit a phone -->
         <template v-for="(item, index) in items" :key="`${item}-${index}`">
@@ -30,15 +30,15 @@
             <button
               type="button"
               :class="[BUTTON, 'tabular-nums', item === current ? 'border-teal bg-teal text-paper hover:bg-teal-hover' : '']"
-              :aria-label="`Page ${item}`"
+              :aria-label="$t('pager.page', { n: item })"
               :aria-current="item === current ? 'page' : undefined"
               @click="go(item)"
             >{{ item }}</button>
           </li>
         </template>
-        <li :class="['px-2 tabular-nums', compact ? '' : 'sm:hidden']">Page {{ current }} of {{ pages }}</li>
+        <li :class="['px-2 tabular-nums', compact ? '' : 'sm:hidden']">{{ $t('pager.pageOf', { page: current, pages }) }}</li>
         <li>
-          <button type="button" :class="BUTTON" :disabled="current >= pages" @click="go(current + 1)">Next</button>
+          <button type="button" :class="BUTTON" :disabled="current >= pages" @click="go(current + 1)">{{ $t('pager.next') }}</button>
         </li>
       </ul>
     </div>

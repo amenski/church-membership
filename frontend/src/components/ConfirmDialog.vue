@@ -2,7 +2,7 @@
   <BaseModal :model-value="modelValue" :title="title" size="sm" @update:model-value="$emit('update:modelValue', $event)">
     <p class="m-0 text-base">{{ message }}</p>
     <template #footer>
-      <BaseButton ref="cancel" variant="secondary" :disabled="busy" @click="$emit('update:modelValue', false)">Cancel</BaseButton>
+      <BaseButton ref="cancel" variant="secondary" :disabled="busy" @click="$emit('update:modelValue', false)">{{ $t('common.cancel') }}</BaseButton>
       <BaseButton :variant="danger ? 'danger' : 'primary'" :disabled="busy" :aria-busy="busy ? 'true' : undefined" @click="$emit('confirm')">
         {{ confirmLabel }}
       </BaseButton>

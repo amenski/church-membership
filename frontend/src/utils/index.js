@@ -1,7 +1,13 @@
 // Utility functions for the application
 import { format as dateFnsFormat } from 'date-fns'
+import { enUS } from 'date-fns/locale'
+import { am } from '@/utils/dateLocale'
+import i18n from '@/i18n'
 
 const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/
+
+// Month and weekday names follow the UI language; the calendar stays Gregorian either way
+const dateLocale = () => (i18n.global.locale.value === 'am' ? am : enUS)
 
 /**
  * A date-only string ("2026-10-01") is a calendar day, not an instant: new Date() would read it
@@ -20,7 +26,7 @@ const toDate = (date) => {
  */
 export const formatDate = (date, fmt = 'MMM dd, yyyy') => {
   if (!date) return ''
-  return dateFnsFormat(toDate(date), fmt)
+  return dateFnsFormat(toDate(date), fmt, { locale: dateLocale() })
 }
 
 /**

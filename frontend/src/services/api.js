@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { useAuthStore, useAppStore } from '@/stores/index.js'
+import i18n from '@/i18n'
 
 // Configuration from environment variables
 const API_CONFIG = {
@@ -145,10 +146,10 @@ api.interceptors.response.use(
         const appStore = useAppStore()
         if (appStore && appStore.addNotification) {
           const errorData = error.response?.data
-          const errorMessage = errorData?.detail || errorData?.title || 'Authentication required'
+          const errorMessage = errorData?.detail || errorData?.title || i18n.global.t('errors.authenticationRequired')
           appStore.addNotification({
             type: 'error',
-            title: 'Unauthorized',
+            title: i18n.global.t('errors.unauthorized'),
             message: errorMessage,
             duration: 5000
           })
@@ -180,10 +181,10 @@ api.interceptors.response.use(
         if (appStore && appStore.addNotification) {
           // Extract message from Problem Details format (RFC 7807) or fallback
           const errorData = error.response?.data
-          const errorMessage = errorData?.detail || errorData?.title || 'You do not have permission to access this resource'
+          const errorMessage = errorData?.detail || errorData?.title || i18n.global.t('errors.forbiddenResource')
           appStore.addNotification({
             type: 'error',
-            title: 'Access Denied',
+            title: i18n.global.t('errors.accessDeniedTitle'),
             message: errorMessage,
             duration: 5000
           })
@@ -498,6 +499,12 @@ const apiService = {
 
   async updateProfile(profileData) {
     const response = await api.put('/users/me/profile', profileData)
+    return response.data
+  },
+
+  // The UI language, on its own endpoint: the profile PUT would read absent fields as "clear this"
+  async updateLanguage(language) {
+    const response = await api.put('/users/me/language', { language })
     return response.data
   },
 

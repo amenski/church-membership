@@ -1,22 +1,22 @@
 <template>
   <!-- detail: the member's page, rows of 12 big squares with the month name above each, a caption over every row -->
-  <div v-if="detail" role="group" :aria-label="label" class="flex flex-col gap-4">
+  <div v-if="detail" role="group" :aria-label="label || $t('strip.duesLast12')" class="flex flex-col gap-4">
     <div v-for="row in rows" :key="row[0].month">
-      <div v-if="rows.length > 1" class="mb-1.5 text-sm font-medium text-ink" aria-hidden="true">{{ row[0].name }} to {{ row[row.length - 1].name }}</div>
+      <div v-if="rows.length > 1" class="mb-1.5 text-sm font-medium text-ink" aria-hidden="true">{{ $t('strip.range', { from: row[0].name, to: row[row.length - 1].name }) }}</div>
       <div class="flex flex-wrap gap-1">
         <div v-for="cell in row" :key="cell.month" class="flex w-11 flex-col items-center gap-1">
           <span class="text-xs leading-none text-muted" aria-hidden="true">{{ cell.short }}</span>
           <span :class="[BOX, 'h-9 w-11 rounded-sm', (muted ? MUTED_SQUARES : SQUARES)[cell.state]]" aria-hidden="true"></span>
-          <span class="sr-only">{{ cell.name }}: {{ cell.label }}</span>
+          <span class="sr-only">{{ cell.name }}: {{ $t(cell.labelKey) }}</span>
         </div>
       </div>
     </div>
   </div>
-  <div v-else role="group" :aria-label="label" :class="['flex', ledger ? 'gap-1' : large ? 'gap-[3px]' : 'gap-0.5']">
+  <div v-else role="group" :aria-label="label || $t('strip.duesLast12')" :class="['flex', ledger ? 'gap-1' : large ? 'gap-[3px]' : 'gap-0.5']">
     <div v-for="cell in cells" :key="cell.month" :class="['flex flex-col items-center', large && 'gap-[3px]']">
       <span :class="[BOX, ledger ? 'size-7 rounded-sm' : large ? 'h-[26px] w-5 rounded-[3px]' : 'h-[18px] w-2.5 rounded-[2px]', (muted ? MUTED_SQUARES : SQUARES)[cell.state]]" aria-hidden="true"></span>
       <span v-if="large" class="text-xs leading-none text-muted" aria-hidden="true">{{ cell.initial }}</span>
-      <span class="sr-only">{{ cell.name }}: {{ cell.label }}</span>
+      <span class="sr-only">{{ cell.name }}: {{ $t(cell.labelKey) }}</span>
     </div>
   </div>
 </template>
@@ -40,7 +40,8 @@ export default {
     size: { type: String, default: 'compact', validator: value => ['compact', 'large', 'ledger', 'detail'].includes(value) },
     // how many months, ending with currentMonth; the detail size draws them 12 to a row
     months: { type: Number, default: 12 },
-    label: { type: String, default: 'Dues, last 12 months' }
+    // the caller's aria-label; blank falls back to the generic one for this language
+    label: { type: String, default: '' }
   },
   data() {
     return { BOX, SQUARES, MUTED_SQUARES }

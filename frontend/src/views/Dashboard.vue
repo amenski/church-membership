@@ -1,27 +1,27 @@
 <template>
   <!-- From lg the header is a full-width band, so the page's own padding (App.vue) is dropped here and the content area below carries it -->
   <div class="lg:max-w-none! lg:p-0!">
-    <PageHead title="Overview" lead="Who is behind on dues, and how this month is going." band />
+    <PageHead :title="$t('nav.overview')" :lead="$t('dashboard.lead')" band />
 
     <div class="lg:mx-auto lg:max-w-[1400px] lg:px-8 lg:pt-6 lg:pb-10">
     <AlertBanner v-if="loadError">
-      The overview did not load. Reload the page, or sign in again if it keeps happening.
+      {{ $t('dashboard.loadError') }}
     </AlertBanner>
-    <p v-else-if="!loaded" class="m-0 py-3 text-sm text-muted" role="status">Loading overview...</p>
+    <p v-else-if="!loaded" class="m-0 py-3 text-sm text-muted" role="status">{{ $t('dashboard.loading') }}</p>
 
     <template v-if="loaded">
       <!-- below lg four tiles; from lg one bordered card, its cells divided by hairlines (the gap shows the rule colour) -->
       <dl class="m-0 mb-6 grid grid-cols-2 gap-2 lg:flex lg:gap-px lg:overflow-hidden lg:rounded-md lg:border lg:border-rule lg:bg-rule">
-        <StatTile slim cell :label="`Collected in ${monthName}`" :value="formatMoney(stats.monthlyRevenue)" />
-        <StatTile slim cell label="Paid up" :value="paidCount" :hint="`of ${activeCount} members`" tone="paid" />
-        <StatTile slim cell label="Behind on dues" :value="behindMembers.length" :hint="behindHint" tone="behind" />
+        <StatTile slim cell :label="$t('dashboard.collectedIn', { month: monthName })" :value="formatMoney(stats.monthlyRevenue)" />
+        <StatTile slim cell :label="$t('dues.badgePaid')" :value="paidCount" :hint="$t('dashboard.ofMembers', { n: activeCount })" tone="paid" />
+        <StatTile slim cell :label="$t('dashboard.behindOnDues')" :value="behindMembers.length" :hint="behindHint" tone="behind" />
         <StatTile
           v-if="failedReminders !== null"
           slim
           cell
-          label="Reminders"
+          :label="$t('dashboard.reminders')"
           :value="failedReminders"
-          hint="failed to deliver."
+          :hint="$t('dashboard.remindersFailed')"
           :tone="failedReminders > 0 ? 'danger' : 'default'"
           to="/communications"
         />
@@ -38,14 +38,14 @@
         <section :class="[CARD, 'min-w-0 order-1']" aria-labelledby="ledger-title">
           <div class="mb-3 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
             <div>
-              <SectionTitle id="ledger-title" class="!mb-0.5 !text-xl">{{ wide ? 'Dues by month' : 'Dues by member' }}</SectionTitle>
+              <SectionTitle id="ledger-title" class="!mb-0.5 !text-xl">{{ wide ? $t('dashboard.ledgerWideTitle') : $t('dashboard.ledgerNarrowTitle') }}</SectionTitle>
               <p class="m-0 max-w-[52ch] text-sm text-muted">
-                {{ stripRange }}, one square a month. Members who are behind or due this month, most behind first.
+                {{ $t('dashboard.behindCaption', { range: stripRange }) }}
               </p>
             </div>
             <ul v-if="wide" class="m-0 flex list-none flex-wrap gap-x-4 gap-y-2 p-0 text-xs text-muted" aria-hidden="true">
-              <li v-for="item in LEGEND" :key="item.label" class="flex items-center gap-1.5">
-                <span :class="['box-border block size-3.5 rounded-sm', SQUARES[item.state]]"></span>{{ item.label }}
+              <li v-for="item in LEGEND" :key="item.labelKey" class="flex items-center gap-1.5">
+                <span :class="['box-border block size-3.5 rounded-sm', SQUARES[item.state]]"></span>{{ $t(item.labelKey) }}
               </li>
             </ul>
           </div>
@@ -53,90 +53,90 @@
             <div :class="wide ? 'overflow-x-auto' : ''">
             <div :class="wide ? 'min-w-[720px]' : ''">
             <div :class="[ledgerGrid, 'hidden border-b border-rule pb-2 text-xs font-medium text-muted sm:grid']" aria-hidden="true">
-              <span>Member</span>
+              <span>{{ $t('members.colMember') }}</span>
               <span v-if="wide" class="flex gap-1">
                 <span v-for="name in monthLabels" :key="name" class="w-7 text-center text-[11px]">{{ name }}</span>
               </span>
               <span v-else>{{ stripRange }}</span>
-              <span class="text-right">Behind</span>
+              <span class="text-right">{{ $t('dashboard.behind') }}</span>
             </div>
             <ul class="m-0 list-none p-0">
               <li v-for="member in shownLedgerRows" :key="member.id" :class="[ledgerGrid, 'min-h-(--list-row-h) border-b border-rule py-2']">
                 <span class="min-w-0 font-medium [overflow-wrap:anywhere]"><router-link :to="`/members/${member.id}`">{{ member.name }}</router-link></span>
                 <span v-if="paidByMember" class="max-sm:order-3 max-sm:col-span-2"><YearStrip v-bind="stripProps(member)" :size="wide ? 'ledger' : 'compact'" /></span>
-                <span v-else class="text-muted max-sm:order-3"><span aria-hidden="true">&ndash;</span><span class="sr-only">Months paid did not load</span></span>
+                <span v-else class="text-muted max-sm:order-3"><span aria-hidden="true">&ndash;</span><span class="sr-only">{{ $t('members.monthsNotLoaded') }}</span></span>
                 <span class="text-right max-sm:order-2">
-                  <StatusLabel v-if="member.consecutiveMonthsMissed > 0" tone="behind">{{ monthsBehind(member.consecutiveMonthsMissed) }}</StatusLabel>
-                  <StatusLabel v-else tone="muted">Due this month</StatusLabel>
+                  <StatusLabel v-if="member.consecutiveMonthsMissed > 0" tone="behind">{{ monthsBehind(member.consecutiveMonthsMissed, $t) }}</StatusLabel>
+                  <StatusLabel v-else tone="muted">{{ $t('dues.badgeDue') }}</StatusLabel>
                 </span>
               </li>
             </ul>
             <div v-if="wide && paidTotals" :class="[ledgerGrid, 'pt-2.5 text-xs font-medium']">
-              <span class="text-muted">Members who paid</span>
+              <span class="text-muted">{{ $t('dashboard.membersWhoPaid') }}</span>
               <span class="flex gap-1">
-                <span v-for="total in paidTotals" :key="total.month" class="w-7 text-center text-ink">{{ total.count }}<span class="sr-only"> members paid in {{ total.name }}</span></span>
+                <span v-for="total in paidTotals" :key="total.month" class="w-7 text-center text-ink">{{ total.count }}<span class="sr-only">{{ $t('dashboard.membersPaidIn', { month: total.name }) }}</span></span>
               </span>
               <span></span>
             </div>
             </div>
             </div>
             <p v-if="ledgerRows.length > LEDGER_LIMIT" class="mt-3 mb-0 text-sm text-muted">
-              Showing {{ LEDGER_LIMIT }} of {{ ledgerRows.length }} members who are behind or due. <router-link to="/members?dues=behind">See all<span class="sr-only"> members who are behind</span></router-link>
+              {{ $t('dashboard.showingOf', { shown: LEDGER_LIMIT, total: ledgerRows.length }) }} <router-link to="/members?dues=behind">{{ $t('dashboard.seeAll') }}<span class="sr-only">{{ $t('dashboard.seeAllSr') }}</span></router-link>
             </p>
           </template>
-          <EmptyNote v-else-if="activeCount > 0">No overdue members. Everyone is paid up for this month.</EmptyNote>
-          <EmptyNote v-else>No active members yet. Add the first one under Members.</EmptyNote>
+          <EmptyNote v-else-if="activeCount > 0">{{ $t('dashboard.noOverdue') }}</EmptyNote>
+          <EmptyNote v-else>{{ $t('dashboard.noActiveMembers') }}</EmptyNote>
         </section>
 
         <!-- What happened lately: below the ledger, so the left column is not left short -->
         <section :class="[CARD, 'min-w-0 order-4']" aria-labelledby="activity-title">
-          <SectionTitle id="activity-title" class="!mb-0.5 !text-xl">Recent activity</SectionTitle>
+          <SectionTitle id="activity-title" class="!mb-0.5 !text-xl">{{ $t('dashboard.recentActivity') }}</SectionTitle>
           <ul v-if="activities.length" class="m-0 mt-2 list-none p-0">
             <li v-for="activity in activities" :key="activity.id" :class="[ROW, 'items-center max-sm:flex-wrap max-sm:gap-y-0']">
               <span class="shrink-0 grow-0 basis-22 text-xs text-muted tabular-nums max-sm:basis-full">{{ formatDate(activity.date) }}</span>
               <span class="min-w-0 flex-auto [overflow-wrap:anywhere]">{{ activity.description }}</span>
             </li>
           </ul>
-          <EmptyNote v-else class="mt-2">Nothing has happened yet. Payments and messages will show up here.</EmptyNote>
+          <EmptyNote v-else class="mt-2">{{ $t('dashboard.nothingHappened') }}</EmptyNote>
         </section>
         </div>
 
         <div class="contents min-w-0 xl:flex xl:flex-col xl:gap-6">
           <section :class="[CARD, 'min-w-0 order-2']" aria-labelledby="calls-title">
-            <SectionTitle id="calls-title" class="!mb-0.5 !text-xl">Call this week</SectionTitle>
-            <p class="m-0 text-sm text-muted">The three members furthest behind.</p>
+            <SectionTitle id="calls-title" class="!mb-0.5 !text-xl">{{ $t('dashboard.callThisWeek') }}</SectionTitle>
+            <p class="m-0 text-sm text-muted">{{ $t('dashboard.callSubtitle') }}</p>
             <ul v-if="callList.length" class="m-0 mt-2 list-none p-0">
               <li v-for="member in callList" :key="member.id" class="border-b border-rule py-3 last:border-b-0 last:pb-0">
                 <div class="flex items-baseline justify-between gap-3">
                   <span class="min-w-0 font-medium [overflow-wrap:anywhere]">{{ member.name }}</span>
-                  <span class="shrink-0 text-sm font-medium text-ochre-text">{{ monthsBehind(member.consecutiveMonthsMissed) }}</span>
+                  <span class="shrink-0 text-sm font-medium text-ochre-text">{{ monthsBehind(member.consecutiveMonthsMissed, $t) }}</span>
                 </div>
                 <div class="mt-2 flex flex-wrap gap-2">
                   <a v-if="member.phone" :href="telHref(member.phone)" :class="[CALL_ACTION, 'border-teal bg-teal text-paper hover:bg-teal-hover']">
-                    <Icon name="phone" :size="14" />Call<span class="sr-only"> {{ member.name }}</span>
+                    <Icon name="phone" :size="14" />{{ $t('members.call') }}<span class="sr-only"> {{ member.name }}</span>
                   </a>
                   <router-link v-if="authStore.isStaff" to="/communications" :class="[CALL_ACTION, 'border-field bg-paper text-ink hover:border-teal hover:bg-teal-tint']">
-                    Send reminder<span class="sr-only"> to {{ member.name }}</span>
+                    {{ $t('dashboard.sendReminder') }}<span class="sr-only">{{ $t('dashboard.sendReminderSr', { name: member.name }) }}</span>
                   </router-link>
                 </div>
               </li>
             </ul>
-            <EmptyNote v-else class="mt-2">Nobody is behind. There is no one to call.</EmptyNote>
+            <EmptyNote v-else class="mt-2">{{ $t('dashboard.nobodyBehind') }}</EmptyNote>
           </section>
 
           <section :class="[CARD, 'min-w-0 order-3']" aria-labelledby="payments-title">
-            <SectionTitle id="payments-title" class="!mb-0.5 !text-xl">Latest payments</SectionTitle>
+            <SectionTitle id="payments-title" class="!mb-0.5 !text-xl">{{ $t('dashboard.latestPayments') }}</SectionTitle>
             <ul v-if="recentPayments.length" class="m-0 mt-2 list-none p-0">
               <li v-for="payment in recentPayments" :key="payment.id" :class="[ROW, 'items-baseline justify-between']">
                 <div class="min-w-0">
-                  <div class="font-medium [overflow-wrap:anywhere]">{{ payment.member?.name || 'Unknown' }}</div>
+                  <div class="font-medium [overflow-wrap:anywhere]">{{ payment.member?.name || $t('payments.unknown') }}</div>
                   <div class="text-xs text-muted">{{ paymentDetail(payment) }}</div>
                 </div>
                 <span class="shrink-0 font-medium tabular-nums">{{ formatMoney(payment.amount) }}</span>
               </li>
             </ul>
-            <EmptyNote v-else class="mt-2">No payments recorded yet. Record the first one under Payments.</EmptyNote>
-            <p v-if="recentPayments.length" class="mt-3 mb-0 text-sm"><router-link to="/payments">All payments</router-link></p>
+            <EmptyNote v-else class="mt-2">{{ $t('dashboard.noPayments') }}</EmptyNote>
+            <p v-if="recentPayments.length" class="mt-3 mb-0 text-sm"><router-link to="/payments">{{ $t('dashboard.allPayments') }}</router-link></p>
           </section>
         </div>
       </div>
@@ -157,11 +157,11 @@ import StatusLabel from '@/components/StatusLabel.vue'
 import YearStrip from '@/components/YearStrip.vue'
 import { useAuthStore } from '../stores/authStore'
 import { formatDate as formatPaidDate, formatMoney, localISODate } from '@/utils'
-import { methodLabel, periodLabel } from '@/utils/paymentHistory'
+import { methodKey, periodLabel } from '@/utils/paymentHistory'
 import { CARD } from '@/ui/classes'
 import { monthsBehind } from '@/utils/dues'
 import { countsForDues } from '@/utils/memberStatus'
-import { paidMonthsFromMap, SQUARES, stripMonthLabels, stripMonths, stripRangeLabel } from '@/utils/yearStrip'
+import { monthAndYear, paidMonthsFromMap, SQUARES, stripMonthLabels, stripMonths, stripRange } from '@/utils/yearStrip'
 
 // One row of the ledger: member, the compact strip (12 squares of 10px, 2px apart), months behind
 const LEDGER_GRID = 'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 sm:grid-cols-[minmax(0,1fr)_142px_9.5rem]'
@@ -169,10 +169,10 @@ const LEDGER_GRID = 'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 ga
 const LEDGER_GRID_WIDE = 'grid grid-cols-[minmax(0,1fr)_380px_8.5rem] items-center gap-x-3 gap-y-1.5'
 // Legend swatches: Paid, Missed, Due now, Not a member (one square each, drawn by the strip itself)
 const LEGEND = [
-  { state: 'paid', label: 'Paid' },
-  { state: 'missed', label: 'Missed' },
-  { state: 'due', label: 'Due now' },
-  { state: 'none', label: 'Not a member' }
+  { state: 'paid', labelKey: 'strip.paid' },
+  { state: 'missed', labelKey: 'strip.missed' },
+  { state: 'due', labelKey: 'dashboard.legendDue' },
+  { state: 'none', labelKey: 'dashboard.legendNotMember' }
 ]
 // The large grid needs about 720px for the ledger card; that fits from the 2xl breakpoint (1400px) up
 const WIDE_QUERY = '(min-width: 87.5rem)'
@@ -230,14 +230,16 @@ export default {
       return this.today.slice(0, 7)
     },
     monthName() {
-      const [year, month] = this.currentMonth.split('-').map(Number)
-      return new Date(year, month - 1, 1).toLocaleDateString(undefined, { month: 'long' })
+      return formatPaidDate(`${this.currentMonth}-01`, 'MMMM')
     },
     // "5 members, 12 months unpaid": the server's per-member counts added up
     behindHint() {
       const members = this.behindMembers.length
       const months = this.behindMembers.reduce((sum, member) => sum + member.consecutiveMonthsMissed, 0)
-      return `${members === 1 ? 'member' : 'members'}, ${months} ${months === 1 ? 'month' : 'months'} unpaid`
+      return this.$t('dashboard.behindHint', {
+        members: this.$t('members.countMember', members),
+        months: this.$t('dashboard.countMonth', months)
+      })
     },
     ledgerGrid() {
       return this.wide ? LEDGER_GRID_WIDE : LEDGER_GRID
@@ -251,12 +253,12 @@ export default {
       const payers = this.members.filter(countsForDues)
       return stripMonths(this.currentMonth).map((month, i) => ({
         month,
-        name: `${this.monthLabels[i]} ${month.slice(0, 4)}`,
+        name: monthAndYear(month),
         count: payers.filter(member => this.paidMonths(member).has(month)).length
       }))
     },
     stripRange() {
-      return stripRangeLabel(this.currentMonth)
+      return this.$t('strip.range', stripRange(this.currentMonth))
     },
     // Worst first: the longest-overdue members are the first calls to make
     behindMembers() {
@@ -356,18 +358,22 @@ export default {
         currentMonth: this.currentMonth,
         monthsMissed: member.consecutiveMonthsMissed || 0,
         countsForDues: countsForDues(member),
-        label: `Dues for ${member.name}, last 12 months`
+        label: this.$t('strip.duesFor', { name: member.name })
       }
     },
     // "Oct 2026, Cash, paid Oct 4": the month it covers, how it was paid, the day it was paid
     paymentDetail(payment) {
-      return [periodLabel(payment.period), methodLabel(payment.paymentMethod), `paid ${formatPaidDate(payment.paymentDate, 'MMM d')}`].filter(Boolean).join(', ')
+      return [
+        periodLabel(payment.period),
+        this.$t(methodKey(payment.paymentMethod)),
+        this.$t('dashboard.paidOnShort', { date: formatPaidDate(payment.paymentDate, 'MMM d') })
+      ].filter(Boolean).join(this.$t('common.listSeparator'))
     },
     telHref(phone) {
       return `tel:${phone.replace(/[^+\d]/g, '')}`
     },
     formatDate(date) {
-      return new Date(date).toLocaleDateString()
+      return formatPaidDate(date, 'MMM d, yyyy')
     }
   }
 }

@@ -30,7 +30,7 @@
         <button
           type="button"
           class="-mt-1 flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-muted hover:text-ink"
-          aria-label="Dismiss notification"
+          :aria-label="$t('common.dismiss')"
           @click="dismiss(toast.key)"
         >
           <Icon name="x" :size="16" />

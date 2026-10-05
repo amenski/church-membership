@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import i18n from '@/i18n'
 import { ariaSort, filtersQuery, formatSort, nextSort, pageParams, parseSort, readFilters, sortLabel } from '@/utils/paymentQuery'
 import { paidMonthsFromMap } from '@/utils/yearStrip'
+
+// src/__tests__/setup.js pins the app locale to English
+const t = (...args) => i18n.global.t(...args)
 
 const DEFAULT = { field: 'paymentDate', direction: 'desc' }
 
@@ -36,9 +40,9 @@ describe('nextSort and ariaSort', () => {
   })
 
   it('says how the list is ordered', () => {
-    expect(sortLabel(DEFAULT)).toBe('Paid on, newest first')
-    expect(sortLabel({ field: 'member', direction: 'desc' })).toBe('Member, Z to A')
-    expect(sortLabel({ field: 'amount', direction: 'desc' })).toBe('Amount, highest first')
+    expect(sortLabel(DEFAULT, t)).toBe('Paid on, newest first')
+    expect(sortLabel({ field: 'member', direction: 'desc' }, t)).toBe('Member, Z to A')
+    expect(sortLabel({ field: 'amount', direction: 'desc' }, t)).toBe('Amount, highest first')
   })
 })
 

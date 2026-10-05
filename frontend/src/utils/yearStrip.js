@@ -17,15 +17,15 @@
 //             (inactive, deceased, transferred, archived): the server stopped counting them
 //
 // Months are "yyyy-MM" strings, which compare correctly as text.
+import { formatDate } from '@/utils'
 
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
-export const STRIP_LABELS = {
-  paid: 'Paid',
-  missed: 'Missed',
-  due: 'Due now, unpaid',
-  none: 'Not a member that month',
-  uncounted: 'Unpaid, no longer counted'
+// The words for these states live in locales/ (strip.*): a cell carries the key, not the word
+export const STRIP_KEYS = {
+  paid: 'strip.paid',
+  missed: 'strip.missed',
+  due: 'strip.due',
+  none: 'strip.none',
+  uncounted: 'strip.uncounted'
 }
 
 // Tokens only: teal paid, clay hatching with a clay edge missed, ochre outline due now, dashed field edge for the rest
@@ -50,16 +50,21 @@ export function stripMonths(currentMonth, count = 12) {
   return months
 }
 
+/** "Nov" from "2026-11", in the UI language. */
+export const monthName = (key) => formatDate(`${key}-01`, 'MMM')
+
+/** "November 2026" from "2026-11", in the UI language. */
+export const monthAndYear = (key) => formatDate(`${key}-01`, 'MMM yyyy')
+
 /** The twelve short month names ("Nov", "Dec", ...) ending with currentMonth, oldest first. */
 export function stripMonthLabels(currentMonth) {
-  return stripMonths(currentMonth).map((key) => MONTH_NAMES[Number(key.slice(5)) - 1])
+  return stripMonths(currentMonth).map(monthName)
 }
 
-/** "Nov to Oct" for the column header. */
-export function stripRangeLabel(currentMonth) {
+/** The column header's two ends — the caller joins them with strip.range, whose word is the language's. */
+export function stripRange(currentMonth) {
   const months = stripMonths(currentMonth)
-  const name = (key) => MONTH_NAMES[Number(key.slice(5)) - 1]
-  return `${name(months[0])} to ${name(months[11])}`
+  return { from: monthName(months[0]), to: monthName(months[11]) }
 }
 
 /**
@@ -70,7 +75,8 @@ export function stripRangeLabel(currentMonth) {
  * @param {number} args.monthsMissed the server's consecutiveMonthsMissed
  * @param {boolean} args.countsForDues status is MEMBER
  * @param {number} [args.count] how many months, 12 by default (the member's page shows 24)
- * @returns {{ month: string, state: string, label: string, initial: string, short: string, name: string }[]}
+ * @returns {{ month: string, state: string, labelKey: string, initial: string, short: string, name: string }[]}
+ * labelKey is an i18n key (strip.*); the rest are already in the UI language.
  */
 export function stripCells({ currentMonth, joinDate, paidMonths, monthsMissed, countsForDues, count = 12 }) {
   const joinMonth = joinDate ? joinDate.slice(0, 7) : ''
@@ -89,14 +95,14 @@ export function stripCells({ currentMonth, joinDate, paidMonths, monthsMissed, c
     }
   }
   return months.map((month, i) => {
-    const monthName = MONTH_NAMES[Number(month.slice(5)) - 1]
+    const short = monthName(month)
     return {
       month,
       state: states[i],
-      label: STRIP_LABELS[states[i]],
-      initial: monthName[0],
-      short: monthName,
-      name: `${monthName} ${month.slice(0, 4)}`
+      labelKey: STRIP_KEYS[states[i]],
+      initial: short[0],
+      short,
+      name: monthAndYear(month)
     }
   })
 }

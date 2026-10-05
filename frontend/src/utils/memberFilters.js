@@ -70,11 +70,11 @@ export function exportIds(filtered, all) {
 // The segments of the Status filter, in the order they are shown. ARCHIVED is ADMIN only and has
 // its own list, so it is not counted here (the archived list loads on demand).
 export const STATUS_SEGMENTS = [
-  { value: 'ALL', label: 'All' },
-  { value: 'MEMBER', label: 'Member' },
-  { value: 'INACTIVE', label: 'Inactive' },
-  { value: 'TRANSFERRED', label: 'Transferred' },
-  { value: 'DECEASED', label: 'Deceased' }
+  { value: 'ALL', labelKey: 'members.statusAll' },
+  { value: 'MEMBER', labelKey: 'status.member' },
+  { value: 'INACTIVE', labelKey: 'status.inactive' },
+  { value: 'TRANSFERRED', labelKey: 'status.transferred' },
+  { value: 'DECEASED', labelKey: 'status.deceased' }
 ]
 
 // Counts for the segments, from the loaded members: "All" leaves archived members out.

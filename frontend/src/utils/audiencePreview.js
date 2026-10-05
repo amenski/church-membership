@@ -2,8 +2,12 @@ import { countsForDues } from '@/utils/memberStatus'
 import { emailKey } from '@/utils/audienceCount'
 
 const byName = (a, b) => a.name.localeCompare(b.name)
-/** "1 person", "3 people". */
-export const personLabel = n => `${n} ${n === 1 ? 'person' : 'people'}`
+/**
+ * "1 person", "3 people".
+ * @param {number} n
+ * @param {Function} t useI18n's t
+ */
+export const personLabel = (n, t) => t('messages.personCount', n)
 
 /**
  * Who a message to this audience would reach, with what happens to each one. Only members with status
@@ -47,51 +51,70 @@ export function sendableCount(rows) {
   return rows.filter(row => row.state === 'send').length
 }
 
-function emailSentence(total, withEmail) {
+function emailSentence(total, withEmail, t) {
   if (total === 0) return ''
-  if (withEmail === total) return total === 1 ? 'They have an email.' : total === 2 ? 'Both have an email.' : 'All of them have an email.'
-  if (withEmail === 0) return total === 1 ? 'They have no email.' : 'None of them has an email.'
-  return `${withEmail} of them have an email.`
+  if (withEmail === total) {
+    if (total === 1) return t('messages.emailThem')
+    return total === 2 ? t('messages.emailBoth') : t('messages.emailAll')
+  }
+  if (withEmail === 0) return total === 1 ? t('messages.emailThemNone') : t('messages.emailNone')
+  return t('messages.emailSome', { n: withEmail })
 }
 
-/** The count line above the list: "3 members owe 2 or more months. 2 of them have an email." */
-export function previewSummary(rows, audience, months) {
+/**
+ * The count line above the list: "3 members owe 2 or more months. 2 of them have an email."
+ * @param {object[]} rows previewRecipients' output
+ * @param {string} audience ALL | OVERDUE | SPECIFIC
+ * @param {string|number} months
+ * @param {Function} t useI18n's t
+ */
+export function previewSummary(rows, audience, months, t) {
   const total = rows.length
   const withEmail = rows.filter(row => row.state !== 'noEmail').length
-  const members = n => `${n} ${n === 1 ? 'member' : 'members'}`
   if (audience === 'SPECIFIC') {
-    if (!total) return 'Choose a member to see who gets this.'
-    return withEmail ? 'This member has an email.' : 'This member has no email, so nothing can be sent.'
+    if (!total) return t('messages.chooseMember')
+    return withEmail ? t('messages.thisMemberHas') : t('messages.thisMemberNone')
   }
   if (audience === 'OVERDUE') {
-    if (!(Number(months) >= 1)) return 'Enter how many months behind to see who gets this.'
-    if (!total) return `Nobody owes ${Number(months)} or more months.`
-    return `${members(total)} ${total === 1 ? 'owes' : 'owe'} ${Number(months)} or more months. ${emailSentence(total, withEmail)}`
+    if (!(Number(months) >= 1)) return t('messages.enterMonths')
+    if (!total) return t('messages.nobodyOwes', { n: Number(months) })
+    return `${t('messages.owesOrMore', { members: t('members.countMember', total), n: Number(months) })} ${emailSentence(total, withEmail, t)}`
   }
-  if (!total) return 'There are no active members.'
-  return `${total} active ${total === 1 ? 'member' : 'members'}. ${emailSentence(total, withEmail)}`
+  if (!total) return t('messages.noActiveMembers')
+  return `${t('messages.activeMembers', total)}. ${emailSentence(total, withEmail, t)}`
 }
 
-function nameList(rows) {
+function nameList(rows, t) {
   const names = rows.slice(0, 5).map(row => row.member.name)
   const more = rows.length - names.length
-  return more > 0 ? `${names.join(', ')} and ${more} more` : names.join(', ')
+  return more > 0
+    ? t('messages.namesAndMore', { names: names.join(t('common.listSeparator')), more })
+    : names.join(t('common.listSeparator'))
 }
 
-/** Who is left out and why, for the confirm dialog; '' when everyone gets the email. */
-export function skippedSentence(rows) {
+/**
+ * Who is left out and why, for the confirm dialog; '' when everyone gets the email.
+ * @param {Function} t useI18n's t
+ */
+export function skippedSentence(rows, t) {
   const noEmail = rows.filter(row => row.state === 'noEmail')
   const shared = rows.filter(row => row.state === 'shared')
   const parts = []
-  if (noEmail.length) parts.push(`${personLabel(noEmail.length)} ${noEmail.length === 1 ? 'has' : 'have'} no email and will be skipped: ${nameList(noEmail)}.`)
-  if (shared.length) parts.push(`${personLabel(shared.length)} ${shared.length === 1 ? 'shares' : 'share'} an address with another member and will not get a second copy: ${nameList(shared)}.`)
+  if (noEmail.length) {
+    parts.push(t('messages.skippedNoEmailSentence', { people: personLabel(noEmail.length, t), names: nameList(noEmail, t) }))
+  }
+  if (shared.length) {
+    parts.push(t('messages.skippedSharedSentence', { people: personLabel(shared.length, t), names: nameList(shared, t) }))
+  }
   return parts.join(' ')
 }
 
-/** The short note by the send button: "1 person has no email and will be skipped."; '' when nobody is skipped. */
-export function skippedNote(rows) {
+/** The short note by the send button: "1 person with no email will be skipped."; '' when nobody is skipped. */
+export function skippedNote(rows, t) {
   const skipped = rows.filter(row => row.state !== 'send').length
   if (!skipped) return ''
-  if (rows.every(row => row.state !== 'shared')) return `${personLabel(skipped)} ${skipped === 1 ? 'has' : 'have'} no email and will be skipped.`
-  return `${personLabel(skipped)} will be skipped.`
+  if (rows.every(row => row.state !== 'shared')) {
+    return t('messages.skippedNoteNoEmail', { people: personLabel(skipped, t) })
+  }
+  return t('messages.skippedNoteSome', { people: personLabel(skipped, t) })
 }

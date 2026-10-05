@@ -5,7 +5,7 @@
       <header class="sticky top-0 z-[1020] flex h-12 items-center justify-between gap-4 border-b border-rule bg-paper px-4">
         <div class="flex min-w-0 items-center gap-3">
           <BrandMark :to="homePath" inline class="lg:hidden" />
-          <nav class="hidden min-w-0 lg:block" aria-label="Breadcrumb">
+          <nav class="hidden min-w-0 lg:block" :aria-label="$t('common.breadcrumb')">
             <ol class="m-0 flex list-none items-center gap-2 p-0 text-sm text-muted">
               <li class="shrink-0">Felege Selam</li>
               <li aria-hidden="true" class="shrink-0 text-rule">/</li>
@@ -17,13 +17,13 @@
         <div v-if="showTabs" class="hidden shrink-0 items-center gap-4 lg:flex">
           <span class="text-sm text-muted">{{ todayText }}</span>
           <form role="search" class="relative" @submit.prevent="searchMembers">
-            <label for="topbar-search" class="sr-only">Search members</label>
+            <label for="topbar-search" class="sr-only">{{ $t('common.searchMembers') }}</label>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false" class="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
             <input
               id="topbar-search"
               v-model="searchText"
               type="search"
-              placeholder="Search members"
+              :placeholder="$t('common.searchMembers')"
               autocomplete="off"
               enterkeyhint="search"
               class="block h-(--control-h) w-56 rounded-sm border border-field bg-paper pr-2.5 pl-8 text-sm text-ink placeholder:text-muted focus:border-teal focus:outline-2 focus:outline-offset-1 focus:outline-teal"
@@ -32,22 +32,23 @@
         </div>
         <!-- Below lg only a signed-in user without the tab bar (a MEMBER) needs the account here: staff have More -->
         <div v-if="!showTabs" class="flex shrink-0 items-center gap-3 lg:hidden">
+          <LanguageSwitcher />
           <router-link to="/profile" class="hidden min-h-11 items-center text-sm text-muted sm:inline-flex">{{ displayName }}</router-link>
           <BaseButton variant="secondary" size="sm" @click="handleLogout">
-            <Icon name="log-out" :size="16" class="mr-1.5" />Sign out
+            <Icon name="log-out" :size="16" class="mr-1.5" />{{ $t('common.signOut') }}
           </BaseButton>
         </div>
       </header>
 
       <aside
         id="appRail"
-        aria-label="Main navigation"
+        :aria-label="$t('nav.mainNavigation')"
         class="fixed inset-y-0 left-0 z-[1045] hidden w-[232px] flex-col overflow-y-auto bg-rail text-rail-text lg:top-12 lg:flex"
       >
         <div class="px-3 pt-5 pb-4">
           <router-link
             :to="homePath"
-            aria-label="Felege Selam home"
+            :aria-label="$t('nav.homeLabel')"
             class="flex flex-col rounded-sm px-2.5 py-1 no-underline focus-visible:outline-paper"
           >
             <span class="font-ethiopic text-2xl leading-[1.25] font-bold text-paper">ፈለገ ሰላም</span>
@@ -55,13 +56,13 @@
           </router-link>
         </div>
 
-        <nav class="flex flex-1 flex-col gap-1 px-3 pb-3" aria-label="Sections">
-          <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/dashboard" name="home">Overview</RailLink>
-          <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/members" name="users">Members</RailLink>
-          <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/households" name="home">Households</RailLink>
-          <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/payments" name="banknote">Payments</RailLink>
-          <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/communications" name="message-square">Messages</RailLink>
-          <RailLink v-if="authStore.hasRole('ADMIN')" to="/activity" name="clock">Activity</RailLink>
+        <nav class="flex flex-1 flex-col gap-1 px-3 pb-3" :aria-label="$t('nav.sections')">
+          <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/dashboard" name="home">{{ $t('nav.overview') }}</RailLink>
+          <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/members" name="users">{{ $t('nav.members') }}</RailLink>
+          <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/households" name="home">{{ $t('nav.households') }}</RailLink>
+          <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/payments" name="banknote">{{ $t('nav.payments') }}</RailLink>
+          <RailLink v-if="authStore.hasRole('VOLUNTEER')" to="/communications" name="message-square">{{ $t('nav.messages') }}</RailLink>
+          <RailLink v-if="authStore.hasRole('ADMIN')" to="/activity" name="clock">{{ $t('nav.activity') }}</RailLink>
         </nav>
 
         <!-- The account: the name opens Profile, Sign out ends the session -->
@@ -73,12 +74,13 @@
             :title="displayName"
           >{{ displayName }}</router-link>
           <div v-if="displayName !== currentUser?.email && currentUser?.email" class="mt-0.5 truncate text-xs text-rail-muted" :title="currentUser.email">{{ currentUser.email }}</div>
+          <LanguageSwitcher tone="rail" class="mt-2.5" />
           <button
             type="button"
             class="mt-2.5 inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-sm border-0 bg-transparent p-0 text-sm text-rail-text hover:text-paper hover:underline focus-visible:outline-paper"
             @click="handleLogout"
           >
-            <Icon name="log-out" :size="16" />Sign out
+            <Icon name="log-out" :size="16" />{{ $t('common.signOut') }}
           </button>
         </div>
       </aside>
@@ -98,16 +100,17 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { format } from 'date-fns'
 import BaseButton from '@/components/BaseButton.vue'
 import BottomTabs from '@/components/BottomTabs.vue'
 import BrandMark from '@/components/BrandMark.vue'
 import Icon from '@/components/Icon.vue'
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 import RailLink from '@/components/RailLink.vue'
 import ToastHost from '@/components/ToastHost.vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/appStore'
 import { useAuthStore } from '@/stores/authStore'
+import { formatDate } from '@/utils'
 import { useRouter, useRoute } from 'vue-router'
 
 const { t } = useI18n()
@@ -124,8 +127,8 @@ const displayName = computed(() => {
   return name || user?.email || ''
 })
 const homePath = computed(() => authStore.homePath)
-// The breadcrumb: the page name each route declares in its meta
-const pageTitle = computed(() => route.meta?.title || '')
+// The breadcrumb: the page name each route declares in its meta, as an i18n key
+const pageTitle = computed(() => (route.meta?.titleKey ? t(route.meta.titleKey) : ''))
 
 // Staff get the dense screens; guests and members get the comfortable ones
 const density = computed(() => (isAuthenticated.value && authStore.hasRole('VOLUNTEER') ? 'dense' : 'comfortable'))
@@ -136,7 +139,7 @@ const showTabs = computed(() => isAuthenticated.value && authStore.hasRole('VOLU
 // Today in the top bar: reads the clock again on each page change, so it is right after midnight
 const todayText = computed(() => {
   void route.fullPath
-  return format(new Date(), 'EEEE, d MMMM yyyy')
+  return formatDate(new Date(), 'EEEE, d MMMM yyyy')
 })
 
 // The top bar search hands the text to the Members screen, which reads ?search=
@@ -152,16 +155,16 @@ const handleLogout = async () => {
     await authStore.logout()
     appStore.addNotification({
       type: 'success',
-      title: t('auth.signOut'),
-      message: 'You have been successfully signed out',
+      title: t('common.signOut'),
+      message: t('auth.signedOut'),
       isToast: true
     })
     router.push('/login')
   } catch (error) {
     appStore.addNotification({
       type: 'error',
-      title: 'Logout Failed',
-      message: 'An error occurred while signing out',
+      title: t('auth.logoutFailed'),
+      message: t('auth.signOutFailed'),
       isToast: true
     })
   }

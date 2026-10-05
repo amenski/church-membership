@@ -1,10 +1,10 @@
 <template>
   <!-- From lg the header is a full-width band, so the page's own padding (App.vue) is dropped here and the content area below carries it -->
   <div class="lg:max-w-none! lg:p-0!">
-    <PageHead title="Households" lead="Families and shared addresses, and who lives in each." band>
+    <PageHead :title="$t('nav.households')" :lead="$t('households.lead')" band>
       <template v-if="authStore.isStaff" #actions>
         <BaseButton @click="showAddModal">
-          <Icon name="plus" :size="16" class="mr-1.5" />Add household
+          <Icon name="plus" :size="16" class="mr-1.5" />{{ $t('households.addHousehold') }}
         </BaseButton>
       </template>
     </PageHead>
@@ -12,34 +12,34 @@
     <div class="lg:mx-auto lg:max-w-[1400px] lg:px-8 lg:pt-6 lg:pb-10">
     <AlertBanner v-if="loadError">
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <span>The household list did not load. Check your connection and try again.</span>
-        <BaseButton variant="secondary" size="sm" @click="loadHouseholds">Try again</BaseButton>
+        <span>{{ $t('households.loadError') }}</span>
+        <BaseButton variant="secondary" size="sm" @click="loadHouseholds">{{ $t('common.tryAgain') }}</BaseButton>
       </div>
     </AlertBanner>
 
-    <p v-if="!loaded" class="m-0 py-4 text-(length:--text-body) text-muted" role="status">Loading households...</p>
+    <p v-if="!loaded" class="m-0 py-4 text-(length:--text-body) text-muted" role="status">{{ $t('households.loading') }}</p>
 
     <!-- Empty state -->
     <div v-if="loaded && !loadError && !households.length">
-      <EmptyNote>No households yet. <template v-if="authStore.isStaff">Add the first household, then choose it when you add or edit a member.</template><template v-else>A staff member can add the first one.</template></EmptyNote>
-      <BaseButton v-if="authStore.isStaff" class="mt-2" @click="showAddModal">Add household</BaseButton>
+      <EmptyNote>{{ $t('households.empty') }} <template v-if="authStore.isStaff">{{ $t('households.emptyStaff') }}</template><template v-else>{{ $t('households.emptyMember') }}</template></EmptyNote>
+      <BaseButton v-if="authStore.isStaff" class="mt-2" @click="showAddModal">{{ $t('households.addHousehold') }}</BaseButton>
     </div>
 
     <!-- From lg: the list on the left, the chosen household on the right. Below lg: one or the other (the URL's ?id= says which) -->
     <div v-if="households.length" class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:items-start">
-      <section :class="['min-w-0', selectedId && 'max-lg:hidden']" aria-label="All households">
-        <form class="mb-3" role="search" aria-label="Search households" @submit.prevent>
-          <label for="household-search" :class="LABEL">Search</label>
-          <input id="household-search" v-model="search" type="search" placeholder="Search by household name" autocomplete="off" :class="CONTROL">
+      <section :class="['min-w-0', selectedId && 'max-lg:hidden']" :aria-label="$t('households.listAria')">
+        <form class="mb-3" role="search" :aria-label="$t('households.searchAria')" @submit.prevent>
+          <label for="household-search" :class="LABEL">{{ $t('common.search') }}</label>
+          <input id="household-search" v-model="search" type="search" :placeholder="$t('households.searchPlaceholder')" autocomplete="off" :class="CONTROL">
         </form>
 
         <div v-if="!visibleHouseholds.length">
-          <EmptyNote>No household matches "{{ search.trim() }}".</EmptyNote>
-          <BaseButton variant="secondary" class="mt-2" @click="search = ''">Clear search</BaseButton>
+          <EmptyNote>{{ $t('households.noMatch', { search: search.trim() }) }}</EmptyNote>
+          <BaseButton variant="secondary" class="mt-2" @click="search = ''">{{ $t('households.clearSearch') }}</BaseButton>
         </div>
         <template v-else>
           <p class="mt-0 mb-2 text-sm text-muted" aria-live="polite">
-            {{ visibleHouseholds.length !== households.length ? `${visibleHouseholds.length} of ${households.length} households` : `${households.length} ${households.length === 1 ? 'household' : 'households'}` }}
+            {{ visibleHouseholds.length !== households.length ? $t('households.countOf', { shown: visibleHouseholds.length, total: households.length }) : $t('households.countHousehold', households.length) }}
           </p>
           <ul class="m-0 list-none overflow-hidden rounded-md border border-rule bg-paper p-0">
             <li v-for="household in pagedHouseholds" :key="household.id" class="border-b border-rule last:border-b-0">
@@ -64,9 +64,9 @@
 
       <!-- Detail -->
       <section v-if="selectedId" class="min-w-0" aria-labelledby="household-title">
-        <TextButton class="mb-2 inline-flex min-h-11 items-center lg:hidden" @click="closeDetail">All households</TextButton>
+        <TextButton class="mb-2 inline-flex min-h-11 items-center lg:hidden" @click="closeDetail">{{ $t('households.allHouseholds') }}</TextButton>
         <AlertBanner v-if="detailError">{{ detailError }}</AlertBanner>
-        <p v-if="detailLoading" class="m-0 py-3 text-muted" role="status">Loading household...</p>
+        <p v-if="detailLoading" class="m-0 py-3 text-muted" role="status">{{ $t('households.loadingDetail') }}</p>
         <div v-else-if="detail" :class="[CARD, 'flex flex-col gap-5']">
           <div class="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
             <div class="min-w-0">
@@ -74,28 +74,28 @@
               <address v-if="addressLines.length" class="m-0 text-base not-italic [overflow-wrap:anywhere]">
                 <div v-for="line in addressLines" :key="line">{{ line }}</div>
               </address>
-              <p v-else class="m-0 text-base text-muted">No address recorded.</p>
+              <p v-else class="m-0 text-base text-muted">{{ $t('households.noAddress') }}</p>
             </div>
             <div v-if="authStore.isStaff" class="flex flex-wrap gap-2">
-              <BaseButton variant="secondary" @click="showEditModal">Edit household</BaseButton>
-              <BaseButton v-if="authStore.isAdmin" variant="danger" @click="showDeleteConfirm">Delete household</BaseButton>
+              <BaseButton variant="secondary" @click="showEditModal">{{ $t('households.editHousehold') }}</BaseButton>
+              <BaseButton v-if="authStore.isAdmin" variant="danger" @click="showDeleteConfirm">{{ $t('households.deleteHousehold') }}</BaseButton>
             </div>
           </div>
 
           <p v-if="owedNotice" class="m-0 rounded-md border border-ochre-line bg-ochre-tint px-4 py-3 text-base text-ochre-text">{{ owedNotice }}</p>
 
           <div v-if="detail.notes">
-            <h3 :class="SUBHEAD">Notes</h3>
+            <h3 :class="SUBHEAD">{{ $t('households.notes') }}</h3>
             <p class="m-0 text-base whitespace-pre-line [overflow-wrap:anywhere]">{{ detail.notes }}</p>
           </div>
 
           <div>
-            <h3 :class="SUBHEAD">Members ({{ memberRows.length }})</h3>
-            <p v-if="memberRows.length" class="m-0 mb-2 text-sm text-muted">Each pays dues on their own.</p>
+            <h3 :class="SUBHEAD">{{ $t('households.membersHeading', { n: memberRows.length }) }}</h3>
+            <p v-if="memberRows.length" class="m-0 mb-2 text-sm text-muted">{{ $t('households.eachPays') }}</p>
             <ul v-if="memberRows.length" class="m-0 list-none border-t border-rule p-0">
               <li v-for="member in memberRows" :key="member.id" class="flex min-h-11 flex-wrap items-center gap-x-4 gap-y-2 border-b border-rule py-3">
                 <router-link :to="`/members/${member.id}`" class="min-w-0 flex-[1_1_10rem] font-medium [overflow-wrap:anywhere]">{{ member.name }}</router-link>
-                <StatusBadge :tone="statusTone(member.status)">{{ statusLabel(member.status) }}</StatusBadge>
+                <StatusBadge :tone="statusTone(member.status)">{{ $t(statusKey(member.status)) }}</StatusBadge>
                 <YearStrip v-if="member.strip" v-bind="member.strip" :muted="member.status === 'ARCHIVED'" />
                 <span class="min-w-28 text-right max-sm:ml-auto">
                   <StatusLabel v-if="member.behindText" :tone="member.behindTone">{{ member.behindText }}</StatusLabel>
@@ -103,31 +103,31 @@
               </li>
             </ul>
             <p v-else class="m-0 text-base text-muted">
-              No members yet.<template v-if="authStore.isStaff"> Choose this household when you add or edit a member.</template>
+              {{ $t('households.noMembers') }}<template v-if="authStore.isStaff">{{ $t('households.noMembersStaff') }}</template>
             </p>
           </div>
 
           <div>
-            <h3 :class="SUBHEAD">People without a membership ({{ dependents.length }})</h3>
-            <p class="m-0 mb-2 text-sm text-muted">Children, or a spouse who pays no dues. They get no messages and are not counted as members.</p>
+            <h3 :class="SUBHEAD">{{ $t('households.dependentsHeading', { n: dependents.length }) }}</h3>
+            <p class="m-0 mb-2 text-sm text-muted">{{ $t('households.dependentsNote') }}</p>
             <ul v-if="dependents.length" class="m-0 list-none border-t border-rule p-0">
               <li v-for="person in dependents" :key="person.id" class="border-b border-rule py-2">
                 <div class="min-h-6 font-medium [overflow-wrap:anywhere]">{{ person.name }}</div>
-                <div v-if="person.birthDate" class="text-sm text-muted">Born {{ formatDay(person.birthDate) }}<template v-if="ageText(person.birthDate)"> &middot; {{ ageText(person.birthDate) }}</template></div>
+                <div v-if="person.birthDate" class="text-sm text-muted">{{ $t('households.born', { date: formatDay(person.birthDate) }) }}<template v-if="personAge(person.birthDate)"> &middot; {{ personAge(person.birthDate) }}</template></div>
                 <div v-if="authStore.isStaff" class="-mx-2 mt-1 flex flex-wrap">
-                  <button type="button" :class="ROW_ACTION" @click="showEditPerson(person)">Edit<span class="sr-only"> {{ person.name }}</span></button>
-                  <button type="button" :class="ROW_ACTION" @click="showMembershipModal(person)">Make a member<span class="sr-only">: {{ person.name }}</span></button>
-                  <button v-if="authStore.isAdmin" type="button" :class="ROW_ACTION_DANGER" @click="showPersonDeleteConfirm(person)">Delete<span class="sr-only"> {{ person.name }}</span></button>
+                  <button type="button" :class="ROW_ACTION" @click="showEditPerson(person)">{{ $t('households.edit') }}<span class="sr-only"> {{ person.name }}</span></button>
+                  <button type="button" :class="ROW_ACTION" @click="showMembershipModal(person)">{{ $t('households.makeMember') }}<span class="sr-only">: {{ person.name }}</span></button>
+                  <button v-if="authStore.isAdmin" type="button" :class="ROW_ACTION_DANGER" @click="showPersonDeleteConfirm(person)">{{ $t('households.delete') }}<span class="sr-only"> {{ person.name }}</span></button>
                 </div>
               </li>
             </ul>
             <template v-else>
               <p class="m-0 text-base text-muted">
-                Nobody here without a membership.<template v-if="authStore.isStaff"> Add a child or a spouse who pays no dues, so the household shows everyone.</template><template v-else> A staff member can add them.</template>
+                {{ $t('households.nobodyHere') }}<template v-if="authStore.isStaff">{{ $t('households.nobodyHereStaff') }}</template><template v-else>{{ $t('households.nobodyHereMember') }}</template>
               </p>
             </template>
             <BaseButton v-if="authStore.isStaff" variant="secondary" class="mt-3 max-sm:min-h-11" @click="showAddPerson">
-              <Icon name="plus" :size="16" class="mr-1.5" />Add person
+              <Icon name="plus" :size="16" class="mr-1.5" />{{ $t('households.addPerson') }}
             </BaseButton>
           </div>
         </div>
@@ -135,22 +135,22 @@
     </div>
 
     <!-- Add and edit -->
-    <BaseModal v-model="formOpen" :title="editing ? 'Edit household' : 'Add household'" size="md">
+    <BaseModal v-model="formOpen" :title="editing ? $t('households.formTitleEdit') : $t('households.formTitleAdd')" size="md">
       <AlertBanner v-if="formError">{{ formError }}</AlertBanner>
       <form id="household-form" class="flex flex-col gap-4" novalidate @submit.prevent="saveHousehold">
-        <BaseInput id="household-name" v-model="form.name" label="Name" autocomplete="off" hint="For example, Kebede family." :error="formErrors.name" />
-        <BaseInput id="household-address1" v-model="form.addressLine1" label="Address" autocomplete="off" hint="Optional." :error="formErrors.addressLine1" />
-        <BaseInput id="household-address2" v-model="form.addressLine2" label="Address line 2" autocomplete="off" :error="formErrors.addressLine2" />
+        <BaseInput id="household-name" v-model="form.name" :label="$t('households.name')" autocomplete="off" :hint="$t('households.nameHint')" :error="formErrors.name" />
+        <BaseInput id="household-address1" v-model="form.addressLine1" :label="$t('households.address')" autocomplete="off" :hint="$t('households.optional')" :error="formErrors.addressLine1" />
+        <BaseInput id="household-address2" v-model="form.addressLine2" :label="$t('households.address2')" autocomplete="off" :error="formErrors.addressLine2" />
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <BaseInput id="household-city" v-model="form.city" label="City" autocomplete="off" :error="formErrors.city" />
-          <BaseInput id="household-postal" v-model="form.postalCode" label="Postal code" autocomplete="off" :error="formErrors.postalCode" />
+          <BaseInput id="household-city" v-model="form.city" :label="$t('households.city')" autocomplete="off" :error="formErrors.city" />
+          <BaseInput id="household-postal" v-model="form.postalCode" :label="$t('households.postalCode')" autocomplete="off" :error="formErrors.postalCode" />
         </div>
-        <BaseTextarea id="household-notes" v-model="form.notes" label="Notes" :rows="3" :max="2000" hint="Optional. For the whole household, such as the best time to call." :error="formErrors.notes" />
+        <BaseTextarea id="household-notes" v-model="form.notes" :label="$t('households.notes')" :rows="3" :max="2000" :hint="$t('households.notesHint')" :error="formErrors.notes" />
       </form>
       <template #footer>
-        <BaseButton variant="secondary" :disabled="saving" @click="formOpen = false">Cancel</BaseButton>
+        <BaseButton variant="secondary" :disabled="saving" @click="formOpen = false">{{ $t('common.cancel') }}</BaseButton>
         <BaseButton type="submit" form="household-form" :disabled="saving" :aria-busy="saving ? 'true' : undefined">
-          {{ saving ? 'Saving...' : editing ? 'Save changes' : 'Add household' }}
+          {{ saving ? $t('common.saving') : editing ? $t('common.saveChanges') : $t('households.formTitleAdd') }}
         </BaseButton>
       </template>
     </BaseModal>
@@ -158,45 +158,45 @@
     <!-- Delete (ADMIN only) -->
     <ConfirmDialog
       v-model="deleteOpen"
-      :title="`Delete ${selected?.name || 'household'}?`"
-      message="This removes the household and its address and notes. Its members are not affected, and this cannot be undone."
-      confirm-label="Delete household"
+      :title="$t('households.deleteTitle', { name: selected?.name || $t('nav.households') })"
+      :message="$t('households.deleteMessage')"
+      :confirm-label="$t('households.deleteHousehold')"
       danger
       :busy="deleting"
       @confirm="deleteHousehold"
     />
 
     <!-- Add and edit a person (STAFF and up) -->
-    <BaseModal v-model="personFormOpen" :title="personEditing ? 'Edit person' : 'Add person'" size="md">
+    <BaseModal v-model="personFormOpen" :title="personEditing ? $t('households.personTitleEdit') : $t('households.personTitleAdd')" size="md">
       <AlertBanner v-if="personFormError">{{ personFormError }}</AlertBanner>
       <form id="person-form" class="flex flex-col gap-4" novalidate @submit.prevent="savePerson">
-        <p class="m-0 text-sm text-muted">Household: <span class="font-medium text-ink [overflow-wrap:anywhere]">{{ selected?.name }}</span></p>
-        <BaseInput id="person-name" v-model="personForm.name" label="Name" autocomplete="off" :error="personErrors.name" />
-        <BaseInput id="person-email" v-model="personForm.email" label="Email" type="email" autocomplete="off" hint="Optional." :error="personErrors.email" />
-        <BaseInput id="person-phone" v-model="personForm.phone" label="Phone" type="tel" autocomplete="off" hint="Optional. 10 digits or more." :error="personErrors.phone" />
-        <BaseInput id="person-birth" v-model="personForm.birthDate" label="Birth date" type="date" :max="yesterday" hint="Optional." :error="personErrors.birthDate" />
+        <p class="m-0 text-sm text-muted">{{ $t('households.householdLabel') }} <span class="font-medium text-ink [overflow-wrap:anywhere]">{{ selected?.name }}</span></p>
+        <BaseInput id="person-name" v-model="personForm.name" :label="$t('households.name')" autocomplete="off" :error="personErrors.name" />
+        <BaseInput id="person-email" v-model="personForm.email" :label="$t('households.personEmail')" type="email" autocomplete="off" :hint="$t('households.optional')" :error="personErrors.email" />
+        <BaseInput id="person-phone" v-model="personForm.phone" :label="$t('households.personPhone')" type="tel" autocomplete="off" :hint="$t('profile.phoneHint')" :error="personErrors.phone" />
+        <BaseInput id="person-birth" v-model="personForm.birthDate" :label="$t('households.birthDate')" type="date" :max="yesterday" :hint="$t('households.optional')" :error="personErrors.birthDate" />
       </form>
       <template #footer>
-        <BaseButton variant="secondary" :disabled="personSaving" @click="personFormOpen = false">Cancel</BaseButton>
+        <BaseButton variant="secondary" :disabled="personSaving" @click="personFormOpen = false">{{ $t('common.cancel') }}</BaseButton>
         <BaseButton type="submit" form="person-form" :disabled="personSaving" :aria-busy="personSaving ? 'true' : undefined">
-          {{ personSaving ? 'Saving...' : personEditing ? 'Save changes' : 'Add person' }}
+          {{ personSaving ? $t('common.saving') : personEditing ? $t('common.saveChanges') : $t('households.personTitleAdd') }}
         </BaseButton>
       </template>
     </BaseModal>
 
     <!-- Make a member (STAFF and up) -->
-    <BaseModal v-model="membershipOpen" :title="`Make ${personTarget?.name || 'this person'} a member`" size="sm">
+    <BaseModal v-model="membershipOpen" :title="$t('households.membershipTitle', { name: personTarget?.name || $t('households.thisPerson') })" size="sm">
       <AlertBanner v-if="membershipError">{{ membershipError }}</AlertBanner>
       <form id="membership-form" class="flex flex-col gap-4" novalidate @submit.prevent="startMembership">
-        <BaseSelect id="membership-status" v-model="membershipForm.status" label="Status" hint="Only a Member owes dues and gets messages. Choose Inactive to keep them off both." :error="membershipErrors.status">
-          <option v-for="option in NEW_MEMBER_STATUS_OPTIONS" :key="option.value" :value="option.value">{{ option.label }}</option>
+        <BaseSelect id="membership-status" v-model="membershipForm.status" :label="$t('households.status')" :hint="$t('households.statusHint')" :error="membershipErrors.status">
+          <option v-for="option in NEW_MEMBER_STATUS_OPTIONS" :key="option.value" :value="option.value">{{ $t(option.labelKey) }}</option>
         </BaseSelect>
-        <BaseInput id="membership-joined" v-model="membershipForm.joinDate" label="Joined on" type="date" :max="today" :error="membershipErrors.joinDate" />
+        <BaseInput id="membership-joined" v-model="membershipForm.joinDate" :label="$t('households.joinedOn')" type="date" :max="today" :error="membershipErrors.joinDate" />
       </form>
       <template #footer>
-        <BaseButton variant="secondary" :disabled="membershipSaving" @click="membershipOpen = false">Cancel</BaseButton>
+        <BaseButton variant="secondary" :disabled="membershipSaving" @click="membershipOpen = false">{{ $t('common.cancel') }}</BaseButton>
         <BaseButton type="submit" form="membership-form" :disabled="membershipSaving" :aria-busy="membershipSaving ? 'true' : undefined">
-          {{ membershipSaving ? 'Saving...' : 'Make a member' }}
+          {{ membershipSaving ? $t('common.saving') : $t('households.makeAMember') }}
         </BaseButton>
       </template>
     </BaseModal>
@@ -204,9 +204,9 @@
     <!-- Delete a person (ADMIN only) -->
     <ConfirmDialog
       v-model="personDeleteOpen"
-      :title="`Delete ${personTarget?.name || 'this person'}?`"
-      message="This removes them from the register and from this household. This cannot be undone."
-      confirm-label="Delete person"
+      :title="$t('households.personDeleteTitle', { name: personTarget?.name || $t('households.thisPerson') })"
+      :message="$t('households.personDeleteMessage')"
+      :confirm-label="$t('households.personDeleteConfirm')"
       danger
       :busy="personDeleting"
       @confirm="deletePerson"
@@ -221,7 +221,7 @@ import { useAppStore } from '../stores/appStore'
 import { useAuthStore } from '../stores/authStore'
 import { formatDate, isValidEmail, localISODate } from '@/utils'
 import { monthsBehind } from '@/utils/dues'
-import { NEW_MEMBER_STATUS_OPTIONS, statusLabel, statusTone } from '@/utils/memberStatus'
+import { NEW_MEMBER_STATUS_OPTIONS, statusKey, statusTone } from '@/utils/memberStatus'
 import { buildMembershipRequest, buildPersonRequest, ageText } from '@/utils/person'
 import { isValidPhone } from '@/utils/phoneRules'
 import { paidMonthsFromMap } from '@/utils/yearStrip'
@@ -275,7 +275,7 @@ export default {
       authStore: useAuthStore(),
       CARD, LABEL, CONTROL, NAME, SUBHEAD, ROW_ACTION, ROW_ACTION_DANGER, NEW_MEMBER_STATUS_OPTIONS, HOUSEHOLD_PAGE_SIZES,
       ageText,
-      statusLabel,
+      statusKey,
       statusTone
     }
   },
@@ -357,7 +357,7 @@ export default {
               currentMonth,
               monthsMissed: missed,
               countsForDues: owes,
-              label: `Dues for ${member.name}, last 12 months`
+              label: this.$t('strip.duesFor', { name: member.name })
             }
           : null
         const behind = owes && known && missed > 0
@@ -365,7 +365,7 @@ export default {
           ...member,
           strip,
           missed: owes ? missed : 0,
-          behindText: behind ? monthsBehind(missed) : owes && known ? 'Paid up' : '',
+          behindText: behind ? monthsBehind(missed, this.$t) : owes && known ? this.$t('dues.badgePaid') : '',
           behindTone: behind ? 'behind' : 'paid'
         }
       })
@@ -375,8 +375,11 @@ export default {
       const behind = this.memberRows.filter(member => member.missed > 0)
       if (!behind.length) return ''
       const months = behind.reduce((sum, member) => sum + member.missed, 0)
-      const who = `${behind.length} ${behind.length === 1 ? 'member' : 'members'} in this household ${behind.length === 1 ? 'owes' : 'owe'}`
-      return `Dues are per member: ${who} ${months} ${months === 1 ? 'month' : 'months'} in total.${this.dependents.length ? ' People without a membership owe nothing.' : ''}`
+      const notice = this.$t('households.duesPerMember', {
+        who: this.$t('households.whoOwes', behind.length),
+        months: this.$t('households.countMonth', months)
+      })
+      return this.dependents.length ? `${notice} ${this.$t('households.dependentsOweNothing')}` : notice
     },
     // people with no membership (memberStatus is null; an archived member still has one)
     dependents() {
@@ -456,7 +459,11 @@ export default {
       }
     },
     memberCountText(count) {
-      return `${count} ${count === 1 ? 'member' : 'members'}`
+      return this.$t('households.countMember', count)
+    },
+    // "35 years old", in the language of the page
+    personAge(birthDate) {
+      return ageText(birthDate, this.$t)
     },
     // the URL keeps page and size beside the chosen household
     openDetail(household) {
@@ -484,8 +491,8 @@ export default {
         if (token !== this.detailToken) return
         console.error('Error loading household:', error)
         this.detailError = error.response?.status === 404
-          ? 'This household no longer exists. Choose another from the list.'
-          : 'The household did not load. Choose it again from the list to retry.'
+          ? this.$t('households.gone')
+          : this.$t('households.didNotLoad')
       } finally {
         if (token === this.detailToken) this.detailLoading = false
       }
@@ -508,9 +515,9 @@ export default {
     },
     validateForm() {
       this.formErrors = { ...EMPTY_ERRORS }
-      if (!this.form.name.trim()) this.formErrors.name = 'Enter the household\'s name.'
-      else if (this.form.name.trim().length > 100) this.formErrors.name = 'Use 100 characters or fewer.'
-      if (this.form.notes.length > 2000) this.formErrors.notes = 'Use 2000 characters or fewer.'
+      if (!this.form.name.trim()) this.formErrors.name = this.$t('households.nameRequired')
+      else if (this.form.name.trim().length > 100) this.formErrors.name = this.$t('households.nameTooLong')
+      if (this.form.notes.length > 2000) this.formErrors.notes = this.$t('households.notesTooLong')
       return !this.formErrors.name && !this.formErrors.notes
     },
     // Put each server field error under its field; anything else goes in the banner
@@ -521,10 +528,10 @@ export default {
         if (field in EMPTY_ERRORS && !this.formErrors[field]) this.formErrors[field] = message
         else rest.push(message)
       }
-      if (!fieldErrors.length) rest.push(error.message || 'Request failed')
+      if (!fieldErrors.length) rest.push(error.message || this.$t('common.requestFailed'))
       if (rest.length) {
         this.formError = rest.join(' ')
-        this.notifyFailure('Could not save household', error)
+        this.notifyFailure(this.$t('households.couldNotSave'), error)
       }
     },
     async saveHousehold() {
@@ -538,7 +545,7 @@ export default {
         if (this.editing) await this.reloadDetail()
         else if (saved?.id) this.openDetail(saved)
         this.formOpen = false
-        this.notify('success', this.editing ? 'Household saved' : 'Household added', request.name)
+        this.notify('success', this.editing ? this.$t('households.saved') : this.$t('households.added'), request.name)
       } catch (error) {
         console.error('Error saving household:', error)
         this.showSaveError(error)
@@ -558,13 +565,13 @@ export default {
         this.deleteOpen = false
         await this.$router.replace({ query: this.queryWithoutId() })
         this.ensureSelection()
-        this.notify('success', 'Household deleted', name)
+        this.notify('success', this.$t('households.deleted'), name)
       } catch (error) {
         console.error('Error deleting household:', error)
         // the server says why (for example, who is still assigned): show it above the open household and in a toast
         this.deleteOpen = false
-        this.detailError = error.message || 'Request failed'
-        this.notifyFailure('Could not delete household', error)
+        this.detailError = error.message || this.$t('common.requestFailed')
+        this.notifyFailure(this.$t('households.couldNotDelete'), error)
       } finally {
         this.deleting = false
       }
@@ -579,8 +586,8 @@ export default {
       } catch (error) {
         console.error('Error reloading household:', error)
         this.detailError = error.response?.status === 404
-          ? 'This household no longer exists. Choose another from the list.'
-          : 'The household did not refresh. Choose it again from the list.'
+          ? this.$t('households.gone')
+          : this.$t('households.didNotRefresh')
       }
     },
     async reloadAfterPersonChange() {
@@ -589,9 +596,9 @@ export default {
     // The messages for the answers the user can act on; '' means "show the server's own text"
     personProblem(error, name) {
       const code = error.response?.data?.code
-      if (code === 'PERSON_001') return `${name} is already a member.`
-      if (code === 'PERSON_002') return `${name} has a membership, so they cannot be deleted here. Archive the membership from the Members screen first.`
-      if (error.response?.status === 404) return `${name} is no longer on the register. The list has been refreshed.`
+      if (code === 'PERSON_001') return this.$t('households.alreadyMember', { name })
+      if (code === 'PERSON_002') return this.$t('households.hasMembership', { name })
+      if (error.response?.status === 404) return this.$t('households.noLongerOnRegister', { name })
       return ''
     },
     resetPersonErrors() {
@@ -620,7 +627,7 @@ export default {
       } catch (error) {
         console.error('Error loading person:', error)
         const problem = this.personProblem(error, person.name)
-        this.notifyFailure('Could not open person', problem || error)
+        this.notifyFailure(this.$t('households.couldNotOpenPerson'), problem || error)
         if (problem) await this.reloadAfterPersonChange()
       }
     },
@@ -632,13 +639,13 @@ export default {
     validatePerson() {
       const errors = { ...EMPTY_PERSON_ERRORS }
       const form = this.personForm
-      if (!form.name.trim()) errors.name = 'Enter the person\'s name.'
-      else if (form.name.trim().length > 100) errors.name = 'Use 100 characters or fewer.'
+      if (!form.name.trim()) errors.name = this.$t('households.personNameRequired')
+      else if (form.name.trim().length > 100) errors.name = this.$t('households.nameTooLong')
       const email = form.email.trim()
-      if (email && !isValidEmail(email)) errors.email = 'Enter a valid email address, like name@example.com.'
-      else if (email.length > 100) errors.email = 'Use 100 characters or fewer.'
-      if (!isValidPhone(form.phone)) errors.phone = 'Enter a phone number with 10 digits or more.'
-      if (form.birthDate && form.birthDate >= localISODate()) errors.birthDate = 'The birth date must be in the past.'
+      if (email && !isValidEmail(email)) errors.email = this.$t('households.emailInvalid')
+      else if (email.length > 100) errors.email = this.$t('households.nameTooLong')
+      if (!isValidPhone(form.phone)) errors.phone = this.$t('households.phoneInvalid')
+      if (form.birthDate && form.birthDate >= localISODate()) errors.birthDate = this.$t('households.birthDatePast')
       this.personErrors = errors
       return !Object.values(errors).some(Boolean)
     },
@@ -650,10 +657,10 @@ export default {
         if (field in EMPTY_PERSON_ERRORS && !this.personErrors[field]) this.personErrors[field] = message
         else rest.push(message)
       }
-      if (!fieldErrors.length) rest.push(error.message || 'Request failed')
+      if (!fieldErrors.length) rest.push(error.message || this.$t('common.requestFailed'))
       if (rest.length) {
         this.personFormError = rest.join(' ')
-        this.notifyFailure('Could not save person', error)
+        this.notifyFailure(this.$t('households.couldNotSavePerson'), error)
       }
     },
     async savePerson() {
@@ -667,13 +674,13 @@ export default {
         else await api.createPerson(request)
         await this.reloadAfterPersonChange()
         this.personFormOpen = false
-        this.notify('success', editing ? 'Person saved' : 'Person added', request.name)
+        this.notify('success', editing ? this.$t('households.personSaved') : this.$t('households.personAdded'), request.name)
       } catch (error) {
         console.error('Error saving person:', error)
         const problem = editing ? this.personProblem(error, this.personTarget.name) : ''
         if (problem) {
           this.personFormOpen = false
-          this.notifyFailure('Could not save person', problem)
+          this.notifyFailure(this.$t('households.couldNotSavePerson'), problem)
           await this.reloadAfterPersonChange()
         } else {
           this.showPersonSaveError(error)
@@ -695,7 +702,7 @@ export default {
       this.membershipError = ''
       this.membershipErrors = { ...EMPTY_MEMBERSHIP_ERRORS }
       if (this.membershipForm.joinDate > localISODate()) {
-        this.membershipErrors.joinDate = 'The join date cannot be in the future.'
+        this.membershipErrors.joinDate = this.$t('households.joinDateFuture')
         return
       }
       this.membershipSaving = true
@@ -705,13 +712,13 @@ export default {
         // the person leaves this list now and appears in Members on its next load
         await this.reloadAfterPersonChange()
         this.membershipOpen = false
-        this.notify('success', 'Made a member', name)
+        this.notify('success', this.$t('households.madeAMember'), name)
       } catch (error) {
         console.error('Error starting membership:', error)
         const problem = this.personProblem(error, name)
         if (problem) {
           this.membershipOpen = false
-          this.notifyFailure('Could not make a member', problem)
+          this.notifyFailure(this.$t('households.couldNotMakeMember'), problem)
           await this.reloadAfterPersonChange()
           return
         }
@@ -721,10 +728,10 @@ export default {
           if (field in EMPTY_MEMBERSHIP_ERRORS && !this.membershipErrors[field]) this.membershipErrors[field] = message
           else rest.push(message)
         }
-        if (!fieldErrors.length) rest.push(error.message || 'Request failed')
+        if (!fieldErrors.length) rest.push(error.message || this.$t('common.requestFailed'))
         if (rest.length) {
           this.membershipError = rest.join(' ')
-          this.notifyFailure('Could not make a member', error)
+          this.notifyFailure(this.$t('households.couldNotMakeMember'), error)
         }
       } finally {
         this.membershipSaving = false
@@ -742,14 +749,14 @@ export default {
         await api.deletePerson(id)
         await this.reloadAfterPersonChange()
         this.personDeleteOpen = false
-        this.notify('success', 'Person deleted', name)
+        this.notify('success', this.$t('households.personDeleted'), name)
       } catch (error) {
         console.error('Error deleting person:', error)
         // a person who became a member meanwhile (409), or one already gone (404): say so and refresh the list
         const problem = this.personProblem(error, name)
         this.personDeleteOpen = false
-        this.detailError = problem || error.message || 'Request failed'
-        this.notifyFailure('Could not delete person', problem || error)
+        this.detailError = problem || error.message || this.$t('common.requestFailed')
+        this.notifyFailure(this.$t('households.couldNotDeletePerson'), problem || error)
         if (problem) await this.reloadAfterPersonChange()
       } finally {
         this.personDeleting = false
@@ -761,7 +768,7 @@ export default {
     // The shared API handler already shows an "Access Denied" toast for 403
     notifyFailure(title, error) {
       if (error.response?.status === 403) return
-      this.notify('error', title, typeof error === 'string' ? error : error.message || 'Request failed')
+      this.notify('error', title, typeof error === 'string' ? error : error.message || this.$t('common.requestFailed'))
     }
   }
 }

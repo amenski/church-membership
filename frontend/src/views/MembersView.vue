@@ -1,14 +1,14 @@
 <template>
   <!-- From lg the header is a full-width band, so the page's own padding (App.vue) is dropped here and the content area below carries it -->
   <div class="lg:max-w-none! lg:p-0!">
-    <PageHead title="Members" compact band>
+    <PageHead :title="$t('nav.members')" compact band>
       <template v-if="authStore.isStaff" #actions>
         <!-- below lg Export CSV sits in the count line under the filters -->
         <BaseButton variant="secondary" class="max-lg:hidden" @click="exportMembers">
-          <Icon name="download" :size="16" class="mr-1.5" />Export CSV
+          <Icon name="download" :size="16" class="mr-1.5" />{{ $t('common.exportCsv') }}
         </BaseButton>
         <BaseButton class="max-lg:min-h-11" @click="showAddModal">
-          <Icon name="plus" :size="16" class="mr-1.5" />Add member
+          <Icon name="plus" :size="16" class="mr-1.5" />{{ $t('members.addMember') }}
         </BaseButton>
       </template>
     </PageHead>
@@ -16,17 +16,17 @@
     <div class="lg:mx-auto lg:max-w-[1400px] lg:px-8 lg:pt-6 lg:pb-10">
     <AlertBanner v-if="loadError">
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <span>The member list did not load. Check your connection and try again.</span>
-        <BaseButton variant="secondary" size="sm" @click="loadMembers">Try again</BaseButton>
+        <span>{{ $t('members.loadError') }}</span>
+        <BaseButton variant="secondary" size="sm" @click="loadMembers">{{ $t('common.tryAgain') }}</BaseButton>
       </div>
     </AlertBanner>
 
     <!-- Filters. From lg one row: the status control on the left; Dues, Sort by, search and "More filters" (the date pair, in a
          popover so it never takes a row) on the right, 32px high, labels visually hidden. On a phone or tablet: status, then
          search beside one "Filters" button that opens Dues, Sort by and the date pair; closed until asked for -->
-    <form v-if="members.length || showingArchived" class="relative mb-3 grid grid-cols-[minmax(0,1fr)_auto] gap-3 lg:mb-4 lg:flex lg:flex-wrap lg:items-center lg:gap-x-4" role="search" aria-label="Filter members" @submit.prevent>
+    <form v-if="members.length || showingArchived" class="relative mb-3 grid grid-cols-[minmax(0,1fr)_auto] gap-3 lg:mb-4 lg:flex lg:flex-wrap lg:items-center lg:gap-x-4" role="search" :aria-label="$t('members.filterAria')" @submit.prevent>
       <div class="col-span-2 overflow-x-auto lg:order-1 lg:overflow-visible">
-        <div role="group" aria-label="Filter by status" class="inline-flex">
+        <div role="group" :aria-label="$t('members.filterByStatus')" class="inline-flex">
           <button
             v-for="segment in statusSegments"
             :key="segment.value"
@@ -35,14 +35,14 @@
             :aria-pressed="filters.status === segment.value ? 'true' : 'false'"
             @click="filters.status = segment.value"
           >
-            {{ segment.label }}<template v-if="segment.count !== null"> <span class="tabular-nums">{{ segment.count }}</span></template>
+            {{ $t(segment.labelKey) }}<template v-if="segment.count !== null"> <span class="tabular-nums">{{ segment.count }}</span></template>
           </button>
         </div>
       </div>
       <div class="relative lg:order-5 lg:max-w-60 lg:flex-[1_1_10rem]">
-        <label for="filter-search" class="sr-only">Search</label>
+        <label for="filter-search" class="sr-only">{{ $t('common.search') }}</label>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false" class="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted max-lg:hidden"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
-        <input id="filter-search" v-model="filters.search" type="search" placeholder="Search name, email or phone" autocomplete="off" :class="[CONTROL, 'max-lg:h-11 lg:pl-8 lg:text-sm']">
+        <input id="filter-search" v-model="filters.search" type="search" :placeholder="$t('members.searchPlaceholder')" autocomplete="off" :class="[CONTROL, 'max-lg:h-11 lg:pl-8 lg:text-sm']">
       </div>
       <button
         type="button"
@@ -51,32 +51,32 @@
         :aria-expanded="filtersOpen ? 'true' : 'false'"
         @click="filtersOpen = !filtersOpen"
       >
-        Filters<template v-if="panelFilterCount"> ({{ panelFilterCount }})</template>
+        {{ $t('members.filters') }}<template v-if="panelFilterCount"> ({{ panelFilterCount }})</template>
         <Icon :name="filtersOpen ? 'chevron-up' : 'chevron-down'" :size="16" />
       </button>
       <div id="filter-panel" :class="filtersOpen ? 'col-span-2 grid grid-cols-2 gap-3 lg:contents' : 'hidden lg:contents'">
         <div class="lg:order-3 lg:ml-auto lg:w-28">
-          <label for="filter-dues" :class="[LABEL, 'lg:sr-only']">Dues</label>
+          <label for="filter-dues" :class="[LABEL, 'lg:sr-only']">{{ $t('members.dues') }}</label>
           <select id="filter-dues" v-model="filters.paymentStatus" :class="[CONTROL, 'lg:text-sm']">
-            <option value="ALL">All dues</option>
-            <option value="CURRENT">Paid up</option>
-            <option value="OVERDUE">Behind</option>
+            <option value="ALL">{{ $t('members.duesAll') }}</option>
+            <option value="CURRENT">{{ $t('members.duesCurrent') }}</option>
+            <option value="OVERDUE">{{ $t('members.duesOverdue') }}</option>
           </select>
         </div>
         <div class="lg:order-4 lg:w-36">
-          <label for="filter-sort" :class="[LABEL, 'lg:sr-only']">Sort by</label>
+          <label for="filter-sort" :class="[LABEL, 'lg:sr-only']">{{ $t('members.sortBy') }}</label>
           <select id="filter-sort" :value="sort.key" :class="[CONTROL, 'lg:text-sm']" @change="setSortOption($event.target.value)">
-            <option v-for="option in SORT_OPTIONS" :key="option.key" :value="option.key">{{ option.label }}</option>
+            <option v-for="option in SORT_OPTIONS" :key="option.key" :value="option.key">{{ $t(option.labelKey) }}</option>
           </select>
         </div>
         <!-- the date pair: in the panel below lg; from lg a popover under the row, opened by "More filters" -->
-        <div id="filter-dates" role="group" aria-label="Joined between" :class="['col-span-2 grid grid-cols-2 gap-3', moreOpen ? 'lg:absolute lg:top-full lg:right-0 lg:z-40 lg:mt-1 lg:w-80 lg:rounded-md lg:border lg:border-rule lg:bg-paper lg:p-3 lg:shadow-modal' : 'lg:hidden']" @keydown.esc="closeMore">
+        <div id="filter-dates" role="group" :aria-label="$t('members.joinedBetween')" :class="['col-span-2 grid grid-cols-2 gap-3', moreOpen ? 'lg:absolute lg:top-full lg:right-0 lg:z-40 lg:mt-1 lg:w-80 lg:rounded-md lg:border lg:border-rule lg:bg-paper lg:p-3 lg:shadow-modal' : 'lg:hidden']" @keydown.esc="closeMore">
           <div>
-            <label for="filter-from" :class="LABEL">Joined from</label>
+            <label for="filter-from" :class="LABEL">{{ $t('members.joinedFrom') }}</label>
             <input id="filter-from" v-model="filters.joinedFrom" type="date" :class="[CONTROL, 'lg:text-sm']">
           </div>
           <div>
-            <label for="filter-to" :class="LABEL">Joined to</label>
+            <label for="filter-to" :class="LABEL">{{ $t('members.joinedTo') }}</label>
             <input id="filter-to" v-model="filters.joinedTo" type="date" :class="[CONTROL, 'lg:text-sm']">
           </div>
         </div>
@@ -90,25 +90,25 @@
         @click="moreOpen = !moreOpen"
         @keydown.esc="closeMore"
       >
-        More filters<template v-if="dateFilterCount"> ({{ dateFilterCount }})</template>
+        {{ $t('members.moreFilters') }}<template v-if="dateFilterCount"> ({{ dateFilterCount }})</template>
         <Icon :name="moreOpen ? 'chevron-up' : 'chevron-down'" :size="16" />
       </button>
-      <TextButton v-if="hasActiveFilters && filteredMembers.length" class="col-span-2 text-left max-lg:min-h-11 lg:order-7 lg:col-auto lg:py-1.5" @click="clearFilters">Clear filters</TextButton>
+      <TextButton v-if="hasActiveFilters && filteredMembers.length" class="col-span-2 text-left max-lg:min-h-11 lg:order-7 lg:col-auto lg:py-1.5" @click="clearFilters">{{ $t('common.clearFilters') }}</TextButton>
     </form>
 
     <!-- Empty states -->
     <div v-if="showingArchived && !source.length">
-      <p v-if="!archivedLoaded" class="m-0 py-4 text-(length:--text-body) text-muted" role="status">Loading archived members...</p>
-      <EmptyNote v-else>No archived members.</EmptyNote>
-      <BaseButton variant="secondary" class="mt-2" @click="clearFilters">Back to all members</BaseButton>
+      <p v-if="!archivedLoaded" class="m-0 py-4 text-(length:--text-body) text-muted" role="status">{{ $t('members.loadingArchived') }}</p>
+      <EmptyNote v-else>{{ $t('members.noArchived') }}</EmptyNote>
+      <BaseButton variant="secondary" class="mt-2" @click="clearFilters">{{ $t('members.backToAll') }}</BaseButton>
     </div>
     <div v-else-if="loaded && !loadError && !members.length">
-      <EmptyNote>No members yet. Add the first member.</EmptyNote>
-      <BaseButton v-if="authStore.isStaff" class="mt-2" @click="showAddModal">Add member</BaseButton>
+      <EmptyNote>{{ $t('members.empty') }}</EmptyNote>
+      <BaseButton v-if="authStore.isStaff" class="mt-2" @click="showAddModal">{{ $t('members.addMember') }}</BaseButton>
     </div>
     <div v-else-if="source.length && !filteredMembers.length">
-      <EmptyNote>No members match these filters.</EmptyNote>
-      <BaseButton variant="secondary" class="mt-2" @click="clearFilters">Clear filters</BaseButton>
+      <EmptyNote>{{ $t('members.noMatch') }}</EmptyNote>
+      <BaseButton variant="secondary" class="mt-2" @click="clearFilters">{{ $t('common.clearFilters') }}</BaseButton>
     </div>
 
     <template v-if="filteredMembers.length">
@@ -118,7 +118,7 @@
           {{ countText }}
         </p>
         <!-- below lg only: from lg Export CSV is in the page header -->
-        <TextButton v-if="authStore.isStaff" class="-my-2.5 min-h-11 lg:hidden" @click="exportMembers">Export CSV</TextButton>
+        <TextButton v-if="authStore.isStaff" class="-my-2.5 min-h-11 lg:hidden" @click="exportMembers">{{ $t('common.exportCsv') }}</TextButton>
       </div>
 
       <!-- Selection (STAFF+): the live region speaks the count, the bar holds what can be done with those members.
@@ -127,40 +127,40 @@
       <p class="sr-only" role="status" aria-live="polite">{{ selectionAnnouncement }}</p>
       <div v-if="canSelect" class="contents lg:pointer-events-none lg:fixed lg:right-0 lg:bottom-4 lg:left-[232px] lg:z-[1050] lg:block lg:px-6">
         <Transition enter-active-class="lg:transition lg:duration-150 lg:ease-out motion-reduce:transition-none" enter-from-class="lg:translate-y-3 lg:opacity-0">
-          <div v-if="selectedMembers.length" role="region" aria-label="Selected members" class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-teal-line bg-teal-tint px-4 py-2.5 max-lg:sticky max-lg:top-14 max-lg:z-30 max-lg:mb-4 lg:pointer-events-auto lg:mx-auto lg:max-w-[960px] lg:border-rule lg:bg-paper lg:shadow-modal">
+          <div v-if="selectedMembers.length" role="region" :aria-label="$t('members.selectedAria')" class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-teal-line bg-teal-tint px-4 py-2.5 max-lg:sticky max-lg:top-14 max-lg:z-30 max-lg:mb-4 lg:pointer-events-auto lg:mx-auto lg:max-w-[960px] lg:border-rule lg:bg-paper lg:shadow-modal">
             <span class="text-base font-semibold text-teal">{{ selectionText }}</span>
             <span class="min-w-0 text-sm text-ink [overflow-wrap:anywhere]">{{ selectedNames }}</span>
-            <TextButton @click="selectedIds = []">Clear selection</TextButton>
+            <TextButton @click="selectedIds = []">{{ $t('members.clearSelection') }}</TextButton>
             <div class="flex flex-wrap gap-2 md:ml-auto">
-              <BaseButton variant="secondary" to="/communications">Send message</BaseButton>
-              <BaseButton variant="secondary" @click="exportSelected">Export selected</BaseButton>
-              <BaseButton variant="secondary" :disabled="!inactiveTargets.length" @click="bulkAction = 'inactive'">Mark inactive</BaseButton>
-              <button v-if="authStore.isAdmin" type="button" :class="[DELETE_BUTTON, 'min-h-(--control-h) px-3 py-1.5 text-base']" @click="bulkAction = 'archive'">Archive</button>
+              <BaseButton variant="secondary" to="/communications">{{ $t('common.sendMessage') }}</BaseButton>
+              <BaseButton variant="secondary" @click="exportSelected">{{ $t('members.exportSelected') }}</BaseButton>
+              <BaseButton variant="secondary" :disabled="!inactiveTargets.length" @click="bulkAction = 'inactive'">{{ $t('members.markInactive') }}</BaseButton>
+              <button v-if="authStore.isAdmin" type="button" :class="[DELETE_BUTTON, 'min-h-(--control-h) px-3 py-1.5 text-base']" @click="bulkAction = 'archive'">{{ $t('members.archive') }}</button>
             </div>
           </div>
         </Transition>
       </div>
       <label v-if="canSelect" class="mb-2 flex min-h-11 cursor-pointer items-center gap-3 text-base text-ink lg:hidden">
         <input type="checkbox" :class="CHECKBOX_PHONE" :checked="allSelected" :indeterminate="someSelected" @change="toggleAll($event.target.checked)">
-        Select all {{ pagedMembers.length }} on this page
+        {{ $t('members.selectAllOnPage', { n: pagedMembers.length }) }}
       </label>
 
       <!-- Archived (ADMIN only): what is hidden, with the two things an administrator can do about it -->
       <template v-if="showingArchived">
         <div role="note" class="mb-4 rounded-md border border-rule bg-paper px-4 py-2.5 text-sm text-ink">
-          Archived members are hidden from the lists, dues, reminders and messages. Their payments and messages are kept. Only administrators see this view.
+          {{ $t('members.archivedNote') }}
         </div>
 
         <table :class="TABLE">
-          <caption class="sr-only">Archived members</caption>
+          <caption class="sr-only">{{ $t('members.archivedCaption') }}</caption>
           <thead>
             <tr class="border-b border-rule">
-              <th scope="col" :class="TH">Member</th>
-              <th scope="col" :class="TH">Household</th>
-              <th scope="col" :class="TH">{{ stripRangeLabel(today.slice(0, 7)) }}, one square a month</th>
-              <th scope="col" :class="TH">Last paid</th>
-              <th scope="col" :class="TH">Archived</th>
-              <th scope="col" :class="TH"><span class="sr-only">Actions</span></th>
+              <th scope="col" :class="TH">{{ $t('members.colMember') }}</th>
+              <th scope="col" :class="TH">{{ $t('members.colHousehold') }}</th>
+              <th scope="col" :class="TH">{{ $t('members.stripHeader', { range: $t('strip.range', stripRange(today.slice(0, 7))) }) }}</th>
+              <th scope="col" :class="TH">{{ $t('members.colLastPaid') }}</th>
+              <th scope="col" :class="TH">{{ $t('members.colArchived') }}</th>
+              <th scope="col" :class="TH"><span class="sr-only">{{ $t('members.colActions') }}</span></th>
             </tr>
           </thead>
           <tbody>
@@ -171,24 +171,24 @@
               </td>
               <td :class="[TD, 'py-3 text-muted']">
                 <template v-if="member.householdName">{{ member.householdName }}</template>
-                <template v-else>None</template>
+                <template v-else>{{ $t('common.none') }}</template>
               </td>
               <td :class="[TD, 'py-3 whitespace-nowrap']">
                 <YearStrip v-if="paidByMember" v-bind="stripProps(member)" />
-                <span v-else class="text-muted"><span aria-hidden="true">&ndash;</span><span class="sr-only">Months paid did not load</span></span>
+                <span v-else class="text-muted"><span aria-hidden="true">&ndash;</span><span class="sr-only">{{ $t('members.monthsNotLoaded') }}</span></span>
               </td>
-              <td :class="[TD, 'py-3 whitespace-nowrap']">{{ member.lastPaymentDate ? formatMemberDate(member.lastPaymentDate) : 'Never' }}</td>
+              <td :class="[TD, 'py-3 whitespace-nowrap']">{{ member.lastPaymentDate ? formatMemberDate(member.lastPaymentDate) : $t('members.never') }}</td>
               <td :class="[TD, 'py-3 whitespace-nowrap']">{{ archivedOn(member) }}</td>
               <td :class="[TD, 'py-3']">
                 <div class="flex flex-wrap items-center justify-end gap-2">
                   <BaseButton variant="secondary" size="sm" :disabled="restoringId === member.id" @click="restoreMember(member)">
-                    Restore<span class="sr-only"> {{ member.name }}</span>
+                    {{ $t('members.restore') }}<span class="sr-only"> {{ member.name }}</span>
                   </BaseButton>
                   <button type="button" :class="[DELETE_BUTTON, 'px-2.5 py-1 text-sm']" :disabled="hasPayments(member)" :aria-describedby="hasPayments(member) ? `keep-${member.id}` : undefined" @click="showPermanentModal(member)">
-                    Delete for good<span class="sr-only"> {{ member.name }}</span>
+                    {{ $t('members.deleteForGood') }}<span class="sr-only"> {{ member.name }}</span>
                   </button>
                 </div>
-                <p v-if="hasPayments(member)" :id="`keep-${member.id}`" class="m-0 mt-1 text-right text-xs text-muted">Has payments, so it stays archived</p>
+                <p v-if="hasPayments(member)" :id="`keep-${member.id}`" class="m-0 mt-1 text-right text-xs text-muted">{{ $t('members.hasPaymentsStay') }}</p>
               </td>
             </tr>
           </tbody>
@@ -199,22 +199,22 @@
             <div class="min-w-0">
               <div :class="[NAME, 'text-xl text-muted']">{{ member.name }}</div>
               <div v-if="member.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
-              <div v-if="member.householdName" class="flex items-center text-sm text-muted [overflow-wrap:anywhere]"><Icon name="home" :size="14" class="mr-1 shrink-0" /><span class="sr-only">Household: </span>{{ member.householdName }}</div>
+              <div v-if="member.householdName" class="flex items-center text-sm text-muted [overflow-wrap:anywhere]"><Icon name="home" :size="14" class="mr-1 shrink-0" /><span class="sr-only">{{ $t('members.householdLabel') }} </span>{{ member.householdName }}</div>
               <div class="mt-1 text-sm text-muted tabular-nums">
-                Last paid {{ member.lastPaymentDate ? formatMemberDate(member.lastPaymentDate) : 'never' }} &middot; {{ archivedOn(member) }}
+                {{ $t('members.lastPaid') }} {{ member.lastPaymentDate ? formatMemberDate(member.lastPaymentDate) : $t('members.neverLower') }} &middot; {{ archivedOn(member) }}
               </div>
             </div>
             <YearStrip v-if="paidByMember" size="large" v-bind="stripProps(member)" />
             <div class="flex flex-col gap-2">
               <div class="flex gap-2">
                 <button type="button" :class="[PHONE_ACTION, 'flex-1 border border-field bg-paper text-ink hover:border-teal hover:bg-teal-tint disabled:pointer-events-none disabled:opacity-65']" :disabled="restoringId === member.id" @click="restoreMember(member)">
-                  Restore<span class="sr-only"> {{ member.name }}</span>
+                  {{ $t('members.restore') }}<span class="sr-only"> {{ member.name }}</span>
                 </button>
                 <button type="button" :class="[DELETE_BUTTON, PHONE_ACTION, 'flex-1']" :disabled="hasPayments(member)" :aria-describedby="hasPayments(member) ? `keep-card-${member.id}` : undefined" @click="showPermanentModal(member)">
-                  Delete for good<span class="sr-only"> {{ member.name }}</span>
+                  {{ $t('members.deleteForGood') }}<span class="sr-only"> {{ member.name }}</span>
                 </button>
               </div>
-              <p v-if="hasPayments(member)" :id="`keep-card-${member.id}`" class="m-0 text-sm text-muted">Has payments, so it stays archived.</p>
+              <p v-if="hasPayments(member)" :id="`keep-card-${member.id}`" class="m-0 text-sm text-muted">{{ $t('members.hasPaymentsStay') }}</p>
             </div>
           </li>
         </ul>
@@ -226,26 +226,26 @@
       <div v-else :class="['hidden overflow-x-auto rounded-md border border-rule bg-paper lg:block', selectedMembers.length ? 'lg:mb-28' : '']">
         <div class="lg:min-w-[56rem] xl:min-w-0">
           <table :class="TABLE">
-            <caption class="sr-only">Members</caption>
+            <caption class="sr-only">{{ $t('nav.members') }}</caption>
             <thead>
               <tr class="border-b border-rule">
                 <th v-if="canSelect" scope="col" :class="[CARD_TH, 'w-8']">
-                  <input type="checkbox" :class="CHECKBOX" :checked="allSelected" :indeterminate="someSelected" :aria-label="`Select all ${pagedMembers.length} on this page`" @change="toggleAll($event.target.checked)">
+                  <input type="checkbox" :class="CHECKBOX" :checked="allSelected" :indeterminate="someSelected" :aria-label="$t('members.selectAllOnPage', { n: pagedMembers.length })" @change="toggleAll($event.target.checked)">
                 </th>
-                <th v-for="column in columns" :key="column.label" scope="col" :aria-sort="ariaSort(column.sortKey)" :class="[CARD_TH, column.class]">
+                <th v-for="column in columns" :key="column.labelKey || column.labelText" scope="col" :aria-sort="ariaSort(column.sortKey)" :class="[CARD_TH, column.class]">
                   <button v-if="column.sortKey" type="button" :class="SORT_BUTTON" @click="setSort(column.sortKey)">
-                    {{ column.label }}
+                    {{ column.labelText || $t(column.labelKey) }}
                     <Icon :name="sortIcon(column.sortKey)" :size="12" :class="sort.key === column.sortKey ? 'text-ink' : 'text-muted'" />
                   </button>
-                  <template v-else>{{ column.label }}</template>
+                  <template v-else>{{ column.labelText || $t(column.labelKey) }}</template>
                 </th>
-                <th v-if="authStore.isStaff" scope="col" :class="[CARD_TH, 'w-14']"><span class="sr-only">Actions</span></th>
+                <th v-if="authStore.isStaff" scope="col" :class="[CARD_TH, 'w-14']"><span class="sr-only">{{ $t('members.colActions') }}</span></th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="member in pagedMembers" :key="member.id" :class="['h-(--row-h) border-b border-rule', isSelected(member) ? 'bg-teal-tint' : '']">
                 <td v-if="canSelect" :class="CARD_TD">
-                  <input type="checkbox" :class="CHECKBOX" :checked="isSelected(member)" :aria-label="`Select ${member.name}`" @change="toggleSelected(member, $event.target.checked)">
+                  <input type="checkbox" :class="CHECKBOX" :checked="isSelected(member)" :aria-label="$t('members.selectMember', { name: member.name })" @change="toggleSelected(member, $event.target.checked)">
                 </td>
                 <td :class="[CARD_TD, 'max-w-0 w-[26%]']">
                   <div :class="NAME"><router-link :to="`/members/${member.id}`">{{ member.name }}</router-link></div>
@@ -255,25 +255,25 @@
                 </td>
                 <td :class="[CARD_TD, 'max-w-0 w-[14%] [overflow-wrap:anywhere]']">
                   <template v-if="member.householdName">{{ member.householdName }}</template>
-                  <span v-else class="text-muted"><span aria-hidden="true">&ndash;</span><span class="sr-only">No household</span></span>
+                  <span v-else class="text-muted"><span aria-hidden="true">&ndash;</span><span class="sr-only">{{ $t('members.noHousehold') }}</span></span>
                 </td>
                 <td :class="[CARD_TD, 'whitespace-nowrap']">
-                  <StatusBadge :tone="statusTone(member.status)">{{ statusLabel(member.status) }}</StatusBadge>
+                  <StatusBadge :tone="statusTone(member.status)">{{ $t(statusKey(member.status)) }}</StatusBadge>
                 </td>
                 <td :class="[CARD_TD, 'whitespace-nowrap']">
                   <YearStrip v-if="paidByMember" v-bind="stripProps(member)" />
-                  <span v-else class="text-muted"><span aria-hidden="true">&ndash;</span><span class="sr-only">Months paid did not load</span></span>
+                  <span v-else class="text-muted"><span aria-hidden="true">&ndash;</span><span class="sr-only">{{ $t('members.monthsNotLoaded') }}</span></span>
                 </td>
                 <td :class="[CARD_TD, 'whitespace-nowrap']">
                   <span :class="duesCell(member).class">{{ duesCell(member).text }}</span>
                 </td>
-                <td :class="[CARD_TD, 'whitespace-nowrap']">{{ member.lastPaymentDate ? formatMemberDate(member.lastPaymentDate) : 'Never' }}</td>
+                <td :class="[CARD_TD, 'whitespace-nowrap']">{{ member.lastPaymentDate ? formatMemberDate(member.lastPaymentDate) : $t('members.never') }}</td>
                 <td :class="[CARD_TD, 'whitespace-nowrap text-muted max-xl:hidden']">
                   <template v-if="member.phone">{{ member.phone }}</template>
-                  <span v-else><span aria-hidden="true">&ndash;</span><span class="sr-only">No phone</span></span>
+                  <span v-else><span aria-hidden="true">&ndash;</span><span class="sr-only">{{ $t('members.noPhone') }}</span></span>
                 </td>
                 <td v-if="authStore.isStaff" :class="[CARD_TD, 'text-right']">
-                  <ActionMenu :label="`More actions for ${member.name}`" :items="menuItems(member)" @select="key => onMenuSelect(key, member)" />
+                  <ActionMenu :label="$t('members.moreActions', { name: member.name })" :items="menuItems(member)" @select="key => onMenuSelect(key, member)" />
                 </td>
               </tr>
             </tbody>
@@ -281,7 +281,7 @@
           <Pager v-bind="pagerProps" class="px-4 py-3" @update:page="setPage" @update:page-size="setPageSize" />
           <div :class="['flex flex-wrap justify-between gap-x-4 gap-y-2 px-4 text-sm text-muted', pagerShown ? 'pb-3' : 'py-3']">
             <span v-if="!pagerShown">{{ countText }}</span>
-            <span class="ml-auto">Dates and counts as of {{ asOfText }}</span>
+            <span class="ml-auto">{{ $t('members.asOf', { date: asOfText }) }}</span>
           </div>
         </div>
       </div>
@@ -291,29 +291,29 @@
         <li v-for="member in pagedMembers" :key="member.id" class="flex flex-col gap-3 rounded-lg border border-rule bg-paper px-4 py-3.5">
           <div class="flex items-start justify-between gap-2">
             <label v-if="canSelect" class="-ml-2 -mt-1.5 flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center">
-              <input type="checkbox" :class="CHECKBOX_PHONE" :checked="isSelected(member)" :aria-label="`Select ${member.name}`" @change="toggleSelected(member, $event.target.checked)">
+              <input type="checkbox" :class="CHECKBOX_PHONE" :checked="isSelected(member)" :aria-label="$t('members.selectMember', { name: member.name })" @change="toggleSelected(member, $event.target.checked)">
             </label>
             <div class="min-w-0 flex-1">
               <div :class="[NAME, 'text-xl']"><router-link :to="`/members/${member.id}`" class="inline-block py-2 -my-2">{{ member.name }}</router-link></div>
               <div v-if="member.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
-              <div v-if="member.householdName" class="flex items-center text-sm text-muted [overflow-wrap:anywhere]"><Icon name="home" :size="14" class="mr-1 shrink-0" /><span class="sr-only">Household: </span>{{ member.householdName }}</div>
+              <div v-if="member.householdName" class="flex items-center text-sm text-muted [overflow-wrap:anywhere]"><Icon name="home" :size="14" class="mr-1 shrink-0" /><span class="sr-only">{{ $t('members.householdLabel') }} </span>{{ member.householdName }}</div>
               <div class="mt-1 flex flex-wrap items-center gap-x-4">
-                <StatusLabel :tone="statusTone(member.status)">{{ statusLabel(member.status) }}</StatusLabel>
+                <StatusLabel :tone="statusTone(member.status)">{{ $t(statusKey(member.status)) }}</StatusLabel>
                 <span v-if="countsForDues(member)" :class="[duesClass(member), 'text-lg']">{{ duesText(member) }}</span>
               </div>
               <div class="mt-1 text-sm text-muted tabular-nums">
-                <template v-if="member.phone">{{ member.phone }} &middot; </template>Joined {{ formatMemberDate(member.joinDate) }} &middot; Last paid {{ member.lastPaymentDate ? formatMemberDate(member.lastPaymentDate) : 'never' }}
+                <template v-if="member.phone">{{ member.phone }} &middot; </template>{{ $t('members.joined') }} {{ formatMemberDate(member.joinDate) }} &middot; {{ $t('members.lastPaid') }} {{ member.lastPaymentDate ? formatMemberDate(member.lastPaymentDate) : $t('members.neverLower') }}
               </div>
             </div>
-            <ActionMenu v-if="authStore.isStaff" :label="`More actions for ${member.name}`" :items="menuItems(member)" @select="key => onMenuSelect(key, member)" />
+            <ActionMenu v-if="authStore.isStaff" :label="$t('members.moreActions', { name: member.name })" :items="menuItems(member)" @select="key => onMenuSelect(key, member)" />
           </div>
           <YearStrip v-if="paidByMember" size="large" v-bind="stripProps(member)" />
           <div v-if="member.phone || (authStore.isStaff && countsForDues(member))" class="flex gap-2">
             <a v-if="member.phone" :href="`tel:${member.phone.replace(/[^+\d]/g, '')}`" :class="[PHONE_ACTION, 'flex-1 border border-field bg-paper text-ink hover:border-teal hover:bg-teal-tint']">
-              <Icon name="phone" :size="18" />Call<span class="sr-only"> {{ member.name }}</span>
+              <Icon name="phone" :size="18" />{{ $t('members.call') }}<span class="sr-only"> {{ member.name }}</span>
             </a>
             <router-link v-if="authStore.isStaff && countsForDues(member)" :to="{ path: '/payments', query: { memberId: member.id } }" :class="[PHONE_ACTION, 'flex-[1.4] border border-teal bg-teal text-paper hover:bg-teal-hover']">
-              Record payment<span class="sr-only"> for {{ member.name }}</span>
+              {{ $t('common.recordPayment') }}<span class="sr-only"> {{ member.name }}</span>
             </router-link>
           </div>
         </li>
@@ -327,9 +327,9 @@
     <!-- Delete for good (ADMIN only, archived members) -->
     <ConfirmDialog
       v-model="permanentOpen"
-      :title="`Delete ${selectedMember?.name || 'member'} for good?`"
-      :message="`This removes ${selectedMember?.name || 'the member'} and cannot be undone. It only works for a member with no payments and no messages, such as one added by mistake.`"
-      confirm-label="Delete for good"
+      :title="$t('members.deleteTitle', { name: selectedMember?.name || $t('nav.member') })"
+      :message="$t('members.deleteMessage', { name: selectedMember?.name || $t('nav.member') })"
+      :confirm-label="$t('members.deleteForGood')"
       danger
       :busy="deletingPermanently"
       @confirm="deletePermanently"
@@ -338,18 +338,18 @@
     <!-- Bulk: Mark inactive and Archive for the selected members -->
     <ConfirmDialog
       :model-value="bulkAction === 'inactive'"
-      :title="`Mark ${inactiveTargets.length} ${inactiveTargets.length === 1 ? 'member' : 'members'} inactive?`"
+      :title="$t('members.markInactiveTitle', inactiveTargets.length)"
       :message="inactiveMessage"
-      confirm-label="Mark inactive"
+      :confirm-label="$t('members.markInactive')"
       :busy="bulkBusy"
       @update:model-value="open => { if (!open) bulkAction = null }"
       @confirm="markSelectedInactive"
     />
     <ConfirmDialog
       :model-value="bulkAction === 'archive'"
-      :title="`Archive ${selectedMembers.length} ${selectedMembers.length === 1 ? 'member' : 'members'}?`"
-      :message="`This hides ${selectedMembers.length === 1 ? 'this member' : 'these members'} from the lists. Their payments and messages are kept.`"
-      :confirm-label="`Archive ${selectedMembers.length === 1 ? 'member' : selectedMembers.length + ' members'}`"
+      :title="$t('members.archiveTitle', selectedMembers.length)"
+      :message="$t('members.archiveMessage', selectedMembers.length)"
+      :confirm-label="$t('members.archiveConfirm', selectedMembers.length)"
       danger
       :busy="bulkBusy"
       @update:model-value="open => { if (!open) bulkAction = null }"
@@ -368,13 +368,13 @@ import { useAppStore } from '../stores/appStore'
 import { useAuthStore } from '../stores/authStore'
 import { downloadBlob, formatDate, localISODate } from '@/utils'
 import { monthsBehind } from '@/utils/dues'
-import { paidMonthsFromMap, stripRangeLabel } from '@/utils/yearStrip'
+import { paidMonthsFromMap, stripRange } from '@/utils/yearStrip'
 import { STATUS_SEGMENTS, filterMembers, sortMembers, statusCounts, exportIds } from '@/utils/memberFilters'
 import { membersCsv } from '@/utils/memberCsv'
 import { clampPage, pageSlice, PAGE_SIZES } from '@/utils/paging'
 import { queryPaging } from '@/utils/queryPaging'
 import { buildMemberRequest } from '@/utils/memberPayload'
-import { countsForDues, statusLabel, statusTone } from '@/utils/memberStatus'
+import { countsForDues, statusKey, statusTone } from '@/utils/memberStatus'
 import ActionMenu from '@/components/ActionMenu.vue'
 import AlertBanner from '@/components/AlertBanner.vue'
 import BaseButton from '@/components/BaseButton.vue'
@@ -400,9 +400,9 @@ const SEGMENT = 'relative -ml-px first:ml-0 inline-flex min-h-11 shrink-0 cursor
 // The Sort by control: the first click on a header starts ascending, but here "Most behind" and
 // "Joined" mean the most behind and the newest first
 const SORT_OPTIONS = [
-  { key: 'name', label: 'Name', direction: 'asc' },
-  { key: 'consecutiveMonthsMissed', label: 'Most behind', direction: 'desc' },
-  { key: 'joinDate', label: 'Joined', direction: 'desc' }
+  { key: 'name', labelKey: 'members.sortName', direction: 'asc' },
+  { key: 'consecutiveMonthsMissed', labelKey: 'members.sortMostBehind', direction: 'desc' },
+  { key: 'joinDate', labelKey: 'members.sortJoined', direction: 'desc' }
 ]
 // A row checkbox (16px; its cell is the tap area on a desktop) and the 44px-box one on a phone card
 const CHECKBOX = 'h-4 w-4 cursor-pointer accent-teal'
@@ -454,7 +454,7 @@ export default {
       today: localISODate(),
       PHONE_ACTION,
       DELETE_BUTTON,
-      stripRangeLabel,
+      stripRange,
       TABLE,
       LABEL,
       CONTROL,
@@ -469,7 +469,7 @@ export default {
       CHECKBOX_PHONE,
       SORT_OPTIONS,
       countsForDues,
-      statusLabel,
+      statusKey,
       statusTone
     }
   },
@@ -485,7 +485,7 @@ export default {
     statusSegments() {
       const counts = statusCounts(this.members)
       const segments = STATUS_SEGMENTS.map(segment => ({ ...segment, count: counts[segment.value] }))
-      if (this.authStore.isAdmin) segments.push({ value: 'ARCHIVED', label: 'Archived', count: this.archivedLoaded ? this.archivedMembers.length : null })
+      if (this.authStore.isAdmin) segments.push({ value: 'ARCHIVED', labelKey: 'status.archived', count: this.archivedLoaded ? this.archivedMembers.length : null })
       return segments
     },
     filteredMembers() {
@@ -536,27 +536,33 @@ export default {
     },
     inactiveMessage() {
       const skipped = this.selectedMembers.length - this.inactiveTargets.length
-      const base = 'They stop counting for dues, reminders and messages. You can mark them active again later.'
-      return skipped ? `${base} ${skipped} selected ${skipped === 1 ? 'member is' : 'members are'} not a Member now and will be left as ${skipped === 1 ? 'it is' : 'they are'}.` : base
+      const base = this.$t('members.markInactiveMessage')
+      return skipped ? `${base} ${this.$t('members.markInactiveSkipped', skipped)}` : base
     },
     // the first three names, then how many more
     selectedNames() {
       const names = this.selectedMembers.map(member => member.name)
-      return names.length > 3 ? `${names.slice(0, 3).join(', ')} and ${names.length - 3} more` : names.join(', ')
+      return names.length > 3
+        ? this.$t('members.andMore', { names: names.slice(0, 3).join(this.$t('common.listSeparator')), n: names.length - 3 })
+        : names.join(this.$t('common.listSeparator'))
     },
     // "3 selected" or, when some are on other pages, "5 selected, 2 not on this page"
     selectionText() {
-      return `${this.selectedMembers.length} selected${this.selectedOffPage ? `, ${this.selectedOffPage} not on this page` : ''}`
+      const n = this.selectedMembers.length
+      if (!this.selectedOffPage) return this.$t('members.selected', { n })
+      return `${this.$t('members.selected', { n })}, ${this.$t('members.selectedOffPage', { off: this.selectedOffPage })}`
     },
     selectionAnnouncement() {
       return this.selectedMembers.length ? this.selectionText : ''
     },
     countText() {
-      const noun = this.showingArchived ? 'archived member' : 'member'
       const total = this.source.length
+      const noun = this.showingArchived
+        ? this.$t('members.countArchivedMember', total)
+        : this.$t('members.countMember', total)
       return this.filteredMembers.length !== total
-        ? `${this.filteredMembers.length} of ${total} ${noun}s`
-        : `${total} ${noun}${total === 1 ? '' : 's'}`
+        ? this.$t('members.countOf', { shown: this.filteredMembers.length, total: noun })
+        : noun
     },
     hasActiveFilters() {
       const f = this.filters
@@ -572,13 +578,13 @@ export default {
     },
     columns() {
       return [
-        { label: 'Member', sortKey: 'name' },
-        { label: 'Household' },
-        { label: 'Status' },
-        { label: `${stripRangeLabel(this.today.slice(0, 7))}, one square a month` },
-        { label: 'Dues', sortKey: 'consecutiveMonthsMissed' },
-        { label: 'Last paid' },
-        { label: 'Phone', class: 'max-xl:hidden' }
+        { labelKey: 'members.colMember', sortKey: 'name' },
+        { labelKey: 'members.colHousehold' },
+        { labelKey: 'members.colStatus' },
+        { labelText: this.$t('members.stripHeader', { range: this.$t('strip.range', stripRange(this.today.slice(0, 7))) }) },
+        { labelKey: 'members.colDues', sortKey: 'consecutiveMonthsMissed' },
+        { labelKey: 'members.colLastPaid' },
+        { labelKey: 'members.colPhone', class: 'max-xl:hidden' }
       ]
     },
     // the table card's footer: today as a long date
@@ -646,7 +652,7 @@ export default {
         monthsMissed: member.consecutiveMonthsMissed || 0,
         countsForDues: countsForDues(member),
         muted: this.showingArchived,
-        label: `Dues for ${member.name}, last 12 months`
+        label: this.$t('strip.duesFor', { name: member.name })
       }
     },
     async loadArchived() {
@@ -656,7 +662,7 @@ export default {
       } catch (error) {
         console.error('Error loading archived members:', error)
         this.archivedMembers = []
-        this.notifyFailure('Could not load archived members', error)
+        this.notifyFailure(this.$t('members.couldNotLoadArchived'), error)
       } finally {
         this.archivedLoaded = true
       }
@@ -690,7 +696,7 @@ export default {
     },
     // One call per member, one after the other. Failures never stop the rest: the ones that worked are
     // reported with the ones that did not, and only the failed members stay selected.
-    async runBulk(targets, call, past) {
+    async runBulk(targets, call, successKey) {
       this.bulkBusy = true
       const failed = []
       let firstError = null
@@ -698,7 +704,7 @@ export default {
         try {
           await call(member)
         } catch (error) {
-          console.error(`Error: ${past} ${member.name}:`, error)
+          console.error(`Error: ${successKey} ${member.name}:`, error)
           failed.push(member)
           firstError = firstError || error
         }
@@ -711,18 +717,24 @@ export default {
       } finally {
         this.bulkBusy = false
       }
-      const noun = n => `${n} ${n === 1 ? 'member' : 'members'}`
       if (!failed.length) {
-        this.notify('success', `${past[0].toUpperCase()}${past.slice(1)}`, noun(done))
+        this.notify('success', this.$t(successKey), this.$t('members.countMember', done))
       } else if (firstError.response?.status !== 403) {
-        this.notify('error', `${done} of ${noun(targets.length)} ${past}`, `Could not change: ${failed.map(member => member.name).join(', ')}. ${firstError.message || 'Request failed'}`)
+        this.notify(
+          'error',
+          this.$t('members.bulkFailedTitle', { done, total: targets.length }),
+          this.$t('members.bulkFailedMessage', {
+            names: failed.map(member => member.name).join(this.$t('common.listSeparator')),
+            error: firstError.message || this.$t('common.requestFailed')
+          })
+        )
       }
     },
     markSelectedInactive() {
-      return this.runBulk(this.inactiveTargets, member => api.updateMember(member.id, buildMemberRequest({ ...member, status: 'INACTIVE' })), 'marked inactive')
+      return this.runBulk(this.inactiveTargets, member => api.updateMember(member.id, buildMemberRequest({ ...member, status: 'INACTIVE' })), 'members.markedInactive')
     },
     archiveSelected() {
-      return this.runBulk(this.selectedMembers, member => api.deleteMember(member.id), 'archived')
+      return this.runBulk(this.selectedMembers, member => api.deleteMember(member.id), 'members.archivedTitle')
     },
     exportSelected() {
       downloadBlob(membersCsv(this.selectedMembers), `members_selected_${new Date().toISOString().split('T')[0]}.csv`)
@@ -756,7 +768,7 @@ export default {
     },
     // Dues are tracked for members with status MEMBER only; for any other status the stored figure is stale
     duesText(member) {
-      return member.consecutiveMonthsMissed > 0 ? monthsBehind(member.consecutiveMonthsMissed) : 'Paid up'
+      return member.consecutiveMonthsMissed > 0 ? monthsBehind(member.consecutiveMonthsMissed, this.$t) : this.$t('dues.badgePaid')
     },
     duesClass(member) {
       if (!countsForDues(member)) return 'text-muted'
@@ -765,20 +777,20 @@ export default {
     // The Dues cell of the table: months behind in clay, "Due now" in ochre when this month is still unpaid, "Paid up" in fern,
     // "No dues" for anyone who is not a Member (the strip's rule: payments must have loaded to tell "due now")
     duesCell(member) {
-      if (!countsForDues(member)) return { text: 'No dues', class: 'text-muted' }
+      if (!countsForDues(member)) return { text: this.$t('members.noDues'), class: 'text-muted' }
       const behind = member.consecutiveMonthsMissed
-      if (behind > 0) return { text: `${behind} ${behind === 1 ? 'month' : 'months'}`, class: 'font-semibold text-clay' }
+      if (behind > 0) return { text: this.$t('members.monthsCount', behind), class: 'font-semibold text-clay' }
       const month = this.today.slice(0, 7)
       const joined = !member.joinDate || member.joinDate.slice(0, 7) <= month
-      if (joined && this.paidByMember && !this.paidByMember.get(member.id)?.has(month)) return { text: 'Due now', class: 'font-semibold text-ochre-text' }
-      return { text: 'Paid up', class: 'font-semibold text-fern-text' }
+      if (joined && this.paidByMember && !this.paidByMember.get(member.id)?.has(month)) return { text: this.$t('members.dueNow'), class: 'font-semibold text-ochre-text' }
+      return { text: this.$t('dues.badgePaid'), class: 'font-semibold text-fern-text' }
     },
     menuItems(member) {
-      const items = [{ key: 'edit', label: 'Edit' }]
-      if (member.status === 'MEMBER') items.push({ key: 'toggle', label: 'Mark inactive' })
-      else if (member.status === 'INACTIVE') items.push({ key: 'toggle', label: 'Mark active' })
-      items.push({ key: 'status', label: 'Change status...' })
-      if (this.authStore.isAdmin) items.push({ key: 'delete', label: 'Archive', danger: true })
+      const items = [{ key: 'edit', label: this.$t('members.edit') }]
+      if (member.status === 'MEMBER') items.push({ key: 'toggle', label: this.$t('members.markInactive') })
+      else if (member.status === 'INACTIVE') items.push({ key: 'toggle', label: this.$t('members.markActive') })
+      items.push({ key: 'status', label: this.$t('members.changeStatus') })
+      if (this.authStore.isAdmin) items.push({ key: 'delete', label: this.$t('members.archive'), danger: true })
       return items
     },
     onMenuSelect(key, member) {
@@ -808,10 +820,10 @@ export default {
       try {
         await api.updateMember(member.id, buildMemberRequest({ ...member, status: reactivating ? 'MEMBER' : 'INACTIVE' }))
         await this.reloadLists()
-        this.notify('success', reactivating ? 'Member reactivated' : 'Member deactivated', member.name)
+        this.notify('success', reactivating ? this.$t('members.memberReactivated') : this.$t('members.memberDeactivated'), member.name)
       } catch (error) {
         console.error('Error toggling member status:', error)
-        this.notifyFailure(reactivating ? 'Could not reactivate member' : 'Could not deactivate member', error)
+        this.notifyFailure(reactivating ? this.$t('members.couldNotReactivate') : this.$t('members.couldNotDeactivate'), error)
       }
     },
     // the archived list is not the normal list: the payments loaded for the strips say whether a member has history
@@ -833,14 +845,14 @@ export default {
         await api.deleteMemberPermanently(id)
         await this.reloadLists()
         this.permanentOpen = false
-        this.notify('success', 'Deleted for good', name)
+        this.notify('success', this.$t('members.deletedForGood'), name)
       } catch (error) {
         console.error('Error deleting member for good:', error)
         this.permanentOpen = false
         if (error.response?.status === 409) {
-          this.notify('error', 'Could not delete', `${name} has payments or messages, so they can only stay archived. Their history is kept.`)
+          this.notify('error', this.$t('members.couldNotDelete'), this.$t('members.hasHistory', { name }))
         } else {
-          this.notifyFailure('Could not delete member', error)
+          this.notifyFailure(this.$t('members.couldNotDeleteMember'), error)
         }
       } finally {
         this.deletingPermanently = false
@@ -851,10 +863,10 @@ export default {
       try {
         await api.updateMember(member.id, buildMemberRequest({ ...member, status: 'MEMBER' }))
         await this.reloadLists()
-        this.notify('success', 'Restored', member.name)
+        this.notify('success', this.$t('members.restored'), member.name)
       } catch (error) {
         console.error('Error restoring member:', error)
-        this.notifyFailure('Could not restore member', error)
+        this.notifyFailure(this.$t('members.couldNotRestore'), error)
       } finally {
         this.restoringId = null
       }
@@ -865,14 +877,14 @@ export default {
     // The shared API handler already shows an "Access Denied" toast for 403
     notifyFailure(title, error) {
       if (error.response?.status === 403) return
-      this.notify('error', title, error.message || 'Request failed')
+      this.notify('error', title, error.message || this.$t('common.requestFailed'))
     },
     async exportMembers() {
       if (this.filteredMembers.length === 0) {
         this.appStore.addNotification({
           type: 'warning',
-          title: 'Nothing to export',
-          message: 'No members match the current filters',
+          title: this.$t('members.nothingToExport'),
+          message: this.$t('members.nothingToExportMessage'),
           isToast: true
         })
         return
@@ -888,8 +900,8 @@ export default {
         console.error('Error exporting members:', error)
         this.appStore.addNotification({
           type: 'error',
-          title: 'Export failed',
-          message: error.message || 'Could not export CSV',
+          title: this.$t('common.exportFailed'),
+          message: error.message || this.$t('common.couldNotExportCsv'),
           isToast: true
         })
       }

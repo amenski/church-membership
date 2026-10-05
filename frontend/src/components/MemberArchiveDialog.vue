@@ -1,11 +1,11 @@
 <template>
-  <BaseModal :model-value="modelValue" :title="`Archive ${member?.name || 'member'}?`" size="sm" @update:model-value="close">
+  <BaseModal :model-value="modelValue" :title="$t('members.archiveTitle', { name: member?.name || $t('nav.member') })" size="sm" @update:model-value="close">
     <AlertBanner v-if="deleteError">{{ deleteError }}</AlertBanner>
-    <p class="m-0 text-base">This hides {{ member?.name || 'the member' }} from the lists. Their payments and messages are kept.</p>
+    <p class="m-0 text-base">{{ $t('members.archiveBody', { name: member?.name || $t('nav.member') }) }}</p>
     <template #footer>
-      <BaseButton variant="secondary" :disabled="deleting" @click="close(false)">Cancel</BaseButton>
+      <BaseButton variant="secondary" :disabled="deleting" @click="close(false)">{{ $t('common.cancel') }}</BaseButton>
       <BaseButton variant="danger" :disabled="deleting" :aria-busy="deleting ? 'true' : undefined" @click="deleteMember">
-        {{ deleting ? 'Archiving...' : 'Archive member' }}
+        {{ deleting ? $t('members.archiving') : $t('members.archiveConfirmLabel') }}
       </BaseButton>
     </template>
   </BaseModal>
@@ -50,12 +50,12 @@ export default {
         await api.deleteMember(id)
         this.$emit('archived', { id, name })
         this.close(false)
-        this.notify('success', 'Member archived', name)
+        this.notify('success', this.$t('members.archivedTitle'), name)
       } catch (error) {
         console.error('Error archiving member:', error)
-        this.deleteError = error.message || 'Request failed'
+        this.deleteError = error.message || this.$t('common.requestFailed')
         // The shared API handler already shows an "Access Denied" toast for 403
-        if (error.response?.status !== 403) this.notify('error', 'Could not archive member', error.message || 'Request failed')
+        if (error.response?.status !== 403) this.notify('error', this.$t('members.couldNotArchive'), error.message || this.$t('common.requestFailed'))
       } finally {
         this.deleting = false
       }

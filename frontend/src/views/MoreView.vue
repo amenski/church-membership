@@ -1,20 +1,20 @@
 <template>
   <div>
-    <PageHead title="More" />
+    <PageHead :title="$t('nav.more')" />
     <ul class="m-0 list-none overflow-hidden rounded-lg border border-rule bg-paper p-0">
       <li v-for="row in rows" :key="row.to" class="border-b border-rule last:border-b-0">
         <router-link :to="row.to" class="flex min-h-[60px] items-center gap-3.5 px-4 py-2 text-ink no-underline hover:bg-teal-tint">
           <Icon :name="row.icon" :size="20" class="shrink-0 text-muted" />
           <span class="min-w-0 flex-1">
-            <span class="block text-lg font-medium">{{ row.label }}</span>
-            <span class="block text-sm text-muted">{{ row.subtitle }}</span>
+            <span class="block text-lg font-medium">{{ $t(row.labelKey) }}</span>
+            <span class="block text-sm text-muted">{{ $t(row.subtitleKey) }}</span>
           </span>
           <Icon name="chevron-right" :size="20" class="shrink-0 text-muted" />
         </router-link>
       </li>
     </ul>
 
-    <section aria-label="Signed in" class="mt-4 flex flex-col gap-3 rounded-lg border border-rule bg-paper px-4 py-3.5">
+    <section :aria-label="$t('more.signedIn')" class="mt-4 flex flex-col gap-3 rounded-lg border border-rule bg-paper px-4 py-3.5">
       <div>
         <div class="truncate text-lg font-semibold" :title="displayName">{{ displayName }}</div>
         <div v-if="email && email !== displayName" class="truncate text-base text-muted" :title="email">{{ email }}</div>
@@ -24,7 +24,7 @@
         class="inline-flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-clay bg-paper text-lg font-medium text-clay hover:bg-clay-tint"
         @click="signOut"
       >
-        <Icon name="log-out" :size="18" />Sign out
+        <Icon name="log-out" :size="18" />{{ $t('common.signOut') }}
       </button>
     </section>
   </div>
@@ -48,10 +48,10 @@ export default {
   computed: {
     rows() {
       return [
-        { to: '/households', label: 'Households', subtitle: 'Families and shared addresses', icon: 'home' },
-        ...(this.authStore.hasRole('ADMIN') ? [{ to: '/activity', label: 'Activity', subtitle: 'Administrators only', icon: 'clock' }] : []),
-        { to: '/my-dues', label: 'My dues', subtitle: 'Your payments and year', icon: 'banknote' },
-        { to: '/profile', label: 'Profile', subtitle: 'Your details and password', icon: 'user' }
+        { to: '/households', labelKey: 'nav.households', subtitleKey: 'more.householdsSubtitle', icon: 'home' },
+        ...(this.authStore.hasRole('ADMIN') ? [{ to: '/activity', labelKey: 'nav.activity', subtitleKey: 'more.activitySubtitle', icon: 'clock' }] : []),
+        { to: '/my-dues', labelKey: 'nav.myDues', subtitleKey: 'more.myDuesSubtitle', icon: 'banknote' },
+        { to: '/profile', labelKey: 'nav.profile', subtitleKey: 'more.profileSubtitle', icon: 'user' }
       ]
     },
     displayName() {
@@ -81,10 +81,10 @@ export default {
     async signOut() {
       try {
         await this.authStore.logout()
-        this.appStore.addNotification({ type: 'success', title: 'Sign out', message: 'You have been successfully signed out', isToast: true })
+        this.appStore.addNotification({ type: 'success', title: this.$t('common.signOut'), message: this.$t('auth.signedOut'), isToast: true })
         this.$router.push('/login')
       } catch {
-        this.appStore.addNotification({ type: 'error', title: 'Logout Failed', message: 'An error occurred while signing out', isToast: true })
+        this.appStore.addNotification({ type: 'error', title: this.$t('auth.logoutFailed'), message: this.$t('auth.signOutFailed'), isToast: true })
       }
     }
   }

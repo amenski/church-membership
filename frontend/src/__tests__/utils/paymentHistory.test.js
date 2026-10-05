@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { methodLabel, periodLabel, receiptNumber, sortPayments } from '@/utils/paymentHistory'
+import { methodKey, periodLabel, receiptNumber, sortPayments } from '@/utils/paymentHistory'
 
 describe('periodLabel', () => {
   it('formats YYYY-MM', () => {
@@ -15,14 +15,14 @@ describe('periodLabel', () => {
   })
 })
 
-describe('receiptNumber and methodLabel', () => {
+describe('receiptNumber and methodKey', () => {
   it('pads the id to six digits', () => {
     expect(receiptNumber({ id: 12 })).toBe('R-000012')
   })
-  it('maps a code to its label and passes an unknown one through', () => {
-    expect(methodLabel('BANK_TRANSFER')).toBe('Bank transfer')
-    expect(methodLabel('WIRE')).toBe('WIRE')
-    expect(methodLabel(null)).toBe('')
+  it('maps a code to its i18n key and passes an unknown one through', () => {
+    expect(methodKey('BANK_TRANSFER')).toBe('methods.bankTransfer')
+    expect(methodKey('WIRE')).toBe('WIRE')
+    expect(methodKey(null)).toBe('')
   })
 })
 

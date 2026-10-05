@@ -1,6 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import apiService from '../services/api'
+import { default as i18n, setLocale } from '../i18n'
+
+// The store runs outside a component, so it translates through the app instance
+const t = (key, ...args) => i18n.global.t(key, ...args)
 
 /**
  * Authentication Store
@@ -56,6 +60,12 @@ export const useAuthStore = defineStore('auth', () => {
     return emailRegex.test(email)
   }
 
+  // The account's language, when it has one, beats whatever this device last used. The login
+  // response carries only email and role, so in practice this fires from probeAuth's GET /users/me.
+  function applyUserLanguage(user) {
+    if (user?.language) setLocale(user.language)
+  }
+
   // Actions
   async function login(credentials) {
     try {
@@ -64,7 +74,7 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Validate email format
       if (!credentials.email || !isValidEmail(credentials.email)) {
-        throw new Error('Please enter a valid email address')
+        throw new Error(t('validation.emailInvalid'))
       }
 
       // Call login API
@@ -75,6 +85,7 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Store user data
       user.value = response.user
+      applyUserLanguage(response.user)
       isAuthenticated.value = true
       lastActivity.value = Date.now()
 
@@ -120,6 +131,25 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * Save the language choice on the account, so it follows the user to another device.
+   * A guest has nowhere to save it: the device preference (setLocale) is the whole story.
+   */
+  async function changeLanguage(language) {
+    if (!isAuthenticated.value || !user.value) return null
+
+    const previous = user.value.language
+    user.value = { ...user.value, language }
+    try {
+      const updated = await apiService.updateLanguage(language)
+      if (updated) user.value = { ...user.value, ...updated }
+      return updated
+    } catch (err) {
+      user.value = { ...user.value, language: previous }
+      throw err
+    }
+  }
+
   // The router guard and App both ask on first load: share one probe
   let pendingCheck = null
 
@@ -135,6 +165,7 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (userData) {
         user.value = userData
+        applyUserLanguage(userData)
         isAuthenticated.value = true
         lastActivity.value = Date.now()
         startSessionMonitoring()
@@ -175,21 +206,21 @@ export const useAuthStore = defineStore('auth', () => {
 
     switch (status) {
       case 400:
-        return 'Invalid request. Please check your input.'
+        return t('errors.invalidRequest')
       case 401:
-        return 'Invalid email or password.'
+        return t('errors.invalidCredentials')
       case 403:
-        return 'Access denied. You do not have permission to perform this action.'
+        return t('errors.forbidden')
       case 409:
-        return 'User already exists with this email.'
+        return t('errors.userExists')
       case 422:
-        return 'Validation failed. Please check your input.'
+        return t('errors.validationFailed')
       case 429:
-        return 'Too many login attempts. Please try again later.'
+        return t('errors.tooManyAttempts')
       case 500:
-        return 'Server error. Please try again later.'
+        return t('errors.serverError')
       default:
-        return error.message || 'An unexpected error occurred.'
+        return error.message || t('errors.genericMessage')
     }
   }
 
@@ -269,6 +300,7 @@ export const useAuthStore = defineStore('auth', () => {
     getTimeUntilExpiry,
     login,
     logout,
+    changeLanguage,
     checkAuth,
     clearAuth,
     clearError,

@@ -17,7 +17,7 @@
         :value="selected ? selected.name : query"
         :readonly="!!selected"
         :disabled="disabled"
-        :placeholder="placeholder"
+        :placeholder="placeholder || $t('picker.placeholder')"
         autocomplete="off"
         autocapitalize="off"
         spellcheck="false"
@@ -37,7 +37,7 @@
       <button
         v-if="selected && !disabled"
         type="button"
-        :aria-label="`Clear ${selected.name}`"
+        :aria-label="$t('picker.clear', { name: selected.name })"
         class="absolute top-1/2 right-0 flex size-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent text-muted hover:text-ink focus-visible:outline-offset-[-2px] lg:size-(--control-h)"
         @click="clear"
       >
@@ -78,8 +78,8 @@
             <StatusBadge v-if="badge(member)" :tone="badge(member).tone" class="shrink-0">{{ badge(member).text }}</StatusBadge>
           </li>
         </ul>
-        <p v-if="!results.length" class="m-0 px-3 py-3 text-base text-muted [overflow-wrap:anywhere]">No member matches '{{ query.trim() }}'</p>
-        <p v-else-if="moreCount" class="m-0 border-t border-rule px-3 py-2 text-sm text-muted">{{ moreCount }} more, keep typing</p>
+        <p v-if="!results.length" class="m-0 px-3 py-3 text-base text-muted [overflow-wrap:anywhere]">{{ $t('picker.noMatch', { query: query.trim() }) }}</p>
+        <p v-else-if="moreCount" class="m-0 border-t border-rule px-3 py-2 text-sm text-muted">{{ $t('picker.more', { n: moreCount }) }}</p>
       </div>
     </Teleport>
   </div>
@@ -107,7 +107,8 @@ export default {
     label: { type: String, required: true },
     modelValue: { type: String, default: '' },
     members: { type: Array, default: () => [] },
-    placeholder: { type: String, default: 'Search by name, phone or email' },
+    // blank falls back to picker.placeholder in this language
+    placeholder: { type: String, default: '' },
     error: { type: String, default: '' },
     disabled: { type: Boolean, default: false },
     // memberId -> Set of paid "yyyy-MM" months (paidMonthsFromMap); without it a row only says "N months behind"
@@ -139,7 +140,7 @@ export default {
     announcement() {
       if (!this.open) return ''
       const n = this.results.length
-      return n ? `${n} ${n === 1 ? 'result' : 'results'}; use arrow keys` : `No member matches '${this.query.trim()}'`
+      return n ? this.$t('picker.results', n) : this.$t('picker.noMatch', { query: this.query.trim() })
     }
   },
   watch: {
@@ -162,7 +163,7 @@ export default {
       return [member.householdName, member.phone].filter(Boolean).join(' · ')
     },
     badge(member) {
-      return duesBadge(member, this.paidByMember, this.currentMonth)
+      return duesBadge(member, this.paidByMember, this.currentMonth, this.$t)
     },
     // opens the list (or keeps it open) with nothing highlighted
     show() {

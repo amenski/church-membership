@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { ACTIVITY_TYPES, MAX_LIMIT, PAGE_SIZE, actorLabel, activityTypeLabel, filterByType, nextLimit } from '@/utils/activityLog'
+import i18n from '@/i18n'
+import { ACTIVITY_TYPES, MAX_LIMIT, PAGE_SIZE, actorLabel, activityTypeKey, filterByType, nextLimit } from '@/utils/activityLog'
+
+// src/__tests__/setup.js pins the app locale to English
+const t = (...args) => i18n.global.t(...args)
 
 // Every ActivityType of the backend (domain/enumeration/ActivityType.java)
 const SERVER_TYPES = [
@@ -9,15 +13,16 @@ const SERVER_TYPES = [
   'PAYMENT_RECORDED', 'PAYMENTS_EXPORTED', 'MESSAGE_SENT', 'SYSTEM_STARTUP', 'BULK_IMPORT', 'PAYMENT_REMINDER_SENT'
 ]
 
-describe('activityTypeLabel', () => {
-  it('has a plain label for every type the server records', () => {
+describe('activityTypeKey', () => {
+  it('has a labelled key for every type the server records', () => {
     for (const type of SERVER_TYPES) {
-      const label = activityTypeLabel(type)
-      expect(label).not.toBe(type)
-      expect(label).toMatch(/^[A-Z][a-z]+( [a-z]+)*$/)
+      const key = activityTypeKey(type)
+      expect(key).not.toBe(type)
+      expect(key).toMatch(/^activity\.[a-zA-Z]+$/)
+      expect(t(key)).not.toBe(key)
     }
-    expect(activityTypeLabel('MEMBER_CREATED')).toBe('Member added')
-    expect(activityTypeLabel('MESSAGE_SENT')).toBe('Message sent')
+    expect(t(activityTypeKey('MEMBER_CREATED'))).toBe('Member added')
+    expect(t(activityTypeKey('MESSAGE_SENT'))).toBe('Message sent')
   })
 
   it('lists exactly the server types, once each, for the filter', () => {
@@ -25,22 +30,22 @@ describe('activityTypeLabel', () => {
   })
 
   it('shows an unknown type as it came and nothing for none', () => {
-    expect(activityTypeLabel('SOMETHING_NEW')).toBe('SOMETHING_NEW')
-    expect(activityTypeLabel(null)).toBe('')
-    expect(activityTypeLabel(undefined)).toBe('')
+    expect(activityTypeKey('SOMETHING_NEW')).toBe('SOMETHING_NEW')
+    expect(activityTypeKey(null)).toBe('')
+    expect(activityTypeKey(undefined)).toBe('')
   })
 })
 
 describe('actorLabel', () => {
   it('shows the email', () => {
-    expect(actorLabel('staff@membertracker.com')).toBe('staff@membertracker.com')
+    expect(actorLabel('staff@membertracker.com', t)).toBe('staff@membertracker.com')
   })
 
   it('falls back to System for the scheduler and for a missing actor', () => {
-    expect(actorLabel('system')).toBe('System')
-    expect(actorLabel('SYSTEM')).toBe('System')
-    expect(actorLabel(null)).toBe('System')
-    expect(actorLabel('')).toBe('System')
+    expect(actorLabel('system', t)).toBe('System')
+    expect(actorLabel('SYSTEM', t)).toBe('System')
+    expect(actorLabel(null, t)).toBe('System')
+    expect(actorLabel('', t)).toBe('System')
   })
 })
 

@@ -11,7 +11,9 @@ export default defineConfig({
     }
   },
   test: {
-    environment: 'jsdom'
+    environment: 'jsdom',
+    // Mounts every view with the English catalog: see src/__tests__/setup.js
+    setupFiles: ['./src/__tests__/setup.js']
   },
   server: {
     port: 3000,

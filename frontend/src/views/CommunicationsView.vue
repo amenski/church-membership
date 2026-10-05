@@ -1,13 +1,13 @@
 <template>
   <!-- From lg the header is a full-width band, so the page's own padding (App.vue) is dropped here and the content area below carries it -->
   <div class="lg:max-w-none! lg:p-0!">
-    <PageHead title="Messages" lead="Email members and see what was delivered." band />
+    <PageHead :title="$t('nav.messages')" :lead="$t('messages.lead')" band />
 
     <div class="lg:mx-auto lg:max-w-[1400px] lg:px-8 lg:pt-6 lg:pb-10">
     <AlertBanner v-if="loadError">
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <span>The messages did not load. Check your connection and try again.</span>
-        <BaseButton variant="secondary" size="sm" @click="loadData">Try again</BaseButton>
+        <span>{{ $t('messages.loadError') }}</span>
+        <BaseButton variant="secondary" size="sm" @click="loadData">{{ $t('common.tryAgain') }}</BaseButton>
       </div>
     </AlertBanner>
 
@@ -15,41 +15,41 @@
       <!-- Compose and who gets it (STAFF and above): side by side from lg, stacked below -->
       <div v-if="authStore.isStaff" class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] lg:items-start">
         <section :class="CARD" aria-labelledby="compose-title">
-          <SectionTitle id="compose-title">New message</SectionTitle>
+          <SectionTitle id="compose-title">{{ $t('messages.newMessage') }}</SectionTitle>
           <AlertBanner v-if="sendError">{{ sendError }}</AlertBanner>
           <form class="flex flex-col gap-4" novalidate @submit.prevent="askToSend">
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <BaseSelect id="message-audience" v-model="form.recipientType" label="Send to">
-                <option value="ALL">Everyone</option>
-                <option value="OVERDUE">Behind on dues</option>
-                <option value="SPECIFIC">One member</option>
+              <BaseSelect id="message-audience" v-model="form.recipientType" :label="$t('messages.sendTo')">
+                <option value="ALL">{{ $t('messages.everyone') }}</option>
+                <option value="OVERDUE">{{ $t('messages.behindOnDues') }}</option>
+                <option value="SPECIFIC">{{ $t('messages.oneMember') }}</option>
               </BaseSelect>
               <BaseInput
                 v-if="form.recipientType === 'OVERDUE'"
                 id="message-months"
                 v-model="form.monthsOverdue"
-                label="At least this many months behind"
+                :label="$t('messages.atLeastMonths')"
                 type="number"
                 min="1"
                 step="1"
                 inputmode="numeric"
                 :error="formErrors.monthsOverdue"
               />
-              <MemberPicker v-else-if="form.recipientType === 'SPECIFIC'" id="message-member" v-model="form.memberId" label="Member" :members="activeMembers" :paid-by-member="paidByMember" :current-month="today.slice(0, 7)" :error="formErrors.memberId" />
+              <MemberPicker v-else-if="form.recipientType === 'SPECIFIC'" id="message-member" v-model="form.memberId" :label="$t('payments.member')" :members="activeMembers" :paid-by-member="paidByMember" :current-month="today.slice(0, 7)" :error="formErrors.memberId" />
             </div>
-            <BaseInput id="message-subject" v-model="form.subject" label="Subject" maxlength="200" autocomplete="off" :error="formErrors.subject" />
+            <BaseInput id="message-subject" v-model="form.subject" :label="$t('messages.subject')" maxlength="200" autocomplete="off" :error="formErrors.subject" />
             <BaseTextarea
               id="message-body"
               v-model="form.message"
-              label="Message"
+              :label="$t('messages.message')"
               :rows="6"
               :max="MESSAGE_MAX"
-              hint="Write {{member_name}} to insert each member's name."
+              :hint="$t('messages.bodyHint', { token: $t('messages.nameToken') })"
               :error="formErrors.message"
             />
             <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
               <BaseButton type="submit" :disabled="sending" :aria-busy="sending ? 'true' : undefined" class="max-sm:w-full">
-                {{ sending ? 'Sending...' : `Send to ${personLabel(recipientTotal)}` }}
+                {{ sending ? $t('messages.sending') : $t('messages.sendToCount', { label: countLabel }) }}
               </BaseButton>
               <span v-if="skippedNote" class="text-sm text-ochre-text">{{ skippedNote }}</span>
             </div>
@@ -58,41 +58,41 @@
 
         <!-- Who gets this: computed from the members and payments already loaded -->
         <section :class="CARD" aria-labelledby="who-title">
-          <SectionTitle id="who-title">Who gets this</SectionTitle>
+          <SectionTitle id="who-title">{{ $t('messages.whoGetsThis') }}</SectionTitle>
           <p class="mt-0 mb-3 text-sm text-muted" role="status">{{ summaryText }}</p>
           <ul v-if="recipients.length" class="m-0 max-h-[32rem] list-none overflow-y-auto border-t border-rule p-0">
             <li v-for="row in recipients" :key="row.member.id" class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-b border-rule py-2.5">
               <div class="min-w-0">
                 <div class="font-medium text-ink [overflow-wrap:anywhere]">{{ row.member.name }}</div>
-                <div class="text-xs text-muted tabular-nums">{{ row.member.consecutiveMonthsMissed > 0 ? monthsBehind(row.member.consecutiveMonthsMissed) : 'Paid up' }}</div>
+                <div class="text-xs text-muted tabular-nums">{{ row.member.consecutiveMonthsMissed > 0 ? monthsBehind(row.member.consecutiveMonthsMissed, $t) : $t('dues.badgePaid') }}</div>
               </div>
               <YearStrip v-if="paidByMember" v-bind="stripProps(row.member)" />
               <div class="flex basis-full flex-wrap items-center gap-x-2 gap-y-1">
-                <StatusBadge v-if="row.state === 'send'" tone="paid">Will get the email</StatusBadge>
-                <StatusBadge v-else-if="row.state === 'noEmail'" tone="behind">Skipped, no email</StatusBadge>
-                <StatusBadge v-else tone="muted">Skipped, shares an address</StatusBadge>
+                <StatusBadge v-if="row.state === 'send'" tone="paid">{{ $t('messages.willGet') }}</StatusBadge>
+                <StatusBadge v-else-if="row.state === 'noEmail'" tone="behind">{{ $t('messages.skippedNoEmail') }}</StatusBadge>
+                <StatusBadge v-else tone="muted">{{ $t('messages.skippedShared') }}</StatusBadge>
                 <span v-if="row.state === 'send'" class="text-xs text-muted [overflow-wrap:anywhere]">{{ row.member.email }}</span>
-                <span v-else-if="row.state === 'shared'" class="text-xs text-muted">{{ row.sharesWith }} gets the one copy</span>
+                <span v-else-if="row.state === 'shared'" class="text-xs text-muted">{{ $t('messages.getsOneCopy', { name: row.sharesWith }) }}</span>
                 <span v-else-if="row.member.phone" class="text-xs text-muted">
-                  <a :href="`tel:${row.member.phone.replace(/[^+\d]/g, '')}`" class="text-teal underline underline-offset-[3px] hover:text-teal-hover">Call {{ row.member.phone }}<span class="sr-only"> for {{ row.member.name }}</span></a> instead
+                  <a :href="`tel:${row.member.phone.replace(/[^+\d]/g, '')}`" class="text-teal underline underline-offset-[3px] hover:text-teal-hover">{{ $t('messages.callInstead', { phone: row.member.phone }) }}<span class="sr-only">{{ $t('messages.callForSr', { name: row.member.name }) }}</span></a>
                 </span>
-                <span v-else class="text-xs text-muted">No phone on file</span>
+                <span v-else class="text-xs text-muted">{{ $t('messages.noPhoneOnFile') }}</span>
               </div>
             </li>
           </ul>
-          <p class="mt-3 mb-0 text-sm text-muted">Members without an email are never sent a message.</p>
+          <p class="mt-3 mb-0 text-sm text-muted">{{ $t('messages.neverSentNoEmail') }}</p>
         </section>
       </div>
 
       <!-- History -->
       <section aria-labelledby="history-title">
-        <SectionTitle id="history-title">Sent messages</SectionTitle>
+        <SectionTitle id="history-title">{{ $t('messages.sentMessages') }}</SectionTitle>
 
-        <p v-if="!loaded" class="m-0 py-4 text-(length:--text-body) text-muted" role="status">Loading messages...</p>
+        <p v-if="!loaded" class="m-0 py-4 text-(length:--text-body) text-muted" role="status">{{ $t('messages.loading') }}</p>
 
         <template v-else-if="!loadError">
           <div v-if="!messages.length">
-            <EmptyNote>No messages yet.<template v-if="authStore.isStaff"> Use the form above to send the first one.</template></EmptyNote>
+            <EmptyNote>{{ $t('messages.noMessages') }}<template v-if="authStore.isStaff">{{ $t('messages.noMessagesStaff') }}</template></EmptyNote>
           </div>
 
           <!-- below lg: one row a message -->
@@ -101,16 +101,16 @@
               <div class="min-w-0">
                 <div class="font-sans font-bold text-ink [overflow-wrap:anywhere]">{{ message.title }}</div>
                 <div class="text-sm text-muted tabular-nums">
-                  {{ sentAt(message) }} &middot; {{ typeLabel(message.type) }} &middot;
-                  <template v-if="message.recipientCount > 0">{{ message.recipientCount }} {{ message.recipientCount === 1 ? 'recipient' : 'recipients' }}</template>
-                  <template v-else>No deliveries recorded</template>
+                  {{ sentAt(message) }} &middot; {{ $t(typeKey(message.type)) }} &middot;
+                  <template v-if="message.recipientCount > 0">{{ $t('messages.recipientCount', message.recipientCount) }}</template>
+                  <template v-else>{{ $t('messages.noDeliveriesRecorded') }}</template>
                 </div>
                 <div v-if="summaryParts(message).length" class="mt-1.5 flex flex-wrap gap-1.5">
                   <StatusBadge v-for="part in summaryParts(message)" :key="part.key" :tone="part.tone">{{ part.text }}</StatusBadge>
                 </div>
               </div>
               <TextButton class="shrink-0 max-sm:text-left" @click="openDeliveries(message)">
-                View deliveries<span class="sr-only"> for {{ message.title }}</span>
+                {{ $t('messages.viewDeliveries') }}<span class="sr-only">{{ $t('messages.viewDeliveriesSr', { title: message.title }) }}</span>
               </TextButton>
             </li>
           </ul>
@@ -120,24 +120,24 @@
           <div v-if="messages.length" class="hidden overflow-x-auto rounded-md border border-rule bg-paper lg:block">
             <div class="min-w-[52rem]">
               <table :class="TABLE_FROM_LG">
-                <caption class="sr-only">Sent messages, newest first</caption>
+                <caption class="sr-only">{{ $t('messages.sentCaption') }}</caption>
                 <thead>
                   <tr class="border-b border-rule">
-                    <th scope="col" :class="CARD_TH">Subject</th>
-                    <th scope="col" :class="CARD_TH">Sent to</th>
-                    <th scope="col" :class="CARD_TH">Sent</th>
-                    <th scope="col" :class="CARD_TH">Delivery</th>
-                    <th scope="col" :class="CARD_TH"><span class="sr-only">Deliveries</span></th>
+                    <th scope="col" :class="CARD_TH">{{ $t('messages.colSubject') }}</th>
+                    <th scope="col" :class="CARD_TH">{{ $t('messages.colSentTo') }}</th>
+                    <th scope="col" :class="CARD_TH">{{ $t('messages.colSent') }}</th>
+                    <th scope="col" :class="CARD_TH">{{ $t('messages.colDelivery') }}</th>
+                    <th scope="col" :class="CARD_TH"><span class="sr-only">{{ $t('messages.colDeliveries') }}</span></th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="message in pagedMessages" :key="message.id" class="border-b border-rule align-top">
                     <td :class="[CARD_TD, 'max-w-0 w-[34%] font-medium text-ink [overflow-wrap:anywhere]']">{{ message.title }}</td>
                     <td :class="CARD_TD">
-                      {{ typeLabel(message.type) }}
+                      {{ $t(typeKey(message.type)) }}
                       <div class="text-sm text-muted">
-                        <template v-if="message.recipientCount > 0">{{ message.recipientCount }} {{ message.recipientCount === 1 ? 'recipient' : 'recipients' }}</template>
-                        <template v-else>No deliveries recorded</template>
+                        <template v-if="message.recipientCount > 0">{{ $t('messages.recipientCount', message.recipientCount) }}</template>
+                        <template v-else>{{ $t('messages.noDeliveriesRecorded') }}</template>
                       </div>
                     </td>
                     <td :class="[CARD_TD, 'whitespace-nowrap text-muted']">{{ sentAt(message) }}</td>
@@ -145,11 +145,11 @@
                       <div v-if="summaryParts(message).length" class="flex flex-wrap gap-1.5">
                         <StatusBadge v-for="part in summaryParts(message)" :key="part.key" :tone="part.tone">{{ part.text }}</StatusBadge>
                       </div>
-                      <span v-else class="text-muted"><span aria-hidden="true">&ndash;</span><span class="sr-only">No delivery counts</span></span>
+                      <span v-else class="text-muted"><span aria-hidden="true">&ndash;</span><span class="sr-only">{{ $t('messages.noDeliveryCounts') }}</span></span>
                     </td>
                     <td :class="[CARD_TD, 'whitespace-nowrap text-right']">
                       <TextButton @click="openDeliveries(message)">
-                        View deliveries<span class="sr-only"> for {{ message.title }}</span>
+                        {{ $t('messages.viewDeliveries') }}<span class="sr-only">{{ $t('messages.viewDeliveriesSr', { title: message.title }) }}</span>
                       </TextButton>
                     </td>
                   </tr>
@@ -157,8 +157,8 @@
               </table>
               <Pager v-bind="pagerProps" class="px-4 py-3" @update:page="setPage" @update:page-size="setPageSize" />
               <div :class="['flex flex-wrap justify-between gap-x-4 gap-y-2 px-4 text-sm text-muted', pagerShown ? 'pb-3' : 'py-3']">
-                <span v-if="!pagerShown">{{ messages.length }} {{ messages.length === 1 ? 'message' : 'messages' }} sent so far</span>
-                <span class="ml-auto">Newest first</span>
+                <span v-if="!pagerShown">{{ $t('messages.sentSoFar', messages.length) }}</span>
+                <span class="ml-auto">{{ $t('messages.newestFirst') }}</span>
               </div>
             </div>
           </div>
@@ -169,33 +169,33 @@
     <!-- Confirm before email goes out -->
     <ConfirmDialog
       v-model="confirmOpen"
-      :title="`Send to ${countLabel}?`"
+      :title="$t('messages.confirmTitle', { label: countLabel })"
       :message="confirmMessage"
-      :confirm-label="`Send to ${countLabel}`"
+      :confirm-label="$t('messages.sendToCount', { label: countLabel })"
       :busy="sending"
       @confirm="sendMessage"
     />
 
     <!-- Deliveries -->
-    <BaseModal v-model="deliveriesOpen" :title="selectedMessage ? `Deliveries: ${selectedMessage.title}` : 'Deliveries'" size="lg">
-      <p v-if="selectedMessage" class="mt-0 mb-3 text-base text-muted tabular-nums">Sent {{ sentAt(selectedMessage) }}</p>
-      <p v-if="deliveriesLoading" class="m-0 py-4 text-muted" role="status">Loading deliveries...</p>
+    <BaseModal v-model="deliveriesOpen" :title="selectedMessage ? $t('messages.deliveriesTitle', { title: selectedMessage.title }) : $t('messages.deliveriesTitlePlain')" size="lg">
+      <p v-if="selectedMessage" class="mt-0 mb-3 text-base text-muted tabular-nums">{{ $t('messages.sentAtLine', { date: sentAt(selectedMessage) }) }}</p>
+      <p v-if="deliveriesLoading" class="m-0 py-4 text-muted" role="status">{{ $t('messages.loadingDeliveries') }}</p>
       <AlertBanner v-else-if="deliveriesError">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <span>The deliveries did not load. Check your connection and try again.</span>
-          <BaseButton variant="secondary" size="sm" @click="loadDeliveries">Try again</BaseButton>
+          <span>{{ $t('messages.deliveriesLoadError') }}</span>
+          <BaseButton variant="secondary" size="sm" @click="loadDeliveries">{{ $t('common.tryAgain') }}</BaseButton>
         </div>
       </AlertBanner>
-      <EmptyNote v-else-if="!deliveries.length">No deliveries were recorded for this message.</EmptyNote>
+      <EmptyNote v-else-if="!deliveries.length">{{ $t('messages.noDeliveries') }}</EmptyNote>
       <template v-else>
-        <div class="mb-3 flex flex-wrap gap-1.5" aria-label="Delivery totals" role="group">
+        <div class="mb-3 flex flex-wrap gap-1.5" :aria-label="$t('messages.deliveryTotalsAria')" role="group">
           <StatusBadge v-for="part in deliveryTotals" :key="part.key" :tone="part.tone">{{ part.text }}</StatusBadge>
         </div>
         <ul class="m-0 list-none border-t border-rule p-0">
           <li v-for="delivery in pagedDeliveries" :key="delivery.id" class="flex items-start justify-between gap-3 border-b border-rule py-3">
             <div class="min-w-0">
               <div class="flex flex-wrap items-baseline gap-x-4">
-                <span class="font-medium [overflow-wrap:anywhere]">{{ delivery.recipient?.name || 'Unknown' }}</span>
+                <span class="font-medium [overflow-wrap:anywhere]">{{ delivery.recipient?.name || $t('payments.unknown') }}</span>
                 <StatusLabel :tone="statusOf(delivery).tone">{{ statusOf(delivery).label }}</StatusLabel>
                 <span v-if="delivery.deliveryTime" class="text-sm text-muted tabular-nums">{{ formatDate(delivery.deliveryTime, 'MMM d, yyyy, h:mm a') }}</span>
               </div>
@@ -214,7 +214,7 @@
               :aria-busy="retryingIds.includes(delivery.id) ? 'true' : undefined"
               @click="retryDelivery(delivery)"
             >
-              {{ retryingIds.includes(delivery.id) ? 'Retrying...' : 'Retry' }}<span class="sr-only"> for {{ delivery.recipient?.name }}</span>
+              {{ retryingIds.includes(delivery.id) ? $t('messages.retrying') : $t('messages.retry') }}<span class="sr-only">{{ $t('messages.retrySr', { name: delivery.recipient?.name }) }}</span>
             </BaseButton>
           </li>
         </ul>
@@ -235,7 +235,7 @@ import { useAppStore } from '../stores/appStore'
 import { formatDate, localISODate } from '@/utils'
 import { personLabel, previewRecipients, previewSummary, sendableCount, skippedNote, skippedSentence } from '@/utils/audiencePreview'
 import { buildCommunicationRequest } from '@/utils/communicationPayload'
-import { attemptsLabel, friendlyNotes, countDeliveries, deliveryStatus, failedFirst, deliverySummaryParts, sortMessages, typeLabel } from '@/utils/messageHistory'
+import { attemptsLabel, friendlyNotes, countDeliveries, deliveryStatus, failedFirst, deliverySummaryParts, sortMessages, typeKey } from '@/utils/messageHistory'
 import { countsForDues } from '@/utils/memberStatus'
 import { monthsBehind } from '@/utils/dues'
 import { paidMonthsFromMap } from '@/utils/yearStrip'
@@ -281,9 +281,10 @@ export default {
       formatDate,
       monthsBehind,
       personLabel,
-      typeLabel,
+      typeKey,
       attemptsLabel,
       friendlyNotes,
+      t,
       CARD,
       TABLE_FROM_LG,
       CARD_TH,
@@ -342,17 +343,18 @@ export default {
       return sendableCount(this.recipients)
     },
     skippedNote() {
-      return skippedNote(this.recipients)
+      return skippedNote(this.recipients, this.t)
     },
     countLabel() {
-      return personLabel(this.recipientTotal)
+      return personLabel(this.recipientTotal, this.t)
     },
     summaryText() {
-      return previewSummary(this.recipients, this.form.recipientType, this.form.monthsOverdue)
+      return previewSummary(this.recipients, this.form.recipientType, this.form.monthsOverdue, this.t)
     },
     confirmMessage() {
-      const skipped = skippedSentence(this.recipients)
-      return `“${this.form.subject.trim()}” goes out by email. You cannot take it back.${skipped ? ` ${skipped}` : ''}`
+      const skipped = skippedSentence(this.recipients, this.t)
+      const body = this.$t('messages.confirmBody', { subject: this.form.subject.trim() })
+      return skipped ? `${body} ${skipped}` : body
     },
     orderedDeliveries() {
       return failedFirst(this.deliveries)
@@ -410,7 +412,7 @@ export default {
         currentMonth: this.today.slice(0, 7),
         monthsMissed: member.consecutiveMonthsMissed || 0,
         countsForDues: countsForDues(member),
-        label: `Dues for ${member.name}, last 12 months`
+        label: this.$t('strip.duesFor', { name: member.name })
       }
     },
     async refreshMessages() {
@@ -425,25 +427,25 @@ export default {
       return formatDate(message.sentDate || message.createdDate, 'MMM d, yyyy, h:mm a')
     },
     summaryParts(message) {
-      return deliverySummaryParts(message.deliverySummary)
+      return deliverySummaryParts(message.deliverySummary, this.t)
     },
     hasEmail(memberId) {
       const member = this.members.find(m => String(m.id) === String(memberId))
       return !!(member && member.email)
     },
     statusOf(delivery) {
-      return deliveryStatus(delivery.status)
+      return deliveryStatus(delivery.status, this.t)
     },
     validateForm() {
       const errors = { ...EMPTY_ERRORS }
       const f = this.form
-      if (f.recipientType === 'OVERDUE' && !(Number(f.monthsOverdue) >= 1)) errors.monthsOverdue = 'Enter 1 or more months.'
-      if (f.recipientType === 'SPECIFIC' && !f.memberId) errors.memberId = 'Choose a member.'
-      else if (f.recipientType === 'SPECIFIC' && !this.hasEmail(f.memberId)) errors.memberId = 'This member has no email address.'
-      if (!f.subject.trim()) errors.subject = 'Enter a subject.'
-      else if (f.subject.trim().length > SUBJECT_MAX) errors.subject = `The subject can be up to ${SUBJECT_MAX} characters.`
-      if (!f.message.trim()) errors.message = 'Write a message.'
-      else if (f.message.trim().length > MESSAGE_MAX) errors.message = `The message can be up to ${MESSAGE_MAX} characters.`
+      if (f.recipientType === 'OVERDUE' && !(Number(f.monthsOverdue) >= 1)) errors.monthsOverdue = this.$t('messages.vMonths')
+      if (f.recipientType === 'SPECIFIC' && !f.memberId) errors.memberId = this.$t('messages.vChooseMember')
+      else if (f.recipientType === 'SPECIFIC' && !this.hasEmail(f.memberId)) errors.memberId = this.$t('messages.vNoEmail')
+      if (!f.subject.trim()) errors.subject = this.$t('messages.vSubject')
+      else if (f.subject.trim().length > SUBJECT_MAX) errors.subject = this.$t('messages.vSubjectLong', { n: SUBJECT_MAX })
+      if (!f.message.trim()) errors.message = this.$t('messages.vMessage')
+      else if (f.message.trim().length > MESSAGE_MAX) errors.message = this.$t('messages.vMessageLong', { n: MESSAGE_MAX })
       this.formErrors = errors
       return !Object.values(errors).some(Boolean)
     },
@@ -452,7 +454,7 @@ export default {
       this.sendError = ''
       if (!this.validateForm()) return
       if (this.recipientTotal === 0) {
-        this.sendError = 'There is nobody to send this to.'
+        this.sendError = this.$t('messages.nobodyToSend')
         return
       }
       this.confirmOpen = true
@@ -469,7 +471,7 @@ export default {
         this.confirmOpen = false
         this.form = emptyForm()
         this.formErrors = { ...EMPTY_ERRORS }
-        this.notify('success', 'Sending started', `${personLabel(count)} will get it in the next few minutes. Check the delivery status below.`)
+        this.notify('success', this.$t('messages.sendingStarted'), this.$t('messages.sendingStartedMessage', { who: personLabel(count, this.t) }))
         await this.refreshMessages()
         // the new message is the first row of the newest-first list
         this.resetPage()
@@ -490,10 +492,10 @@ export default {
         if (key in EMPTY_ERRORS && !this.formErrors[key]) this.formErrors[key] = message
         else rest.push(message)
       }
-      if (!fieldErrors.length) rest.push(error.message || 'The message was not sent. Try again.')
+      if (!fieldErrors.length) rest.push(error.message || this.$t('messages.notSent'))
       if (rest.length) {
         this.sendError = rest.join(' ')
-        this.notifyFailure('Could not send message', error)
+        this.notifyFailure(this.$t('messages.couldNotSend'), error)
       }
     },
     async openDeliveries(message) {
@@ -530,12 +532,12 @@ export default {
       try {
         const updated = await api.retryDelivery(this.selectedMessage.id, delivery.id)
         this.deliveries = this.deliveries.map(item => (item.id === updated.id ? updated : item))
-        if (updated.status === 'FAILED') this.notify('warning', 'Retry failed', `The email to ${delivery.recipient?.name || 'the member'} still did not go out. Check the address and try again later.`)
-        else this.notify('success', 'Delivery retried', delivery.recipient?.name || '')
+        if (updated.status === 'FAILED') this.notify('warning', this.$t('messages.retryFailed'), this.$t('messages.retryFailedMessage', { name: delivery.recipient?.name || this.$t('payments.memberFallback') }))
+        else this.notify('success', this.$t('messages.deliveryRetried'), delivery.recipient?.name || '')
         await this.refreshMessages()
       } catch (error) {
         console.error('Error retrying delivery:', error)
-        this.notifyFailure('Could not retry delivery', error)
+        this.notifyFailure(this.$t('messages.couldNotRetry'), error)
       } finally {
         this.retryingIds = this.retryingIds.filter(id => id !== delivery.id)
       }
@@ -546,7 +548,7 @@ export default {
     // The shared API handler already shows an "Access Denied" toast for 403
     notifyFailure(title, error) {
       if (error.response?.status === 403) return
-      this.notify('error', title, error.message || 'Request failed')
+      this.notify('error', title, error.message || this.$t('common.requestFailed'))
     }
   }
 }

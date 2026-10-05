@@ -1,7 +1,7 @@
 <template>
   <router-link
     :to="to"
-    aria-label="Felege Selam home"
+    :aria-label="$t('nav.homeLabel')"
     :class="['flex no-underline', inline ? 'flex-row items-baseline gap-3' : 'flex-col']"
   >
     <span :class="['font-ethiopic font-bold leading-[1.3] text-teal', inline ? 'text-lg' : 'text-xl']">ፈለገ ሰላም</span>

@@ -8,10 +8,10 @@ export const DEFAULT_SORT = { field: 'paymentDate', direction: 'desc' }
 
 // Column header -> server sort field, the direction the first click gives, and the words for "sorted by ..."
 export const SORT_FIELDS = {
-  paymentDate: { first: 'desc', label: 'Paid on', asc: 'oldest first', desc: 'newest first' },
-  member: { first: 'asc', label: 'Member', asc: 'A to Z', desc: 'Z to A' },
-  period: { first: 'desc', label: 'Month', asc: 'oldest first', desc: 'newest first' },
-  amount: { first: 'desc', label: 'Amount', asc: 'lowest first', desc: 'highest first' }
+  paymentDate: { first: 'desc', labelKey: 'payments.colPaidOn', ascKey: 'payments.sortOldestFirst', descKey: 'payments.sortNewestFirst' },
+  member: { first: 'asc', labelKey: 'payments.colMember', ascKey: 'payments.sortAToZ', descKey: 'payments.sortZToA' },
+  period: { first: 'desc', labelKey: 'payments.colMonth', ascKey: 'payments.sortOldestFirst', descKey: 'payments.sortNewestFirst' },
+  amount: { first: 'desc', labelKey: 'payments.colAmount', ascKey: 'payments.sortLowestFirst', descKey: 'payments.sortHighestFirst' }
 }
 
 /** "member,desc" (the server's sort parameter) -> { field, direction }; anything else is the default sort. */
@@ -38,10 +38,14 @@ export function ariaSort(sort, field) {
   return sort.direction === 'asc' ? 'ascending' : 'descending'
 }
 
-/** "Paid on, newest first": for the table caption and footer. */
-export function sortLabel(sort) {
-  const { label, asc, desc } = SORT_FIELDS[sort.field]
-  return `${label}, ${sort.direction === 'asc' ? asc : desc}`
+/**
+ * "Paid on, newest first": for the table caption and footer.
+ * @param {{field: string, direction: string}} sort
+ * @param {Function} t useI18n's t
+ */
+export function sortLabel(sort, t) {
+  const { labelKey, ascKey, descKey } = SORT_FIELDS[sort.field]
+  return t('payments.sortedBy', { column: t(labelKey), order: t(sort.direction === 'asc' ? ascKey : descKey) })
 }
 
 const first = (value) => (Array.isArray(value) ? value[0] : value)

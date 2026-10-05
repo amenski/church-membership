@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { validateNewPassword, PASSWORD_RULE_MESSAGE } from '@/utils/passwordRules'
+import { validateNewPassword, PASSWORD_RULE_KEY } from '@/utils/passwordRules'
 
 // Same table as the server's UserTest
 describe('validateNewPassword', () => {
@@ -30,6 +30,6 @@ describe('validateNewPassword', () => {
     ['whitespace only as the special', '   Abcd1   '],
     ['not a string', null]
   ])('rejects: %s', (_label, pw) => {
-    expect(validateNewPassword(pw)).toBe(PASSWORD_RULE_MESSAGE)
+    expect(validateNewPassword(pw)).toBe(PASSWORD_RULE_KEY)
   })
 })

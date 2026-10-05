@@ -14,6 +14,10 @@ vi.mock('@/services/api', () => ({
 // Fresh router + store per test so history/auth state cannot leak between cases.
 async function setup({ role = null, lastActivity = null, sessionTimeout } = {}) {
   vi.resetModules()
+  // resetModules drops the instance src/__tests__/setup.js pinned to English, and the guard's
+  // notice is asserted in English below.
+  const { default: i18n } = await import('@/i18n')
+  i18n.global.locale.value = 'en'
   const { useAuthStore } = await import('@/stores/authStore')
   setActivePinia(createPinia())
   const store = useAuthStore()
@@ -30,7 +34,9 @@ async function setup({ role = null, lastActivity = null, sessionTimeout } = {}) 
   return { router, store, appStore }
 }
 
-describe('router beforeEach guard', () => {
+// Every case calls vi.resetModules() and rebuilds the router and its imports, which under a full
+// parallel run has been seen to pass 5s. The extra headroom is for that, not for the guard.
+describe('router beforeEach guard', { timeout: 20000 }, () => {
   beforeEach(() => {
     window.history.replaceState({}, '', '/')
     window.scrollTo = vi.fn() // jsdom does not implement it; the router calls it

@@ -1,6 +1,6 @@
 <template>
   <nav
-    aria-label="Main"
+    :aria-label="$t('nav.mainNavigation')"
     class="fixed inset-x-0 bottom-0 z-[1030] flex border-t border-rule bg-paper pb-[env(safe-area-inset-bottom)] lg:hidden"
   >
     <router-link v-for="tab in TABS" :key="tab.to" :to="tab.to" custom v-slot="{ href, navigate, isActive }">
@@ -14,7 +14,7 @@
         @click="navigate"
       >
         <Icon :name="tab.icon" :size="22" />
-        {{ tab.label }}
+        {{ $t(tab.labelKey) }}
       </a>
     </router-link>
   </nav>
@@ -25,11 +25,11 @@ import Icon from '@/components/Icon.vue'
 
 // The same five for every role that gets the bar; More holds the rest (see MoreView)
 const TABS = [
-  { to: '/dashboard', label: 'Overview', icon: 'layout-grid' },
-  { to: '/members', label: 'Members', icon: 'users' },
-  { to: '/payments', label: 'Payments', icon: 'banknote' },
-  { to: '/communications', label: 'Messages', icon: 'message-square' },
-  { to: '/more', label: 'More', icon: 'more-horizontal', children: ['/households', '/activity', '/profile'] }
+  { to: '/dashboard', labelKey: 'nav.overview', icon: 'layout-grid' },
+  { to: '/members', labelKey: 'nav.members', icon: 'users' },
+  { to: '/payments', labelKey: 'nav.payments', icon: 'banknote' },
+  { to: '/communications', labelKey: 'nav.messages', icon: 'message-square' },
+  { to: '/more', labelKey: 'nav.more', icon: 'more-horizontal', children: ['/households', '/activity', '/profile'] }
 ]
 
 export default {

@@ -1,20 +1,20 @@
 <template>
   <div class="mx-auto max-w-160">
-    <p v-if="loading" class="m-0 py-4 text-(length:--text-body) text-muted" role="status">Loading your dues...</p>
+    <p v-if="loading" class="m-0 py-4 text-(length:--text-body) text-muted" role="status">{{ $t('myDues.loading') }}</p>
 
     <AlertBanner v-else-if="error">
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <span>{{ error }}. Check your connection and try again.</span>
-        <BaseButton variant="secondary" size="sm" @click="load">Try again</BaseButton>
+        <span>{{ error }} {{ $t('common.checkConnection') }}</span>
+        <BaseButton variant="secondary" size="sm" @click="load">{{ $t('common.tryAgain') }}</BaseButton>
       </div>
     </AlertBanner>
 
     <section v-else-if="!dues" :class="CARD" aria-labelledby="none-title">
-      <SectionTitle id="none-title">My dues</SectionTitle>
+      <SectionTitle id="none-title">{{ $t('nav.myDues') }}</SectionTitle>
       <p class="mt-0 mb-4 text-(length:--text-body) leading-(--lh-body)">
-        We could not find your membership. Ask the church office to check that your sign-in email matches the email they have for you.
+        {{ $t('myDues.notFoundBody') }}
       </p>
-      <BaseButton variant="secondary" to="/profile" class="w-full sm:w-auto">Go to Profile</BaseButton>
+      <BaseButton variant="secondary" to="/profile" class="w-full sm:w-auto">{{ $t('myDues.goToProfile') }}</BaseButton>
     </section>
 
     <div v-else class="flex flex-col gap-5">
@@ -29,8 +29,8 @@
       </section>
 
       <section :class="CARD" aria-labelledby="my-dues-year">
-        <h2 id="my-dues-year" class="m-0 mb-1 text-lg font-semibold text-ink">Your year</h2>
-        <p class="mt-0 mb-3.5 text-sm text-muted">Each square is one month, {{ rangeLabel }}.</p>
+        <h2 id="my-dues-year" class="m-0 mb-1 text-lg font-semibold text-ink">{{ $t('myDues.yearTitle') }}</h2>
+        <p class="mt-0 mb-3.5 text-sm text-muted">{{ $t('myDues.yearCaption', { range: rangeLabel }) }}</p>
         <YearStrip
           size="large"
           :current-month="currentMonth"
@@ -38,18 +38,18 @@
           :paid-months="paidMonths"
           :months-missed="dues.monthsBehind"
           :counts-for-dues="dues.status === 'MEMBER'"
-          label="Your dues, last 12 months"
+          :label="$t('myDues.stripLabel')"
         />
       </section>
 
       <section :class="CARD" aria-labelledby="my-dues-receipts">
-        <h2 id="my-dues-receipts" class="m-0 mb-1 text-lg font-semibold text-ink">Receipts</h2>
-        <EmptyNote v-if="!dues.payments.length">No payments yet.</EmptyNote>
+        <h2 id="my-dues-receipts" class="m-0 mb-1 text-lg font-semibold text-ink">{{ $t('myDues.receiptsTitle') }}</h2>
+        <EmptyNote v-if="!dues.payments.length">{{ $t('myDues.noPayments') }}</EmptyNote>
         <ul v-else class="m-0 list-none p-0">
           <li v-for="payment in dues.payments" :key="payment.receiptNumber" class="flex min-h-11 items-center justify-between gap-3 border-b border-rule py-3 last:border-b-0">
             <div class="min-w-0">
               <div class="text-(length:--text-body) font-medium">{{ longMonth(payment.period) }}</div>
-              <div class="text-sm text-muted">{{ payment.receiptNumber }}, {{ methodLabel(payment.method) }}</div>
+              <div class="text-sm text-muted">{{ payment.receiptNumber }}, {{ $t(methodKey(payment.method)) }}</div>
             </div>
             <div class="shrink-0 text-(length:--text-body) font-semibold tabular-nums">{{ formatMoney(payment.amount) }}</div>
           </li>
@@ -57,23 +57,23 @@
       </section>
 
       <section :class="[CARD, 'flex flex-col gap-3']" aria-labelledby="my-dues-details">
-        <h2 id="my-dues-details" class="m-0 text-lg font-semibold text-ink">Your details</h2>
+        <h2 id="my-dues-details" class="m-0 text-lg font-semibold text-ink">{{ $t('myDues.detailsTitle') }}</h2>
         <dl class="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-[0.9375rem]">
-          <dt class="font-normal text-muted">Phone</dt>
-          <dd class="m-0">{{ dues.phone || 'Not set' }}</dd>
-          <dt class="font-normal text-muted">Email</dt>
-          <dd class="m-0 min-w-0 [overflow-wrap:anywhere]">{{ dues.email || 'Not set' }}</dd>
-          <dt class="font-normal text-muted">Household</dt>
-          <dd class="m-0">{{ dues.householdName || 'None' }}</dd>
+          <dt class="font-normal text-muted">{{ $t('myDues.phone') }}</dt>
+          <dd class="m-0">{{ dues.phone || $t('myDues.notSet') }}</dd>
+          <dt class="font-normal text-muted">{{ $t('myDues.email') }}</dt>
+          <dd class="m-0 min-w-0 [overflow-wrap:anywhere]">{{ dues.email || $t('myDues.notSet') }}</dd>
+          <dt class="font-normal text-muted">{{ $t('myDues.household') }}</dt>
+          <dd class="m-0">{{ dues.householdName || $t('myDues.none') }}</dd>
         </dl>
-        <BaseButton to="/profile" class="w-full">Edit my details</BaseButton>
-        <BaseButton variant="secondary" to="/profile" class="w-full">Change password</BaseButton>
+        <BaseButton to="/profile" class="w-full">{{ $t('myDues.editDetails') }}</BaseButton>
+        <BaseButton variant="secondary" to="/profile" class="w-full">{{ $t('profile.changePassword') }}</BaseButton>
         <button
           type="button"
           class="inline-flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-sm border border-clay bg-paper text-lg font-medium text-clay hover:bg-clay-tint"
           @click="signOut"
         >
-          <Icon name="log-out" :size="18" />Sign out
+          <Icon name="log-out" :size="18" />{{ $t('common.signOut') }}
         </button>
       </section>
     </div>
@@ -82,14 +82,15 @@
 
 <script>
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAppStore, useAuthStore } from '@/stores/index.js'
 import apiService from '@/services/api.js'
 import { formatMoney, localISODate } from '@/utils'
 import { longMonth } from '@/utils/dues'
 import { memberSince, myDuesStatus } from '@/utils/myDues'
-import { methodLabel } from '@/utils/paymentHistory'
-import { stripRangeLabel } from '@/utils/yearStrip'
+import { methodKey } from '@/utils/paymentHistory'
+import { stripRange } from '@/utils/yearStrip'
 import AlertBanner from '@/components/AlertBanner.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import EmptyNote from '@/components/EmptyNote.vue'
@@ -102,6 +103,7 @@ export default {
   name: 'MyDuesView',
   components: { AlertBanner, BaseButton, EmptyNote, Icon, SectionTitle, YearStrip },
   setup() {
+    const { t } = useI18n()
     const authStore = useAuthStore()
     const appStore = useAppStore()
     const router = useRouter()
@@ -118,7 +120,7 @@ export default {
         dues.value = await apiService.getMyDues()
       } catch (err) {
         dues.value = null
-        if (err.response?.status !== 404) error.value = 'Failed to load your dues'
+        if (err.response?.status !== 404) error.value = t('myDues.loadFailed')
       } finally {
         loading.value = false
       }
@@ -127,10 +129,10 @@ export default {
     const signOut = async () => {
       try {
         await authStore.logout()
-        appStore.addNotification({ type: 'success', title: 'Sign out', message: 'You have been successfully signed out', isToast: true })
+        appStore.addNotification({ type: 'success', title: t('common.signOut'), message: t('auth.signedOut'), isToast: true })
         router.push('/login')
       } catch {
-        appStore.addNotification({ type: 'error', title: 'Logout Failed', message: 'An error occurred while signing out', isToast: true })
+        appStore.addNotification({ type: 'error', title: t('auth.logoutFailed'), message: t('auth.signOutFailed'), isToast: true })
       }
     }
 
@@ -146,10 +148,10 @@ export default {
       signOut,
       formatMoney,
       longMonth,
-      methodLabel,
-      rangeLabel: stripRangeLabel(currentMonth),
-      since: computed(() => memberSince(dues.value?.joinDate)),
-      status: computed(() => (dues.value ? myDuesStatus(dues.value, currentMonth) : { title: '', detail: '' })),
+      methodKey,
+      rangeLabel: computed(() => t('strip.range', stripRange(currentMonth))),
+      since: computed(() => memberSince(dues.value?.joinDate, t)),
+      status: computed(() => (dues.value ? myDuesStatus(dues.value, currentMonth, t) : { title: '', detail: '' })),
       paidMonths: computed(() => new Set(dues.value?.paidMonths || []))
     }
   }

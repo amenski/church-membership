@@ -34,7 +34,7 @@
                 '-mr-2 -mt-1 flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-muted hover:text-ink',
                 sheet && 'max-lg:order-1 max-lg:m-0 max-lg:size-11 max-lg:text-paper max-lg:hover:text-paper max-lg:focus-visible:outline-paper'
               ]"
-              aria-label="Close"
+              :aria-label="$t('common.close')"
               @click="close"
             >
               <Icon v-if="sheet" name="chevron-left" :size="22" class="lg:hidden" />

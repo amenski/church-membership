@@ -1,12 +1,13 @@
 // The five membership statuses of the backend (MemberStatus.java) and the one rule that depends on them:
 // only a MEMBER pays dues, is counted as behind, gets messages and can have a payment recorded.
 
-export const STATUS_LABELS = {
-  MEMBER: 'Member',
-  INACTIVE: 'Inactive',
-  DECEASED: 'Deceased',
-  TRANSFERRED: 'Transferred',
-  ARCHIVED: 'Archived'
+// The words live in locales/ (status.*); these are the keys that reach them
+export const STATUS_KEYS = {
+  MEMBER: 'status.member',
+  INACTIVE: 'status.inactive',
+  DECEASED: 'status.deceased',
+  TRANSFERRED: 'status.transferred',
+  ARCHIVED: 'status.archived'
 }
 
 // StatusLabel tones: a member who is paid is fern; every other status is neutral. An inactive
@@ -21,10 +22,10 @@ const TONES = {
 
 /** The options of the Status select when editing. Archived is not one: it is the menu action. */
 export const STATUS_OPTIONS = [
-  { value: 'MEMBER', label: STATUS_LABELS.MEMBER },
-  { value: 'INACTIVE', label: STATUS_LABELS.INACTIVE },
-  { value: 'DECEASED', label: STATUS_LABELS.DECEASED },
-  { value: 'TRANSFERRED', label: STATUS_LABELS.TRANSFERRED }
+  { value: 'MEMBER', labelKey: STATUS_KEYS.MEMBER },
+  { value: 'INACTIVE', labelKey: STATUS_KEYS.INACTIVE },
+  { value: 'DECEASED', labelKey: STATUS_KEYS.DECEASED },
+  { value: 'TRANSFERRED', labelKey: STATUS_KEYS.TRANSFERRED }
 ]
 
 /** A new member can only start as Member or Inactive (the server refuses the others). */
@@ -39,9 +40,9 @@ export function isArchived(member) {
   return member?.status === 'ARCHIVED'
 }
 
-/** The word for a status; an unknown value shows as it came. */
-export function statusLabel(status) {
-  return STATUS_LABELS[status] || status || ''
+/** The i18n key of a status name; an unknown value shows as it came. */
+export function statusKey(status) {
+  return STATUS_KEYS[status] || status || ''
 }
 
 export function statusTone(status) {

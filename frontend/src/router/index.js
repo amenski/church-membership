@@ -1,8 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
 import { useAppStore } from '../stores/appStore'
+import i18n from '../i18n'
 
-// `title` is the page name in the top bar's breadcrumb; the guards read the rest.
+// `titleKey` is the i18n key of the page name in the top bar's breadcrumb; the guards read the rest.
 const routes = [
   // There is no landing page: the root is a doorway to sign-in, and the guard sends an
   // already-signed-in visitor on to their home screen.
@@ -14,67 +15,67 @@ const routes = [
     path: '/dashboard',
     name: 'dashboard',
     component: () => import('../views/Dashboard.vue'),
-    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER', title: 'Overview' }
+    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER', titleKey: 'nav.overview' }
   },
   {
     path: '/members',
     name: 'members',
     component: () => import('../views/MembersView.vue'),
-    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER', title: 'Members' }
+    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER', titleKey: 'nav.members' }
   },
   {
     path: '/members/:id',
     name: 'member',
     component: () => import('../views/MemberDetailView.vue'),
-    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER', title: 'Member' }
+    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER', titleKey: 'nav.member' }
   },
   {
     path: '/households',
     name: 'households',
     component: () => import('../views/HouseholdsView.vue'),
-    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER', title: 'Households' }
+    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER', titleKey: 'nav.households' }
   },
   {
     path: '/payments',
     name: 'payments',
     component: () => import('../views/PaymentsView.vue'),
-    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER', title: 'Payments' }
+    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER', titleKey: 'nav.payments' }
   },
   {
     path: '/communications',
     name: 'communications',
     component: () => import('../views/CommunicationsView.vue'),
-    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER', title: 'Messages' }
+    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER', titleKey: 'nav.messages' }
   },
   {
     path: '/activity',
     name: 'activity',
     component: () => import('../views/ActivityView.vue'),
-    meta: { requiresAuth: true, requiresRole: 'ADMIN', title: 'Activity' }
+    meta: { requiresAuth: true, requiresRole: 'ADMIN', titleKey: 'nav.activity' }
   },
   {
     path: '/more',
     name: 'more',
     component: () => import('../views/MoreView.vue'),
-    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER', title: 'More' }
+    meta: { requiresAuth: true, requiresRole: 'VOLUNTEER', titleKey: 'nav.more' }
   },
   {
     path: '/profile',
     name: 'profile',
     component: () => import('../views/ProfileView.vue'),
-    meta: { requiresAuth: true, title: 'Profile' }
+    meta: { requiresAuth: true, titleKey: 'nav.profile' }
   },
   {
     path: '/my-dues',
     name: 'my-dues',
     component: () => import('../views/MyDuesView.vue'),
-    meta: { requiresAuth: true, title: 'My dues' }
+    meta: { requiresAuth: true, titleKey: 'nav.myDues' }
   },
   {
     path: '/login',
     name: 'login',
     component: () => import('../views/LoginView.vue'),
-    meta: { requiresGuest: true, title: 'Sign in' }
+    meta: { requiresGuest: true, titleKey: 'nav.signIn' }
   },
   {
     path: '/:pathMatch(.*)*',
@@ -134,8 +135,8 @@ router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresRole && isAuthenticated && !authStore.hasRole(to.meta.requiresRole)) {
     useAppStore().addNotification({
       type: 'warning',
-      title: 'Access denied',
-      message: "You don't have access to that page.",
+      title: i18n.global.t('errors.accessDeniedTitle'),
+      message: i18n.global.t('errors.accessDeniedMessage'),
       duration: 5000
     })
     next(authStore.homePath)

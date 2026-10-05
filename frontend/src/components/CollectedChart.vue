@@ -1,18 +1,18 @@
 <template>
   <section :class="[CARD, 'min-w-0']" aria-labelledby="collected-title">
     <template v-if="error">
-      <SectionTitle id="collected-title" class="!mb-2 !text-xl">Collected by month</SectionTitle>
-      <AlertBanner>The monthly amounts did not load.</AlertBanner>
-      <TextButton @click="load">Try again</TextButton>
+      <SectionTitle id="collected-title" class="!mb-2 !text-xl">{{ $t('chart.title') }}</SectionTitle>
+      <AlertBanner>{{ $t('chart.notLoaded') }}</AlertBanner>
+      <TextButton @click="load">{{ $t('common.tryAgain') }}</TextButton>
     </template>
     <template v-else-if="hasCollected">
       <div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
         <div>
-          <SectionTitle id="collected-title" class="!mb-0.5 !text-xl">Collected by month</SectionTitle>
-          <p class="m-0 max-w-[60ch] text-sm text-muted">{{ range }}, by the month the dues are for.</p>
+          <SectionTitle id="collected-title" class="!mb-0.5 !text-xl">{{ $t('chart.title') }}</SectionTitle>
+          <p class="m-0 max-w-[60ch] text-sm text-muted">{{ $t('chart.caption', { range }) }}</p>
         </div>
         <p class="m-0 text-sm text-muted sm:text-right">
-          Twelve months<br><span class="text-2xl font-semibold tabular-nums text-ink">{{ formatMoney(total) }}</span>
+          {{ $t('chart.twelveMonths') }}<br><span class="text-2xl font-semibold tabular-nums text-ink">{{ formatMoney(total) }}</span>
         </p>
       </div>
 
@@ -30,25 +30,25 @@
       </ol>
       <p class="mt-3 mb-0 flex items-center gap-1.5 text-xs text-muted">
         <span :class="['box-border block h-3.5 w-3.5 rounded-sm', CURRENT_COLUMN]" aria-hidden="true"></span>
-        {{ currentName }} is still in progress.
+        {{ $t('chart.currentInProgress', { month: currentName }) }}
       </p>
 
       <table class="sr-only">
-        <caption>Collected by month, the last 12 months, oldest first</caption>
+        <caption>{{ $t('chart.tableCaption') }}</caption>
         <thead>
-          <tr><th scope="col">Month</th><th scope="col">Collected</th></tr>
+          <tr><th scope="col">{{ $t('chart.colMonth') }}</th><th scope="col">{{ $t('chart.colCollected') }}</th></tr>
         </thead>
         <tbody>
           <tr v-for="row in rows" :key="row.month">
             <th scope="row">{{ row.name }}</th>
-            <td>{{ formatMoney(row.amount) }}{{ row.current ? ', in progress' : '' }}</td>
+            <td>{{ formatMoney(row.amount) }}{{ row.current ? $t('chart.inProgress') : '' }}</td>
           </tr>
         </tbody>
       </table>
     </template>
     <template v-else>
-      <SectionTitle id="collected-title" class="!mb-2 !text-xl">Collected by month</SectionTitle>
-      <EmptyNote v-if="loaded">No payments in the last 12 months. Record one under Payments to see it here.</EmptyNote>
+      <SectionTitle id="collected-title" class="!mb-2 !text-xl">{{ $t('chart.title') }}</SectionTitle>
+      <EmptyNote v-if="loaded">{{ $t('chart.none') }}</EmptyNote>
     </template>
   </section>
 </template>
@@ -59,7 +59,7 @@ import AlertBanner from '@/components/AlertBanner.vue'
 import EmptyNote from '@/components/EmptyNote.vue'
 import SectionTitle from '@/components/SectionTitle.vue'
 import TextButton from '@/components/TextButton.vue'
-import { formatMoney } from '@/utils'
+import { formatDate, formatMoney } from '@/utils'
 import { CARD } from '@/ui/classes'
 
 // The tallest column, in px; the other months scale to the largest one
@@ -100,7 +100,7 @@ export default {
     range() {
       const first = this.collected[0]
       const last = this.collected[this.collected.length - 1]
-      return `${this.longName(first.month)} to ${this.longName(last.month)}`
+      return this.$t('strip.range', { from: this.longName(first.month), to: this.longName(last.month) })
     },
     currentName() {
       return this.longName(this.collected[this.collected.length - 1].month)
@@ -110,7 +110,7 @@ export default {
       const max = Math.max(...this.collected.map(row => row.amount), 0)
       return this.collected.map((row, index) => ({
         ...row,
-        label: monthStart(row.month).toLocaleDateString(undefined, { month: 'short' }),
+        label: formatDate(`${row.month}-01`, 'MMM'),
         name: this.longName(row.month),
         whole: dollars.format(row.amount),
         short: shortMoney(row.amount),
@@ -135,7 +135,7 @@ export default {
       }
     },
     longName(month) {
-      return monthStart(month).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+      return formatDate(`${month}-01`, 'MMMM yyyy')
     }
   }
 }

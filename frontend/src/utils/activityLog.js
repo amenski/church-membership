@@ -1,43 +1,50 @@
 import { format } from 'date-fns'
+import { formatDate } from '@/utils'
 
+// The words live in locales/ (activity.*)
 const TYPES = [
-  { value: 'SIGN_IN', label: 'Signed in' },
-  { value: 'PASSWORD_CHANGED', label: 'Password changed' },
-  { value: 'MEMBER_CREATED', label: 'Member added' },
-  { value: 'MEMBER_UPDATED', label: 'Member edited' },
-  { value: 'MEMBER_ACTIVATED', label: 'Member reactivated' },
-  { value: 'MEMBER_DEACTIVATED', label: 'Member deactivated' },
-  { value: 'MEMBER_ARCHIVED', label: 'Member archived' },
-  { value: 'MEMBER_DELETED', label: 'Member deleted' },
-  { value: 'MEMBER_HOUSEHOLD_CHANGED', label: 'Member household changed' },
-  { value: 'MEMBERS_EXPORTED', label: 'Members exported' },
-  { value: 'HOUSEHOLD_CREATED', label: 'Household added' },
-  { value: 'HOUSEHOLD_UPDATED', label: 'Household edited' },
-  { value: 'HOUSEHOLD_DELETED', label: 'Household deleted' },
-  { value: 'PERSON_CREATED', label: 'Person added' },
-  { value: 'PERSON_UPDATED', label: 'Person edited' },
-  { value: 'PERSON_DELETED', label: 'Person deleted' },
-  { value: 'MEMBERSHIP_STARTED', label: 'Membership started' },
-  { value: 'PAYMENT_RECORDED', label: 'Payment recorded' },
-  { value: 'PAYMENTS_EXPORTED', label: 'Payments exported' },
-  { value: 'MESSAGE_SENT', label: 'Message sent' },
+  { value: 'SIGN_IN', labelKey: 'activity.signIn' },
+  { value: 'PASSWORD_CHANGED', labelKey: 'activity.passwordChanged' },
+  { value: 'MEMBER_CREATED', labelKey: 'activity.memberCreated' },
+  { value: 'MEMBER_UPDATED', labelKey: 'activity.memberUpdated' },
+  { value: 'MEMBER_ACTIVATED', labelKey: 'activity.memberActivated' },
+  { value: 'MEMBER_DEACTIVATED', labelKey: 'activity.memberDeactivated' },
+  { value: 'MEMBER_ARCHIVED', labelKey: 'activity.memberArchived' },
+  { value: 'MEMBER_DELETED', labelKey: 'activity.memberDeleted' },
+  { value: 'MEMBER_HOUSEHOLD_CHANGED', labelKey: 'activity.memberHouseholdChanged' },
+  { value: 'MEMBERS_EXPORTED', labelKey: 'activity.membersExported' },
+  { value: 'HOUSEHOLD_CREATED', labelKey: 'activity.householdCreated' },
+  { value: 'HOUSEHOLD_UPDATED', labelKey: 'activity.householdUpdated' },
+  { value: 'HOUSEHOLD_DELETED', labelKey: 'activity.householdDeleted' },
+  { value: 'PERSON_CREATED', labelKey: 'activity.personCreated' },
+  { value: 'PERSON_UPDATED', labelKey: 'activity.personUpdated' },
+  { value: 'PERSON_DELETED', labelKey: 'activity.personDeleted' },
+  { value: 'MEMBERSHIP_STARTED', labelKey: 'activity.membershipStarted' },
+  { value: 'PAYMENT_RECORDED', labelKey: 'activity.paymentRecorded' },
+  { value: 'PAYMENTS_EXPORTED', labelKey: 'activity.paymentsExported' },
+  { value: 'MESSAGE_SENT', labelKey: 'activity.messageSent' },
   // Written by the sample data only; they stay readable in existing databases
-  { value: 'SYSTEM_STARTUP', label: 'System started' },
-  { value: 'BULK_IMPORT', label: 'Members imported' },
-  { value: 'PAYMENT_REMINDER_SENT', label: 'Reminders sent' }
+  { value: 'SYSTEM_STARTUP', labelKey: 'activity.systemStartup' },
+  { value: 'BULK_IMPORT', labelKey: 'activity.bulkImport' },
+  { value: 'PAYMENT_REMINDER_SENT', labelKey: 'activity.paymentReminderSent' }
 ]
 
-/** Every activity type the server records, with a plain label, in the order the filter lists them. */
+/** Every activity type the server records, with the key of its label, in the order the filter lists them. */
 export const ACTIVITY_TYPES = TYPES
 
-/** A plain label for an activity type; an unknown type shows as it came. */
-export function activityTypeLabel(type) {
-  return TYPES.find(item => item.value === type)?.label || type || ''
+/** The i18n key of a type's label; an unknown type is shown as it came. */
+export function activityTypeKey(type) {
+  return TYPES.find(item => item.value === type)?.labelKey || type || ''
 }
 
-/** Who did it: the email, or "System" for the scheduled job (the server writes "system") or a missing actor. */
-export function actorLabel(actor) {
-  return !actor || String(actor).toLowerCase() === 'system' ? 'System' : actor
+/**
+ * Who did it: the email, or the System word for the scheduled job (the server writes "system") or a
+ * missing actor.
+ * @param {string} actor
+ * @param {Function} t useI18n's t
+ */
+export function actorLabel(actor, t) {
+  return !actor || String(actor).toLowerCase() === 'system' ? t('activity.system') : actor
 }
 
 /** Entries of one type; "ALL" or no type keeps everything. Does not change the input. */
@@ -73,20 +80,29 @@ export function activityTone(type) {
 
 const dayKey = date => format(date, 'yyyy-MM-dd')
 
-/** "Today, Sunday 4 October", "Saturday 3 October" (yesterday), then with the year for older days ("Wednesday 30 September 2026"). Local time. */
-export function dayHeading(date, now = new Date()) {
+/**
+ * "Today, Sunday 4 October", "Saturday 3 October" (yesterday), then with the year for older days
+ * ("Wednesday 30 September 2026"). Local time, in the UI language.
+ * @param {Date} date
+ * @param {Function} t useI18n's t
+ * @param {Date} [now]
+ */
+export function dayHeading(date, t, now = new Date()) {
   const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1)
   const today = dayKey(date) === dayKey(now)
   const recent = today || dayKey(date) === dayKey(yesterday)
-  const text = format(date, recent ? 'EEEE d MMMM' : 'EEEE d MMMM yyyy')
-  return today ? `Today, ${text}` : text
+  const text = formatDate(date, recent ? 'EEEE d MMMM' : 'EEEE d MMMM yyyy')
+  return today ? t('activity.today', { date: text }) : text
 }
 
 /**
  * Entries grouped by local day, in the order given (newest first stays newest first):
  * [{ key, heading, entries }]. An entry without a readable createdAt is left out.
+ * @param {object[]} entries
+ * @param {Function} t useI18n's t
+ * @param {Date} [now]
  */
-export function groupByDay(entries, now = new Date()) {
+export function groupByDay(entries, t, now = new Date()) {
   const groups = []
   for (const entry of Array.isArray(entries) ? entries : []) {
     const date = new Date(entry.createdAt)
@@ -94,7 +110,7 @@ export function groupByDay(entries, now = new Date()) {
     const key = dayKey(date)
     let group = groups[groups.length - 1]
     if (!group || group.key !== key) {
-      group = { key, heading: dayHeading(date, now), entries: [] }
+      group = { key, heading: dayHeading(date, t, now), entries: [] }
       groups.push(group)
     }
     group.entries.push(entry)

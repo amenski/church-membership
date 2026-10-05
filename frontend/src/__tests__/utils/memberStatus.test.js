@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  NEW_MEMBER_STATUS_OPTIONS, STATUS_LABELS, STATUS_OPTIONS, countsForDues, isArchived, statusLabel, statusTone
+  NEW_MEMBER_STATUS_OPTIONS, STATUS_KEYS, STATUS_OPTIONS, countsForDues, isArchived, statusKey, statusTone
 } from '@/utils/memberStatus'
 
 const ALL = ['MEMBER', 'INACTIVE', 'DECEASED', 'TRANSFERRED', 'ARCHIVED']
@@ -18,13 +18,15 @@ describe('countsForDues', () => {
 })
 
 describe('labels and tones', () => {
-  it('has the five words', () => {
-    expect(ALL.map(statusLabel)).toEqual(['Member', 'Inactive', 'Deceased', 'Transferred', 'Archived'])
-    expect(Object.keys(STATUS_LABELS)).toEqual(ALL)
+  it('maps the five statuses to their i18n keys', () => {
+    expect(ALL.map(statusKey)).toEqual([
+      'status.member', 'status.inactive', 'status.deceased', 'status.transferred', 'status.archived'
+    ])
+    expect(Object.keys(STATUS_KEYS)).toEqual(ALL)
   })
   it('shows an unknown status as it came and nothing for none', () => {
-    expect(statusLabel('SOMETHING')).toBe('SOMETHING')
-    expect(statusLabel(undefined)).toBe('')
+    expect(statusKey('SOMETHING')).toBe('SOMETHING')
+    expect(statusKey(undefined)).toBe('')
   })
   it('uses the paid tone for Member and a neutral tone for every other status', () => {
     expect(statusTone('MEMBER')).toBe('paid')
@@ -36,7 +38,9 @@ describe('labels and tones', () => {
 describe('options', () => {
   it('offers four statuses when editing and never Archived (that is the menu action)', () => {
     expect(STATUS_OPTIONS.map(o => o.value)).toEqual(['MEMBER', 'INACTIVE', 'DECEASED', 'TRANSFERRED'])
-    expect(STATUS_OPTIONS.map(o => o.label)).toEqual(['Member', 'Inactive', 'Deceased', 'Transferred'])
+    expect(STATUS_OPTIONS.map(o => o.labelKey)).toEqual([
+      'status.member', 'status.inactive', 'status.deceased', 'status.transferred'
+    ])
   })
   it('offers only Member and Inactive for a new member, as the server enforces', () => {
     expect(NEW_MEMBER_STATUS_OPTIONS.map(o => o.value)).toEqual(['MEMBER', 'INACTIVE'])

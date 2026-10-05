@@ -1,40 +1,40 @@
 <template>
   <div>
-    <PageHead title="Profile" lead="Your details and password." />
+    <PageHead :title="$t('nav.profile')" :lead="$t('profile.lead')" />
 
     <div class="max-w-160">
-      <p v-if="loading" class="m-0 py-4 text-(length:--text-body) text-muted" role="status">Loading profile...</p>
+      <p v-if="loading" class="m-0 py-4 text-(length:--text-body) text-muted" role="status">{{ $t('profile.loading') }}</p>
 
       <AlertBanner v-else-if="error">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <span>{{ error }}. Check your connection and try again.</span>
-          <BaseButton variant="secondary" size="sm" @click="loadProfile">Try again</BaseButton>
+          <span>{{ error }} {{ $t('common.checkConnection') }}</span>
+          <BaseButton variant="secondary" size="sm" @click="loadProfile">{{ $t('common.tryAgain') }}</BaseButton>
         </div>
       </AlertBanner>
 
       <template v-else>
         <section :class="[CARD, 'mb-6']" aria-labelledby="details-title">
-          <SectionTitle id="details-title">Your details</SectionTitle>
+          <SectionTitle id="details-title">{{ $t('profile.yourDetails') }}</SectionTitle>
 
           <dl class="m-0 mb-1 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-(length:--text-body) leading-(--lh-body)">
-            <dt class="font-normal text-muted">Email</dt>
+            <dt class="font-normal text-muted">{{ $t('profile.email') }}</dt>
             <dd class="m-0 min-w-0 [overflow-wrap:anywhere]">{{ user.email }}</dd>
-            <dt class="font-normal text-muted">Role</dt>
+            <dt class="font-normal text-muted">{{ $t('profile.role') }}</dt>
             <dd class="m-0 font-medium">{{ roleLabel }}</dd>
           </dl>
-          <p class="mt-0 mb-6 text-(length:--text-label) leading-(--lh-label) text-muted">Your email cannot be changed here.</p>
+          <p class="mt-0 mb-6 text-(length:--text-label) leading-(--lh-label) text-muted">{{ $t('profile.emailNote') }}</p>
 
           <AlertBanner v-if="successMessage" tone="success">{{ successMessage }}</AlertBanner>
           <AlertBanner v-if="saveError">{{ saveError }}</AlertBanner>
 
           <form class="flex flex-col gap-4" novalidate @submit.prevent="handleSubmit">
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <BaseInput id="firstName" v-model="form.firstName" label="First name" maxlength="50" autocomplete="given-name" :error="formErrors.firstName" />
-              <BaseInput id="lastName" v-model="form.lastName" label="Last name" maxlength="50" autocomplete="family-name" :error="formErrors.lastName" />
+              <BaseInput id="firstName" v-model="form.firstName" :label="$t('profile.firstName')" maxlength="50" autocomplete="given-name" :error="formErrors.firstName" />
+              <BaseInput id="lastName" v-model="form.lastName" :label="$t('profile.lastName')" maxlength="50" autocomplete="family-name" :error="formErrors.lastName" />
             </div>
-            <BaseInput id="phone" v-model="form.phone" label="Phone" type="tel" autocomplete="tel" hint="Optional. 10 digits or more." :error="formErrors.phone" />
+            <BaseInput id="phone" v-model="form.phone" :label="$t('profile.phone')" type="tel" autocomplete="tel" :hint="$t('profile.phoneHint')" :error="formErrors.phone" />
             <div>
-              <label for="bio" :class="LABEL">Bio</label>
+              <label for="bio" :class="LABEL">{{ $t('profile.bio') }}</label>
               <textarea
                 id="bio"
                 v-model="form.bio"
@@ -50,44 +50,50 @@
               <div class="mt-1 flex justify-between gap-4 text-[0.9375rem]">
                 <p v-if="formErrors.bio" id="bio-error" class="m-0 text-clay">{{ formErrors.bio }}</p>
                 <span v-else id="bio-error"></span>
-                <span id="bio-count" :class="['tabular-nums', form.bio.length > BIO_MAX ? 'text-clay' : 'text-muted']">{{ form.bio.length }} of {{ BIO_MAX }}</span>
+                <span id="bio-count" :class="['tabular-nums', form.bio.length > BIO_MAX ? 'text-clay' : 'text-muted']">{{ $t('profile.bioCount', { n: form.bio.length, max: BIO_MAX }) }}</span>
               </div>
             </div>
             <div>
               <BaseButton type="submit" :disabled="saving" :aria-busy="saving ? 'true' : undefined" class="max-sm:w-full">
-                {{ saving ? 'Saving...' : 'Save changes' }}
+                {{ saving ? $t('common.saving') : $t('common.saveChanges') }}
               </BaseButton>
             </div>
           </form>
         </section>
 
         <section :class="[CARD, 'mb-6']" aria-labelledby="password-title">
-          <SectionTitle id="password-title">Password</SectionTitle>
-          <p class="mt-0 mb-4 text-(length:--text-body) leading-(--lh-body)">Use at least 8 characters with an uppercase letter, a lowercase letter, a number and a special character.</p>
-          <BaseButton variant="secondary" class="max-sm:w-full" @click="openPasswordDialog">Change password</BaseButton>
+          <SectionTitle id="password-title">{{ $t('profile.password') }}</SectionTitle>
+          <p class="mt-0 mb-4 text-(length:--text-body) leading-(--lh-body)">{{ $t('profile.passwordRules') }}</p>
+          <BaseButton variant="secondary" class="max-sm:w-full" @click="openPasswordDialog">{{ $t('profile.changePassword') }}</BaseButton>
+        </section>
+
+        <section :class="[CARD, 'mb-6']" aria-labelledby="language-title">
+          <SectionTitle id="language-title">{{ $t('common.language') }}</SectionTitle>
+          <p class="mt-0 mb-3 text-(length:--text-body) leading-(--lh-body) text-muted">{{ $t('profile.languageNote') }}</p>
+          <LanguageSwitcher />
         </section>
       </template>
     </div>
 
-    <BaseModal v-model="passwordOpen" title="Change password" size="md">
+    <BaseModal v-model="passwordOpen" :title="$t('profile.changePassword')" size="md">
       <AlertBanner v-if="passwordServerError">{{ passwordServerError }}</AlertBanner>
       <form id="password-form" class="flex flex-col gap-4" novalidate @submit.prevent="handlePasswordChange">
-        <BaseInput id="currentPassword" v-model="passwordForm.currentPassword" label="Current password" type="password" autocomplete="current-password" :error="passwordErrors.currentPassword" />
+        <BaseInput id="currentPassword" v-model="passwordForm.currentPassword" :label="$t('profile.currentPassword')" type="password" autocomplete="current-password" :error="passwordErrors.currentPassword" />
         <BaseInput
           id="newPassword"
           v-model="passwordForm.newPassword"
-          label="New password"
+          :label="$t('profile.newPassword')"
           type="password"
           autocomplete="new-password"
-          :hint="passwordErrors.newPassword ? '' : PASSWORD_RULE_MESSAGE"
+          :hint="passwordErrors.newPassword ? '' : $t(PASSWORD_RULE_KEY)"
           :error="passwordErrors.newPassword"
         />
-        <BaseInput id="confirmPassword" v-model="passwordForm.confirmPassword" label="Confirm new password" type="password" autocomplete="new-password" :error="passwordErrors.confirmPassword" />
+        <BaseInput id="confirmPassword" v-model="passwordForm.confirmPassword" :label="$t('profile.confirmPassword')" type="password" autocomplete="new-password" :error="passwordErrors.confirmPassword" />
       </form>
       <template #footer>
-        <BaseButton variant="secondary" :disabled="changingPassword" @click="passwordOpen = false">Cancel</BaseButton>
+        <BaseButton variant="secondary" :disabled="changingPassword" @click="passwordOpen = false">{{ $t('common.cancel') }}</BaseButton>
         <BaseButton type="submit" form="password-form" :disabled="changingPassword" :aria-busy="changingPassword ? 'true' : undefined">
-          {{ changingPassword ? 'Changing...' : 'Change password' }}
+          {{ changingPassword ? $t('profile.changing') : $t('profile.changePassword') }}
         </BaseButton>
       </template>
     </BaseModal>
@@ -97,13 +103,15 @@
 <script>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useAuthStore, useAppStore } from '@/stores/index.js'
+import { useI18n } from 'vue-i18n'
 import apiService from '@/services/api.js'
-import { validateNewPassword, PASSWORD_RULE_MESSAGE } from '@/utils/passwordRules.js'
+import { validateNewPassword, PASSWORD_RULE_KEY } from '@/utils/passwordRules.js'
 import { isValidPhone } from '@/utils/phoneRules.js'
 import AlertBanner from '@/components/AlertBanner.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import BaseInput from '@/components/BaseInput.vue'
 import BaseModal from '@/components/BaseModal.vue'
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 import PageHead from '@/components/PageHead.vue'
 import SectionTitle from '@/components/SectionTitle.vue'
 
@@ -113,8 +121,9 @@ const BIO_MAX = 500
 
 export default {
   name: 'ProfileView',
-  components: { AlertBanner, BaseButton, BaseInput, BaseModal, PageHead, SectionTitle },
+  components: { AlertBanner, BaseButton, BaseInput, BaseModal, LanguageSwitcher, PageHead, SectionTitle },
   setup() {
+    const { t } = useI18n()
     const authStore = useAuthStore()
     const appStore = useAppStore()
     const user = ref(authStore.user || {})
@@ -158,25 +167,25 @@ export default {
 
       // First name validation
       if (!form.value.firstName?.trim()) {
-        formErrors.value.firstName = 'First name is required'
+        formErrors.value.firstName = t('validation.firstNameRequired')
         isValid = false
       }
 
       // Last name validation
       if (!form.value.lastName?.trim()) {
-        formErrors.value.lastName = 'Last name is required'
+        formErrors.value.lastName = t('validation.lastNameRequired')
         isValid = false
       }
 
       // Phone validation (optional but must match the server's pattern if provided)
       if (!isValidPhone(form.value.phone)) {
-        formErrors.value.phone = 'Please enter a valid phone number'
+        formErrors.value.phone = t('validation.phoneInvalid')
         isValid = false
       }
 
       // Bio validation (optional but limit length)
       if (form.value.bio && form.value.bio.length > BIO_MAX) {
-        formErrors.value.bio = 'Bio must be less than 500 characters'
+        formErrors.value.bio = t('validation.bioTooLong')
         isValid = false
       }
 
@@ -196,7 +205,7 @@ export default {
           bio: data.bio || ''
         }
       } catch (err) {
-        error.value = 'Failed to load profile'
+        error.value = t('profile.loadFailed')
         console.error('Error loading profile:', err)
       } finally {
         loading.value = false
@@ -217,7 +226,7 @@ export default {
         const data = await apiService.updateProfile(form.value)
         user.value = data
         authStore.user = data
-        successMessage.value = 'Profile updated successfully!'
+        successMessage.value = t('profile.updated')
 
         setTimeout(() => {
           successMessage.value = null
@@ -229,7 +238,7 @@ export default {
           if (field in formErrors.value && !formErrors.value[field]) formErrors.value[field] = message
           else rest.push(message)
         }
-        if (!err.fieldErrors?.length) rest.push('Failed to update profile')
+        if (!err.fieldErrors?.length) rest.push(t('profile.updateFailed'))
         if (rest.length) saveError.value = rest.join(' ')
         console.error('Error updating profile:', err)
       } finally {
@@ -244,28 +253,28 @@ export default {
 
       // Current password validation
       if (!passwordForm.value.currentPassword) {
-        passwordErrors.value.currentPassword = 'Current password is required'
+        passwordErrors.value.currentPassword = t('validation.currentPasswordRequired')
         isValid = false
       }
 
       // New password validation
       if (!passwordForm.value.newPassword) {
-        passwordErrors.value.newPassword = 'New password is required'
+        passwordErrors.value.newPassword = t('validation.newPasswordRequired')
         isValid = false
       } else {
         const rule = validateNewPassword(passwordForm.value.newPassword)
         if (rule) {
-          passwordErrors.value.newPassword = rule
+          passwordErrors.value.newPassword = t(rule)
           isValid = false
         }
       }
 
       // Confirm password validation
       if (!passwordForm.value.confirmPassword) {
-        passwordErrors.value.confirmPassword = 'Please confirm your new password'
+        passwordErrors.value.confirmPassword = t('validation.confirmPasswordRequired')
         isValid = false
       } else if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
-        passwordErrors.value.confirmPassword = 'Passwords do not match'
+        passwordErrors.value.confirmPassword = t('validation.passwordsMismatch')
         isValid = false
       }
 
@@ -307,13 +316,13 @@ export default {
         passwordOpen.value = false
         appStore.addNotification({
           type: 'success',
-          title: 'Password changed',
-          message: 'Your password was changed.',
+          title: t('profile.passwordChangedTitle'),
+          message: t('profile.passwordChangedMessage'),
           isToast: true
         })
       } catch (err) {
         // The API interceptor puts the server's reason in err.message
-        passwordServerError.value = err.fieldErrors?.[0]?.message || err.message || 'Failed to change password'
+        passwordServerError.value = err.fieldErrors?.[0]?.message || err.message || t('profile.passwordChangeFailed')
         console.error('Error changing password:', err)
       } finally {
         changingPassword.value = false
@@ -330,9 +339,13 @@ export default {
       if (!open) resetPasswordForm()
     })
 
+    // ADMIN -> roles.admin, and anything unknown falls back to the raw role
     const roleLabel = computed(() => {
       const role = user.value?.role || ''
-      return role.charAt(0) + role.slice(1).toLowerCase()
+      if (!role) return ''
+      const key = `roles.${role.toLowerCase()}`
+      const label = t(key)
+      return label === key ? role.charAt(0) + role.slice(1).toLowerCase() : label
     })
 
     onMounted(loadProfile)
@@ -351,7 +364,7 @@ export default {
       BIO_MAX,
       LABEL,
       CARD,
-      PASSWORD_RULE_MESSAGE,
+      PASSWORD_RULE_KEY,
       changingPassword,
       passwordServerError,
       passwordForm,

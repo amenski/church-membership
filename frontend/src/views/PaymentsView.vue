@@ -1,13 +1,13 @@
 <template>
   <!-- From lg the header is a full-width band, so the page's own padding (App.vue) is dropped here and the content area below carries it -->
   <div class="lg:max-w-none! lg:p-0!">
-    <PageHead title="Payments" lead="Record what members paid and see the history." band>
+    <PageHead :title="$t('nav.payments')" :lead="$t('payments.lead')" band>
       <template v-if="authStore.isStaff" #actions>
         <BaseButton variant="secondary" @click="exportPayments">
-          <Icon name="download" :size="16" class="mr-1.5" />Export CSV
+          <Icon name="download" :size="16" class="mr-1.5" />{{ $t('common.exportCsv') }}
         </BaseButton>
         <BaseButton @click="openRecord">
-          <Icon name="plus" :size="16" class="mr-1.5" />Record payment
+          <Icon name="plus" :size="16" class="mr-1.5" />{{ $t('common.recordPayment') }}
         </BaseButton>
       </template>
     </PageHead>
@@ -15,12 +15,12 @@
     <div class="lg:mx-auto lg:max-w-[1400px] lg:px-8 lg:pt-6 lg:pb-10">
     <AlertBanner v-if="loadError">
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <span>The payments did not load. Check your connection and try again.</span>
-        <BaseButton variant="secondary" size="sm" @click="loadAll">Try again</BaseButton>
+        <span>{{ $t('payments.loadError') }}</span>
+        <BaseButton variant="secondary" size="sm" @click="loadAll">{{ $t('common.tryAgain') }}</BaseButton>
       </div>
     </AlertBanner>
 
-    <p v-if="!loaded" class="m-0 py-4 text-(length:--text-body) text-muted" role="status">Loading payments...</p>
+    <p v-if="!loaded" class="m-0 py-4 text-(length:--text-body) text-muted" role="status">{{ $t('payments.loading') }}</p>
 
     <!-- Figures from GET /payments/summary (the server adds them up, the browser never holds every payment) -->
     <dl v-if="summary && summary.count" class="m-0 mb-6 grid grid-cols-2 gap-2 lg:grid-cols-3">
@@ -32,60 +32,60 @@
 
     <!-- Filters -->
     <!-- From lg one row, labels visually hidden: search on the left, Method on the right -->
-    <form v-if="showFilters" class="mb-6 grid grid-cols-2 gap-3 md:flex md:flex-wrap md:items-end lg:mb-4 lg:items-center lg:gap-x-4" role="search" aria-label="Filter payments" @submit.prevent="commitSearch">
+    <form v-if="showFilters" class="mb-6 grid grid-cols-2 gap-3 md:flex md:flex-wrap md:items-end lg:mb-4 lg:items-center lg:gap-x-4" role="search" :aria-label="$t('payments.filterAria')" @submit.prevent="commitSearch">
       <div class="col-span-2 md:col-span-1 md:min-w-60 md:flex-1 lg:max-w-60 lg:flex-[1_1_10rem]">
-        <label for="filter-search" :class="[LABEL, 'lg:sr-only']">Search</label>
-        <input id="filter-search" v-model="searchText" type="search" placeholder="Search member name" autocomplete="off" :class="[CONTROL, 'lg:text-sm']">
+        <label for="filter-search" :class="[LABEL, 'lg:sr-only']">{{ $t('common.search') }}</label>
+        <input id="filter-search" v-model="searchText" type="search" :placeholder="$t('payments.searchPlaceholder')" autocomplete="off" :class="[CONTROL, 'lg:text-sm']">
       </div>
       <div class="col-span-2 md:col-span-1 md:w-48 lg:order-3 lg:ml-auto lg:w-44">
-        <label for="filter-method" :class="[LABEL, 'lg:sr-only']">Method</label>
+        <label for="filter-method" :class="[LABEL, 'lg:sr-only']">{{ $t('payments.method') }}</label>
         <select id="filter-method" v-model="method" :class="[CONTROL, 'lg:text-sm']">
-          <option value="">All methods</option>
-          <option v-for="method in PAYMENT_METHODS" :key="method.value" :value="method.value">{{ method.label }}</option>
+          <option value="">{{ $t('payments.allMethods') }}</option>
+          <option v-for="method in PAYMENT_METHODS" :key="method.value" :value="method.value">{{ $t(method.labelKey) }}</option>
         </select>
       </div>
-      <TextButton v-if="(hasActiveFilters || searchText) && payments.length" class="col-span-2 text-left md:col-span-1 md:py-1.5 lg:order-2" @click="clearFilters">Clear filters</TextButton>
+      <TextButton v-if="(hasActiveFilters || searchText) && payments.length" class="col-span-2 text-left md:col-span-1 md:py-1.5 lg:order-2" @click="clearFilters">{{ $t('common.clearFilters') }}</TextButton>
     </form>
 
     <!-- Empty states -->
     <div v-if="loaded && !loadError && !total && !hasActiveFilters && !searchText.trim()">
-      <EmptyNote>No payments yet. Record the first one.</EmptyNote>
-      <BaseButton v-if="authStore.isStaff" class="mt-2" @click="openRecord">Record payment</BaseButton>
+      <EmptyNote>{{ $t('payments.empty') }}</EmptyNote>
+      <BaseButton v-if="authStore.isStaff" class="mt-2" @click="openRecord">{{ $t('common.recordPayment') }}</BaseButton>
     </div>
     <div v-else-if="loaded && !loadError && !total">
-      <EmptyNote>No payments match these filters.</EmptyNote>
-      <BaseButton variant="secondary" class="mt-2" @click="clearFilters">Clear filters</BaseButton>
+      <EmptyNote>{{ $t('payments.noMatch') }}</EmptyNote>
+      <BaseButton variant="secondary" class="mt-2" @click="clearFilters">{{ $t('common.clearFilters') }}</BaseButton>
     </div>
 
     <!-- While another page loads the rows on screen stay, dimmed, until the new ones arrive -->
-    <p v-if="loading && loaded" class="sr-only" role="status">Updating payments...</p>
+    <p v-if="loading && loaded" class="sr-only" role="status">{{ $t('payments.updating') }}</p>
     <div v-if="payments.length" :class="loading ? 'opacity-60' : ''" :aria-busy="loading ? 'true' : undefined">
       <!-- from lg the visible count is the table card's footer; this line stays for screen readers -->
       <p class="mt-0 mb-2 text-sm text-muted lg:sr-only" aria-live="polite">{{ countText }}</p>
 
       <!-- md to lg: ruled table -->
       <table :class="[TABLE, 'lg:hidden']">
-        <caption class="sr-only">Payment history. Sorted by {{ sortText }}</caption>
+        <caption class="sr-only">{{ $t('payments.historyCaption', { sort: sortText }) }}</caption>
         <thead>
           <tr class="border-b border-rule">
-            <th scope="col" :aria-sort="sortState('paymentDate')" :class="TH"><SortButton label="Paid on" :state="sortState('paymentDate')" @click="setSort('paymentDate')" /></th>
-            <th scope="col" :aria-sort="sortState('member')" :class="TH"><SortButton label="Member" :state="sortState('member')" @click="setSort('member')" /></th>
-            <th scope="col" :aria-sort="sortState('period')" :class="TH"><SortButton label="Month covered" :state="sortState('period')" @click="setSort('period')" /></th>
-            <th scope="col" :class="TH">Method</th>
-            <th scope="col" :aria-sort="sortState('amount')" :class="[TH, 'text-right']"><SortButton label="Amount" :state="sortState('amount')" @click="setSort('amount')" /></th>
-            <th scope="col" :class="TH">Receipt</th>
+            <th scope="col" :aria-sort="sortState('paymentDate')" :class="TH"><SortButton :label="$t('payments.colPaidOn')" :state="sortState('paymentDate')" @click="setSort('paymentDate')" /></th>
+            <th scope="col" :aria-sort="sortState('member')" :class="TH"><SortButton :label="$t('payments.colMember')" :state="sortState('member')" @click="setSort('member')" /></th>
+            <th scope="col" :aria-sort="sortState('period')" :class="TH"><SortButton :label="$t('payments.colMonthCovered')" :state="sortState('period')" @click="setSort('period')" /></th>
+            <th scope="col" :class="TH">{{ $t('payments.colMethod') }}</th>
+            <th scope="col" :aria-sort="sortState('amount')" :class="[TH, 'text-right']"><SortButton :label="$t('payments.colAmount')" :state="sortState('amount')" @click="setSort('amount')" /></th>
+            <th scope="col" :class="TH">{{ $t('payments.colReceipt') }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="payment in payments" :key="payment.id" class="h-(--row-h) border-b border-rule">
             <td :class="[TD, 'whitespace-nowrap']">{{ formatDate(payment.paymentDate, 'MMM d, yyyy') }}</td>
-            <td :class="[TD, 'max-w-0 w-[30%] font-medium [overflow-wrap:anywhere]']">{{ payment.member?.name || 'Unknown' }}</td>
+            <td :class="[TD, 'max-w-0 w-[30%] font-medium [overflow-wrap:anywhere]']">{{ payment.member?.name || $t('payments.unknown') }}</td>
             <td :class="[TD, 'whitespace-nowrap']">{{ periodLabel(payment.period) }}</td>
-            <td :class="[TD, 'whitespace-nowrap']">{{ methodLabel(payment.paymentMethod) }}</td>
+            <td :class="[TD, 'whitespace-nowrap']">{{ $t(methodKey(payment.paymentMethod)) }}</td>
             <td :class="[TD, 'text-right whitespace-nowrap']">{{ formatMoney(payment.amount) }}</td>
             <td :class="TD">
               <TextButton class="py-1" @click="openReceipt(payment)">
-                {{ receiptNumber(payment) }}<span class="sr-only">, receipt for {{ payment.member?.name || 'Unknown' }}</span>
+                {{ receiptNumber(payment) }}<span class="sr-only">{{ $t('payments.receiptFor', { name: payment.member?.name || $t('payments.unknown') }) }}</span>
               </TextButton>
             </td>
           </tr>
@@ -96,28 +96,28 @@
       <div class="hidden overflow-x-auto rounded-md border border-rule bg-paper lg:block">
         <div class="min-w-[44rem]">
           <table :class="TABLE_FROM_LG">
-            <caption class="sr-only">Payment history. Sorted by {{ sortText }}</caption>
+            <caption class="sr-only">{{ $t('payments.historyCaption', { sort: sortText }) }}</caption>
             <thead>
               <tr class="border-b border-rule">
-                <th scope="col" :class="CARD_TH">Receipt</th>
-                <th scope="col" :aria-sort="sortState('paymentDate')" :class="CARD_TH"><SortButton label="Paid on" :state="sortState('paymentDate')" @click="setSort('paymentDate')" /></th>
-                <th scope="col" :aria-sort="sortState('member')" :class="CARD_TH"><SortButton label="Member" :state="sortState('member')" @click="setSort('member')" /></th>
-                <th scope="col" :aria-sort="sortState('period')" :class="CARD_TH"><SortButton label="Month" :state="sortState('period')" @click="setSort('period')" /></th>
-                <th scope="col" :class="CARD_TH">Method</th>
-                <th scope="col" :aria-sort="sortState('amount')" :class="[CARD_TH, 'text-right']"><SortButton label="Amount" :state="sortState('amount')" @click="setSort('amount')" /></th>
+                <th scope="col" :class="CARD_TH">{{ $t('payments.colReceipt') }}</th>
+                <th scope="col" :aria-sort="sortState('paymentDate')" :class="CARD_TH"><SortButton :label="$t('payments.colPaidOn')" :state="sortState('paymentDate')" @click="setSort('paymentDate')" /></th>
+                <th scope="col" :aria-sort="sortState('member')" :class="CARD_TH"><SortButton :label="$t('payments.colMember')" :state="sortState('member')" @click="setSort('member')" /></th>
+                <th scope="col" :aria-sort="sortState('period')" :class="CARD_TH"><SortButton :label="$t('payments.colMonth')" :state="sortState('period')" @click="setSort('period')" /></th>
+                <th scope="col" :class="CARD_TH">{{ $t('payments.colMethod') }}</th>
+                <th scope="col" :aria-sort="sortState('amount')" :class="[CARD_TH, 'text-right']"><SortButton :label="$t('payments.colAmount')" :state="sortState('amount')" @click="setSort('amount')" /></th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="payment in payments" :key="payment.id" class="h-(--row-h) border-b border-rule">
                 <td :class="[CARD_TD, 'whitespace-nowrap']">
                   <TextButton class="py-1" @click="openReceipt(payment)">
-                    {{ receiptNumber(payment) }}<span class="sr-only">, receipt for {{ payment.member?.name || 'Unknown' }}</span>
+                    {{ receiptNumber(payment) }}<span class="sr-only">{{ $t('payments.receiptFor', { name: payment.member?.name || $t('payments.unknown') }) }}</span>
                   </TextButton>
                 </td>
                 <td :class="[CARD_TD, 'whitespace-nowrap']">{{ formatDate(payment.paymentDate, 'MMM d, yyyy') }}</td>
-                <td :class="[CARD_TD, 'max-w-0 w-[34%] font-medium [overflow-wrap:anywhere]']">{{ payment.member?.name || 'Unknown' }}</td>
+                <td :class="[CARD_TD, 'max-w-0 w-[34%] font-medium [overflow-wrap:anywhere]']">{{ payment.member?.name || $t('payments.unknown') }}</td>
                 <td :class="[CARD_TD, 'whitespace-nowrap']">{{ periodLabel(payment.period) }}</td>
-                <td :class="[CARD_TD, 'whitespace-nowrap']">{{ methodLabel(payment.paymentMethod) }}</td>
+                <td :class="[CARD_TD, 'whitespace-nowrap']">{{ $t(methodKey(payment.paymentMethod)) }}</td>
                 <td :class="[CARD_TD, 'text-right whitespace-nowrap']">{{ formatMoney(payment.amount) }}</td>
               </tr>
             </tbody>
@@ -125,7 +125,7 @@
           <Pager v-bind="pagerProps" class="px-4 py-3" @update:page="setPage" @update:page-size="setPageSize" />
           <div :class="['flex flex-wrap justify-between gap-x-4 gap-y-2 px-4 text-sm text-muted', pagerShown ? 'pb-3' : 'py-3']">
             <span v-if="!pagerShown">{{ countText }}</span>
-            <span class="ml-auto">Sorted by {{ sortText }}</span>
+            <span class="ml-auto">{{ $t('payments.sortedByLabel', { sort: sortText }) }}</span>
           </div>
         </div>
       </div>
@@ -134,14 +134,14 @@
       <ul class="m-0 list-none border-t border-rule p-0 md:hidden">
         <li v-for="payment in payments" :key="payment.id" class="border-b border-rule py-3">
           <div class="flex items-baseline justify-between gap-3">
-            <span class="min-w-0 font-medium [overflow-wrap:anywhere]">{{ payment.member?.name || 'Unknown' }}</span>
+            <span class="min-w-0 font-medium [overflow-wrap:anywhere]">{{ payment.member?.name || $t('payments.unknown') }}</span>
             <span class="shrink-0 font-medium tabular-nums">{{ formatMoney(payment.amount) }}</span>
           </div>
-          <div class="text-sm text-muted">{{ periodLabel(payment.period) }} &middot; {{ methodLabel(payment.paymentMethod) }}</div>
+          <div class="text-sm text-muted">{{ periodLabel(payment.period) }} &middot; {{ $t(methodKey(payment.paymentMethod)) }}</div>
           <div class="flex items-center justify-between gap-3 text-sm text-muted tabular-nums">
-            <span>Paid on {{ formatDate(payment.paymentDate, 'MMM d, yyyy') }}</span>
+            <span>{{ $t('payments.paidOnLine', { date: formatDate(payment.paymentDate, 'MMM d, yyyy') }) }}</span>
             <TextButton class="text-base" @click="openReceipt(payment)">
-              {{ receiptNumber(payment) }}<span class="sr-only">, receipt for {{ payment.member?.name || 'Unknown' }}</span>
+              {{ receiptNumber(payment) }}<span class="sr-only">{{ $t('payments.receiptFor', { name: payment.member?.name || $t('payments.unknown') }) }}</span>
             </TextButton>
           </div>
         </li>
@@ -151,35 +151,35 @@
     </div>
 
     <!-- Record payment (STAFF and above) -->
-    <BaseModal v-if="authStore.isStaff" v-model="recordOpen" title="Record payment" size="md" sheet>
+    <BaseModal v-if="authStore.isStaff" v-model="recordOpen" :title="$t('payments.recordTitle')" size="md" sheet>
       <AlertBanner v-if="formError">{{ formError }}</AlertBanner>
-      <AlertBanner v-if="membersError">The members did not load. Close this and try again.</AlertBanner>
-      <p v-else-if="!membersLoaded" class="m-0 py-2 text-muted" role="status">Loading members...</p>
-      <EmptyNote v-else-if="!activeMembers.length">There are no active members to record a payment for. Add or reactivate a member first.</EmptyNote>
+      <AlertBanner v-if="membersError">{{ $t('payments.membersLoadError') }}</AlertBanner>
+      <p v-else-if="!membersLoaded" class="m-0 py-2 text-muted" role="status">{{ $t('payments.loadingMembers') }}</p>
+      <EmptyNote v-else-if="!activeMembers.length">{{ $t('payments.noActiveMembers') }}</EmptyNote>
       <form v-else id="payment-form" class="flex flex-col gap-4" novalidate @submit.prevent="recordPayment">
-        <MemberPicker id="payment-member" v-model="form.memberId" label="Member" class="max-lg:min-h-12" :members="activeMembers" :paid-by-member="paidByMember" :current-month="currentPeriod" :error="formErrors.memberId" />
+        <MemberPicker id="payment-member" v-model="form.memberId" :label="$t('payments.member')" class="max-lg:min-h-12" :members="activeMembers" :paid-by-member="paidByMember" :current-month="currentPeriod" :error="formErrors.memberId" />
         <!-- Phone sheet only: what the chosen member owes, from the same year strip as the Members list -->
-        <section v-if="selectedMember && paidByMember" :aria-label="`${selectedMember.name}, dues`" class="flex flex-col gap-2.5 rounded-lg border border-rule bg-paper px-4 py-3.5 lg:hidden">
+        <section v-if="selectedMember && paidByMember" :aria-label="$t('payments.duesFor', { name: selectedMember.name })" class="flex flex-col gap-2.5 rounded-lg border border-rule bg-paper px-4 py-3.5 lg:hidden">
           <div class="text-xl font-medium [overflow-wrap:anywhere]">{{ selectedMember.name }}</div>
           <YearStrip size="large" v-bind="stripProps(selectedMember)" />
           <p class="m-0 text-lg leading-snug">{{ owed.sentence }}</p>
         </section>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <BaseInput id="payment-period" v-model="form.period" label="Month covered" type="month" class="max-lg:min-h-12" :max="currentPeriod" :hint="periodHint" :error="formErrors.period" />
-          <BaseInput id="payment-date" v-model="form.paymentDate" label="Paid on" type="date" class="max-lg:min-h-12" :max="today" hint="Change this when you enter an older payment." :error="formErrors.paymentDate" />
+          <BaseInput id="payment-period" v-model="form.period" :label="$t('payments.monthCovered')" type="month" class="max-lg:min-h-12" :max="currentPeriod" :hint="periodHint" :error="formErrors.period" />
+          <BaseInput id="payment-date" v-model="form.paymentDate" :label="$t('payments.paidOnLabel')" type="date" class="max-lg:min-h-12" :max="today" :hint="$t('payments.dateHint')" :error="formErrors.paymentDate" />
         </div>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <BaseInput id="payment-amount" v-model="form.amount" label="Amount" type="number" class="max-lg:min-h-12" min="0.01" step="0.01" inputmode="decimal" :error="formErrors.amount" />
-          <BaseSelect id="payment-method" v-model="form.paymentMethod" label="Payment method" class="max-lg:min-h-12" :error="formErrors.paymentMethod">
-            <option v-for="method in PAYMENT_METHODS" :key="method.value" :value="method.value">{{ method.label }}</option>
+          <BaseInput id="payment-amount" v-model="form.amount" :label="$t('payments.amount')" type="number" class="max-lg:min-h-12" min="0.01" step="0.01" inputmode="decimal" :error="formErrors.amount" />
+          <BaseSelect id="payment-method" v-model="form.paymentMethod" :label="$t('payments.paymentMethod')" class="max-lg:min-h-12" :error="formErrors.paymentMethod">
+            <option v-for="method in PAYMENT_METHODS" :key="method.value" :value="method.value">{{ $t(method.labelKey) }}</option>
           </BaseSelect>
         </div>
-        <BaseTextarea id="payment-notes" v-model="form.notes" label="Notes (optional)" :max="NOTES_MAX" :rows="2" :error="formErrors.notes" />
+        <BaseTextarea id="payment-notes" v-model="form.notes" :label="$t('payments.notes')" :max="NOTES_MAX" :rows="2" :error="formErrors.notes" />
       </form>
       <template #footer>
-        <BaseButton variant="secondary" :disabled="saving" @click="recordOpen = false">Cancel</BaseButton>
+        <BaseButton variant="secondary" :disabled="saving" @click="recordOpen = false">{{ $t('common.cancel') }}</BaseButton>
         <BaseButton type="submit" form="payment-form" :disabled="saving || !activeMembers.length" :aria-busy="saving ? 'true' : undefined">
-          {{ saving ? 'Recording...' : 'Record payment' }}
+          {{ saving ? $t('payments.recording') : $t('common.recordPayment') }}
         </BaseButton>
       </template>
     </BaseModal>
@@ -196,7 +196,7 @@ import { useAppStore } from '../stores/appStore'
 import { useAuthStore } from '../stores/authStore'
 import { downloadBlob, formatDate, formatMoney, localISODate } from '@/utils'
 import { buildPaymentRequest, PAYMENT_METHODS } from '@/utils/paymentPayload'
-import { methodLabel, periodLabel, receiptNumber, sortPayments } from '@/utils/paymentHistory'
+import { methodKey, periodLabel, receiptNumber, sortPayments } from '@/utils/paymentHistory'
 import { ariaSort, filtersQuery, nextSort, pageParams, readFilters, sortLabel } from '@/utils/paymentQuery'
 import { PAGE_SIZES } from '@/utils/paging'
 import { queryPaging } from '@/utils/queryPaging'
@@ -250,7 +250,7 @@ export default {
       authStore: useAuthStore(),
       formatDate,
       formatMoney,
-      methodLabel,
+      methodKey,
       periodLabel,
       receiptNumber,
       TABLE,
@@ -310,10 +310,10 @@ export default {
     // The member's year strip cells and what they owe (the step 1 rule: yearStrip.js); nothing until the paid months are in
     owed() {
       const member = this.selectedMember
-      return member && this.paidByMember ? owedSummary(stripCells(this.stripArgs(member))) : { oldest: '', sentence: '' }
+      return member && this.paidByMember ? owedSummary(stripCells(this.stripArgs(member)), this.$t) : { oldest: '', sentence: '' }
     },
     periodHint() {
-      return this.owed.oldest && this.owed.oldest !== this.currentPeriod && this.form.period === this.owed.oldest && this.form.period === this.autoPeriod ? `${longMonth(this.owed.oldest)}, the oldest month not paid.` : ''
+      return this.owed.oldest && this.owed.oldest !== this.currentPeriod && this.form.period === this.owed.oldest && this.form.period === this.autoPeriod ? this.$t('payments.oldestHint', { month: longMonth(this.owed.oldest) }) : ''
     },
     activeMembers() {
       return this.members.filter(countsForDues).sort((a, b) => a.name.localeCompare(b.name))
@@ -330,19 +330,21 @@ export default {
     },
     figures() {
       return [
-        { label: 'This month', value: formatMoney(this.summary.thisMonth) },
-        { label: 'All time', value: formatMoney(this.summary.allTime) },
-        { label: 'Average payment', value: formatMoney(this.summary.average) }
+        { label: this.$t('payments.thisMonth'), value: formatMoney(this.summary.thisMonth) },
+        { label: this.$t('payments.allTime'), value: formatMoney(this.summary.allTime) },
+        { label: this.$t('payments.averagePayment'), value: formatMoney(this.summary.average) }
       ]
     },
     // "32 payments", or "3 of 32 payments" when a filter hides some
     countText() {
-      const noun = this.total === 1 && !this.hasActiveFilters ? 'payment' : 'payments'
+      const noun = this.$t('payments.countPayment', this.total)
       const all = this.summary?.count
-      return this.hasActiveFilters && all !== undefined && all !== this.total ? `${this.total} of ${all} ${noun}` : `${this.total} ${noun}`
+      return this.hasActiveFilters && all !== undefined && all !== this.total
+        ? this.$t('payments.countOf', { total: noun, all })
+        : noun
     },
     sortText() {
-      return sortLabel(this.sort)
+      return sortLabel(this.sort, this.$t)
     },
     pagerProps() {
       return { page: this.page, pageSize: this.pageSize, total: this.total }
@@ -412,7 +414,7 @@ export default {
       }
     },
     stripProps(member) {
-      return { ...this.stripArgs(member), label: `Dues for ${member.name}, last 12 months` }
+      return { ...this.stripArgs(member), label: this.$t('strip.duesFor', { name: member.name }) }
     },
     // search, method and sort ride in the URL beside page and size (left out when they are the defaults)
     pagingExtraQuery() {
@@ -554,13 +556,13 @@ export default {
     validateForm() {
       const errors = { ...EMPTY_ERRORS }
       const f = this.form
-      if (!f.memberId) errors.memberId = 'Choose a member.'
-      if (!f.period) errors.period = 'Choose the month this payment covers.'
-      else if (f.period > this.currentPeriod) errors.period = 'Choose this month or an earlier one.'
-      if (!f.paymentDate) errors.paymentDate = 'Choose the day the payment was made.'
-      else if (f.paymentDate > this.today) errors.paymentDate = 'The payment date cannot be in the future.'
-      if (!(Number(f.amount) >= 0.01)) errors.amount = 'Enter an amount of at least 0.01.'
-      if (f.notes.length > NOTES_MAX) errors.notes = `Notes can be up to ${NOTES_MAX} characters.`
+      if (!f.memberId) errors.memberId = this.$t('payments.vChooseMember')
+      if (!f.period) errors.period = this.$t('payments.vChoosePeriod')
+      else if (f.period > this.currentPeriod) errors.period = this.$t('payments.vPeriodTooLate')
+      if (!f.paymentDate) errors.paymentDate = this.$t('payments.vChooseDate')
+      else if (f.paymentDate > this.today) errors.paymentDate = this.$t('payments.vDateInFuture')
+      if (!(Number(f.amount) >= 0.01)) errors.amount = this.$t('payments.vAmountTooSmall')
+      if (f.notes.length > NOTES_MAX) errors.notes = this.$t('payments.vNotesTooLong', { n: NOTES_MAX })
       this.formErrors = errors
       return !Object.values(errors).some(Boolean)
     },
@@ -573,10 +575,10 @@ export default {
         if (field in EMPTY_ERRORS && !this.formErrors[field]) this.formErrors[field] = message
         else rest.push(message)
       }
-      if (!fieldErrors.length) rest.push(error.message || 'The payment was not recorded. Try again.')
+      if (!fieldErrors.length) rest.push(error.message || this.$t('payments.notRecorded'))
       if (rest.length) {
         this.formError = rest.join(' ')
-        this.notifyFailure('Could not record payment', error)
+        this.notifyFailure(this.$t('payments.couldNotRecord'), error)
       }
     },
     async recordPayment() {
@@ -592,7 +594,11 @@ export default {
         // the page, the figures and the chart; the members too, a payment resets their months-behind count
         await Promise.all([this.loadAll(), this.authStore.isStaff ? this.loadMembers() : null])
         this.$refs.chart?.load()
-        this.notify('success', 'Payment recorded', `${member?.name || 'Member'}, ${periodLabel(request.period)}: ${formatMoney(request.amount)}`)
+        this.notify('success', this.$t('payments.recorded'), this.$t('payments.recordedMessage', {
+          name: member?.name || this.$t('payments.memberFallback'),
+          period: periodLabel(request.period),
+          amount: formatMoney(request.amount)
+        }))
       } catch (error) {
         console.error('Error recording payment:', error)
         this.showSaveError(error)
@@ -610,7 +616,7 @@ export default {
     // The shared API handler already shows an "Access Denied" toast for 403
     notifyFailure(title, error) {
       if (error.response?.status === 403) return
-      this.notify('error', title, error.message || 'Request failed')
+      this.notify('error', title, error.message || this.$t('common.requestFailed'))
     },
     async exportPayments() {
       try {
@@ -621,8 +627,8 @@ export default {
         console.error('Error exporting payments:', error)
         this.appStore.addNotification({
           type: 'error',
-          title: 'Export failed',
-          message: error.message || 'Could not export CSV',
+          title: this.$t('common.exportFailed'),
+          message: error.message || this.$t('common.couldNotExportCsv'),
           isToast: true
         })
       }

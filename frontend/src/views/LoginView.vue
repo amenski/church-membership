@@ -15,7 +15,7 @@
           ></span>
         </div>
         <p class="m-0 max-w-[36ch] text-lg leading-normal text-rail-text">
-          One square a month. Solid is paid, hatched is behind, an outline is due now.
+          {{ $t('login.stripCaption') }}
         </p>
       </div>
 
@@ -23,17 +23,17 @@
         <div class="font-ethiopic text-[36px] leading-tight font-bold lg:text-[56px] lg:leading-[1.2] xl:text-[72px]">ፈለገ ሰላም</div>
         <div class="mt-0.5 text-lg font-medium text-rail-text lg:mt-2 lg:text-2xl lg:text-paper">Felege Selam</div>
         <p class="m-0 mt-5 hidden max-w-[34ch] text-lg leading-relaxed text-rail-text lg:block">
-          The church office keeps members, dues, payments and messages in one place.
+          {{ $t('login.tagline') }}
         </p>
       </div>
     </section>
 
     <div class="flex flex-1 flex-col items-center gap-4 px-4 pt-6 pb-8 max-lg:justify-start lg:justify-center lg:px-6 lg:py-12">
       <div class="w-full max-w-sm rounded-lg border border-rule bg-paper px-4 py-5 lg:rounded-md lg:p-7">
-        <h1 class="mt-0 mb-5 text-2xl font-semibold text-ink">Sign in</h1>
+        <h1 class="mt-0 mb-5 text-2xl font-semibold text-ink">{{ $t('nav.signIn') }}</h1>
 
         <form @submit.prevent="handleLogin">
-          <AlertBanner v-if="sessionExpired" tone="warning" role="status">Your session expired. Sign in again.</AlertBanner>
+          <AlertBanner v-if="sessionExpired" tone="warning" role="status">{{ $t('login.sessionExpired') }}</AlertBanner>
 
           <!-- Error Alert -->
           <AlertBanner v-if="authError">{{ authError }}</AlertBanner>
@@ -43,7 +43,7 @@
             <BaseInput
               id="email"
               v-model="form.email"
-              label="Email"
+              :label="$t('login.email')"
               type="email"
               class="max-lg:min-h-12"
               :error="errors.email"
@@ -58,7 +58,7 @@
             <BaseInput
               id="password"
               v-model="form.password"
-              label="Password"
+              :label="$t('login.password')"
               type="password"
               class="max-lg:min-h-12"
               :error="errors.password"
@@ -75,27 +75,32 @@
               class="mr-2 inline-block size-4 rounded-full border-2 border-current border-r-transparent align-[-0.125em] motion-safe:animate-spin"
               aria-hidden="true"
             ></span>
-            {{ isAuthLoading ? 'Signing in...' : 'Sign in' }}
+            {{ isAuthLoading ? $t('login.signingIn') : $t('nav.signIn') }}
           </BaseButton>
         </form>
       </div>
 
+      <LanguageSwitcher />
+
       <!-- Registration is disabled: accounts are created by the church office -->
-      <p class="m-0 text-center text-base text-muted lg:text-sm">Accounts are set up by the church office.</p>
+      <p class="m-0 text-center text-base text-muted lg:text-sm">{{ $t('login.accountsNote') }}</p>
     </div>
   </div>
 </template>
 
 <script setup>
 import { computed, reactive } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
 import { useAppStore } from '../stores/appStore'
 import AlertBanner from '@/components/AlertBanner.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import BaseInput from '@/components/BaseInput.vue'
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 import { SQUARES } from '@/utils/yearStrip'
 
+const { t } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
 const appStore = useAppStore()
@@ -145,9 +150,9 @@ const validateField = (field) => {
   switch (field) {
     case 'email':
       if (!form.email.trim()) {
-        errors.email = 'Email is required'
+        errors.email = t('validation.emailRequired')
       } else if (!isValidEmail(form.email)) {
-        errors.email = 'Please enter a valid email address'
+        errors.email = t('validation.emailInvalid')
       } else {
         errors.email = ''
       }
@@ -155,7 +160,7 @@ const validateField = (field) => {
 
     case 'password':
       if (!form.password.trim()) {
-        errors.password = 'Password is required'
+        errors.password = t('validation.passwordRequired')
       } else {
         errors.password = ''
       }
@@ -178,8 +183,8 @@ const handleLogin = async () => {
   if (!validateForm()) {
     appStore.addNotification({
       type: 'warning',
-      title: 'Validation Error',
-      message: 'Please fix the errors in the form',
+      title: t('errors.validationTitle'),
+      message: t('errors.validationMessage'),
       isToast: true
     })
     return
@@ -198,8 +203,8 @@ const handleLogin = async () => {
     // Show success notification
     appStore.addNotification({
       type: 'success',
-      title: 'Welcome back!',
-      message: 'You have successfully signed in',
+      title: t('login.welcomeBack'),
+      message: t('login.signedInMessage'),
       isToast: true
     })
 
@@ -215,8 +220,8 @@ const handleLogin = async () => {
     // Error is handled by the store, we just need to show the notification
     appStore.addNotification({
       type: 'error',
-      title: 'Login Failed',
-      message: authStore.authError || 'An error occurred during login',
+      title: t('login.loginFailedTitle'),
+      message: authStore.authError || t('login.loginFailedMessage'),
       isToast: true
     })
   }
