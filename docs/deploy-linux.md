@@ -108,6 +108,23 @@ Pick one.
 
 Keep `COOKIE_SECURE=true` with https. The reason for each part of `TRUSTED_PROXIES` is in the comment in the compose file.
 
+5. **Instead of editing the compose file**, keep the proxy network in a second file next to it that is not in git (list it in `.git/info/exclude`), so that `git pull` never conflicts:
+
+   ```yaml
+   # docker-compose.proxy.yml
+   services:
+     app:
+       networks: [default, proxy]
+   networks:
+     proxy:
+       external: true
+       name: docker_proxynet   # your proxy's network
+   ```
+
+   Start with both files: `docker compose -f docker-compose.server.yml -f docker-compose.proxy.yml up -d --build --wait`. On a shared machine the same file can cap MySQL (`mem_limit: 512m` and, repeating the `command:` list of the main file, `--performance-schema=OFF --innodb-buffer-pool-size=128M`).
+6. **People reach the site on another port than 443** (a router forwarding, say, 8191 to the proxy's 443, so the address is `https://members.example.org:8191`): the proxy must pass the port on, in `X-Forwarded-Host`. Browsers send an `Origin` header with the port on script and API requests, and the app answers 403 ("Invalid CORS request") when the address it sees has no port. The page then loads blank. In nginx: `proxy_set_header Host $host; proxy_set_header X-Forwarded-Host $http_host; proxy_set_header X-Forwarded-Proto $scheme;`. Putting the port in `Host` instead does not work.
+7. **Nginx Proxy Manager without its web page**: it reads a hand-written `/data/nginx/custom/http.conf` (inside its data folder) that holds a whole `server { ... }` block for the new name, with the same certificate as its other hosts and the headers of point 6. Test before reloading: `docker exec npm nginx -t && docker exec npm nginx -s reload`. Write the file with `docker exec -i npm sh -c 'cat > /data/nginx/custom/http.conf'` (without `-i` the file comes out empty). Use `set $upstream http://membertracker-app:8080; proxy_pass $upstream;` so that nginx still starts while the app is down.
+
 **3. No proxy, plain http on a trusted network.** Not set up by default (the port is loopback only). Change the `ports:` line of the app to `"${APP_PORT:-8080}:8080"`, set `COOKIE_SECURE=false` and `TRUSTED_PROXIES='127\.0\.0\.1'` in `.env`, and allow the port to your own network only in ufw as in step 10, remembering that Docker bypasses ufw for published ports. Passwords and cookies cross the network unencrypted: never on the internet.
 
 ### D6. Sign in and check [server]
@@ -213,6 +230,8 @@ Use `linux/arm64` for a Raspberry Pi or another ARM server. The base images exis
 | Proxy shows 502 | The app is down, or the proxy cannot reach it: `curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/api/users/me` must print `401`. On a proxy network, check that both containers are on it: `sudo docker network inspect <network> \| grep -E 'Name|membertracker'` |
 | Sign-in does nothing over http | `COOKIE_SECURE=true` (the default) sends cookies browsers drop on plain http. Set it to `false` in `.env` for a plain-http setup and run `up -d` |
 | The app killed with exit code 137 | Out of memory under the 768 MB limit (`sudo docker inspect -f '{{.State.OOMKilled}}' membertracker-app` prints `true`). Raise `APP_MEM_LIMIT` in `.env`, for example `1g`, and run `up -d` |
+| The page is blank and `/assets/...` answers 403 in the browser (200 with curl) | The proxy hides the port the browser used. See point 6 of D5 (`X-Forwarded-Host $http_host`) |
+| `docker: unknown command: docker buildx` | Ubuntu's `docker.io` package has no buildx. Nothing to fix: compose falls back to the classic builder, which this Dockerfile works with |
 | The build fails downloading something | The build needs the internet (Gradle, npm). Check the server's DNS and proxy settings and run it again: finished layers are kept |
 
 ## The other way: the jar under systemd
