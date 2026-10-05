@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** The status rules table of docs/person-membership-plan.md. */
+/** The status rules table of docs/archive/person-membership-plan.md. */
 class MemberStatusTest {
 
     @Test

@@ -17,7 +17,7 @@ import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
  * Runs the real migration files on in-memory H2 (MySQL mode): 001 and 002 for the schema and sample data,
  * then the member migrations. 003 (MySQL multi-column ADD), 004 and 006 (users only) are skipped. The
  * "--rollback" lines are plain SQL comments to the populator, so they are not executed here.
- * H2 passing is not MySQL passing: every migration is also run on MySQL (docs/person-membership-plan.md, section 6).
+ * H2 passing is not MySQL passing: every migration is also run on MySQL (docs/archive/person-membership-plan.md, section 6).
  */
 class MemberMigrationTest {
 
