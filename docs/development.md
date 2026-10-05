@@ -111,7 +111,7 @@ Settings are optional. To change them, copy `.env.example` to `.env` (git ignore
 
 The password and database name apply only when the data folder is empty (first start). Changing `MYSQL_ROOT_PASSWORD` later does not change the password stored in an existing data folder.
 
-This is for local development only. The `data/` folder holds real database files and is ignored by git: never commit it. On macOS with Docker Desktop, the data folder must be under a path Docker may share. The repo folder is, since Docker Desktop shares your home folder by default.
+The defaults are for local development only. On a server, set a strong `MYSQL_ROOT_PASSWORD` and a `MYSQL_DATA_DIR` outside the repo, and give the app its own database login instead of root: [deploy-linux.md](deploy-linux.md#5-database-server). The `data/` folder holds real database files and is ignored by git: never commit it. On macOS with Docker Desktop, the data folder must be under a path Docker may share. The repo folder is, since Docker Desktop shares your home folder by default.
 
 #### Moving existing data
 
@@ -137,7 +137,7 @@ If the app has already run against the compose database, Liquibase has created t
 - Dump (works while the database runs): `docker exec membertracker-mysql mysqldump -uroot -ppassword --single-transaction --routines felege_selam > backup.sql`
 - Copy the folder: only after `docker compose stop` (or `down`). A copy of a running database can be corrupt.
 
-A backup on the same disk does not protect against losing the disk; keep a copy somewhere else.
+On a server, `deploy/backup-mysql.sh` does this every night and keeps the newest 14 ([deploy-linux.md](deploy-linux.md#11-back-up-server)). A backup on the same disk does not protect against losing the disk; keep a copy somewhere else.
 
 #### Create a login
 
@@ -159,9 +159,11 @@ UPDATE users SET password = '<hash>' WHERE email = 'admin@membertracker.com';
 ./gradlew bootJar
 ```
 
-This builds the frontend (`:frontend:vueBuild`), copies it into the JAR's `/static`, and writes **`target/membertracker.jar`**. The JAR serves the frontend at `/` and the API at `/api/*`.
+This builds the frontend (`:frontend:vueBuild`), copies it into the JAR's `/static`, and writes **`target/membertracker.jar`**. The JAR contains the frontend (served at `/`) and the API at `/api/*`. Known problem: a browser that is not signed in cannot load the frontend from the JAR yet (see [todo.md](todo.md)).
 
 ## Deploy
+
+A step-by-step checklist for one Linux machine (install, database, service, Caddy, firewall, backups, updates, rollback) is in [deploy-linux.md](deploy-linux.md). The sections below are the reference.
 
 ### HTTPS (Caddy reverse proxy)
 
@@ -201,7 +203,7 @@ The password follows the same rule as every password: 8 to 72 characters (bytes)
 
 ### Environment variables
 
-The default profile has no secret defaults: it refuses to start if a required variable is missing. The `dev` profile carries local-only values, so `./gradlew bootRun` works without any setup. The production JAR needs the environment.
+The default profile has no secret defaults and fails to start if a required variable is missing: a missing `JWT_SECRET` stops with `auth.jwt-secret (JWT_SECRET) must be at least 32 characters`, while a missing `DB_USERNAME` or `DB_PASSWORD` is not named: the text `${DB_USERNAME}` is used as the value and the database answers `Access denied for user '${DB_USERNAME}'`. The `dev` profile carries local-only values, so `./gradlew bootRun` works without any setup. The production JAR needs the environment; `deploy/membertracker.env.example` lists every variable.
 
 | Variable | Required | Meaning |
 |----------|:--------:|---------|
@@ -219,24 +221,7 @@ The default profile has no secret defaults: it refuses to start if a required va
 
 ### systemd
 
-`/etc/systemd/system/membertracker.service`:
-
-```ini
-[Unit]
-Description=MemberTracker
-After=mysql.service
-
-[Service]
-User=appuser
-WorkingDirectory=/opt/membertracker
-EnvironmentFile=/opt/membertracker/membertracker.env   # DB_USERNAME, DB_PASSWORD, JWT_SECRET (+ BOOTSTRAP_ADMIN_* on the first start only)
-ExecStart=/usr/bin/java -jar /opt/membertracker/membertracker.jar
-Restart=on-failure
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-```
+The unit is `deploy/membertracker.service` (user `membertracker`, settings from `/opt/membertracker/membertracker.env`, `Restart=on-failure`, heap `-Xms512m -Xmx1024m`, a few hardening options). The settings file is `deploy/membertracker.env.example`. Install both as in [deploy-linux.md](deploy-linux.md#7-install-the-service-and-start-it-server). systemd does not allow a comment after a value on the same line, in a unit or in an env file: put comments on their own line.
 
 ```bash
 sudo systemctl enable --now membertracker
@@ -289,13 +274,13 @@ volumes:
 - [ ] `JWT_SECRET` set to a random value, for example `openssl rand -base64 48`. At least 32 characters is enforced (the default profile has no default and will not start without it). If an old build with the published default secret ever ran in production, rotate the secret now: the old default is in the git history
 - [ ] `deploy/Caddyfile` in use: it sends HSTS, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` (no camera, microphone or geolocation) and a 1 MB request body limit. `Content-Security-Policy-Report-Only` is report-only from the time the frontend loaded fonts and icons from CDNs; they are now npm packages served from the app itself, so the policy can be enforced (rename to `Content-Security-Policy`) after a check that no page logs a violation
 - [ ] `DB_USERNAME` and `DB_PASSWORD` set from the environment (not `root/password`); the default JDBC URL has no `useSSL=false`
-- [ ] CORS origins changed in **both** `SecurityConfig` and `WebMvcConfig`. They are hard-coded to localhost.
+- [ ] CORS origins: hard-coded to localhost in **both** `SecurityConfig` and `WebMvcConfig`. Change them only if the page is served from another address than the API. With the jar behind Caddy, or on `http://host:8080`, the page and the API share one origin and a sign-in works with the lists unchanged (a request that names a foreign `Origin` gets 403)
 - [ ] SQL logging stays off: `spring.jpa.show-sql=false` in the default profile (only `dev` turns it on)
 - [ ] Don't enable the `dev` profile in production (it turns on Swagger and SQL logging, and loads the sample users, members and payments)
 - [ ] First start: `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` set, the administrator can sign in, then **`BOOTSTRAP_ADMIN_PASSWORD` removed** from the env file (see [First start](#first-start))
 - [ ] Mail settings provided (see [email.md](email.md))
-- [ ] Daily database backups
-- [ ] JVM memory set, for example `-Xms512m -Xmx1024m`
+- [ ] Daily database backups (`deploy/backup-mysql.sh` from cron, a copy kept off the machine, a restore tried once: [deploy-linux.md](deploy-linux.md#11-back-up-server))
+- [ ] JVM memory set, for example `-Xms512m -Xmx1024m` (`deploy/membertracker.service` sets it)
 
 Open security items are tracked in [functionality-audit.md](functionality-audit.md) and [todo.md](todo.md).
 

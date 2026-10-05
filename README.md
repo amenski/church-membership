@@ -14,7 +14,7 @@ cd frontend && npm install && npm run dev   # frontend on http://localhost:3000
 
 `docker-compose.yml` runs only the database, with the dev profile's credentials; copy `.env.example` to `.env` to change them. Without Docker, any MySQL 8 with a `felege_selam` database works.
 
-Self-registration is disabled and the sample users' password hashes do not match the passwords in their comments, so give one a password first: [docs/development.md](docs/development.md#create-a-login). Full setup, build and deployment steps are in the same file.
+Self-registration is disabled and the sample users' password hashes do not match the passwords in their comments, so give one a password first: [docs/development.md](docs/development.md#create-a-login). Full setup and build steps are in the same file. To run it on a Linux machine of your own, follow [docs/deploy-linux.md](docs/deploy-linux.md).
 
 ## Documentation
 
@@ -22,7 +22,8 @@ Self-registration is disabled and the sample users' password hashes do not match
 
 | Doc | Read it when… |
 |-----|---------------|
-| [docs/development.md](docs/development.md) | Setting up, running, building or deploying |
+| [docs/development.md](docs/development.md) | Setting up, running or building; the deployment reference (variables, Caddy, systemd, production checklist) |
+| [docs/deploy-linux.md](docs/deploy-linux.md) | Putting MemberTracker on one Linux machine: install, database, service, HTTPS, firewall, backups, updates |
 | [docs/architecture.md](docs/architecture.md) | Deciding where new code goes; checking past design decisions |
 | [docs/design.md](docs/design.md) | Building or restyling a screen: tokens, density, layout and components |
 | [docs/authentication.md](docs/authentication.md) | Working on login, sessions, cookies, roles or permissions |
