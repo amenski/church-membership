@@ -3,6 +3,7 @@ package io.github.membertracker.infrastructure.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.membertracker.infrastructure.filter.CsrfCookieFilter;
 import io.github.membertracker.infrastructure.filter.JwtAuthenticationFilter;
+import io.github.membertracker.infrastructure.filter.SpaFallbackFilter;
 import io.github.membertracker.infrastructure.handler.ProblemDetails;
 import io.github.membertracker.usecase.LoadUserByUsernameUseCase;
 import org.springframework.context.annotation.Bean;
@@ -23,6 +24,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfException;
@@ -128,8 +130,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/static/**").permitAll()
-                .requestMatchers("/").permitAll()
+                // The built web app, nothing else: the page, its hashed files and the welcome path. Client routes
+                // such as /login are forwarded to /index.html by SpaFallbackFilter before this check.
+                .requestMatchers("/", "/index.html", "/assets/**").permitAll()
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .anyRequest().authenticated()
             )
@@ -138,7 +141,8 @@ public class SecurityConfig {
                 .accessDeniedHandler(accessDeniedHandler))
             .authenticationProvider(authenticationProvider)
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class);
+            .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
+            .addFilterBefore(new SpaFallbackFilter(), AuthorizationFilter.class);
 
         return http.build();
     }

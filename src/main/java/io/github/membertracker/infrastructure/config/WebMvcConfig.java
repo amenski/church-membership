@@ -1,22 +1,21 @@
 package io.github.membertracker.infrastructure.config;
 
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
+import org.springframework.http.CacheControl;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import org.springframework.web.servlet.resource.PathResourceResolver;
 
-import java.io.IOException;
+import java.time.Duration;
 
 /**
- * Spring MVC configuration for serving the Vue.js frontend as static resources.
+ * Spring MVC configuration for serving the Vue.js frontend that the build copies into the jar's classpath:/static/.
  * <p>
- * This configuration enables:
- * 1. Serving static frontend files from the classpath:/static/ directory
- * 2. SPA routing fallback - returns index.html for non-existent routes to allow Vue Router to handle client-side routing
- * 3. CORS configuration for development mode (allows frontend dev server on different port)
+ * The built pages sit at the site root, because the built index.html loads /assets/...:
+ * 1. /index.html is never cached without revalidation, so a new release shows up at once.
+ * 2. /assets/** carries a content hash in every file name, so it is cached for a year and marked immutable.
+ * 3. Client routes (/login, /members, ...) are forwarded to /index.html by SpaFallbackFilter in the security chain.
+ * 4. CORS configuration for development mode (allows the frontend dev server on a different port).
  */
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
@@ -33,22 +32,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Serve static resources from classpath:/static/ with SPA fallback
-        registry.addResourceHandler("/static/**")
+        registry.addResourceHandler("/index.html")
                 .addResourceLocations("classpath:/static/")
-                .resourceChain(true)
-                .addResolver(new PathResourceResolver() {
-                    @Override
-                    protected Resource getResource(String resourcePath, Resource location) throws IOException {
-                        Resource requestedResource = location.createRelative(resourcePath);
-                        if (requestedResource.exists() && requestedResource.isReadable()) {
-                            return requestedResource;
-                        } else {
-                            // SPA fallback: return index.html for non-existent resources
-                            // This allows Vue Router to handle client-side routing
-                            return new ClassPathResource("/static/index.html");
-                        }
-                    }
-                });
+                .setCacheControl(CacheControl.noCache());
+        registry.addResourceHandler("/assets/**")
+                .addResourceLocations("classpath:/static/assets/")
+                .setCacheControl(CacheControl.maxAge(Duration.ofDays(365)).cachePublic().immutable());
     }
 }
