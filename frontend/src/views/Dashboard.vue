@@ -23,9 +23,15 @@
         />
       </dl>
 
-      <div class="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start">
+      <!--
+        Every block is a card. Below xl they stack in one column, full width (the ledger needs the room at 1000px);
+        from xl the ledger and Recent activity are the left column, Call this week and Latest payments the right.
+        The two column wrappers only exist from xl (display: contents before), so `order` keeps the reading order below it.
+      -->
+      <div class="flex flex-col gap-6 xl:grid xl:grid-cols-[minmax(0,1fr)_21rem] xl:items-start">
+        <div class="contents min-w-0 xl:flex xl:flex-col xl:gap-6">
         <!-- The year ledger: who owes, most behind first, one square a month -->
-        <section class="min-w-0 rounded-md border border-rule bg-paper p-(--card-pad)" aria-labelledby="ledger-title">
+        <section :class="[CARD, 'min-w-0 order-1']" aria-labelledby="ledger-title">
           <div class="mb-3 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
             <div>
               <SectionTitle id="ledger-title" class="!mb-0.5 !text-xl">{{ wide ? 'Dues by month' : 'Dues by member' }}</SectionTitle>
@@ -75,8 +81,21 @@
           <EmptyNote v-else>No active members yet. Add the first one under Members.</EmptyNote>
         </section>
 
-        <aside class="flex min-w-0 flex-col gap-6">
-          <section class="rounded-md border border-rule bg-paper p-(--card-pad)" aria-labelledby="calls-title">
+        <!-- What happened lately: below the ledger, so the left column is not left short -->
+        <section :class="[CARD, 'min-w-0 order-4']" aria-labelledby="activity-title">
+          <SectionTitle id="activity-title" class="!mb-0.5 !text-xl">Recent activity</SectionTitle>
+          <ul v-if="activities.length" class="m-0 mt-2 list-none p-0">
+            <li v-for="activity in activities" :key="activity.id" :class="[ROW, 'items-center max-sm:flex-wrap max-sm:gap-y-0']">
+              <span class="shrink-0 grow-0 basis-22 text-xs text-muted tabular-nums max-sm:basis-full">{{ formatDate(activity.date) }}</span>
+              <span class="min-w-0 flex-auto [overflow-wrap:anywhere]">{{ activity.description }}</span>
+            </li>
+          </ul>
+          <EmptyNote v-else class="mt-2">Nothing has happened yet. Payments and messages will show up here.</EmptyNote>
+        </section>
+        </div>
+
+        <div class="contents min-w-0 xl:flex xl:flex-col xl:gap-6">
+          <section :class="[CARD, 'min-w-0 order-2']" aria-labelledby="calls-title">
             <SectionTitle id="calls-title" class="!mb-0.5 !text-xl">Call this week</SectionTitle>
             <p class="m-0 text-sm text-muted">The three members furthest behind.</p>
             <ul v-if="callList.length" class="m-0 mt-2 list-none p-0">
@@ -98,33 +117,21 @@
             <EmptyNote v-else class="mt-2">Nobody is behind. There is no one to call.</EmptyNote>
           </section>
 
-          <section class="min-w-0" aria-labelledby="payments-title">
-            <SectionTitle id="payments-title">Recent payments</SectionTitle>
-            <RuledList v-if="recentPayments.length">
-              <RuledRow v-for="payment in recentPayments" :key="payment.id">
-                <span class="shrink-0 grow-0 basis-22 text-xs text-muted max-sm:basis-full">{{ formatDate(payment.paymentDate) }}</span>
-                <span class="min-w-0 flex-auto [overflow-wrap:anywhere]">{{ payment.member?.name || 'Unknown' }}</span>
-                <span class="text-right font-medium">{{ formatMoney(payment.amount) }}</span>
-              </RuledRow>
-            </RuledList>
-            <EmptyNote v-else>No payments recorded yet. Record the first one under Payments.</EmptyNote>
+          <section :class="[CARD, 'min-w-0 order-3']" aria-labelledby="payments-title">
+            <SectionTitle id="payments-title" class="!mb-0.5 !text-xl">Latest payments</SectionTitle>
+            <ul v-if="recentPayments.length" class="m-0 mt-2 list-none p-0">
+              <li v-for="payment in recentPayments" :key="payment.id" :class="[ROW, 'items-baseline justify-between']">
+                <div class="min-w-0">
+                  <div class="font-medium [overflow-wrap:anywhere]">{{ payment.member?.name || 'Unknown' }}</div>
+                  <div class="text-xs text-muted">{{ paymentDetail(payment) }}</div>
+                </div>
+                <span class="shrink-0 font-medium tabular-nums">{{ formatMoney(payment.amount) }}</span>
+              </li>
+            </ul>
+            <EmptyNote v-else class="mt-2">No payments recorded yet. Record the first one under Payments.</EmptyNote>
+            <p v-if="recentPayments.length" class="mt-3 mb-0 text-sm"><router-link to="/payments">All payments</router-link></p>
           </section>
-        </aside>
-      </div>
-
-      <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
-        <CollectedChart />
-
-        <section class="min-w-0" aria-labelledby="activity-title">
-          <SectionTitle id="activity-title">Recent activity</SectionTitle>
-          <RuledList v-if="activities.length">
-            <RuledRow v-for="activity in activities" :key="activity.id">
-              <span class="shrink-0 grow-0 basis-22 text-xs text-muted max-sm:basis-full">{{ formatDate(activity.date) }}</span>
-              <span class="min-w-0 flex-auto [overflow-wrap:anywhere]">{{ activity.description }}</span>
-            </RuledRow>
-          </RuledList>
-          <EmptyNote v-else>Nothing has happened yet. Payments and messages will show up here.</EmptyNote>
-        </section>
+        </div>
       </div>
     </template>
   </div>
@@ -133,18 +140,17 @@
 <script>
 import api from '@/services/api'
 import AlertBanner from '@/components/AlertBanner.vue'
-import CollectedChart from '@/components/CollectedChart.vue'
 import EmptyNote from '@/components/EmptyNote.vue'
 import Icon from '@/components/Icon.vue'
 import PageHead from '@/components/PageHead.vue'
-import RuledList from '@/components/RuledList.vue'
-import RuledRow from '@/components/RuledRow.vue'
 import SectionTitle from '@/components/SectionTitle.vue'
 import StatTile from '@/components/StatTile.vue'
 import StatusLabel from '@/components/StatusLabel.vue'
 import YearStrip from '@/components/YearStrip.vue'
 import { useAuthStore } from '../stores/authStore'
-import { formatMoney, localISODate } from '@/utils'
+import { formatDate as formatPaidDate, formatMoney, localISODate } from '@/utils'
+import { methodLabel, periodLabel } from '@/utils/paymentHistory'
+import { CARD } from '@/ui/classes'
 import { monthsBehind } from '@/utils/dues'
 import { countsForDues } from '@/utils/memberStatus'
 import { paidMonthsByMember, SQUARES, stripMonthLabels, stripMonths, stripRangeLabel } from '@/utils/yearStrip'
@@ -162,12 +168,14 @@ const LEGEND = [
 ]
 // The large grid needs about 720px for the ledger card; that fits from the 2xl breakpoint (1400px) up
 const WIDE_QUERY = '(min-width: 87.5rem)'
+// One row in a card's list: Latest payments and Recent activity
+const ROW = 'flex min-h-(--list-row-h) gap-3 border-b border-rule py-2.5 last:border-b-0 tabular-nums'
 // A small action link in the Call this week panel
 const CALL_ACTION = 'inline-flex min-h-8 items-center gap-1.5 rounded-sm border px-3 text-base font-medium no-underline'
 
 export default {
   name: 'DashboardView',
-  components: { AlertBanner, CollectedChart, EmptyNote, Icon, PageHead, RuledList, RuledRow, SectionTitle, StatTile, StatusLabel, YearStrip },
+  components: { AlertBanner, EmptyNote, Icon, PageHead, SectionTitle, StatTile, StatusLabel, YearStrip },
   setup() {
     return {
       authStore: useAuthStore(),
@@ -176,7 +184,9 @@ export default {
       LEDGER_GRID,
       LEGEND,
       SQUARES,
-      CALL_ACTION
+      CALL_ACTION,
+      CARD,
+      ROW
     }
   },
   data() {
@@ -332,6 +342,10 @@ export default {
         countsForDues: countsForDues(member),
         label: `Dues for ${member.name}, last 12 months`
       }
+    },
+    // "Oct 2026, Cash, paid Oct 4": the month it covers, how it was paid, the day it was paid
+    paymentDetail(payment) {
+      return [periodLabel(payment.period), methodLabel(payment.paymentMethod), `paid ${formatPaidDate(payment.paymentDate, 'MMM d')}`].filter(Boolean).join(', ')
     },
     telHref(phone) {
       return `tel:${phone.replace(/[^+\d]/g, '')}`
