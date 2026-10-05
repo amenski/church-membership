@@ -279,7 +279,10 @@
             </tbody>
           </table>
           <Pager v-bind="pagerProps" class="px-4 py-3" @update:page="setPage" @update:page-size="setPageSize" />
-          <div :class="['px-4 text-right text-sm text-muted', pagerShown ? 'pb-3' : 'py-3']">Dates and counts as of {{ asOfText }}</div>
+          <div :class="['flex flex-wrap justify-between gap-x-4 gap-y-2 px-4 text-sm text-muted', pagerShown ? 'pb-3' : 'py-3']">
+            <span v-if="!pagerShown">{{ countText }}</span>
+            <span class="ml-auto">Dates and counts as of {{ asOfText }}</span>
+          </div>
         </div>
       </div>
 
