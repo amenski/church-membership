@@ -12,8 +12,6 @@ browser --> Caddy (ports 80 and 443) --> MemberTracker (127.0.0.1:8080) --> MySQ
 
 Only Caddy listens on the network. The database files are in `/srv/membertracker/mysql`, the backups in `/srv/membertracker/backups`, the program and its settings in `/opt/membertracker`.
 
-> **Open problem (found 5 October 2026): the jar does not serve the web pages to a browser that is not signed in.** `GET /` and `/assets/*` answer 401, and a reload on a page such as `/members` answers 404, so a browser cannot load the app and step 12 cannot work. Everything before it does work (the API, the database, the first administrator). The cause and the fix options are in [todo.md](todo.md). Do not rely on this checklist for real use until that item is closed.
-
 **[server]** means run it on the Linux machine, **[computer]** on the machine where you build. Replace `admin@SERVER` with your login and the machine's name or address.
 
 ## 1. Decide how people will reach it
@@ -23,7 +21,7 @@ Pick one. Later steps say "Option A", "B" or "C".
 | | Option A: same network only | Option B: a real domain | Option C: plain http |
 |---|---|---|---|
 | Address people open | `https://members.lan` | `https://members.yourchurch.org` | `http://SERVER-IP:8080` |
-| What you need | A name that every device resolves to the server (a router DNS entry, or one line in each device's hosts file). Caddy signs its own certificate (`tls internal`) and each device trusts Caddy's root certificate once | A domain, a DNS A record pointing at your public IP, and ports 80 and 443 forwarded from the router to the server. Let's Encrypt certificate, renewed by Caddy | Nothing else. No Caddy |
+| What you need | A name that every device resolves to the server (a router DNS entry, or one line in each device's hosts file). Caddy signs its own certificate (`tls internal`) and each device trusts Caddy's root certificate once | A domain, a DNS A record pointing at your public IP, and ports 80 and 443 forwarded from the router to the server. Let's Encrypt certificate, renewed by Caddy | Nothing else. No Caddy: the jar serves the pages and the API itself, so the address works without a proxy |
 | Settings | `COOKIE_SECURE=true` (default) | `COOKIE_SECURE=true` (default) | `COOKIE_SECURE=false` and `SERVER_ADDRESS=0.0.0.0` |
 
 **Option C warning:** passwords and session cookies cross the network unencrypted, so anyone on that network can read them. Use it only on a network you fully trust, never on the internet.
@@ -338,7 +336,7 @@ Open the address from step 1 and sign in with `BOOTSTRAP_ADMIN_EMAIL` and the pa
 2. **Members**, "Add member", enter a name, "Add member": the member appears in the list.
 3. **Payments**, "Record payment", pick that member, enter an amount, "Record payment": a "Payment recorded" message appears and the Overview shows the payment.
 
-If the page loads but sign-in does nothing, see the cookie row in the table below.
+The pages come from the jar itself, signed in or not: reloading on a page such as `/members` shows it again, and a file that does not exist (`/assets/missing.js`) answers 404. If the page loads but sign-in does nothing, see the cookie row in the table below.
 
 ## 13. Check that it starts by itself after a reboot [server]
 

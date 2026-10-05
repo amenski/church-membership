@@ -28,7 +28,7 @@ src/main/java/io/github/membertracker/
 │   ├── *Controller     REST controllers (incl. ActivityLogController)
 │   ├── config/         SecurityConfig, WebMvcConfig, properties classes
 │   ├── dto/            Request and response DTOs
-│   ├── filter/         JwtAuthenticationFilter, CsrfCookieFilter
+│   ├── filter/         JwtAuthenticationFilter, CsrfCookieFilter, SpaFallbackFilter
 │   ├── handler/        GlobalExceptionHandler
 │   ├── persistence/    JPA entities, repository implementations, and mapper/ (MemberPersistenceMapper: the one place a member entity and a Member are converted)
 │   ├── security/       LoginAttemptLimiter, SecurityContextCurrentActor, ArchivedVisibility
@@ -124,6 +124,7 @@ frontend/src/
 | 2026-10 | "Send to all" means members with status MEMBER only (`Recipients.reachable` also drops every other status) | Inactive, transferred and deceased people must not be billed or written to | In use |
 | 2026-10 | Any payment amount above 0 is valid; no fixed minimum | Dues vary by family and gifts can be small | In use |
 | 2026-10 | Reminders go only to members who are already behind; there is no pre-due window | The old pre-due policy code was removed, so nothing sends before a due date. Whether to bring a window back is open in [todo.md](todo.md) | In use |
+| 2026-10 | The jar serves its own pages at the site root, signed in or not. Permit list: `/`, `/index.html`, `/assets/**` and nothing else outside `/api/auth/**`. `SpaFallbackFilter` forwards a GET or HEAD to `/index.html` when the path is not under `/api`, `/v3`, `/swagger-ui` or `/error`, has no file extension in its last segment and the client accepts text/html. `/index.html` is sent `no-cache`, `/assets/**` (hashed names) for a year as immutable. The old `/static/**` mapping is gone (nothing used it) | The built `index.html` loads `/assets/...`, so a signed-out browser must get the page, the files and every client route (`/login`, a reload on `/members`) from the jar alone; this works with Caddy, or with plain http and no proxy. The filter runs inside the security chain, before the authorization check, so the headers and the `XSRF-TOKEN` cookie are set on a page load and the permit list stays exact. A missing file with an extension and an unknown `/api/*` path are never answered with the page | In use. A file added to the web build's root is not public until its path is added to the permit list |
 | 2026-10 | OpenAPI/Swagger UI only under the dev profile | Public endpoint list helps attackers; devs still get docs | In use |
 | 2026-10 | All API errors are RFC 7807 ProblemDetail; no rejected values echoed | One format for the frontend; no input reflected back | In use |
 | 2026-10 | Member search, sort and filters stay in the browser | Under ~1,000 members the full list is ~200 kB; a paged API adds complexity for no visible gain | In use. Revisit above ~2,000 members (Members, Households and Messages page in the browser) |

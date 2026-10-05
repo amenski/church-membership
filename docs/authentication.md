@@ -13,9 +13,23 @@ How users sign in, how sessions are kept, and which role can call which endpoint
 
 ## Backend
 
+### Public paths
+
+Without a sign-in the app answers only these, so the browser can load the sign-in page:
+
+| Path | Why |
+|------|-----|
+| `/api/auth/**` | Sign-in, refresh, logout, register (403) |
+| `/` | The welcome path; it serves `/index.html` |
+| `/index.html` | The single-page app. `Cache-Control: no-cache` |
+| `/assets/**` | The built scripts, styles and fonts. Their names carry a content hash, so `Cache-Control: max-age=31536000, public, immutable`. A missing file answers 404 |
+| `/v3/api-docs/**`, `/swagger-ui/**`, `/swagger-ui.html` | Permitted, but only the dev profile serves them |
+
+Client routes such as `/login`, `/members` and `/members/3` are not on the list: `SpaFallbackFilter` (in the security chain, before the authorization check) forwards a GET or HEAD request to `/index.html` when the path is not under `/api`, `/v3`, `/swagger-ui` or `/error`, has no file extension in its last segment, and the client accepts text/html (or sends no Accept header, or `*/*`). The Vue router and the app's own guards then decide what the user sees. Everything else keeps the rule: a signed-out request for `/api/...` (known or not) or any other path, such as `/favicon-x.png`, answers 401 `application/problem+json`, and a signed-in request for a path that does not exist answers 404. The page response carries the security headers and the `XSRF-TOKEN` cookie, so the cookie exists before the first API call.
+
 ### Endpoints
 
-All paths are under `/api`. Only `/api/auth/**` is public; everything else requires a valid access token.
+All paths are under `/api`. Only `/api/auth/**` is public; everything else requires a valid access token. The web pages the jar serves are public too, see [Public paths](#public-paths).
 
 | Method | Path | What it does |
 |--------|------|--------------|

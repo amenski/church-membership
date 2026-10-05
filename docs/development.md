@@ -159,7 +159,7 @@ UPDATE users SET password = '<hash>' WHERE email = 'admin@membertracker.com';
 ./gradlew bootJar
 ```
 
-This builds the frontend (`:frontend:vueBuild`), copies it into the JAR's `/static`, and writes **`target/membertracker.jar`**. The JAR contains the frontend (served at `/`) and the API at `/api/*`. Known problem: a browser that is not signed in cannot load the frontend from the JAR yet (see [todo.md](todo.md)).
+This builds the frontend (`:frontend:vueBuild`), copies it into the JAR's `/static`, and writes **`target/membertracker.jar`**. The JAR contains the frontend and the API at `/api/*`, and needs nothing else to serve a browser, with or without Caddy. The pages are served at the site root, to a signed-out browser too: `/`, `/index.html` and `/assets/**` (see [authentication.md](authentication.md#public-paths)). A reload on a client route such as `/members` returns the app, and a missing file answers 404. The build also copies nothing else to the root (the favicon is inline in `index.html`); a file you add to `frontend/public` is served only to a signed-in browser until its path is added to the permit list in `SecurityConfig`.
 
 ## Deploy
 
@@ -291,8 +291,8 @@ Open security items are tracked in [functionality-audit.md](functionality-audit.
 | `src/main/resources/application.properties` | Default (production) config: database, auth, mail, church info, Liquibase context `prod`, the first-administrator variables. Secrets come from the environment, no defaults |
 | `src/main/resources/application-dev.properties` | `dev` profile: local-only database and JWT values, SQL logging, Swagger, Liquibase context `dev` (loads the sample data) |
 | `frontend/vite.config.js` | Dev server port 3000 and `/api` proxy |
-| `src/main/java/.../infrastructure/config/SecurityConfig.java` | Security filter chain and CORS for the API |
-| `src/main/java/.../infrastructure/config/WebMvcConfig.java` | Static file serving with SPA fallback, plus a second CORS mapping |
+| `src/main/java/.../infrastructure/config/SecurityConfig.java` | Security filter chain (the permit list), SPA fallback registration and CORS for the API |
+| `src/main/java/.../infrastructure/config/WebMvcConfig.java` | Cache headers for the built pages (`/index.html` no-cache, `/assets/**` one year immutable), plus a second CORS mapping |
 
 Spring also maps environment variables onto any property (for example `SERVER_PORT`, `LOGGING_LEVEL_ROOT`, `LOGGING_FILE_NAME`). Variables for auth and mail are listed in [authentication.md](authentication.md#configuration) and [email.md](email.md#configuration).
 
