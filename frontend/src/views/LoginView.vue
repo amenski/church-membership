@@ -203,9 +203,11 @@ const handleLogin = async () => {
       isToast: true
     })
 
-    // Get redirect path from query parameter or default to dashboard
+    // Get redirect path from query parameter or default to the user's home page. Never '/': the
+    // router redirects '/' to '/login', which is where we already are, so the navigation is dropped
+    // as a duplicate and the sign-in page stays until a refresh.
     const route = router.currentRoute.value
-    const redirectPath = route.query.redirect || '/'
+    const redirectPath = route.query.redirect || authStore.homePath
 
     // Redirect to intended destination
     router.push(decodeURIComponent(redirectPath))
