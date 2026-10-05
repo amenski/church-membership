@@ -1,4 +1,5 @@
-# MySQL for local development and for checking Liquibase against a real database.
+# MySQL for local development and for checking Liquibase against a real database. On a Linux server it
+# runs the production database with a strong password and MYSQL_DATA_DIR set: docs/deploy-linux.md.
 #
 # Start:  docker compose up -d
 # The defaults match the `dev` profile (user root, password `password`, database
