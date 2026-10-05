@@ -39,7 +39,7 @@ Use case `GetDashboardStatsUseCase` (returns a `DashboardStats` record: four que
 - `GetMembersWithMissedPaymentsUseCase.invoke(1)` -> `MemberRepository.findDuesPayingWithMissedAtLeastOrderByMissedDesc(1)`: MEMBER-status members only, the one furthest behind first (then by name). The same use case serves `GET /api/members/overdue/{months}` and the send-to-overdue endpoint, so they are dues-paying-only too.
 
 ## Recent activities
-- Derived, not read from the `activity_log` table (no Java code references that table; it is only in the SQL scripts, `src/main/resources/db/sql/001.schema-creation.sql:71`).
+- Derived, not read from the `activity_log` table (no Java code references that table; it is only in the SQL scripts, `src/main/resources/db/sql/001.schema-creation.sql`).
 - Sources: `findRecent(5)` payments (newest `paymentDate`) + `CommunicationRepository.findRecent(5)` (newest `createdDate`, deliveries are not loaded).
 - Payment item: `id=payment_<id>`, `type=payment`, `description="Payment received: $<amount %.2f>"`.
 - Communication item: `id=comm_<id>`, `type=communication`, `description="Communication sent: <title>"`, `date` = `createdDate` truncated to date.

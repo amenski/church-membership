@@ -2,7 +2,7 @@
 
 `frontend/src/views/ActivityView.vue` (no Pinia store for data)
 
-The Activity page: who changed or exported what, newest first. Route `/activity`, minimum role ADMIN (`frontend/src/router/index.js:36-41`; the guard that turns a lower role away is `frontend/src/router/index.js:108-118`). The rail shows its link only to ADMIN (`frontend/src/App.vue:60`, icon `bi-clock-history`). Overview and rules: [activity.md](activity.md); API: [activity-log-controller.md](activity-log-controller.md).
+The Activity page: who changed or exported what, newest first. Route `/activity`, minimum role ADMIN (`frontend/src/router/index.js`; the guard that turns a lower role away is `frontend/src/router/index.js`). The rail shows its link only to ADMIN (`frontend/src/App.vue`, icon `bi-clock-history`). Overview and rules: [activity.md](activity.md); API: [activity-log-controller.md](activity-log-controller.md).
 
 ## What the user sees
 - Page head "Activity", lead "Who changed or exported what, newest first. Only administrators can see this." From `lg` the head is the full-width band (title only) with the content in a padded area under it; the lead sentence moves to a line at the top of that area. The "Show" select is a 32px row with its label visually hidden.
@@ -19,10 +19,10 @@ ADMIN only. For STAFF, VOLUNTEER and MEMBER the nav item is not rendered, and op
 ## Endpoints
 | Method | Path | api.js | Used by |
 |--------|------|--------|---------|
-| GET | `/activity-log?limit=N` (ADMIN) | `frontend/src/services/api.js:404` | `load` |
+| GET | `/activity-log?limit=N` (ADMIN) | `frontend/src/services/api.js` | `load` |
 
 ## State and helpers
-Local component `data()` (`frontend/src/views/ActivityView.vue:98-106`): `entries`, `limit` (50), `type` ("ALL" or an `ActivityType`), `loaded`, `loadError`, `loadingMore`. Computed `visible` (filtered entries), `days` (`groupByDay(visible)`) and `canShowMore`. Methods `load`, `showMore`, `time` (`HH:mm`).
+Local component `data()` (`frontend/src/views/ActivityView.vue`): `entries`, `limit` (50), `type` ("ALL" or an `ActivityType`), `loaded`, `loadError`, `loadingMore`. Computed `visible` (filtered entries), `days` (`groupByDay(visible)`) and `canShowMore`. Methods `load`, `showMore`, `time` (`HH:mm`).
 
 Pure helpers in `frontend/src/utils/activityLog.js` (tested in `frontend/src/__tests__/utils/activityLog.test.js`): `ACTIVITY_TYPES` (value and label for every type the server records, in filter order), `activityTypeLabel(type)` (unknown types show as they came), `actorLabel(actor)` ("System" for "system" or a missing actor), `filterByType(entries, type)`, `activityTone(type)` (the badge tone), `dayHeading(date, now)`, `groupByDay(entries, now)` (consecutive entries on the same local day; entries without a readable date are left out), `nextLimit(limit)`, `PAGE_SIZE` 50, `MAX_LIMIT` 200. `ACTIVITY_TYPES` mirrors `domain/enumeration/ActivityType.java`; add a type in both places.
 
