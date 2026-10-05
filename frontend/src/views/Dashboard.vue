@@ -1,20 +1,24 @@
 <template>
-  <div>
-    <PageHead title="Overview" lead="Who is behind on dues, and how this month is going." />
+  <!-- From lg the header is a full-width band, so the page's own padding (App.vue) is dropped here and the content area below carries it -->
+  <div class="lg:max-w-none! lg:p-0!">
+    <PageHead title="Overview" lead="Who is behind on dues, and how this month is going." band />
 
+    <div class="lg:mx-auto lg:max-w-[1400px] lg:px-8 lg:pt-6 lg:pb-10">
     <AlertBanner v-if="loadError">
       The overview did not load. Reload the page, or sign in again if it keeps happening.
     </AlertBanner>
     <p v-else-if="!loaded" class="m-0 py-3 text-sm text-muted" role="status">Loading overview...</p>
 
     <template v-if="loaded">
-      <dl class="m-0 mb-6 grid grid-cols-2 gap-2 lg:grid-cols-4">
-        <StatTile slim :label="`Collected in ${monthName}`" :value="formatMoney(stats.monthlyRevenue)" />
-        <StatTile slim label="Paid up" :value="paidCount" :hint="`of ${activeCount} members`" tone="paid" />
-        <StatTile slim label="Behind on dues" :value="behindMembers.length" :hint="behindHint" tone="behind" />
+      <!-- below lg four tiles; from lg one bordered card, its cells divided by hairlines (the gap shows the rule colour) -->
+      <dl class="m-0 mb-6 grid grid-cols-2 gap-2 lg:flex lg:gap-px lg:overflow-hidden lg:rounded-md lg:border lg:border-rule lg:bg-rule">
+        <StatTile slim cell :label="`Collected in ${monthName}`" :value="formatMoney(stats.monthlyRevenue)" />
+        <StatTile slim cell label="Paid up" :value="paidCount" :hint="`of ${activeCount} members`" tone="paid" />
+        <StatTile slim cell label="Behind on dues" :value="behindMembers.length" :hint="behindHint" tone="behind" />
         <StatTile
           v-if="failedReminders !== null"
           slim
+          cell
           label="Reminders"
           :value="failedReminders"
           hint="failed to deliver."
@@ -134,6 +138,7 @@
         </div>
       </div>
     </template>
+    </div>
   </div>
 </template>
 
