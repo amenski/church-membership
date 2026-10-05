@@ -21,10 +21,11 @@
       </div>
     </AlertBanner>
 
-    <!-- Filters: one compact row from lg up. On a phone or tablet: status, then search beside one "Filters" button
-         that opens Dues, Sort by and the date pair; closed until asked for -->
-    <form v-if="members.length || showingArchived" class="mb-3 grid grid-cols-[minmax(0,1fr)_auto] gap-3 lg:mb-6 lg:flex lg:flex-wrap lg:items-end" role="search" aria-label="Filter members" @submit.prevent>
-      <div class="col-span-2 overflow-x-auto lg:basis-full lg:overflow-visible">
+    <!-- Filters. From lg one row: the status control on the left; Dues, Sort by, search and "More filters" (the date pair, in a
+         popover so it never takes a row) on the right, 32px high, labels visually hidden. On a phone or tablet: status, then
+         search beside one "Filters" button that opens Dues, Sort by and the date pair; closed until asked for -->
+    <form v-if="members.length || showingArchived" class="relative mb-3 grid grid-cols-[minmax(0,1fr)_auto] gap-3 lg:mb-4 lg:flex lg:flex-wrap lg:items-center lg:gap-x-4" role="search" aria-label="Filter members" @submit.prevent>
+      <div class="col-span-2 overflow-x-auto lg:order-1 lg:overflow-visible">
         <div role="group" aria-label="Filter by status" class="inline-flex">
           <button
             v-for="segment in statusSegments"
@@ -38,9 +39,10 @@
           </button>
         </div>
       </div>
-      <div class="lg:min-w-60 lg:flex-1">
-        <label for="filter-search" :class="[LABEL, 'max-lg:sr-only']">Search</label>
-        <input id="filter-search" v-model="filters.search" type="search" placeholder="Search name, email or phone" autocomplete="off" :class="[CONTROL, 'max-lg:h-11']">
+      <div class="relative lg:order-5 lg:max-w-60 lg:flex-[1_1_10rem]">
+        <label for="filter-search" class="sr-only">Search</label>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false" class="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted max-lg:hidden"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
+        <input id="filter-search" v-model="filters.search" type="search" placeholder="Search name, email or phone" autocomplete="off" :class="[CONTROL, 'max-lg:h-11 lg:pl-8 lg:text-sm']">
       </div>
       <button
         type="button"
@@ -53,30 +55,45 @@
         <Icon :name="filtersOpen ? 'chevron-up' : 'chevron-down'" :size="16" />
       </button>
       <div id="filter-panel" :class="filtersOpen ? 'col-span-2 grid grid-cols-2 gap-3 lg:contents' : 'hidden lg:contents'">
-        <div class="lg:w-40">
-          <label for="filter-dues" :class="LABEL">Dues</label>
-          <select id="filter-dues" v-model="filters.paymentStatus" :class="CONTROL">
-            <option value="ALL">All</option>
+        <div class="lg:order-3 lg:ml-auto lg:w-28">
+          <label for="filter-dues" :class="[LABEL, 'lg:sr-only']">Dues</label>
+          <select id="filter-dues" v-model="filters.paymentStatus" :class="[CONTROL, 'lg:text-sm']">
+            <option value="ALL">All dues</option>
             <option value="CURRENT">Paid up</option>
             <option value="OVERDUE">Behind</option>
           </select>
         </div>
-        <div class="lg:w-40">
-          <label for="filter-sort" :class="LABEL">Sort by</label>
-          <select id="filter-sort" :value="sort.key" :class="CONTROL" @change="setSortOption($event.target.value)">
+        <div class="lg:order-4 lg:w-36">
+          <label for="filter-sort" :class="[LABEL, 'lg:sr-only']">Sort by</label>
+          <select id="filter-sort" :value="sort.key" :class="[CONTROL, 'lg:text-sm']" @change="setSortOption($event.target.value)">
             <option v-for="option in SORT_OPTIONS" :key="option.key" :value="option.key">{{ option.label }}</option>
           </select>
         </div>
-        <div class="lg:w-40">
-          <label for="filter-from" :class="LABEL">Joined from</label>
-          <input id="filter-from" v-model="filters.joinedFrom" type="date" :class="CONTROL">
-        </div>
-        <div class="lg:w-40">
-          <label for="filter-to" :class="LABEL">Joined to</label>
-          <input id="filter-to" v-model="filters.joinedTo" type="date" :class="CONTROL">
+        <!-- the date pair: in the panel below lg; from lg a popover under the row, opened by "More filters" -->
+        <div id="filter-dates" role="group" aria-label="Joined between" :class="['col-span-2 grid grid-cols-2 gap-3', moreOpen ? 'lg:absolute lg:top-full lg:right-0 lg:z-40 lg:mt-1 lg:w-80 lg:rounded-md lg:border lg:border-rule lg:bg-paper lg:p-3 lg:shadow-modal' : 'lg:hidden']" @keydown.esc="closeMore">
+          <div>
+            <label for="filter-from" :class="LABEL">Joined from</label>
+            <input id="filter-from" v-model="filters.joinedFrom" type="date" :class="[CONTROL, 'lg:text-sm']">
+          </div>
+          <div>
+            <label for="filter-to" :class="LABEL">Joined to</label>
+            <input id="filter-to" v-model="filters.joinedTo" type="date" :class="[CONTROL, 'lg:text-sm']">
+          </div>
         </div>
       </div>
-      <TextButton v-if="hasActiveFilters && filteredMembers.length" class="col-span-2 text-left max-lg:min-h-11 lg:col-span-1 lg:py-1.5" @click="clearFilters">Clear filters</TextButton>
+      <button
+        ref="moreButton"
+        type="button"
+        :class="['hidden h-(--control-h) cursor-pointer items-center gap-1.5 rounded-sm border px-3 text-sm font-medium whitespace-nowrap lg:order-6 lg:flex', dateFilterCount ? 'border-teal bg-teal-tint text-teal' : 'border-field bg-paper text-ink hover:border-teal hover:bg-teal-tint']"
+        aria-controls="filter-dates"
+        :aria-expanded="moreOpen ? 'true' : 'false'"
+        @click="moreOpen = !moreOpen"
+        @keydown.esc="closeMore"
+      >
+        More filters<template v-if="dateFilterCount"> ({{ dateFilterCount }})</template>
+        <Icon :name="moreOpen ? 'chevron-up' : 'chevron-down'" :size="16" />
+      </button>
+      <TextButton v-if="hasActiveFilters && filteredMembers.length" class="col-span-2 text-left max-lg:min-h-11 lg:order-7 lg:col-auto lg:py-1.5" @click="clearFilters">Clear filters</TextButton>
     </form>
 
     <!-- Empty states -->
@@ -362,7 +379,7 @@ const PHONE_ACTION = 'flex min-h-11 items-center justify-center gap-2 rounded-md
 // "Delete for good": an outline in clay (the dialog holds the solid danger button)
 const DELETE_BUTTON = 'inline-flex cursor-pointer items-center justify-center rounded-sm border border-clay bg-paper font-medium leading-normal text-clay hover:bg-clay-tint disabled:pointer-events-none disabled:border-rule disabled:text-muted disabled:opacity-65'
 // One button of the Status segmented control; segmentShape rounds the two ends and joins the borders
-const SEGMENT = 'relative -ml-px first:ml-0 inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1 border px-3 text-base font-medium whitespace-nowrap lg:min-h-(--control-h)'
+const SEGMENT = 'relative -ml-px first:ml-0 inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1 border px-3 text-base font-medium whitespace-nowrap lg:min-h-(--control-h) lg:text-sm'
 // The Sort by control: the first click on a header starts ascending, but here "Most behind" and
 // "Joined" mean the most behind and the newest first
 const SORT_OPTIONS = [
@@ -394,6 +411,7 @@ export default {
       loadError: false,
       filters: { ...EMPTY_FILTERS },
       filtersOpen: false,
+      moreOpen: false,
       sort: { key: 'name', direction: 'asc' },
       selectedIds: [],
       bulkAction: null,
@@ -486,10 +504,13 @@ export default {
       const f = this.filters
       return !!f.search.trim() || f.status !== 'ALL' || f.paymentStatus !== 'ALL' || !!f.joinedFrom || !!f.joinedTo
     },
+    // how many of the two dates are set: what the desktop "More filters" button holds
+    dateFilterCount() {
+      return (this.filters.joinedFrom ? 1 : 0) + (this.filters.joinedTo ? 1 : 0)
+    },
     // what the phone "Filters" button holds that is set: Dues and the two dates (status and search stay in view)
     panelFilterCount() {
-      const f = this.filters
-      return (f.paymentStatus !== 'ALL' ? 1 : 0) + (f.joinedFrom ? 1 : 0) + (f.joinedTo ? 1 : 0)
+      return (this.filters.paymentStatus !== 'ALL' ? 1 : 0) + this.dateFilterCount
     },
     columns() {
       return [
@@ -650,6 +671,11 @@ export default {
     },
     clearFilters() {
       this.filters = { ...EMPTY_FILTERS }
+    },
+    closeMore() {
+      if (!this.moreOpen) return
+      this.moreOpen = false
+      this.$refs.moreButton?.focus()
     },
     formatMemberDate(date) {
       return date ? formatDate(date, 'MMM d, yyyy') : ''
