@@ -1,6 +1,7 @@
 <template>
-  <div>
-    <PageHead title="Payments" lead="Record what members paid and see the history.">
+  <!-- From lg the header is a full-width band, so the page's own padding (App.vue) is dropped here and the content area below carries it -->
+  <div class="lg:max-w-none! lg:p-0!">
+    <PageHead title="Payments" lead="Record what members paid and see the history." band>
       <template v-if="authStore.isStaff" #actions>
         <BaseButton variant="secondary" @click="exportPayments">
           <Icon name="download" :size="16" class="mr-1.5" />Export CSV
@@ -11,6 +12,7 @@
       </template>
     </PageHead>
 
+    <div class="lg:mx-auto lg:max-w-[1400px] lg:px-8 lg:pt-6 lg:pb-10">
     <AlertBanner v-if="loadError">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <span>The payments did not load. Check your connection and try again.</span>
@@ -29,19 +31,20 @@
     <CollectedChart v-if="payments.length" ref="chart" class="mb-6" />
 
     <!-- Filters -->
-    <form v-if="payments.length" class="mb-6 grid grid-cols-2 gap-3 md:flex md:flex-wrap md:items-end" role="search" aria-label="Filter payments" @submit.prevent>
-      <div class="col-span-2 md:col-span-1 md:min-w-60 md:flex-1">
-        <label for="filter-search" :class="LABEL">Search</label>
-        <input id="filter-search" v-model="filters.search" type="search" placeholder="Search member name" autocomplete="off" :class="CONTROL">
+    <!-- From lg one row, labels visually hidden: search on the left, Method on the right -->
+    <form v-if="payments.length" class="mb-6 grid grid-cols-2 gap-3 md:flex md:flex-wrap md:items-end lg:mb-4 lg:items-center lg:gap-x-4" role="search" aria-label="Filter payments" @submit.prevent>
+      <div class="col-span-2 md:col-span-1 md:min-w-60 md:flex-1 lg:max-w-60 lg:flex-[1_1_10rem]">
+        <label for="filter-search" :class="[LABEL, 'lg:sr-only']">Search</label>
+        <input id="filter-search" v-model="filters.search" type="search" placeholder="Search member name" autocomplete="off" :class="[CONTROL, 'lg:text-sm']">
       </div>
-      <div class="col-span-2 md:col-span-1 md:w-48">
-        <label for="filter-method" :class="LABEL">Method</label>
-        <select id="filter-method" v-model="filters.method" :class="CONTROL">
+      <div class="col-span-2 md:col-span-1 md:w-48 lg:order-3 lg:ml-auto lg:w-44">
+        <label for="filter-method" :class="[LABEL, 'lg:sr-only']">Method</label>
+        <select id="filter-method" v-model="filters.method" :class="[CONTROL, 'lg:text-sm']">
           <option value="ALL">All methods</option>
           <option v-for="method in PAYMENT_METHODS" :key="method.value" :value="method.value">{{ method.label }}</option>
         </select>
       </div>
-      <TextButton v-if="hasActiveFilters && filteredPayments.length" class="col-span-2 text-left md:col-span-1 md:py-1.5" @click="clearFilters">Clear filters</TextButton>
+      <TextButton v-if="hasActiveFilters && filteredPayments.length" class="col-span-2 text-left md:col-span-1 md:py-1.5 lg:order-2" @click="clearFilters">Clear filters</TextButton>
     </form>
 
     <!-- Empty states -->
@@ -55,12 +58,13 @@
     </div>
 
     <template v-if="filteredPayments.length">
-      <p class="mt-0 mb-2 text-sm text-muted" aria-live="polite">
+      <!-- from lg the visible count is the table card's footer; this line stays for screen readers -->
+      <p class="mt-0 mb-2 text-sm text-muted lg:sr-only" aria-live="polite">
         {{ hasActiveFilters ? `${filteredPayments.length} of ${payments.length} payments` : `${payments.length} ${payments.length === 1 ? 'payment' : 'payments'}` }}
       </p>
 
-      <!-- md and up: ruled table -->
-      <table :class="TABLE">
+      <!-- md to lg: ruled table -->
+      <table :class="[TABLE, 'lg:hidden']">
         <caption class="sr-only">Payment history, newest first</caption>
         <thead>
           <tr class="border-b border-rule">
@@ -87,6 +91,43 @@
           </tr>
         </tbody>
       </table>
+
+      <!-- lg and up: the table in a bordered card (grey header row, hairline between rows, footer line); it scrolls sideways inside the card -->
+      <div class="hidden overflow-x-auto rounded-md border border-rule bg-paper lg:block">
+        <div class="min-w-[44rem]">
+          <table :class="TABLE_FROM_LG">
+            <caption class="sr-only">Payment history, newest first</caption>
+            <thead>
+              <tr class="border-b border-rule">
+                <th scope="col" :class="CARD_TH">Receipt</th>
+                <th scope="col" :class="CARD_TH">Paid on</th>
+                <th scope="col" :class="CARD_TH">Member</th>
+                <th scope="col" :class="CARD_TH">Month</th>
+                <th scope="col" :class="CARD_TH">Method</th>
+                <th scope="col" :class="[CARD_TH, 'text-right']">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="payment in filteredPayments" :key="payment.id" class="h-(--row-h) border-b border-rule">
+                <td :class="[CARD_TD, 'whitespace-nowrap']">
+                  <TextButton class="py-1" @click="openReceipt(payment)">
+                    {{ receiptNumber(payment) }}<span class="sr-only">, receipt for {{ payment.member?.name || 'Unknown' }}</span>
+                  </TextButton>
+                </td>
+                <td :class="[CARD_TD, 'whitespace-nowrap']">{{ formatDate(payment.paymentDate, 'MMM d, yyyy') }}</td>
+                <td :class="[CARD_TD, 'max-w-0 w-[34%] font-medium [overflow-wrap:anywhere]']">{{ payment.member?.name || 'Unknown' }}</td>
+                <td :class="[CARD_TD, 'whitespace-nowrap']">{{ periodLabel(payment.period) }}</td>
+                <td :class="[CARD_TD, 'whitespace-nowrap']">{{ methodLabel(payment.paymentMethod) }}</td>
+                <td :class="[CARD_TD, 'text-right whitespace-nowrap']">{{ formatMoney(payment.amount) }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="flex flex-wrap justify-between gap-x-4 gap-y-2 px-4 py-3 text-sm text-muted">
+            <span>{{ hasActiveFilters ? `${filteredPayments.length} of ${payments.length} payments` : `${payments.length} ${payments.length === 1 ? 'payment' : 'payments'}` }}</span>
+            <span>Newest first</span>
+          </div>
+        </div>
+      </div>
 
       <!-- Below md: the same rows, stacked -->
       <ul class="m-0 list-none border-t border-rule p-0 md:hidden">
@@ -143,6 +184,7 @@
 
     <!-- Receipt -->
     <ReceiptDialog v-model="receiptOpen" :payment="selectedPayment" />
+    </div>
   </div>
 </template>
 
@@ -171,7 +213,7 @@ import ReceiptDialog from '@/components/ReceiptDialog.vue'
 import TextButton from '@/components/TextButton.vue'
 import YearStrip from '@/components/YearStrip.vue'
 
-import { CONTROL, LABEL, TABLE, TABLE_TH as TH, TABLE_TD as TD } from '@/ui/classes'
+import { CONTROL, LABEL, TABLE, TABLE_FROM_LG, TABLE_TH as TH, TABLE_TD as TD, TABLE_CARD_TH as CARD_TH, TABLE_CARD_TD as CARD_TD } from '@/ui/classes'
 
 const NOTES_MAX = 500
 const EMPTY_ERRORS = { memberId: '', period: '', paymentDate: '', amount: '', paymentMethod: '', notes: '' }
@@ -202,6 +244,9 @@ export default {
       periodLabel,
       receiptNumber,
       TABLE,
+      TABLE_FROM_LG,
+      CARD_TH,
+      CARD_TD,
       LABEL,
       CONTROL,
       TH,
