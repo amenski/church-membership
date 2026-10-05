@@ -29,13 +29,13 @@
 
       <!--
         Every block is a card. Below xl they stack in one column, full width (the ledger needs the room at 1000px);
-        from xl the ledger and Recent activity are the left column, Call this week and Latest payments the right.
-        The two column wrappers only exist from xl (display: contents before), so `order` keeps the reading order below it.
+        from xl the ledger is the left column and Latest payments the right. The two column wrappers only exist
+        from xl (display: contents before), so DOM order alone sets the reading order below it.
       -->
       <div class="flex flex-col gap-6 xl:grid xl:grid-cols-[minmax(0,1fr)_21rem] xl:items-start">
         <div class="contents min-w-0 xl:flex xl:flex-col xl:gap-6">
-        <!-- The year ledger: who owes, most behind first, one square a month -->
-        <section :class="[CARD, 'min-w-0 order-1']" aria-labelledby="ledger-title">
+        <!-- The year ledger: who owes, most behind first, one square a month; behind rows carry the call actions -->
+        <section :class="[CARD, 'min-w-0']" aria-labelledby="ledger-title">
           <div class="mb-3 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
             <div>
               <SectionTitle id="ledger-title" class="!mb-0.5 !text-xl">{{ wide ? $t('dashboard.ledgerWideTitle') : $t('dashboard.ledgerNarrowTitle') }}</SectionTitle>
@@ -69,6 +69,17 @@
                   <StatusLabel v-if="member.consecutiveMonthsMissed > 0" tone="behind">{{ monthsBehind(member.consecutiveMonthsMissed, $t) }}</StatusLabel>
                   <StatusLabel v-else tone="muted">{{ $t('dues.badgeDue') }}</StatusLabel>
                 </span>
+                <span
+                  v-if="member.consecutiveMonthsMissed > 0 && (member.phone || authStore.isStaff)"
+                  class="col-span-2 flex flex-wrap gap-2 max-sm:order-4 max-sm:pb-1 sm:col-span-3 sm:justify-end"
+                >
+                  <a v-if="member.phone" :href="telHref(member.phone)" :class="[CALL_ACTION, 'border-teal bg-teal text-paper hover:bg-teal-hover']">
+                    <Icon name="phone" :size="14" />{{ $t('members.call') }}<span class="sr-only"> {{ member.name }}</span>
+                  </a>
+                  <router-link v-if="authStore.isStaff" to="/communications" :class="[CALL_ACTION, 'border-field bg-paper text-ink hover:border-teal hover:bg-teal-tint']">
+                    {{ $t('members.sendReminder') }}<span class="sr-only">{{ $t('members.sendReminderSr', { name: member.name }) }}</span>
+                  </router-link>
+                </span>
               </li>
             </ul>
             <div v-if="wide && paidTotals" :class="[ledgerGrid, 'pt-2.5 text-xs font-medium']">
@@ -87,44 +98,10 @@
           <EmptyNote v-else-if="activeCount > 0">{{ $t('dashboard.noOverdue') }}</EmptyNote>
           <EmptyNote v-else>{{ $t('dashboard.noActiveMembers') }}</EmptyNote>
         </section>
-
-        <!-- What happened lately: below the ledger, so the left column is not left short -->
-        <section :class="[CARD, 'min-w-0 order-4']" aria-labelledby="activity-title">
-          <SectionTitle id="activity-title" class="!mb-0.5 !text-xl">{{ $t('dashboard.recentActivity') }}</SectionTitle>
-          <ul v-if="activities.length" class="m-0 mt-2 list-none p-0">
-            <li v-for="activity in activities" :key="activity.id" :class="[ROW, 'items-center max-sm:flex-wrap max-sm:gap-y-0']">
-              <span class="shrink-0 grow-0 basis-22 text-xs text-muted tabular-nums max-sm:basis-full">{{ formatDate(activity.date) }}</span>
-              <span class="min-w-0 flex-auto [overflow-wrap:anywhere]">{{ activity.description }}</span>
-            </li>
-          </ul>
-          <EmptyNote v-else class="mt-2">{{ $t('dashboard.nothingHappened') }}</EmptyNote>
-        </section>
         </div>
 
         <div class="contents min-w-0 xl:flex xl:flex-col xl:gap-6">
-          <section :class="[CARD, 'min-w-0 order-2']" aria-labelledby="calls-title">
-            <SectionTitle id="calls-title" class="!mb-0.5 !text-xl">{{ $t('dashboard.callThisWeek') }}</SectionTitle>
-            <p class="m-0 text-sm text-muted">{{ $t('dashboard.callSubtitle') }}</p>
-            <ul v-if="callList.length" class="m-0 mt-2 list-none p-0">
-              <li v-for="member in callList" :key="member.id" class="border-b border-rule py-3 last:border-b-0 last:pb-0">
-                <div class="flex items-baseline justify-between gap-3">
-                  <span class="min-w-0 font-medium [overflow-wrap:anywhere]">{{ member.name }}</span>
-                  <span class="shrink-0 text-sm font-medium text-ochre-text">{{ monthsBehind(member.consecutiveMonthsMissed, $t) }}</span>
-                </div>
-                <div class="mt-2 flex flex-wrap gap-2">
-                  <a v-if="member.phone" :href="telHref(member.phone)" :class="[CALL_ACTION, 'border-teal bg-teal text-paper hover:bg-teal-hover']">
-                    <Icon name="phone" :size="14" />{{ $t('members.call') }}<span class="sr-only"> {{ member.name }}</span>
-                  </a>
-                  <router-link v-if="authStore.isStaff" to="/communications" :class="[CALL_ACTION, 'border-field bg-paper text-ink hover:border-teal hover:bg-teal-tint']">
-                    {{ $t('dashboard.sendReminder') }}<span class="sr-only">{{ $t('dashboard.sendReminderSr', { name: member.name }) }}</span>
-                  </router-link>
-                </div>
-              </li>
-            </ul>
-            <EmptyNote v-else class="mt-2">{{ $t('dashboard.nobodyBehind') }}</EmptyNote>
-          </section>
-
-          <section :class="[CARD, 'min-w-0 order-3']" aria-labelledby="payments-title">
+          <section :class="[CARD, 'min-w-0']" aria-labelledby="payments-title">
             <SectionTitle id="payments-title" class="!mb-0.5 !text-xl">{{ $t('dashboard.latestPayments') }}</SectionTitle>
             <ul v-if="recentPayments.length" class="m-0 mt-2 list-none p-0">
               <li v-for="payment in recentPayments" :key="payment.id" :class="[ROW, 'items-baseline justify-between']">
@@ -218,8 +195,7 @@ export default {
       today: localISODate(),
       failedReminders: null,
       wide: false,
-      wideQuery: null,
-      activities: []
+      wideQuery: null
     }
   },
   computed: {
@@ -266,9 +242,6 @@ export default {
         .filter(member => countsForDues(member) && member.consecutiveMonthsMissed > 0)
         .sort((a, b) => b.consecutiveMonthsMissed - a.consecutiveMonthsMissed)
     },
-    callList() {
-      return this.behindMembers.slice(0, 3)
-    },
     // Everyone who owes: behind, or (when the payments loaded) not yet paid for the current month
     ledgerRows() {
       return this.members
@@ -301,19 +274,16 @@ export default {
         const [
           statsRes,
           paymentsRes,
-          membersRes,
-          activitiesRes
+          membersRes
         ] = await Promise.all([
           api.getDashboardStats(),
           api.getPaymentsPage({ page: 0, size: RECENT_PAYMENTS, sort: 'paymentDate,desc' }),
-          api.getMembers(),
-          api.getRecentActivities()
+          api.getMembers()
         ])
 
         this.stats = statsRes
         this.recentPayments = Array.isArray(paymentsRes?.content) ? paymentsRes.content : []
         this.members = Array.isArray(membersRes) ? membersRes : []
-        this.activities = activitiesRes
         this.today = localISODate()
         this.loadError = false
         await Promise.all([this.loadPaidMonths(), this.loadFailedReminders()])
@@ -371,9 +341,6 @@ export default {
     },
     telHref(phone) {
       return `tel:${phone.replace(/[^+\d]/g, '')}`
-    },
-    formatDate(date) {
-      return formatPaidDate(date, 'MMM d, yyyy')
     }
   }
 }

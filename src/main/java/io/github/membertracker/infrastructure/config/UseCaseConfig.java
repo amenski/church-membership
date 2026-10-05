@@ -46,8 +46,6 @@ import io.github.membertracker.usecase.GetPaymentByIdUseCase;
 import io.github.membertracker.usecase.GetPaymentPageUseCase;
 import io.github.membertracker.usecase.GetCollectedByMonthUseCase;
 import io.github.membertracker.usecase.GetDashboardStatsUseCase;
-import io.github.membertracker.usecase.GetRecentCommunicationsUseCase;
-import io.github.membertracker.usecase.GetRecentPaymentsUseCase;
 import io.github.membertracker.usecase.GetPaymentsByMemberUseCase;
 import io.github.membertracker.usecase.HasPaymentForMonthUseCase;
 import io.github.membertracker.usecase.LoadUserByUsernameUseCase;
@@ -336,16 +334,6 @@ public class UseCaseConfig {
     @Bean
     public GetCollectedByMonthUseCase getCollectedByMonthUseCase(PaymentRepository paymentRepository) {
         return new GetCollectedByMonthUseCase(paymentRepository);
-    }
-
-    @Bean
-    public GetRecentPaymentsUseCase getRecentPaymentsUseCase(PaymentRepository paymentRepository) {
-        return new GetRecentPaymentsUseCase(paymentRepository);
-    }
-
-    @Bean
-    public GetRecentCommunicationsUseCase getRecentCommunicationsUseCase(CommunicationRepository communicationRepository) {
-        return new GetRecentCommunicationsUseCase(communicationRepository);
     }
 
     // Scheduler-related use cases

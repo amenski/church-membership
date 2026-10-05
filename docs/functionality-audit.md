@@ -87,7 +87,7 @@ Scale: **0** absent · **1** stub or flat data · **2** basic, usable · **3** f
 
 | Area | Score | What exists today, and what is missing |
 |------|:-----:|----------------------------------------|
-| Reporting | 1 | Four dashboard counters and two recent-activity lists, computed by database queries (counts, a sum, limited recent lists). No date ranges, trends, giving by fund, attendance or growth reports. |
+| Reporting | 1 | Four dashboard counters and one recent-payments list, computed by database queries (counts, a sum, a limited recent list). No date ranges, trends, giving by fund, attendance or growth reports. |
 | Search | 0 | No search or filter parameters on any endpoint, and no pagination. Filtering happens in the browser on the full list. |
 | Notifications | 0 | A monthly reminder scheduler runs on the 1st (C3 fixed); `{{member_name}}` in the reminder is filled in per recipient (C4 fixed). No in-app notifications, birthday or anniversary alerts, or staff task alerts. |
 | Import and export | 1 | CSV export of members and payments. No import, so a church moving from a spreadsheet must type every record by hand. |

@@ -137,29 +137,10 @@ class DashboardQueriesIntegrationTest {
 
     @Test
     void overdueListHoldsActiveMembersOnlyLongestBehindFirst() throws Exception {
-        String overdue = fetch("/api/dashboard/overdue-members");
+        String overdue = fetch("/api/members/overdue/1");
 
         assertThat(JsonPath.<List<String>>read(overdue, "$[*].name")).containsExactly("Ann", "Ben");
         assertThat(JsonPath.<List<Integer>>read(overdue, "$[*].consecutiveMonthsMissed")).containsExactly(3, 1);
-    }
-
-    @Test
-    void recentPaymentsAreLimitedToTenNewestFirst() throws Exception {
-        String recent = fetch("/api/dashboard/recent-payments");
-
-        List<String> dates = JsonPath.read(recent, "$[*].paymentDate");
-        assertThat(dates).hasSize(10).isSortedAccordingTo(java.util.Comparator.reverseOrder());
-        assertThat(dates.get(0)).isEqualTo(LocalDate.now().toString());
-    }
-
-    @Test
-    void recentActivitiesTakeFivePaymentsAndFiveCommunicationsAtMostTenInTotal() throws Exception {
-        String activities = fetch("/api/dashboard/recent-activities");
-
-        List<String> ids = JsonPath.read(activities, "$[*].id");
-        assertThat(ids).hasSize(10);
-        assertThat(ids.stream().filter(id -> id.startsWith("payment_"))).hasSize(5);
-        assertThat(ids.stream().filter(id -> id.startsWith("comm_"))).hasSize(5);
     }
 
     @Test

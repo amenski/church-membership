@@ -1,16 +1,9 @@
 package io.github.membertracker.infrastructure;
 
-import io.github.membertracker.infrastructure.security.ArchivedVisibility;
-import io.github.membertracker.domain.model.Communication;
-import io.github.membertracker.domain.model.Member;
-import io.github.membertracker.domain.model.Payment;
 import io.github.membertracker.usecase.GetCollectedByMonthUseCase;
 import io.github.membertracker.usecase.GetCollectedByMonthUseCase.MonthlyCollected;
 import io.github.membertracker.usecase.GetDashboardStatsUseCase;
 import io.github.membertracker.usecase.GetDashboardStatsUseCase.DashboardStats;
-import io.github.membertracker.usecase.GetMembersWithMissedPaymentsUseCase;
-import io.github.membertracker.usecase.GetRecentCommunicationsUseCase;
-import io.github.membertracker.usecase.GetRecentPaymentsUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,12 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Failures are not caught here: they reach {@code GlobalExceptionHandler} and come back as a 500 problem,
@@ -36,27 +24,15 @@ import java.util.Map;
 @Tag(name = "Dashboard", description = "Summary figures for the home screen.")
 public class DashboardController {
 
-    private static final int RECENT_PAYMENTS = 10;
     private static final int CHART_MONTHS = 12;
-    private static final int ACTIVITIES_PER_SOURCE = 5;
-    private static final int ACTIVITIES = 10;
 
     private final GetDashboardStatsUseCase getDashboardStatsUseCase;
-    private final GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase;
-    private final GetRecentPaymentsUseCase getRecentPaymentsUseCase;
-    private final GetRecentCommunicationsUseCase getRecentCommunicationsUseCase;
     private final GetCollectedByMonthUseCase getCollectedByMonthUseCase;
 
     @Autowired
     public DashboardController(GetDashboardStatsUseCase getDashboardStatsUseCase,
-                               GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase,
-                               GetRecentPaymentsUseCase getRecentPaymentsUseCase,
-                               GetRecentCommunicationsUseCase getRecentCommunicationsUseCase,
                                GetCollectedByMonthUseCase getCollectedByMonthUseCase) {
         this.getDashboardStatsUseCase = getDashboardStatsUseCase;
-        this.getMembersWithMissedPaymentsUseCase = getMembersWithMissedPaymentsUseCase;
-        this.getRecentPaymentsUseCase = getRecentPaymentsUseCase;
-        this.getRecentCommunicationsUseCase = getRecentCommunicationsUseCase;
         this.getCollectedByMonthUseCase = getCollectedByMonthUseCase;
     }
 
@@ -72,47 +48,5 @@ public class DashboardController {
     @Operation(summary = "Amount collected per billing month for the last 12 months, oldest first (VOLUNTEER+)")
     public ResponseEntity<List<MonthlyCollected>> getCollectedByMonth() {
         return ResponseEntity.ok(getCollectedByMonthUseCase.invoke(CHART_MONTHS));
-    }
-
-    @GetMapping("/recent-payments")
-    @PreAuthorize("hasRole('VOLUNTEER')")
-    @Operation(summary = "Ten most recent payments (VOLUNTEER+)")
-    public ResponseEntity<List<Payment>> getRecentPayments() {
-        return ResponseEntity.ok(ArchivedVisibility.redact(getRecentPaymentsUseCase.invoke(RECENT_PAYMENTS)));
-    }
-
-    @GetMapping("/overdue-members")
-    @PreAuthorize("hasRole('VOLUNTEER')")
-    @Operation(summary = "Active members overdue by one month or more, longest first (VOLUNTEER+)")
-    public ResponseEntity<List<Member>> getOverdueMembers() {
-        return ResponseEntity.ok(getMembersWithMissedPaymentsUseCase.invoke(1));
-    }
-
-    @GetMapping("/recent-activities")
-    @PreAuthorize("hasRole('VOLUNTEER')")
-    @Operation(summary = "Recent activity feed (VOLUNTEER+)")
-    public ResponseEntity<List<Map<String, Object>>> getRecentActivities() {
-        List<Map<String, Object>> activities = new ArrayList<>();
-
-        for (Payment p : getRecentPaymentsUseCase.invoke(ACTIVITIES_PER_SOURCE)) {
-            Map<String, Object> activity = new HashMap<>();
-            activity.put("id", "payment_" + p.getId());
-            activity.put("date", p.getPaymentDate());
-            activity.put("type", "payment");
-            activity.put("description", "Payment received: $" + String.format("%.2f", p.getAmount()));
-            activities.add(activity);
-        }
-
-        for (Communication c : getRecentCommunicationsUseCase.invoke(ACTIVITIES_PER_SOURCE)) {
-            Map<String, Object> activity = new HashMap<>();
-            activity.put("id", "comm_" + c.getId());
-            activity.put("date", c.getCreatedDate().toLocalDate());
-            activity.put("type", "communication");
-            activity.put("description", "Communication sent: " + c.getTitle());
-            activities.add(activity);
-        }
-
-        activities.sort(Comparator.comparing((Map<String, Object> a) -> (LocalDate) a.get("date")).reversed());
-        return ResponseEntity.ok(activities.stream().limit(ACTIVITIES).toList());
     }
 }

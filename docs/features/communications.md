@@ -55,7 +55,7 @@ Role view of the screen:
 1. Choose "One member" and pick the member (active members only). The preview shows that member; the confirm dialog reads "Send to 1 person?".
 2. `POST /api/communications/send-to-member/{memberId}` (`CommunicationsView.vue`).
 3. A member with no email returns 400 `COMMUNICATION_007` "Member '<name>' has no email address, so there is nothing to send to." and stores nothing. An unknown member id returns 400 (`CommunicationController.java`); otherwise one PENDING delivery is created and the send runs in the background (`CommunicationController.java`).
-4. The Overview's "Send reminder" link only opens this screen; it sends nothing itself ([dashboard.md](dashboard.md)).
+4. The Overview's "Send reminder" link, on a behind ledger row, only opens this screen; it sends nothing itself ([dashboard.md](dashboard.md)).
 
 ### Inspect deliveries
 1. Click "View deliveries" on a row (`CommunicationsView.vue`).

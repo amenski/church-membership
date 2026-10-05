@@ -82,9 +82,7 @@ class RoleAuthorizationTest {
     @MockitoBean private GetDeliveriesByCommunicationUseCase getDeliveriesByCommunicationUseCase;
     @MockitoBean private RetryDeliveryUseCase retryDeliveryUseCase;
     @MockitoBean private GetDashboardStatsUseCase getDashboardStatsUseCase;
-    @MockitoBean private GetRecentPaymentsUseCase getRecentPaymentsUseCase;
     @MockitoBean private GetCollectedByMonthUseCase getCollectedByMonthUseCase;
-    @MockitoBean private GetRecentCommunicationsUseCase getRecentCommunicationsUseCase;
     @MockitoBean private GetAllHouseholdsUseCase getAllHouseholdsUseCase;
     @MockitoBean private GetHouseholdByIdUseCase getHouseholdByIdUseCase;
     @MockitoBean private CreateHouseholdUseCase createHouseholdUseCase;
@@ -128,9 +126,6 @@ class RoleAuthorizationTest {
             new Endpoint(HttpMethod.POST, "/api/communications/1/deliveries/1/retry", null, "STAFF"),
 
             new Endpoint(HttpMethod.GET, "/api/dashboard/stats", null, "VOLUNTEER"),
-            new Endpoint(HttpMethod.GET, "/api/dashboard/recent-payments", null, "VOLUNTEER"),
-            new Endpoint(HttpMethod.GET, "/api/dashboard/overdue-members", null, "VOLUNTEER"),
-            new Endpoint(HttpMethod.GET, "/api/dashboard/recent-activities", null, "VOLUNTEER"),
 
             new Endpoint(HttpMethod.GET, "/api/activity-log", null, "ADMIN"),
 

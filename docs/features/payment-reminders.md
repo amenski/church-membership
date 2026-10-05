@@ -8,7 +8,7 @@ Roles from `@PreAuthorize` and route meta; hierarchy ADMIN > STAFF > VOLUNTEER >
 | Task | Minimum role | Screen / endpoint |
 |------|--------------|-------------------|
 | Run the monthly counter and reminder jobs | nobody (scheduled) | `src/main/java/io/github/membertracker/scheduler/PaymentReminderScheduler.java` |
-| See who is overdue | VOLUNTEER | Dues filter "Behind" on `/members` (`frontend/src/views/MembersView.vue`), Call this week and the dues ledger on `/dashboard` ([dashboard.md](dashboard.md)) |
+| See who is overdue | VOLUNTEER | Dues filter "Behind" on `/members` (`frontend/src/views/MembersView.vue`) and the dues ledger on `/dashboard` ([dashboard.md](dashboard.md)) |
 | See the reminder message and its deliveries | VOLUNTEER | `/communications` ([communications.md](communications.md)) |
 | Email all overdue members by hand | STAFF | "Behind on dues" on `/communications`, `POST /api/communications/send-to-overdue/{months}` (`src/main/java/io/github/membertracker/infrastructure/CommunicationController.java`) |
 | Email one overdue member by hand | STAFF | "Send reminder" on the Overview opens `/communications`, where "One member" calls `POST /api/communications/send-to-member/{memberId}` (`CommunicationController.java`) |
@@ -46,7 +46,7 @@ Example with the default threshold 3, for a member who paid through September an
 
 ### What the admin sees
 1. Members screen: "N months" in the Dues column, and the Dues filter "Behind" shows MEMBER-status members with a counter above 0 (`frontend/src/utils/memberFilters.js`, `MembersView.vue`).
-2. Overview: the Call this week card (the three furthest behind) and the dues ledger, with a Send reminder link for STAFF+ that opens Messages ([dashboard.md](dashboard.md)).
+2. Overview: the dues ledger, with a Send reminder link on each behind row for STAFF+ that opens Messages ([dashboard.md](dashboard.md)).
 3. Communications: the "Payment Reminder" message appears in the list with the date the job ran, and its deliveries (one per overdue member, with SENT or FAILED status) in the dialog.
 4. The jobs write to the application log only ("Starting payment reminder process", errors) (`PaymentReminderScheduler.java`).
 

@@ -122,8 +122,6 @@ class PersonReadSwitchTest {
     @Test
     void theOverdueListsSortByThePersonName() throws Exception {
         // Same months missed, so the tie is broken by the person's name: Abebe < Zed.
-        assertThat((List<String>) JsonPath.read(getAsAdmin("/api/dashboard/overdue-members"), "$[*].name"))
-            .containsExactly("Abebe Kebede", "Zed Zewdu");
         assertThat((List<String>) JsonPath.read(getAsAdmin("/api/members/overdue/1"), "$[*].name"))
             .containsExactly("Abebe Kebede", "Zed Zewdu");
         assertThat(memberRepository.findDuesPayingWithMissedAtLeastOrderByMissedDesc(1))
@@ -139,7 +137,7 @@ class PersonReadSwitchTest {
 
     @Test
     void aPaymentsEmbeddedMemberCarriesThePersonValuesOnEveryPaymentRead() throws Exception {
-        for (String url : List.of("/api/payments", "/api/payments/member/" + abebe.getId(), "/api/dashboard/recent-payments")) {
+        for (String url : List.of("/api/payments", "/api/payments/member/" + abebe.getId())) {
             String body = getAsAdmin(url);
             assertThat((List<String>) JsonPath.read(body, "$[*].member.name")).as(url).containsExactly("Abebe Kebede");
             assertThat((List<String>) JsonPath.read(body, "$[*].member.email")).as(url).containsExactly("abebe@example.org");

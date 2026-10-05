@@ -29,24 +29,17 @@ class DashboardErrorsTest {
 
     @MockitoBean private LoadUserByUsernameUseCase loadUserByUsernameUseCase;
     @MockitoBean private GetDashboardStatsUseCase getDashboardStatsUseCase;
-    @MockitoBean private GetMembersWithMissedPaymentsUseCase getMembersWithMissedPaymentsUseCase;
-    @MockitoBean private GetRecentPaymentsUseCase getRecentPaymentsUseCase;
     @MockitoBean private GetCollectedByMonthUseCase getCollectedByMonthUseCase;
-    @MockitoBean private GetRecentCommunicationsUseCase getRecentCommunicationsUseCase;
 
     @ParameterizedTest(name = "GET {0}")
     @ValueSource(strings = {
         "/api/dashboard/stats",
-        "/api/dashboard/recent-payments",
-        "/api/dashboard/overdue-members",
-        "/api/dashboard/recent-activities"
+        "/api/dashboard/collected-by-month"
     })
     void aFailureIsAProblemJson500(String path) throws Exception {
         DataAccessResourceFailureException failure = new DataAccessResourceFailureException("database is down");
         when(getDashboardStatsUseCase.invoke()).thenThrow(failure);
-        when(getMembersWithMissedPaymentsUseCase.invoke(1)).thenThrow(failure);
-        when(getRecentPaymentsUseCase.invoke(org.mockito.ArgumentMatchers.anyInt())).thenThrow(failure);
-        when(getRecentCommunicationsUseCase.invoke(org.mockito.ArgumentMatchers.anyInt())).thenThrow(failure);
+        when(getCollectedByMonthUseCase.invoke(12)).thenThrow(failure);
 
         mockMvc.perform(get(path).with(user("v@example.com").roles("VOLUNTEER")))
             .andExpect(status().isInternalServerError())

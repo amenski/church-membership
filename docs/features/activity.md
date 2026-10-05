@@ -54,7 +54,6 @@ The use cases ask a `CurrentActor` port (`src/main/java/io/github/membertracker/
 - Newest first, `limit` 1 to 200, default 50; outside that range the answer is 400 with a field error.
 - The table is `activity_log` (migration `001.schema-creation.sql`, the `actor` column and a `created_at` index added by `007.add-activity-log-actor.sql`).
 - There is no retention or deletion job yet: entries accumulate forever. Deciding how long to keep them is an open item in [../todo.md](../todo.md).
-- The dashboard's "recent activities" list is built from payments and messages, not from this table ([dashboard.md](dashboard.md)).
 
 Older databases also hold three types written by the sample data (`SYSTEM_STARTUP`, `BULK_IMPORT`, `PAYMENT_REMINDER_SENT`, actor empty, shown as "System"); nothing writes them now.
 

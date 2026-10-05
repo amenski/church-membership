@@ -134,7 +134,7 @@ The old `USER` role was removed. Migration `004.migrate-user-role-to-member.sql`
 | Own account `/api/users/me*` | Any signed-in user, including MEMBER | | |
 | Own dues `/api/me/dues` | Any signed-in user, including MEMBER (matched to a member by email, see [features/my-dues.md](features/my-dues.md)) | | |
 
-**Archived members are visible to ADMIN only, on every read path** (`infrastructure/security/ArchivedVisibility`, one helper used by all controllers): `GET /api/members/{id}`, `GET /api/payments/member/{id}` and `POST /api/communications/send-to-member/{id}` answer as for an unknown id (404, 404, 400 `MEMBER_006`), the id-based export drops them, and where a payment or a delivery embeds an archived member (`/api/payments`, `/api/payments/{id}`, `/api/dashboard/recent-payments`, `/api/communications/{id}/deliveries`, delivery retry) the email and phone are blanked and the name stays so the history still reads.
+**Archived members are visible to ADMIN only, on every read path** (`infrastructure/security/ArchivedVisibility`, one helper used by all controllers): `GET /api/members/{id}`, `GET /api/payments/member/{id}` and `POST /api/communications/send-to-member/{id}` answer as for an unknown id (404, 404, 400 `MEMBER_006`), the id-based export drops them, and where a payment or a delivery embeds an archived member (`/api/payments`, `/api/payments/{id}`, `/api/communications/{id}/deliveries`, delivery retry) the email and phone are blanked and the name stays so the history still reads.
 
 ## Frontend
 

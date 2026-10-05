@@ -520,14 +520,6 @@ const apiService = {
 
   async getCollectedByMonth() {
     return this.get('/dashboard/collected-by-month')
-  },
-
-  async getOverdueMembers() {
-    return this.get('/dashboard/overdue-members')
-  },
-
-  async getRecentActivities() {
-    return this.get('/dashboard/recent-activities')
   }
 }
 
