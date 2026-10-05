@@ -42,7 +42,7 @@
             {{ visibleHouseholds.length !== households.length ? `${visibleHouseholds.length} of ${households.length} households` : `${households.length} ${households.length === 1 ? 'household' : 'households'}` }}
           </p>
           <ul class="m-0 list-none overflow-hidden rounded-md border border-rule bg-paper p-0">
-            <li v-for="household in visibleHouseholds" :key="household.id" class="border-b border-rule last:border-b-0">
+            <li v-for="household in pagedHouseholds" :key="household.id" class="border-b border-rule last:border-b-0">
               <button
                 type="button"
                 :aria-current="String(household.id) === selectedId ? 'true' : undefined"
@@ -57,6 +57,8 @@
               </button>
             </li>
           </ul>
+          <!-- the list column is 22rem wide from lg: there the numbered buttons give way to "Page 4 of 12" -->
+          <Pager v-bind="pagerProps" :page-sizes="HOUSEHOLD_PAGE_SIZES" :compact="wide" class="mt-3" @update:page="setPage" @update:page-size="setPageSize" />
         </template>
       </section>
 
@@ -223,6 +225,8 @@ import { NEW_MEMBER_STATUS_OPTIONS, statusLabel, statusTone } from '@/utils/memb
 import { buildMembershipRequest, buildPersonRequest, ageText } from '@/utils/person'
 import { isValidPhone } from '@/utils/phoneRules'
 import { paidMonthsByMember } from '@/utils/yearStrip'
+import { clampPage, pageSlice } from '@/utils/paging'
+import { queryPaging } from '@/utils/queryPaging'
 import AlertBanner from '@/components/AlertBanner.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import BaseInput from '@/components/BaseInput.vue'
@@ -233,6 +237,7 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import EmptyNote from '@/components/EmptyNote.vue'
 import Icon from '@/components/Icon.vue'
 import PageHead from '@/components/PageHead.vue'
+import Pager from '@/components/Pager.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import StatusLabel from '@/components/StatusLabel.vue'
 import TextButton from '@/components/TextButton.vue'
@@ -248,6 +253,10 @@ const ROW_ACTION_DANGER = `${ROW_ACTION_BASE} text-clay hover:text-clay-hover`
 // Same breakpoint as the shell (lg): from here the list and the household sit side by side
 const WIDE = '(min-width: 62rem)'
 
+// The list shows 10 households a page; the size select offers three sizes
+const HOUSEHOLD_PAGE_SIZES = [10, 25, 50]
+const HOUSEHOLD_DEFAULT_SIZE = 10
+
 const EMPTY_FORM = { name: '', addressLine1: '', addressLine2: '', city: '', postalCode: '', notes: '' }
 const FIELDS = Object.keys(EMPTY_FORM)
 const EMPTY_ERRORS = { ...EMPTY_FORM }
@@ -258,12 +267,13 @@ const EMPTY_MEMBERSHIP_ERRORS = { status: '', joinDate: '' }
 
 export default {
   name: 'HouseholdsView',
-  components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, BaseTextarea, ConfirmDialog, EmptyNote, Icon, PageHead, StatusBadge, StatusLabel, TextButton, YearStrip },
+  mixins: [queryPaging({ defaultSize: HOUSEHOLD_DEFAULT_SIZE, sizes: HOUSEHOLD_PAGE_SIZES })],
+  components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, BaseTextarea, ConfirmDialog, EmptyNote, Icon, PageHead, Pager, StatusBadge, StatusLabel, TextButton, YearStrip },
   setup() {
     return {
       appStore: useAppStore(),
       authStore: useAuthStore(),
-      CARD, LABEL, CONTROL, NAME, SUBHEAD, ROW_ACTION, ROW_ACTION_DANGER, NEW_MEMBER_STATUS_OPTIONS,
+      CARD, LABEL, CONTROL, NAME, SUBHEAD, ROW_ACTION, ROW_ACTION_DANGER, NEW_MEMBER_STATUS_OPTIONS, HOUSEHOLD_PAGE_SIZES,
       ageText,
       statusLabel,
       statusTone
@@ -313,6 +323,16 @@ export default {
     visibleHouseholds() {
       const term = this.search.trim().toLowerCase()
       return term ? this.households.filter(household => (household.name || '').toLowerCase().includes(term)) : this.households
+    },
+    currentPage() {
+      return clampPage(this.page, this.visibleHouseholds.length, this.pageSize)
+    },
+    // the rows on screen: one page of the list. The open household is chosen by ?id= and does not depend on the page
+    pagedHouseholds() {
+      return pageSlice(this.visibleHouseholds, this.currentPage, this.pageSize)
+    },
+    pagerProps() {
+      return { page: this.currentPage, pageSize: this.pageSize, total: this.visibleHouseholds.length }
     },
     // /households?id=<id> chooses the household (a member's page links here)
     selectedId() {
@@ -372,6 +392,14 @@ export default {
   watch: {
     selectedId() {
       this.loadDetail()
+    },
+    // a new search: back to page 1
+    search() {
+      this.resetPage()
+    },
+    // the list changed length (loaded, one added or deleted): a page beyond the last becomes the last
+    'visibleHouseholds.length'(length) {
+      if (this.loaded) this.settlePage(length)
     }
   },
   async created() {
@@ -394,7 +422,7 @@ export default {
     },
     // Side by side there is always a household on the right: the first one until the user chooses
     ensureSelection() {
-      if (this.wide && !this.selectedId && this.households.length) this.$router.replace({ query: { id: String(this.households[0].id) } })
+      if (this.wide && !this.selectedId && this.households.length) this.$router.replace({ query: { ...this.$route.query, id: String(this.households[0].id) } })
     },
     // The members and their payments behind the strips (the calls the Overview makes too). A failure only hides the strips and the notice.
     async loadMembers() {
@@ -430,11 +458,16 @@ export default {
     memberCountText(count) {
       return `${count} ${count === 1 ? 'member' : 'members'}`
     },
+    // the URL keeps page and size beside the chosen household
     openDetail(household) {
-      this.$router.push({ query: { id: String(household.id) } })
+      this.$router.push({ query: { ...this.$route.query, id: String(household.id) } })
     },
     closeDetail() {
-      this.$router.push({ query: {} })
+      this.$router.push({ query: this.queryWithoutId() })
+    },
+    queryWithoutId() {
+      const { id: _id, ...rest } = this.$route.query
+      return rest
     },
     // A later call (another household chosen) makes an earlier one that is still running stop
     async loadDetail() {
@@ -523,7 +556,7 @@ export default {
         await api.deleteHousehold(id)
         await this.loadHouseholds()
         this.deleteOpen = false
-        await this.$router.replace({ query: {} })
+        await this.$router.replace({ query: this.queryWithoutId() })
         this.ensureSelection()
         this.notify('success', 'Household deleted', name)
       } catch (error) {
