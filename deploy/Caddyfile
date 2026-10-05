@@ -9,6 +9,10 @@
 # only from loopback (TRUSTED_PROXIES), which is where Caddy connects from.
 
 members.example.org {
+	# Local network only (no public domain): remove the # on the next line so Caddy signs the certificate
+	# itself. docs/deploy-linux.md explains how each device then trusts it.
+	# tls internal
+
 	encode gzip
 
 	# The API takes small JSON bodies only
