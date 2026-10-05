@@ -15,6 +15,9 @@ export const TABLE = 'hidden w-full border-collapse text-left text-base tabular-
 export const TABLE_FROM_LG = 'hidden w-full border-collapse text-left text-base tabular-nums lg:table'
 export const TABLE_TH ='pb-2 pr-3 text-xs font-medium text-muted first:pl-0 last:pr-0'
 export const TABLE_TD = 'py-0 pr-3 align-middle first:pl-0 last:pr-0'
+/** The header and body cells of a table inside a bordered card (Members): grey header row, 16px at both edges, 10px above and below. */
+export const TABLE_CARD_TH = 'bg-mist px-3 py-2.5 text-xs font-medium text-muted first:pl-4 last:pr-4'
+export const TABLE_CARD_TD = 'px-3 py-2.5 align-middle first:pl-4 last:pr-4'
 
 /** A clickable column header. */
 export const SORT_BUTTON = '-mx-1 inline-flex cursor-pointer items-center gap-1 rounded-sm border-0 bg-transparent px-1 py-0.5 text-xs font-medium text-muted hover:text-ink'

@@ -112,25 +112,30 @@
     </div>
 
     <template v-if="filteredMembers.length">
-      <div class="mb-2 flex items-center justify-between gap-3">
-        <p class="m-0 text-sm text-muted" aria-live="polite">
+      <div class="mb-2 flex items-center justify-between gap-3 lg:mb-0">
+        <!-- from lg the visible count is the table card's footer; this line stays for screen readers -->
+        <p class="m-0 text-sm text-muted lg:sr-only" aria-live="polite">
           {{ countText }}
         </p>
         <!-- below lg only: from lg Export CSV is in the page header -->
         <TextButton v-if="authStore.isStaff" class="-my-2.5 min-h-11 lg:hidden" @click="exportMembers">Export CSV</TextButton>
       </div>
 
-      <!-- Selection (STAFF+): the live region speaks the count, the bar holds what can be done with those members -->
+      <!-- Selection (STAFF+): the live region speaks the count, the bar holds what can be done with those members.
+           From lg the bar sits between the filter row and the table card in a slot as high as the bar, so the table does
+           not move when it appears (it grows only if the buttons wrap); the slot is sticky under the top bar -->
       <p class="sr-only" role="status" aria-live="polite">{{ selectionAnnouncement }}</p>
-      <div v-if="selectedMembers.length" role="region" aria-label="Selected members" class="sticky top-14 z-30 mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-teal-line bg-teal-tint px-4 py-2.5">
-        <span class="text-base font-semibold text-teal">{{ selectedMembers.length }} selected</span>
-        <span class="min-w-0 text-sm text-ink [overflow-wrap:anywhere]">{{ selectedNames }}</span>
-        <TextButton @click="selectedIds = []">Clear selection</TextButton>
-        <div class="flex flex-wrap gap-2 md:ml-auto">
-          <BaseButton variant="secondary" to="/communications">Send message</BaseButton>
-          <BaseButton variant="secondary" @click="exportSelected">Export selected</BaseButton>
-          <BaseButton variant="secondary" :disabled="!inactiveTargets.length" @click="bulkAction = 'inactive'">Mark inactive</BaseButton>
-          <button v-if="authStore.isAdmin" type="button" :class="[DELETE_BUTTON, 'min-h-(--control-h) px-3 py-1.5 text-base']" @click="bulkAction = 'archive'">Archive</button>
+      <div v-if="canSelect" class="contents lg:pointer-events-none lg:sticky lg:top-14 lg:z-30 lg:mb-4 lg:block lg:min-h-14">
+        <div v-if="selectedMembers.length" role="region" aria-label="Selected members" class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-teal-line bg-teal-tint px-4 py-2.5 max-lg:sticky max-lg:top-14 max-lg:z-30 max-lg:mb-4 lg:pointer-events-auto">
+          <span class="text-base font-semibold text-teal">{{ selectedMembers.length }} selected</span>
+          <span class="min-w-0 text-sm text-ink [overflow-wrap:anywhere]">{{ selectedNames }}</span>
+          <TextButton @click="selectedIds = []">Clear selection</TextButton>
+          <div class="flex flex-wrap gap-2 md:ml-auto">
+            <BaseButton variant="secondary" to="/communications">Send message</BaseButton>
+            <BaseButton variant="secondary" @click="exportSelected">Export selected</BaseButton>
+            <BaseButton variant="secondary" :disabled="!inactiveTargets.length" @click="bulkAction = 'inactive'">Mark inactive</BaseButton>
+            <button v-if="authStore.isAdmin" type="button" :class="[DELETE_BUTTON, 'min-h-(--control-h) px-3 py-1.5 text-base']" @click="bulkAction = 'archive'">Archive</button>
+          </div>
         </div>
       </div>
       <label v-if="canSelect" class="mb-2 flex min-h-11 cursor-pointer items-center gap-3 text-base text-ink lg:hidden">
@@ -213,65 +218,68 @@
         </ul>
       </template>
 
-      <!-- lg and up: ruled table. Between lg and xl it keeps a minimum width and scrolls sideways inside its own box rather than squeezing the columns -->
-      <div v-else class="hidden overflow-x-auto lg:block">
-      <table :class="[TABLE, 'lg:min-w-[56rem] xl:min-w-0']">
-        <caption class="sr-only">Members</caption>
-        <thead>
-          <tr class="border-b border-rule">
-            <th v-if="canSelect" scope="col" :class="[TH, 'w-8']">
-              <input type="checkbox" :class="CHECKBOX" :checked="allSelected" :indeterminate="someSelected" :aria-label="`Select all ${filteredMembers.length} shown`" @change="toggleAll($event.target.checked)">
-            </th>
-            <th v-for="column in columns" :key="column.label" scope="col" :aria-sort="ariaSort(column.sortKey)" :class="[TH, column.class]">
-              <button v-if="column.sortKey" type="button" :class="SORT_BUTTON" @click="setSort(column.sortKey)">
-                {{ column.label }}
-                <Icon :name="sortIcon(column.sortKey)" :size="12" :class="sort.key === column.sortKey ? 'text-ink' : 'text-muted'" />
-              </button>
-              <template v-else>{{ column.label }}</template>
-            </th>
-            <th v-if="authStore.isStaff" scope="col" :class="[TH, 'w-14']"><span class="sr-only">Actions</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="member in filteredMembers" :key="member.id" :class="['h-(--row-h) border-b border-rule', isSelected(member) ? 'bg-teal-tint' : '']">
-            <td v-if="canSelect" :class="TD">
-              <input type="checkbox" :class="CHECKBOX" :checked="isSelected(member)" :aria-label="`Select ${member.name}`" @change="toggleSelected(member, $event.target.checked)">
-            </td>
-            <td :class="[TD, 'max-w-0 w-[26%]']">
-              <div :class="NAME"><router-link :to="`/members/${member.id}`">{{ member.name }}</router-link></div>
-              <div v-if="member.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
-              <!-- the Phone column is hidden between lg and xl: its number sits under the email instead -->
-              <div v-if="member.phone" class="whitespace-nowrap text-sm text-muted xl:hidden">{{ member.phone }}</div>
-            </td>
-            <td :class="[TD, 'max-w-0 w-[14%] [overflow-wrap:anywhere]']">
-              <template v-if="member.householdName">{{ member.householdName }}</template>
-              <span v-else class="text-muted"><span aria-hidden="true">&ndash;</span><span class="sr-only">No household</span></span>
-            </td>
-            <td :class="[TD, 'whitespace-nowrap max-xl:hidden']">
-              <template v-if="member.phone">{{ member.phone }}</template>
-              <span v-else class="text-muted"><span aria-hidden="true">&ndash;</span><span class="sr-only">No phone</span></span>
-            </td>
-            <td :class="[TD, 'whitespace-nowrap']">{{ formatMemberDate(member.joinDate) }}</td>
-            <td :class="[TD, 'whitespace-nowrap']">
-              <StatusLabel :tone="statusTone(member.status)">{{ statusLabel(member.status) }}</StatusLabel>
-            </td>
-            <td :class="[TD, 'whitespace-nowrap']">
-              <YearStrip v-if="paidByMember" v-bind="stripProps(member)" />
-              <span v-else class="text-muted"><span aria-hidden="true">&ndash;</span><span class="sr-only">Months paid did not load</span></span>
-            </td>
-            <td :class="[TD, 'whitespace-nowrap']">
-              <span :class="duesClass(member)">
-                <template v-if="countsForDues(member)">{{ duesText(member) }}</template>
-                <template v-else><span aria-hidden="true">&ndash;</span><span class="sr-only">Not tracked while {{ statusLabel(member.status).toLowerCase() }}</span></template>
-              </span>
-            </td>
-            <td :class="[TD, 'whitespace-nowrap']">{{ member.lastPaymentDate ? formatMemberDate(member.lastPaymentDate) : 'Never' }}</td>
-            <td v-if="authStore.isStaff" :class="[TD, 'text-right']">
-              <ActionMenu :label="`More actions for ${member.name}`" :items="menuItems(member)" @select="key => onMenuSelect(key, member)" />
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <!-- lg and up: the table in a bordered card (grey header row, hairline between rows, footer line). Between lg and xl it keeps a
+           minimum width and scrolls sideways inside the card rather than squeezing the columns -->
+      <div v-else class="hidden overflow-x-auto rounded-md border border-rule bg-paper lg:block">
+        <div class="lg:min-w-[56rem] xl:min-w-0">
+          <table :class="TABLE">
+            <caption class="sr-only">Members</caption>
+            <thead>
+              <tr class="border-b border-rule">
+                <th v-if="canSelect" scope="col" :class="[CARD_TH, 'w-8']">
+                  <input type="checkbox" :class="CHECKBOX" :checked="allSelected" :indeterminate="someSelected" :aria-label="`Select all ${filteredMembers.length} shown`" @change="toggleAll($event.target.checked)">
+                </th>
+                <th v-for="column in columns" :key="column.label" scope="col" :aria-sort="ariaSort(column.sortKey)" :class="[CARD_TH, column.class]">
+                  <button v-if="column.sortKey" type="button" :class="SORT_BUTTON" @click="setSort(column.sortKey)">
+                    {{ column.label }}
+                    <Icon :name="sortIcon(column.sortKey)" :size="12" :class="sort.key === column.sortKey ? 'text-ink' : 'text-muted'" />
+                  </button>
+                  <template v-else>{{ column.label }}</template>
+                </th>
+                <th v-if="authStore.isStaff" scope="col" :class="[CARD_TH, 'w-14']"><span class="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="member in filteredMembers" :key="member.id" :class="['h-(--row-h) border-b border-rule', isSelected(member) ? 'bg-teal-tint' : '']">
+                <td v-if="canSelect" :class="CARD_TD">
+                  <input type="checkbox" :class="CHECKBOX" :checked="isSelected(member)" :aria-label="`Select ${member.name}`" @change="toggleSelected(member, $event.target.checked)">
+                </td>
+                <td :class="[CARD_TD, 'max-w-0 w-[26%]']">
+                  <div :class="NAME"><router-link :to="`/members/${member.id}`">{{ member.name }}</router-link></div>
+                  <div v-if="member.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
+                  <!-- the Phone column is hidden between lg and xl: its number sits under the email instead -->
+                  <div v-if="member.phone" class="whitespace-nowrap text-sm text-muted xl:hidden">{{ member.phone }}</div>
+                </td>
+                <td :class="[CARD_TD, 'max-w-0 w-[14%] [overflow-wrap:anywhere]']">
+                  <template v-if="member.householdName">{{ member.householdName }}</template>
+                  <span v-else class="text-muted"><span aria-hidden="true">&ndash;</span><span class="sr-only">No household</span></span>
+                </td>
+                <td :class="[CARD_TD, 'whitespace-nowrap']">
+                  <StatusBadge :tone="statusTone(member.status)">{{ statusLabel(member.status) }}</StatusBadge>
+                </td>
+                <td :class="[CARD_TD, 'whitespace-nowrap']">
+                  <YearStrip v-if="paidByMember" v-bind="stripProps(member)" />
+                  <span v-else class="text-muted"><span aria-hidden="true">&ndash;</span><span class="sr-only">Months paid did not load</span></span>
+                </td>
+                <td :class="[CARD_TD, 'whitespace-nowrap']">
+                  <span :class="duesCell(member).class">{{ duesCell(member).text }}</span>
+                </td>
+                <td :class="[CARD_TD, 'whitespace-nowrap']">{{ member.lastPaymentDate ? formatMemberDate(member.lastPaymentDate) : 'Never' }}</td>
+                <td :class="[CARD_TD, 'whitespace-nowrap text-muted max-xl:hidden']">
+                  <template v-if="member.phone">{{ member.phone }}</template>
+                  <span v-else><span aria-hidden="true">&ndash;</span><span class="sr-only">No phone</span></span>
+                </td>
+                <td v-if="authStore.isStaff" :class="[CARD_TD, 'text-right']">
+                  <ActionMenu :label="`More actions for ${member.name}`" :items="menuItems(member)" @select="key => onMenuSelect(key, member)" />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="flex flex-wrap justify-between gap-x-4 gap-y-2 px-4 py-3 text-sm text-muted">
+            <span>{{ filteredMembers.length }} of {{ source.length }} members</span>
+            <span>Dates and counts as of {{ asOfText }}</span>
+          </div>
+        </div>
       </div>
 
       <!-- Below lg: one card per member, two across from md -->
@@ -369,10 +377,11 @@ import Icon from '@/components/Icon.vue'
 import MemberArchiveDialog from '@/components/MemberArchiveDialog.vue'
 import MemberFormDialog from '@/components/MemberFormDialog.vue'
 import PageHead from '@/components/PageHead.vue'
+import StatusBadge from '@/components/StatusBadge.vue'
 import StatusLabel from '@/components/StatusLabel.vue'
 import YearStrip from '@/components/YearStrip.vue'
 import TextButton from '@/components/TextButton.vue'
-import { CONTROL, LABEL, NAME, SORT_BUTTON, TABLE_FROM_LG as TABLE, TABLE_TH as TH, TABLE_TD as TD } from '@/ui/classes'
+import { CONTROL, LABEL, NAME, SORT_BUTTON, TABLE_FROM_LG as TABLE, TABLE_TH as TH, TABLE_TD as TD, TABLE_CARD_TH as CARD_TH, TABLE_CARD_TD as CARD_TD } from '@/ui/classes'
 
 // A 44px tap target for the card's two actions
 const PHONE_ACTION = 'flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-lg font-medium no-underline'
@@ -394,7 +403,7 @@ const EMPTY_FILTERS = { search: '', status: 'ALL', paymentStatus: 'ALL', joinedF
 
 export default {
   name: 'MembersView',
-  components: { ActionMenu, AlertBanner, BaseButton, ConfirmDialog, EmptyNote, Icon, MemberArchiveDialog, MemberFormDialog, PageHead, StatusLabel, TextButton, YearStrip },
+  components: { ActionMenu, AlertBanner, BaseButton, ConfirmDialog, EmptyNote, Icon, MemberArchiveDialog, MemberFormDialog, PageHead, StatusBadge, StatusLabel, TextButton, YearStrip },
   setup() {
     return {
       appStore: useAppStore(),
@@ -433,6 +442,8 @@ export default {
       CONTROL,
       TH,
       TD,
+      CARD_TH,
+      CARD_TD,
       SORT_BUTTON,
       NAME,
       SEGMENT,
@@ -514,15 +525,18 @@ export default {
     },
     columns() {
       return [
-        { label: 'Name', sortKey: 'name' },
+        { label: 'Member', sortKey: 'name' },
         { label: 'Household' },
-        { label: 'Phone', class: 'max-xl:hidden' },
-        { label: 'Joined', sortKey: 'joinDate' },
         { label: 'Status' },
         { label: `${stripRangeLabel(this.today.slice(0, 7))}, one square a month` },
         { label: 'Dues', sortKey: 'consecutiveMonthsMissed' },
-        { label: 'Last paid' }
+        { label: 'Last paid' },
+        { label: 'Phone', class: 'max-xl:hidden' }
       ]
+    },
+    // the table card's footer: today as a long date
+    asOfText() {
+      return formatDate(this.today, 'EEEE, d MMMM yyyy')
     }
   },
   watch: {
@@ -687,6 +701,17 @@ export default {
     duesClass(member) {
       if (!countsForDues(member)) return 'text-muted'
       return ['font-medium', member.consecutiveMonthsMissed > 0 ? 'text-ochre-text' : 'text-fern-text']
+    },
+    // The Dues cell of the table: months behind in clay, "Due now" in ochre when this month is still unpaid, "Paid up" in fern,
+    // "No dues" for anyone who is not a Member (the strip's rule: payments must have loaded to tell "due now")
+    duesCell(member) {
+      if (!countsForDues(member)) return { text: 'No dues', class: 'text-muted' }
+      const behind = member.consecutiveMonthsMissed
+      if (behind > 0) return { text: `${behind} ${behind === 1 ? 'month' : 'months'}`, class: 'font-semibold text-clay' }
+      const month = this.today.slice(0, 7)
+      const joined = !member.joinDate || member.joinDate.slice(0, 7) <= month
+      if (joined && this.paidByMember && !this.paidByMember.get(member.id)?.has(month)) return { text: 'Due now', class: 'font-semibold text-ochre-text' }
+      return { text: 'Paid up', class: 'font-semibold text-fern-text' }
     },
     menuItems(member) {
       const items = [{ key: 'edit', label: 'Edit' }]
