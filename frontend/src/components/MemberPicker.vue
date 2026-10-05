@@ -110,7 +110,7 @@ export default {
     placeholder: { type: String, default: 'Search by name, phone or email' },
     error: { type: String, default: '' },
     disabled: { type: Boolean, default: false },
-    // memberId -> Set of paid "yyyy-MM" months (paidMonthsByMember); without it a row only says "N months behind"
+    // memberId -> Set of paid "yyyy-MM" months (paidMonthsFromMap); without it a row only says "N months behind"
     paidByMember: { type: Map, default: null },
     // "yyyy-MM", the month "due this month" and "paid up" are read for
     currentMonth: { type: String, default: '' }

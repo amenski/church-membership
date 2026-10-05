@@ -238,7 +238,7 @@ import { buildCommunicationRequest } from '@/utils/communicationPayload'
 import { attemptsLabel, friendlyNotes, countDeliveries, deliveryStatus, failedFirst, deliverySummaryParts, sortMessages, typeLabel } from '@/utils/messageHistory'
 import { countsForDues } from '@/utils/memberStatus'
 import { monthsBehind } from '@/utils/dues'
-import { paidMonthsByMember } from '@/utils/yearStrip'
+import { paidMonthsFromMap } from '@/utils/yearStrip'
 import { PAGE_SIZES, clampPage, pageSlice } from '@/utils/paging'
 import { queryPaging } from '@/utils/queryPaging'
 import AlertBanner from '@/components/AlertBanner.vue'
@@ -394,10 +394,10 @@ export default {
         this.loaded = true
       }
     },
-    // The paid months behind the strips: one existing call, grouped by member. A failure only hides the strips.
+    // The paid months behind the strips: GET /payments/paid-months, grouped by member. A failure only hides the strips.
     async loadPayments() {
       try {
-        this.paidByMember = paidMonthsByMember(await api.getPayments())
+        this.paidByMember = paidMonthsFromMap(await api.getPaidMonths(12))
       } catch (error) {
         console.error('Error loading payments for the year strips:', error)
         this.paidByMember = null

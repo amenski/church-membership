@@ -161,7 +161,7 @@ import { methodLabel, periodLabel } from '@/utils/paymentHistory'
 import { CARD } from '@/ui/classes'
 import { monthsBehind } from '@/utils/dues'
 import { countsForDues } from '@/utils/memberStatus'
-import { paidMonthsByMember, SQUARES, stripMonthLabels, stripMonths, stripRangeLabel } from '@/utils/yearStrip'
+import { paidMonthsFromMap, SQUARES, stripMonthLabels, stripMonths, stripRangeLabel } from '@/utils/yearStrip'
 
 // One row of the ledger: member, the compact strip (12 squares of 10px, 2px apart), months behind
 const LEDGER_GRID = 'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 sm:grid-cols-[minmax(0,1fr)_142px_9.5rem]'
@@ -178,6 +178,8 @@ const LEGEND = [
 const WIDE_QUERY = '(min-width: 87.5rem)'
 // The ledger lists the most behind members and stops here; Members holds the whole list
 const LEDGER_LIMIT = 10
+// how many payments "Latest payments" lists
+const RECENT_PAYMENTS = 10
 // One row in a card's list: Latest payments and Recent activity
 const ROW = 'flex min-h-(--list-row-h) gap-3 border-b border-rule py-2.5 last:border-b-0 tabular-nums'
 // A small action link in the Call this week panel
@@ -301,13 +303,13 @@ export default {
           activitiesRes
         ] = await Promise.all([
           api.getDashboardStats(),
-          api.getRecentPayments(),
+          api.getPaymentsPage({ page: 0, size: RECENT_PAYMENTS, sort: 'paymentDate,desc' }),
           api.getMembers(),
           api.getRecentActivities()
         ])
 
         this.stats = statsRes
-        this.recentPayments = paymentsRes
+        this.recentPayments = Array.isArray(paymentsRes?.content) ? paymentsRes.content : []
         this.members = Array.isArray(membersRes) ? membersRes : []
         this.activities = activitiesRes
         this.today = localISODate()
@@ -320,10 +322,10 @@ export default {
         this.loaded = true
       }
     },
-    // The paid months behind the strips (the call the Members screen makes too). A failure only hides the strips.
+    // The paid months behind the strips: GET /payments/paid-months, the call the Members screen makes too. A failure only hides the strips.
     async loadPaidMonths() {
       try {
-        this.paidByMember = paidMonthsByMember(await api.getPayments())
+        this.paidByMember = paidMonthsFromMap(await api.getPaidMonths(12))
       } catch (error) {
         console.error('Error loading payments for the year strip:', error)
         this.paidByMember = null

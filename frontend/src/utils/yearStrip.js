@@ -101,6 +101,15 @@ export function stripCells({ currentMonth, joinDate, paidMonths, monthsMissed, c
   })
 }
 
+/** memberId (a number) -> Set of "yyyy-MM" periods, from GET /payments/paid-months ({"<memberId>": ["2026-09", ...]}). */
+export function paidMonthsFromMap(map) {
+  const byMember = new Map()
+  for (const [id, months] of Object.entries(map && typeof map === 'object' ? map : {})) {
+    if (Array.isArray(months)) byMember.set(Number(id), new Set(months.map(String)))
+  }
+  return byMember
+}
+
 /** memberId -> Set of "yyyy-MM" periods, from the payments list. */
 export function paidMonthsByMember(payments) {
   const byMember = new Map()

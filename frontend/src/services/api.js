@@ -392,6 +392,21 @@ const apiService = {
     return this.get('/payments', params)
   },
 
+  // GET /payments/page?page&size&search&method&sort (page is zero-based): {content, page, size, totalElements, totalPages}
+  async getPaymentsPage(params = {}) {
+    return this.get('/payments/page', params)
+  },
+
+  // GET /payments/paid-months?months=12: {"<memberId>": ["2026-09", "2026-10"]}, members with no payment in the window are absent
+  async getPaidMonths(months = 12) {
+    return this.get('/payments/paid-months', { months })
+  },
+
+  // GET /payments/summary: {thisMonth, allTime, average, count}
+  async getPaymentSummary() {
+    return this.get('/payments/summary')
+  },
+
   // GET /payments/member/{id}: every payment of one member, 404 like getMember
   async getPaymentsByMember(memberId) {
     return this.get(`/payments/member/${memberId}`)
@@ -502,10 +517,6 @@ const apiService = {
 
   async getCollectedByMonth() {
     return this.get('/dashboard/collected-by-month')
-  },
-
-  async getRecentPayments() {
-    return this.get('/dashboard/recent-payments')
   },
 
   async getOverdueMembers() {

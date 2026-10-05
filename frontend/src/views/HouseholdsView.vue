@@ -224,7 +224,7 @@ import { monthsBehind } from '@/utils/dues'
 import { NEW_MEMBER_STATUS_OPTIONS, statusLabel, statusTone } from '@/utils/memberStatus'
 import { buildMembershipRequest, buildPersonRequest, ageText } from '@/utils/person'
 import { isValidPhone } from '@/utils/phoneRules'
-import { paidMonthsByMember } from '@/utils/yearStrip'
+import { paidMonthsFromMap } from '@/utils/yearStrip'
 import { clampPage, pageSlice } from '@/utils/paging'
 import { queryPaging } from '@/utils/queryPaging'
 import AlertBanner from '@/components/AlertBanner.vue'
@@ -424,7 +424,7 @@ export default {
     ensureSelection() {
       if (this.wide && !this.selectedId && this.households.length) this.$router.replace({ query: { ...this.$route.query, id: String(this.households[0].id) } })
     },
-    // The members and their payments behind the strips (the calls the Overview makes too). A failure only hides the strips and the notice.
+    // The members and their paid months behind the strips (GET /members and /payments/paid-months, the calls the Overview makes too). A failure only hides the strips and the notice.
     async loadMembers() {
       try {
         const members = await api.getMembers()
@@ -436,7 +436,7 @@ export default {
     },
     async loadPaidMonths() {
       try {
-        this.paidByMember = paidMonthsByMember(await api.getPayments())
+        this.paidByMember = paidMonthsFromMap(await api.getPaidMonths(12))
       } catch (error) {
         console.error('Error loading payments for the household strips:', error)
         this.paidByMember = null

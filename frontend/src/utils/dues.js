@@ -48,7 +48,7 @@ export function owedSummary(cells) {
  * current month off the year strip rule, so they need the paid months. Without them only "behind"
  * shows. A member who owes no dues has no badge.
  * @param {object} member
- * @param {Map<number, Set<string>>|null} paidByMember memberId -> paid "yyyy-MM" months (yearStrip.js paidMonthsByMember)
+ * @param {Map<number, Set<string>>|null} paidByMember memberId -> paid "yyyy-MM" months (yearStrip.js paidMonthsFromMap)
  * @param {string} currentMonth "yyyy-MM"
  * @returns {{ tone: 'danger'|'behind'|'paid', text: string }|null} tone is a StatusBadge tone
  */

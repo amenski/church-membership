@@ -4,7 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import MembersView from '@/views/MembersView.vue'
 import api from '@/services/api'
 
-vi.mock('@/services/api', () => ({ default: { getMembers: vi.fn() } }))
+vi.mock('@/services/api', () => ({ default: { getMembers: vi.fn(), getPaidMonths: vi.fn(() => Promise.resolve({})) } }))
 
 const member = (over) => ({ id: 1, name: 'Abel', email: 'abel@example.com', phone: '', joinDate: '2026-01-05', status: 'MEMBER', consecutiveMonthsMissed: 0, ...over })
 

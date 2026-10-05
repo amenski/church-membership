@@ -368,7 +368,7 @@ import { useAppStore } from '../stores/appStore'
 import { useAuthStore } from '../stores/authStore'
 import { downloadBlob, formatDate, localISODate } from '@/utils'
 import { monthsBehind } from '@/utils/dues'
-import { paidMonthsByMember, stripRangeLabel } from '@/utils/yearStrip'
+import { paidMonthsFromMap, stripRangeLabel } from '@/utils/yearStrip'
 import { STATUS_SEGMENTS, filterMembers, sortMembers, statusCounts, exportIds } from '@/utils/memberFilters'
 import { membersCsv } from '@/utils/memberCsv'
 import { clampPage, pageSlice, PAGE_SIZES } from '@/utils/paging'
@@ -629,10 +629,10 @@ export default {
         this.loaded = true
       }
     },
-    // The paid months behind the year strip: one existing call, grouped by member. A failure only hides the strips.
+    // The paid months behind the year strip: GET /payments/paid-months, grouped by member. A failure only hides the strips.
     async loadPayments() {
       try {
-        this.paidByMember = paidMonthsByMember(await api.getPayments())
+        this.paidByMember = paidMonthsFromMap(await api.getPaidMonths(12))
       } catch (error) {
         console.error('Error loading payments for the year strip:', error)
         this.paidByMember = null
