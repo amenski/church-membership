@@ -173,7 +173,7 @@
             <div class="min-w-0">
               <div :class="[NAME, 'text-xl text-muted']">{{ member.name }}</div>
               <div v-if="member.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
-              <div v-if="member.householdName" class="text-sm text-muted [overflow-wrap:anywhere]"><Icon name="home" :size="14" class="mr-1" /><span class="sr-only">Household: </span>{{ member.householdName }}</div>
+              <div v-if="member.householdName" class="flex items-center text-sm text-muted [overflow-wrap:anywhere]"><Icon name="home" :size="14" class="mr-1 shrink-0" /><span class="sr-only">Household: </span>{{ member.householdName }}</div>
               <div class="mt-1 text-sm text-muted tabular-nums">
                 Last paid {{ member.lastPaymentDate ? formatMemberDate(member.lastPaymentDate) : 'never' }} &middot; {{ archivedOn(member) }}
               </div>
@@ -261,7 +261,7 @@
             <div class="min-w-0 flex-1">
               <div :class="[NAME, 'text-xl']"><router-link :to="`/members/${member.id}`" class="inline-block py-2 -my-2">{{ member.name }}</router-link></div>
               <div v-if="member.email" class="text-sm text-muted [overflow-wrap:anywhere]">{{ member.email }}</div>
-              <div v-if="member.householdName" class="text-sm text-muted [overflow-wrap:anywhere]"><Icon name="home" :size="14" class="mr-1" /><span class="sr-only">Household: </span>{{ member.householdName }}</div>
+              <div v-if="member.householdName" class="flex items-center text-sm text-muted [overflow-wrap:anywhere]"><Icon name="home" :size="14" class="mr-1 shrink-0" /><span class="sr-only">Household: </span>{{ member.householdName }}</div>
               <div class="mt-1 flex flex-wrap items-center gap-x-4">
                 <StatusLabel :tone="statusTone(member.status)">{{ statusLabel(member.status) }}</StatusLabel>
                 <span v-if="countsForDues(member)" :class="[duesClass(member), 'text-lg']">{{ duesText(member) }}</span>
