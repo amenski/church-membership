@@ -73,7 +73,7 @@ Example: `{"memberId": 1, "amount": 50.0, "paymentMethod": "CASH", "period": "20
 
 ### Record flow
 `RecordPaymentUseCase.invoke(memberId, amount, paymentMethod, period, paymentDate, notes)` (`RecordPaymentUseCase.java`):
-0. Load the member with `memberRepository.findById`, else `MemberDomainException.memberNotFound`; an INACTIVE member is rejected with `MemberDomainException.memberInactive` (`MEMBER_008`); build the `Payment`, period defaulting to `YearMonth.now()` and payment date to today unless `paymentDate` was sent
+0. Load the member with `memberRepository.findById`, else `MemberDomainException.memberNotFound`; a member whose status does not count for dues (anything but MEMBER: INACTIVE, DECEASED, TRANSFERRED) is rejected with `MemberDomainException.memberInactive` (`MEMBER_008`); build the `Payment`, period defaulting to `YearMonth.now()` and payment date to today unless `paymentDate` was sent
 1. `validateAmount`, `validatePeriod`, `validatePaymentDate`
 2. Reject if the member already has a payment for that period (`RecordPaymentUseCase.java`)
 3. `markAsProcessed` fills `paymentDate` with today only if still missing
@@ -84,7 +84,7 @@ Example: `{"memberId": 1, "amount": 50.0, "paymentMethod": "CASH", "period": "20
 - Amount > 0 (`Payment.java`), plus bean validation min 0.01 (`Payment.java`)
 - Period: any month up to and including the current one is accepted (history can be entered); a future month is rejected (`PAYMENT_007`); a month more than 10 years back is rejected as a probable typo (`Payment.MAX_YEARS_BACK`, `PAYMENT_002`, message "too far back")
 - Payment date: not in the future (`PAYMENT_008`; also `@PastOrPresent` on the request, which gives a field error)
-- Member must be active, else `MEMBER_008` "Member '<name>' is inactive. Reactivate the member before recording a payment."
+- Member must have status MEMBER (counts for dues), else `MEMBER_008` "Member '<name>' is inactive. Reactivate the member before recording a payment."
 - One payment per member per period (`RecordPaymentUseCase.java`)
 
 ## Errors
@@ -113,5 +113,5 @@ All RFC 7807 ([../architecture.md](../architecture.md)); handler `src/main/java/
 - Searching `141` finds the payment with id 141 (R-000141) and every member whose name contains `141`; a receipt search is an exact id, never a substring of other ids.
 - Payments cannot be deleted or voided yet; a void feature would need an audit trail.
 - `ProcessMemberPaymentUseCase` (never called) was removed in `chore: remove unused use cases, the membership policy and PhoneNumber`; `RecordPaymentUseCase` is the only record path.
-- A payment for an inactive member is rejected: reactivate the member first. Reactivating resets the missed-months counter (`Member.activate`).
+- A payment for a member who does not count for dues (INACTIVE, DECEASED, TRANSFERRED) is rejected: set the status back to MEMBER first. Reactivating resets the missed-months counter (`Member.activate`).
 - The missed-months counter is raised by `Member.markMissedFor` (`Member.java`) through the monthly job in [payment-reminder-scheduler.md](payment-reminder-scheduler.md) (audit C3).

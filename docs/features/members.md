@@ -1,6 +1,6 @@
 # Members
 
-The church's member directory: browse, search, add, edit, deactivate, archive and export members. Used by volunteers (read-only), staff (edit) and admins (archive, restore, permanent delete through the API).
+The church's member directory: browse, search, add, edit, deactivate, archive and export members, with a page for each member. Used by volunteers (read-only), staff (edit) and admins (archive, restore, delete for good).
 
 ## Who can do what
 Roles from `@PreAuthorize` and route meta; hierarchy ADMIN > STAFF > VOLUNTEER > MEMBER.
@@ -16,39 +16,41 @@ Roles from `@PreAuthorize` and route meta; hierarchy ADMIN > STAFF > VOLUNTEER >
 | Mark inactive / active, change status | STAFF | "Mark inactive", "Mark active" or "Change status..." in the row menu, same `PUT` with `status` |
 | Archive a member | ADMIN | "Archive" in the row menu, `DELETE /api/members/{id}` (archives, nothing is deleted) |
 | Restore an archived member | ADMIN | `PUT /api/members/{id}` with `status` MEMBER or INACTIVE ("Restore" on an archived row) |
-| Delete a member for good | ADMIN | `DELETE /api/members/{id}/permanent`: API only, refused (409) when the member has payments or messages |
+| Delete a member for good | ADMIN | "Delete for good" on an archived row, `DELETE /api/members/{id}/permanent`: refused (409) when the member has payments or messages |
+| Open a member's page | VOLUNTEER | the name links to `/members/:id`: [member-detail-view.md](member-detail-view.md) |
+| Send a message, export, mark inactive or archive several members | STAFF (Archive: ADMIN) | tick rows, then the selection bar; see [members-view.md](members-view.md#selection-and-bulk-actions) |
 
 Role view of the screen (the buttons are hidden, not disabled, for roles that cannot use them):
-- VOLUNTEER sees the whole table, the search and the filters. There is no "Add member" or "Export CSV" button and no actions column (`MembersView.vue`).
-- STAFF also sees "Add member", "Export CSV" and a More menu on every row with "Edit", "Mark inactive" (a Member) or "Mark active" (an Inactive one) and "Change status..." (opens Edit with the Status select focused).
-- ADMIN also sees "Archive" (in clay) at the end of the row menu, "Archived" in the Status filter (it loads `GET /api/members?archived=true`) and, on an archived row, a menu with "Restore" only.
+- VOLUNTEER sees the whole table, the search and the filters. There is no "Add member" or "Export CSV" button, no checkboxes and no actions column (`MembersView.vue`).
+- STAFF also sees "Add member", "Export CSV", row checkboxes with the selection bar and a More menu on every row with "Edit", "Mark inactive" (a Member) or "Mark active" (an Inactive one) and "Change status..." (opens Edit with the Status select focused).
+- ADMIN also sees "Archive" (in clay) at the end of the row menu and in the selection bar, the "Archived" segment of the status control (it loads `GET /api/members?archived=true`) and, on an archived row, "Restore" and "Delete for good".
 - The server enforces the same roles; a 403 shows the shared "Access denied" toast and nothing else changes.
 
 ## How it works
 ### Browse members
-1. The screen loads the full member list once on open and again after every save, archive or toggle (`MembersView.vue`).
-2. From `md` up a ruled table shows Name (with the email beneath), Phone, Joined, Status and Dues (`MembersView.vue`); below `md` the same rows are a stacked list (`MembersView.vue`).
+1. The screen loads the full member list once on open and again after every save, archive or toggle (`MembersView.vue`). It shows 25 rows a page; page and size are in the URL (`?page=2&size=50`).
+2. From `lg` up a table in a card shows (STAFF+: a checkbox), Member (the name, which links to the member page, with the email beneath), Household, Status, the year strip, Dues, Last paid and Phone; below `lg` the same rows are stacked cards (`MembersView.vue`).
 3. Status is a dot plus a word from `status`: "Member" in fern, "Inactive" in clay, "Deceased", "Transferred" and "Archived" muted (`utils/memberStatus.js`).
 4. Dues apply to members with status MEMBER only (`countsForDues`, the one rule for every screen). A Member shows "Paid up" or "N months behind" ("1 month behind"). Every other status shows a muted dash (screen readers hear "Not tracked while inactive", "while deceased" and so on): the server stops counting months for them, so the stored number is stale (`MembersView.vue`).
 5. On a load failure a banner says "The member list did not load. Check your connection and try again." with a "Try again" button (`MembersView.vue`). With no members: "No members yet. Add the first member." and an "Add member" button for STAFF and above.
 
 ### Search and filter
 1. Type in the search box: matches name, email or phone, case-insensitive. A term with 3+ digits also matches phone numbers ignoring spaces and dashes (`frontend/src/utils/memberFilters.js`).
-2. Pick Status (All members / Member / Inactive / Deceased / Transferred, plus Archived for ADMIN) and Dues (All / Paid up / Behind). "All members" is everyone listed (not archived); the others are exactly that status. "Behind" means a Member with `consecutiveMonthsMissed > 0`; "Paid up" means a Member and 0. The Dues filter applies to Members only: any other status matches neither, only "All" (`memberFilters.js`).
-3. Set "Joined from" / "Joined to" (inclusive dates; members with no join date drop out once either is set) (`memberFilters.js`). Below `md` the two dates sit behind a "More filters" button.
+2. Pick a Status segment (All, Member, Inactive, Transferred, Deceased, plus Archived for ADMIN; each shows its count) and Dues (All / Paid up / Behind). "All" is everyone listed (not archived); the others are exactly that status. "Behind" means a Member with `consecutiveMonthsMissed > 0`; "Paid up" means a Member and 0. The Dues filter applies to Members only: any other status matches neither, only "All" (`memberFilters.js`).
+3. Set "Joined from" / "Joined to" (inclusive dates; members with no join date drop out once either is set) (`memberFilters.js`). They sit behind a "More filters" popover from `lg` and behind the "Filters" button below it.
 4. All filters combine with AND. "Clear filters" appears when any is set; when nothing matches the screen says "No members match these filters." with a "Clear filters" button (`MembersView.vue`).
-- Filtering happens in the browser on the loaded list, by design ([../architecture.md](../architecture.md), revisit above ~2,000 members). Filters are not remembered between visits.
+- Filtering happens in the browser on the loaded list, by design ([../architecture.md](../architecture.md), revisit above ~2,000 members). Filters are not remembered between visits; only the page, the page size and the Dues filter (`?dues=behind|paid|all`, the Overview's "See all" link) ride in the URL.
 
 ### Sort columns
-1. From `md` up, click the Name, Joined or Dues header (`MembersView.vue`). Headers are buttons with `aria-sort`.
+1. From `lg` up, click the Member or Dues header (`MembersView.vue`). Headers are buttons with `aria-sort`. The "Sort by" select (Name, Most behind, Joined) works on every width and shares the same sort.
 2. First click sorts ascending, a second click on the same header flips it (`MembersView.vue`). Empty values always sort last, and so do members who are not MEMBER when sorting by Dues (`memberFilters.js`).
-- There is no sort control below `md`.
+- Below `lg` there are no headers; the "Sort by" select is the only control.
 
 ### Add a member
 1. Click "Add member" and fill the name (required), optionally email and phone, and "Joined on" (default today, not in the future); a Status select offers only Member (default) and Inactive, as the server enforces (`MembersView.vue`).
 2. "Add member" in the dialog sends `{name, email?, phone?, joinDate?, status}` to `POST /api/members` (`MembersView.vue`, `frontend/src/utils/memberPayload.js`). The name is checked on the screen first, and the email only when filled (format).
 3. The server creates the member with the status MEMBER (or INACTIVE when the request asks for it with `status`) and the counters at zero; it uses the join date sent, or today (`src/main/java/io/github/membertracker/usecase/SaveMemberUseCase.java`). The screen sends `status`. DECEASED, TRANSFERRED and ARCHIVED are refused on create (400, field error on `status`).
-4. Success: the dialog closes, the row appears and a toast "Member added" names the member. The email may be left empty, and two members may share one address: there is no duplicate check. A child added without an email counts as a member who owes dues unless they are added as Inactive: the dialog's hint says "choose Inactive".
+4. Success: the dialog closes, the row appears and a toast "Member added" names the member. The email may be left empty, and two members may share one address: there is no duplicate check. A child added without an email counts as a member who owes dues unless they are added as Inactive: the dialog's hint says "choose Inactive". Someone who pays no dues at all can be a person without a membership instead: [people.md](people.md).
 5. Other failures (validation, 403): field errors from the server show under their fields; anything else shows in a banner at the top of the dialog plus an error toast "Could not save member" (no toast for 403); the dialog stays open (`MembersView.vue`).
 
 ### Edit a member
@@ -73,8 +75,8 @@ Choose "Archived" in the Status filter, open the row menu and choose "Restore": 
 4. Success: a toast "Member archived". Failure (403 for a non-admin): a banner in the dialog and the toast "Could not archive member" (not for 403), and the member stays.
 5. The activity log records MEMBER_ARCHIVED ("Member X was archived").
 
-### Delete for good (API only)
-`DELETE /api/members/{id}/permanent` (ADMIN) removes the row only when the member has no payment and no message delivery (a record made by mistake); otherwise it answers 409 `MEMBER_010` and nothing changes. The database enforces the same rule: migration `011` made the payment and delivery foreign keys `ON DELETE RESTRICT`, so even a raw `DELETE FROM member` fails (MySQL error 1451) while history exists. The activity log records MEMBER_DELETED. There is no button for it yet.
+### Delete for good (ADMIN, Archived view)
+`DELETE /api/members/{id}/permanent` (ADMIN) removes the row only when the member has no payment and no message delivery (a record made by mistake); otherwise it answers 409 `MEMBER_010` and nothing changes. The database enforces the same rule: migration `011` made the payment and delivery foreign keys `ON DELETE RESTRICT`, so even a raw `DELETE FROM member` fails (MySQL error 1451) while history exists. The activity log records MEMBER_DELETED. The screen has a "Delete for good" button on archived rows (ADMIN); it is disabled for a member whose last 12 months already show a payment, and the server's 409 decides the rest.
 
 ### Export to CSV
 1. Click "Export CSV" (STAFF+). If the filters leave zero rows, a "Nothing to export" toast shows and no request is made (`MembersView.vue`).
@@ -113,9 +115,9 @@ Changing `status` through `PUT`: see [member-controller.md](member-controller.md
 
 - An ARCHIVED member is visible to ADMIN only on every read path (by id, id-based export, payments of the member, send to one member; embedded in payments and deliveries, email and phone are blanked for others): see [../authentication.md](../authentication.md).
 - Reads go by status: `findAll` (the list, the full export, the "inactive" list and the Overview total) leaves out ARCHIVED, "dues paying" is status MEMBER, and `findByConsecutiveMonthsMissedGreaterThanEqual` returns MEMBER-status members only.
-- Request shape `MemberRequest` (`src/main/java/io/github/membertracker/infrastructure/dto/MemberRequest.java`): name required (max 100), email optional (trimmed, blank becomes null) and well-formed when present (max 100), phone optional (blank becomes null) but if present must match `^\+?[0-9\s\-\(\)]{10,}$`, join date optional and not in the future, `active` optional. Failures return 400 with a field list. `id`, counters, last payment date and the monthly-job marker are not part of it and are ignored if sent.
+- Request shape `MemberRequest` (`src/main/java/io/github/membertracker/infrastructure/dto/MemberRequest.java`): name required (max 100), email optional (trimmed, blank becomes null) and well-formed when present (max 100), phone optional (blank becomes null) but if present must match `^\+?[0-9\s\-\(\)]{10,}$`, join date optional and not in the future, `status` optional, `householdId` optional. Failures return 400 with a field list. `id`, counters, last payment date and the monthly-job marker are not part of it and are ignored if sent.
 - Email is optional and not unique. Migration `009.make-member-email-optional.sql` dropped the unique index, made the column nullable and added a plain lookup index `idx_member_email_lookup`. Messages and reminders reach only members with an email, and members sharing an address get one message between them (the one with the lowest id; the others have no delivery row for that message): see [communications.md](communications.md). The activity log never records an email.
-- A child added without an email counts as a member until the status step of the [person/membership plan](../archive/person-membership-plan.md): they appear behind on dues unless marked inactive.
+- A child added without an email is a member like any other: they count for dues and appear behind unless marked inactive. A dependent who pays no dues is a person without a membership ([people.md](people.md)).
 - New members: join date defaults to today, status MEMBER unless INACTIVE is asked for, counters zero (`SaveMemberUseCase.java`).
 - Export ids: not empty, at most 5000, each positive (`src/main/java/io/github/membertracker/infrastructure/dto/ExportMembersRequest.java`); unknown ids are skipped. The selected export drops archived members for everyone but an ADMIN; the full export leaves them out for all.
 - `consecutiveMonthsMissed`, `lastPaymentDate` and `lastMissedCountMonth` are system-managed (never client-settable since audit C8):
@@ -125,8 +127,8 @@ Changing `status` through `PUT`: see [member-controller.md](member-controller.md
 - Automatic deactivation: there is none. A membership policy (`shouldDeactivate`: 3 or more missed months) once existed but was only reachable through an unused use case; both were removed in `chore: remove unused use cases, the membership policy and PhoneNumber` and can be recovered from git history. Decide whether to build it for real.
 
 ## Known issues
-- A member without an email counts for dues until the status step ships (see Rules). A single-member message to one without an email is refused with a 400 (audit C10 is closed by migration 009).
-- Automatic deactivation never ran: the pre-due reminder window and automatic deactivation never ran; the code was removed in `chore: remove unused use cases, the membership policy and PhoneNumber` and can be recovered from git history; decide whether to build them for real.
+- A member without an email counts for dues (mark them inactive, or keep a dependent as a person without a membership). A single-member message to one without an email is refused with a 400.
+- The pre-due reminder window and automatic deactivation do not exist; the code was removed in `chore: remove unused use cases, the membership policy and PhoneNumber` and can be recovered from git history. Whether to build them is open in [../todo.md](../todo.md).
 - Load errors are only logged to the console and shown as the banner; there is no retry other than the "Try again" button.
 - A filter that matches every member exports through the full-list endpoint but the file is still named `members_filtered_...` (`MembersView.vue`).
 - After archiving a row from its menu, focus has nowhere to return (the trigger is gone) and falls to the page.

@@ -23,6 +23,7 @@ Larger roadmap items that nobody has started (import, user management, password 
 - [ ] A signed-out load makes one 401 and one 400 probe. Kept on purpose: it is how an expired access cookie with a valid refresh cookie signs the user back in.
 - [ ] A durable send queue and an automatic later retry of FAILED deliveries (`SendCommunicationToAllMembersUseCase` and `SendCommunicationToMembersUseCase` each use a cached thread pool, so unsent mail is lost on a restart; only the manual Retry exists)
 - [ ] The Activity "Show more" stops at 200 entries (`@Max(200)` on `GET /api/activity-log`, `MAX_LIMIT` in `ActivityView.vue`); older entries cannot be reached
+- [ ] Export selected from the Members selection bar is built in the browser (`membersCsv`) and makes no request, so it writes no "Exported N members" entry to the activity log (the Export CSV button does)
 - [ ] Send message from the Members selection bar links to `/communications` without the selected members; Messages reads no member parameter, so the recipients are chosen again
 - [ ] The Payments phone list cannot change its sort: the sortable headers exist from `md` only, and a phone keeps whatever sort is in the URL
 - [ ] The Overview ledger "See all" link opens `/members?dues=behind`, which lists members who are behind; the ledger count also includes members who are only due this month, so the list can be shorter than the count

@@ -26,8 +26,8 @@ CSV: a plain response built in memory (`byte[]`), `Content-Type: text/csv; chars
 ## Collaborators
 | Dependency | Used by | Ref |
 |------------|---------|-----|
-| `GetAllMembersUseCase` -> `findAll()` (everyone but ARCHIVED) | list, full export |
-| `GetArchivedMembersUseCase` -> `findByStatus(ARCHIVED)` | list with `?archived=true` (ADMIN) | `usecase/GetAllMembersUseCase.java` |
+| `GetAllMembersUseCase` -> `findAll()` (everyone but ARCHIVED) | list, full export | `usecase/GetAllMembersUseCase.java` |
+| `GetArchivedMembersUseCase` -> `findByStatus(ARCHIVED)` | list with `?archived=true` (ADMIN) | `usecase/GetArchivedMembersUseCase.java` |
 | `GetMemberByIdUseCase` -> `findById` (finds archived members too) | read, the existence check in DELETE, and the selected export | `usecase/GetMemberByIdUseCase.java` |
 | `GetActiveMembersUseCase` -> `findDuesPaying()` | `/active` | `usecase/GetActiveMembersUseCase.java` |
 | `GetInactiveMembersUseCase` -> `findAll()` filtered to statuses that do not count for dues | `/inactive` | `usecase/GetInactiveMembersUseCase.java` |
@@ -71,7 +71,7 @@ All are RFC 7807 `ProblemDetail` ([../architecture.md](../architecture.md)), exc
 
 ## Gotchas
 - Audit C9 is closed: no endpoint erases payments or deliveries any more. A PUT on an archived member by STAFF is a 404 (only an ADMIN can see or restore one); restoring to MEMBER resets the missed-months counter, to INACTIVE keeps it frozen.
-- Email is optional and not unique since migration `009` (audit C10): two members can share an address and a member can have none. Rolling migration 009 back fails while any row has a NULL or a duplicate email, on purpose. A child added without an email counts as a member until the status step of the [person/membership plan](../archive/person-membership-plan.md): they appear behind on dues unless marked inactive.
+- Email is optional and not unique since migration `009` (audit C10): two members can share an address and a member can have none. Rolling migration 009 back fails while any row has a NULL or a duplicate email, on purpose. A child added here without an email is a member like any other: they count for dues and appear behind unless marked inactive. A dependent who pays no dues belongs in [people.md](people.md) instead (a person without a membership).
 - 404 responses are empty bodies, not `ProblemDetail` (`MemberController.java`).
 - `active` no longer exists: not in the JSON, not in `MemberRequest`, not in the CSV, not in the database (migration `014`). Reactivating is `status: MEMBER` and resets the missed-months counter.
 - There is no email lookup any more (`findByEmailIgnoreCase`/`existsByEmailIgnoreCase` were removed with the duplicate check); the `member.email` column and its `idx_member_email_lookup` index were dropped by migration `014` (email lives on `person`, which keeps `idx_person_email`).

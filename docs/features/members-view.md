@@ -131,7 +131,7 @@ STAFF+ only, normal list only (the Archived view has no checkboxes). `canSelect`
 - `api.getMembers`, `createMember`, `updateMember`, `deleteMember`, `exportMembers`: `frontend/src/services/api.js`. Backend: [member-controller.md](member-controller.md).
 - `useAppStore().addNotification` for toasts; `useAuthStore` for role gates.
 - `ActionMenu`, `BaseModal`, `PageHead`, `StatusLabel`, ... in `frontend/src/components/` (see [../design.md](../design.md)).
-- `formatDate`, `localISODate`, `downloadBlob`, `isValidEmail`: `frontend/src/utils/index.js`; `monthsBehind`: `frontend/src/utils/dashboardMeter.js`.
+- `formatDate`, `localISODate`, `downloadBlob`, `isValidEmail`: `frontend/src/utils/index.js`; `monthsBehind`: `frontend/src/utils/dues.js`.
 - `memberStore` (an unused, non-working store) was removed in `chore(ui): remove dead frontend code`.
 
 ## Errors
