@@ -1,6 +1,7 @@
 <template>
-  <div>
-    <PageHead title="Households" lead="Families and shared addresses, and who lives in each.">
+  <!-- From lg the header is a full-width band, so the page's own padding (App.vue) is dropped here and the content area below carries it -->
+  <div class="lg:max-w-none! lg:p-0!">
+    <PageHead title="Households" lead="Families and shared addresses, and who lives in each." band>
       <template v-if="authStore.isStaff" #actions>
         <BaseButton @click="showAddModal">
           <Icon name="plus" :size="16" class="mr-1.5" />Add household
@@ -8,6 +9,7 @@
       </template>
     </PageHead>
 
+    <div class="lg:mx-auto lg:max-w-[1400px] lg:px-8 lg:pt-6 lg:pb-10">
     <AlertBanner v-if="loadError">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <span>The household list did not load. Check your connection and try again.</span>
@@ -207,6 +209,7 @@
       :busy="personDeleting"
       @confirm="deletePerson"
     />
+    </div>
   </div>
 </template>
 
