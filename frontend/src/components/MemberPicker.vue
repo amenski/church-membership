@@ -68,7 +68,7 @@
               'flex min-h-11 cursor-pointer items-center justify-between gap-3 border-b border-rule px-3 py-1.5 last:border-b-0 lg:min-h-9',
               index === activeIndex && 'bg-teal-tint'
             ]"
-            @mouseenter="activeIndex = index"
+            @mousemove="activeIndex = index"
             @click="choose(member)"
           >
             <span class="min-w-0">
@@ -89,6 +89,7 @@
 import Icon from '@/components/Icon.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { duesBadge } from '@/utils/dues'
+import { nextIndex } from '@/utils/listNavigation'
 import { searchMembers } from '@/utils/memberSearch'
 
 const MAX_SHOWN = 8
@@ -116,7 +117,7 @@ export default {
   },
   emits: ['update:modelValue'],
   data() {
-    return { query: '', open: false, activeIndex: 0, position: {}, host: 'body', listId: `member-picker-list-${nextId++}` }
+    return { query: '', open: false, activeIndex: -1, position: {}, host: 'body', listId: `member-picker-list-${nextId++}` }
   },
   computed: {
     selected() {
@@ -138,7 +139,7 @@ export default {
     announcement() {
       if (!this.open) return ''
       const n = this.results.length
-      return n ? `${n} ${n === 1 ? 'result' : 'results'}` : `No member matches '${this.query.trim()}'`
+      return n ? `${n} ${n === 1 ? 'result' : 'results'}; use arrow keys` : `No member matches '${this.query.trim()}'`
     }
   },
   watch: {
@@ -163,8 +164,9 @@ export default {
     badge(member) {
       return duesBadge(member, this.paidByMember, this.currentMonth)
     },
-    show(index = 0) {
-      this.activeIndex = Math.max(0, Math.min(index, this.shown.length - 1))
+    // opens the list (or keeps it open) with nothing highlighted
+    show() {
+      this.activeIndex = -1
       if (this.open) return
       this.host = this.$refs.input?.closest('[role="dialog"]') || 'body'
       this.open = true
@@ -178,10 +180,10 @@ export default {
     },
     onInput(event) {
       this.query = event.target.value
-      this.show(0)
+      this.show()
     },
     onClick() {
-      if (!this.selected && !this.disabled) this.show(0)
+      if (!this.selected && !this.disabled) this.show()
     },
     onKeydown(event) {
       if (this.disabled || event.isComposing) return
@@ -195,28 +197,26 @@ export default {
       }
       switch (event.key) {
         case 'ArrowDown':
-          event.preventDefault()
-          if (this.open) this.move(1)
-          else this.show(0)
-          break
         case 'ArrowUp':
           event.preventDefault()
-          if (this.open) this.move(-1)
-          else this.show(this.shown.length - 1)
+          if (!this.open) this.show()
+          this.move(event.key)
           break
         case 'Home':
         case 'End':
           if (!this.open) break
           event.preventDefault()
-          this.activeIndex = event.key === 'Home' ? 0 : Math.max(0, this.shown.length - 1)
-          this.scrollToActive()
+          this.move(event.key)
           break
-        case 'Enter':
-          // with the list open Enter picks; without it Enter still submits the surrounding form
+        case 'Enter': {
+          // with the list open Enter never submits the form: it picks the highlighted row, or the one
+          // result there is, and with several results and no highlight it does nothing
           if (!this.open) break
           event.preventDefault()
-          if (this.shown[this.activeIndex]) this.choose(this.shown[this.activeIndex])
+          const member = this.shown[this.activeIndex] || (this.shown.length === 1 ? this.shown[0] : null)
+          if (member) this.choose(member)
           break
+        }
         case 'Escape':
           // closes the list only; with it already closed Escape reaches the dialog
           if (!this.open) break
@@ -229,10 +229,8 @@ export default {
           break
       }
     },
-    move(step) {
-      const n = this.shown.length
-      if (!n) return
-      this.activeIndex = (this.activeIndex + step + n) % n
+    move(key) {
+      this.activeIndex = nextIndex(this.activeIndex, key, this.shown.length)
       this.scrollToActive()
     },
     scrollToActive() {
@@ -248,7 +246,7 @@ export default {
       this.$emit('update:modelValue', '')
       await this.$nextTick()
       this.$refs.input?.focus()
-      this.show(0)
+      this.show()
     },
     // Fixed position from the input's box: not clipped by the dialog body, as wide as the field,
     // flipped above it when there is more room there, kept inside what the keyboard leaves visible
