@@ -47,6 +47,10 @@ frontend/package-lock.json
 frontend/dist/
 frontend/build/
 
+### Local Docker (docker-compose.yml) ###
+.env
+/data/
+
 ### OS ###
 .DS_Store
 Thumbs.db

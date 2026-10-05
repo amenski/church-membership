@@ -1,0 +1,37 @@
+# MySQL for local development and for checking Liquibase against a real database.
+#
+# Start:  docker compose up -d
+# The defaults match the `dev` profile (user root, password `password`, database
+# felege_selam), so `./gradlew bootRun` connects without any change.
+#
+# Where the data lives: in ${MYSQL_DATA_DIR} on this machine (default ./data/mysql, next to
+# this file; git ignores it). It is a bind mount, so the data stays when the container is
+# removed (`docker compose down`). Only deleting that folder removes the data.
+#
+# Back up: `docker exec membertracker-mysql mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" felege_selam > backup.sql`
+# (use the password from .env, or `password` when there is no .env). Copying the folder
+# is safe only while the container is stopped. See docs/development.md.
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: membertracker-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-felege_selam}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+00:00
+    ports:
+      - "127.0.0.1:${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - ${MYSQL_DATA_DIR:-./data/mysql}:/var/lib/mysql
+    healthcheck:
+      # 127.0.0.1 (TCP), because the temporary server that runs during first-time setup
+      # has networking off; this passes only once the real server is up.
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
