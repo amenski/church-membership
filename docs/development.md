@@ -69,7 +69,7 @@ The raw spec is at `/v3/api-docs`. Swagger and the spec are off in every other p
 ### Frontend notes
 
 - Styling is Tailwind CSS v4 only (`frontend/src/assets/styles/tailwind.css`); there is no Bootstrap. The build and dev commands are unchanged (`npm run dev`, `npm run build`, `npm test`).
-- Fonts (`@fontsource/inter`, `@fontsource/noto-sans-ethiopic`) are npm packages bundled by Vite, so the app loads nothing from a CDN or any third-party host. Icons are inline SVG in `frontend/src/components/Icon.vue`; there is no icon font. Tokens, density and the component list are in [design.md](design.md).
+- Fonts (`@fontsource/ibm-plex-sans`, `@fontsource/noto-sans-ethiopic`) are npm packages bundled by Vite, so the app loads nothing from a CDN or any third-party host. Icons are inline SVG in `frontend/src/components/Icon.vue`; there is no icon font. Tokens, density and the component list are in [design.md](design.md).
 
 ### Frontend environment variables
 

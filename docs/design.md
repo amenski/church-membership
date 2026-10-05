@@ -2,7 +2,7 @@
 
 Subject: Felege Selam Church (ፈለገ ሰላም, Amharic for "stream of peace"). The app is an internal
 admin dashboard: the treasurer and volunteers open it weekly after services to see who needs a
-call, record payments and reach members; a signed-in member sees only their own profile.
+call, record payments and reach members; a signed-in member sees only their own dues and profile.
 
 Code: `frontend/src/assets/styles/tailwind.css` (the only stylesheet: tokens and base rules),
 the components in `frontend/src/components/`, and the shared class strings in
@@ -83,7 +83,7 @@ Utilities read them with `h-(--control-h)`, `min-h-(--row-h)`, `p-(--card-pad)`,
 | `--text-body` / `--lh-body` | 14px / 20px | 16px / 24px |
 | `--text-label` / `--lh-label` | 12px / 16px | 13px / 18px |
 
-- **Dense:** every staff screen. **Comfortable:** sign-in, and a MEMBER's own profile.
+- **Dense:** every staff screen. **Comfortable:** sign-in, and a MEMBER's own screens (My dues and Profile).
 - `App.vue` sets `data-density` on the shell root: `comfortable` when signed out or when the role
   is MEMBER, otherwise `dense`.
 - `BaseButton` consumes the density height: `primary` and `danger` hold `--control-primary-h`,
@@ -141,7 +141,7 @@ Utilities read them with `h-(--control-h)`, `min-h-(--row-h)`, `p-(--card-pad)`,
 
 `PageHead`, `SectionTitle`, `BaseButton`, `BaseInput`, `BaseSelect`, `BaseTextarea`, `BaseModal`,
 `ConfirmDialog`, `ActionMenu`, `AlertBanner`, `EmptyNote`, `StatusLabel`, `StatusBadge`, `YearStrip`, `TextButton`, `StatTile`, `CollectedChart`,
-`Pager`, `SortButton`, `Icon`, `RuledList`/`RuledRow`, `BrandMark`, `RailLink`, `ToastHost`.
+`Pager`, `SortButton`, `MemberPicker`, `ReceiptDialog`, `MemberFormDialog`, `MemberArchiveDialog`, `BottomTabs`, `Icon`, `RuledList`/`RuledRow`, `BrandMark`, `RailLink`, `ToastHost`.
 
 - `Icon` holds the whole icon set as inline SVG path data — no icon font, and only the glyphs named
   reach the bundle.

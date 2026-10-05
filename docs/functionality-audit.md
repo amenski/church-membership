@@ -115,7 +115,7 @@ Each of these was confirmed by reading the source on this branch. None was confi
 **C1. Every operational screen returns 403**
 The role rename left `hasRole('USER')` on 16 endpoints (6 in Payment, 6 in Communication, 4 in Dashboard). There is no `RoleHierarchy` bean, so Admin and Staff fail `hasRole('VOLUNTEER')` on member reads. Seed data and the `users.role` column default still write `USER`, which `UserRole.fromCode` rejects.
 `PaymentController.java` · `SecurityConfig.java` · `001.schema-creation.sql` · `002.sample-data.sql`
-> **Status (3 Oct 2026):** fixed in `3cf5d84` (role hierarchy, mapped roles, migration 004, `RoleAuthorizationTest` — 125 passing). Frontend routes now set `requiresRole`.
+> **Status (3 Oct 2026):** fixed in `3cf5d84` (role hierarchy, mapped roles, migration 004, `RoleAuthorizationTest`). Frontend routes now set `requiresRole`.
 
 **C2. Recording a payment overwrites the member**
 The payment request body carries a full `member` object, and the use case saves that object as the member. A client can rename, reactivate or blank a member while recording a gift.

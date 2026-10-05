@@ -14,11 +14,11 @@ cd frontend && npm install && npm run dev   # frontend on http://localhost:3000
 
 `docker-compose.yml` runs only the database, with the dev profile's credentials; copy `.env.example` to `.env` to change them. Without Docker, any MySQL 8 with a `felege_selam` database works.
 
-Full setup, build and deployment steps are in [docs/development.md](docs/development.md).
+Self-registration is disabled and the seeded password hashes do not match their comments, so create a login first: [docs/development.md](docs/development.md#create-a-login). Full setup, build and deployment steps are in the same file.
 
 ## Documentation
 
-**Guides** (kept current with the code)
+**Guides** (checked against the code on 5 October 2026)
 
 | Doc | Read it when… |
 |-----|---------------|
@@ -41,7 +41,7 @@ Overviews explain a feature to people (who can do what, how it works, rules, kno
 | Members | [members](docs/features/members.md) | [member-controller](docs/features/member-controller.md) | [members-view](docs/features/members-view.md) |
 | Member detail page | [member-detail-view](docs/features/member-detail-view.md) | same page | same page |
 | Households | [households](docs/features/households.md) | same page | same page (Screen) |
-| People (members and dependents) | [people](docs/features/people.md) | same page | none yet (step 11 pending) |
+| People (members and dependents) | [people](docs/features/people.md) | same page | the people list on the household detail ([households](docs/features/households.md)) |
 | Payments | [payments](docs/features/payments.md) | [payment-controller](docs/features/payment-controller.md) | [payments-view](docs/features/payments-view.md) |
 | Communications | [communications](docs/features/communications.md) | [communication-controller](docs/features/communication-controller.md) | [communications-view](docs/features/communications-view.md) |
 | Activity log | [activity](docs/features/activity.md) | [activity-log-controller](docs/features/activity-log-controller.md) | [activity-view](docs/features/activity-view.md) |
@@ -52,5 +52,15 @@ Overviews explain a feature to people (who can do what, how it works, rules, kno
 
 | Doc | What it is |
 |-----|------------|
-| [docs/todo.md](docs/todo.md) | Live backlog |
-| [docs/functionality-audit.md](docs/functionality-audit.md) | Audit from 3 October 2026: maturity scores, critical defects (C1–C10), roadmap |
+| [docs/todo.md](docs/todo.md) | The open work: decisions to make, small leftovers, items the owner deferred |
+| [docs/functionality-audit.md](docs/functionality-audit.md) | Audit of 3 October 2026 (maturity scores, defects C1 to C10, roadmap) with a status table that says what is fixed |
+
+**Archive** (finished plans, kept for history in [docs/archive/](docs/archive/))
+
+| Doc | What it was |
+|-----|-------------|
+| [docs/archive/person-membership-plan.md](docs/archive/person-membership-plan.md) | The 12-step plan for people, households and membership status (done, migrations 009 to 014) |
+| [docs/archive/design-todo.md](docs/archive/design-todo.md) | The plan for the design mockup of every page (done) |
+| [docs/archive/design-gaps.md](docs/archive/design-gaps.md) | The gap list between the app and the mockup (done) |
+| [docs/archive/role-auth-checkpoints.md](docs/archive/role-auth-checkpoints.md) | Progress tracker for the role-based authorization work (done) |
+| [docs/archive/validation-plan.md](docs/archive/validation-plan.md) | The plan for request validation and the global exception handler (done) |

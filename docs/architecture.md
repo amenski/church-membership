@@ -1,6 +1,6 @@
 # Architecture
 
-*Last checked against the code: 3 October 2026.*
+*Last checked against the code: 5 October 2026.*
 
 How the code is organised, where new logic belongs, and the design decisions made so far.
 
@@ -17,27 +17,27 @@ Clean architecture: dependencies point inwards, and the domain layer depends on 
 ```
 src/main/java/io/github/membertracker/
 ├── domain/
-│   ├── model/          Member, Household, Payment, User, Communication, MessageDelivery, ActivityLogEntry
-│   ├── valueobject/    Email
-│   ├── enumeration/    PaymentMethod, UserRole, CommunicationType, ActivityType, MemberStatus
-│   ├── exception/      DomainException + Member/Payment/User subclasses
+│   ├── model/          Member, Person, Household, Payment, User, Communication, MessageDelivery, ActivityLogEntry, and read models such as PaymentSummary and PageResult
+│   ├── valueobject/    Email, MonthLabel
+│   ├── enumeration/    PaymentMethod, PaymentSortField, UserRole, CommunicationType, ActivityType, MemberStatus
+│   ├── exception/      DomainException + Communication/Household/Member/Payment/Person/User subclasses
 │   ├── repository/     Repository interfaces (incl. ActivityLogRepository)
 │   └── service/        Ports: CurrentActor (who is acting, implemented in infrastructure/security)
-├── usecase/            One class per operation (31), e.g. RecordPaymentUseCase; RecordActivityUseCase writes the audit trail
+├── usecase/            One class per operation, e.g. RecordPaymentUseCase; RecordActivityUseCase writes the audit trail
 ├── infrastructure/
 │   ├── *Controller     REST controllers (incl. ActivityLogController)
 │   ├── config/         SecurityConfig, WebMvcConfig, properties classes
 │   ├── dto/            Request and response DTOs
-│   ├── filter/         JwtAuthenticationFilter
+│   ├── filter/         JwtAuthenticationFilter, CsrfCookieFilter
 │   ├── handler/        GlobalExceptionHandler
 │   ├── persistence/    JPA entities, repository implementations, and mapper/ (MemberPersistenceMapper: the one place a member entity and a Member are converted)
-│   ├── security/       LoginAttemptLimiter, SecurityContextCurrentActor
+│   ├── security/       LoginAttemptLimiter, SecurityContextCurrentActor, ArchivedVisibility
 │   └── service/        EmailService
 ├── scheduler/          PaymentReminderScheduler (monthly, enabled by SchedulingConfig)
-└── utils/              CookieUtils, JwtUtils
+└── utils/              CookieUtils, JwtUtils, CsvUtils, MessageTemplates
 ```
 
-Database migrations: `src/main/resources/db/master.xml` and `db/sql/NNN.*.sql`. Migration 012 creates the empty `person` and `household` tables (step 7 of the [person plan](archive/person-membership-plan.md)); migration 013 backfills one `person` per member (same id) and adds `member.person_id` (NOT NULL, unique, FK RESTRICT).
+Database migrations: `src/main/resources/db/master.xml` (it includes the whole `db/sql` folder) and `db/sql/NNN.*.sql`, 001 to 014. Migration 012 creates the `person` and `household` tables (step 7 of the [person plan](archive/person-membership-plan.md)); 013 backfills one `person` per member (same id) and adds `member.person_id` (NOT NULL, unique, FK RESTRICT); 014 drops the legacy `name`, `email`, `phone` and `active` columns of `member`.
 
 ## Where logic belongs
 
@@ -80,7 +80,7 @@ public Payment invoke(Long memberId, Double amount, PaymentMethod paymentMethod,
 - **Use cases:** integration tests covering the whole workflow.
 - **Controllers:** MockMvc tests for every role against every endpoint group (`RoleAuthorizationTest`, every role against every endpoint group).
 
-Current coverage: `RoleAuthorizationTest` and `ApplicationTests`. `ApplicationTests` is disabled.
+Backend: 748 tests, 1 skipped (`ApplicationTests`, disabled), and frontend: 326 tests, as of the last full run on 5 October 2026 (`./gradlew test`, `npm test` in `frontend/`). `RoleAuthorizationTest` covers every role against every endpoint group.
 
 ## Validation and errors
 
@@ -96,11 +96,12 @@ Current coverage: `RoleAuthorizationTest` and `ApplicationTests`. `ApplicationTe
 ```
 frontend/src/
 ├── views/        One component per page
+├── components/   Shared components (Pager, MemberPicker, YearStrip, dialogs, …)
 ├── stores/       Pinia stores: auth, app (notifications)
 ├── services/     api.js — the only Axios instance
 ├── router/       Routes and auth guards
 ├── ui/           classes.js — the class strings the views share
-├── utils/        Generic helpers (formatDate, formatMoney, …)
+├── utils/        Helpers (formatDate, formatMoney, paging, member filters, …)
 └── i18n.js       Translations (one locale so far)
 ```
 
@@ -125,8 +126,8 @@ frontend/src/
 | 2026-10 | Reminders go only to members who are already behind; there is no pre-due window | The old pre-due policy code was removed, so nothing sends before a due date. Whether to bring a window back is open in [todo.md](todo.md) | In use |
 | 2026-10 | OpenAPI/Swagger UI only under the dev profile | Public endpoint list helps attackers; devs still get docs | In use |
 | 2026-10 | All API errors are RFC 7807 ProblemDetail; no rejected values echoed | One format for the frontend; no input reflected back | In use |
-| 2026-10 | Member search, sort and filters stay in the browser | Under ~1,000 members the full list is ~200 kB; a paged API adds complexity for no visible gain | In use. Revisit above ~2,000 members |
-| 2026-10 | Payments gain `GET /api/payments/page` (search, method, sort, paging) and `GET /api/payments/paid-months`; the plain `GET /api/payments` list is kept for exports and the screens that need every payment | Payments grow every month and are the largest list; screens that only draw a table or a year strip should not download all of them | In use: Payments pages on the server, and the year strips (Members, Overview, Messages, Households) and the member picker read `/paid-months`; no screen downloads every payment any more (only the CSV export reads them all). `GET /api/payments/summary` gives the Payments figures. Members stay unpaged |
+| 2026-10 | Member search, sort and filters stay in the browser | Under ~1,000 members the full list is ~200 kB; a paged API adds complexity for no visible gain | In use. Revisit above ~2,000 members (Members, Households and Messages page in the browser) |
+| 2026-10 | Payments gain `GET /api/payments/page` (search, method, sort, paging) and `GET /api/payments/paid-months`; the plain `GET /api/payments` list is kept for exports and the screens that need every payment | Payments grow every month and are the largest list; screens that only draw a table or a year strip should not download all of them | In use: Payments pages on the server, and the year strips (Members, Overview, Messages, Households) and the member picker read `/paid-months`; no screen downloads every payment any more (only the CSV export reads them all). `GET /api/payments/summary` gives the Payments figures. Members, Households and Messages page in the browser |
 | 2026-10 | Unauthenticated requests answer 401 (problem+json); 403 only for authenticated users lacking the role | The client refreshes the session on 401 | In use |
 | 2026-10 | The overdue counter is raised once per member per month by a monthly job (idempotent through member.last_missed_count_month) | A daily job would over-count; re-runs and restarts must be safe | In use |
 | 2026-10 | Members are written through MemberRequest; counters and payment dates are system-managed and never client-settable | Stops mass assignment; keeps the monthly job's marker intact | In use |
@@ -138,9 +139,9 @@ frontend/src/
 | 2026-10 | Membership status (MEMBER, INACTIVE, DECEASED, TRANSFERRED, ARCHIVED) is stored on the member; the old `active` flag and column are gone (migration `014`, step 12) | Dues, reminders and messages need more than on/off; the migration must stay reversible | In use |
 | 2026-10 | Members are read by status: `findDuesPaying`/`countDuesPaying` (status MEMBER) drive dues, reminders, messages and payments; every list and count except `GET /api/members?archived=true` (ADMIN) hides ARCHIVED | One rule table (`MemberStatus`) instead of `active` checks scattered around | In use |
 | 2026-10 | Members are archived, not deleted; payments and deliveries use ON DELETE RESTRICT; a permanent delete is an admin API that refuses when history exists | A hard delete erased payment history (audit C9) | In use |
-| 2026-10 | `person` and `household` tables exist (migration 012) but no code reads or writes them until step 8; `person.email` is indexed, not unique | Expand first: the schema ships and is proven on a copy before any code depends on it | In use (empty, unused) |
-| 2026-10 | `member.name`, `email`, `phone` and `active` were dropped (migration `014.drop-legacy-member-columns.sql`, plan step 12, the contract step): name, email and phone live on `person` only, written by `MemberDbRepository.save` through the linked person (`MemberPersistenceMapper.writeToPerson`); the status replaces `active` in the JSON, the request and the CSV; the overdue list sorts by `person.name`; payment and delivery list queries join member and person | Expand, then contract: reads moved to `person` at step 9 and the drift query stayed at 0 for a release before the columns went; one home per fact, no dual-write to keep in step | In use in code (applied to the demo database by the owner; each DROP has a rollback that restores the values from `person`) |
-| 2026-10 | A household is real but minimal (name, address, notes; no head, no dues): `/api/households` (VOLUNTEER read, STAFF write, ADMIN delete), members join through `person.household_id` via an optional `householdId` on the member request (absent keeps, null clears); a household with any person cannot be deleted (409), archived members stay in it and only an ADMIN sees them | Decisions a and f of the person plan; people must never lose their household behind their back | In use in code (backend of step 10; the live demo database needs no new migration, a human restart applies this build) |
-| 2026-10 | People without a membership (dependents) are persons with no `member` row: `/api/people` (VOLUNTEER read, STAFF write and start a membership, ADMIN delete only when there is none); a household detail lists its `people` (every person) beside `members` (the memberships) and its list adds `personCount`; dues, reminders, messages, exports and dashboard counts stay on `member` rows | Decision f of the person plan: dues are per membership, and a dependent must never leak into a members-only number | In use in code (backend of step 11, frontend pending; the drift query no longer treats a person without a member as a problem) |
+| 2026-10 | `person` and `household` tables exist (migration 012) but no code reads or writes them until step 8; `person.email` is indexed, not unique | Expand first: the schema ships and is proven on a copy before any code depends on it | Done: both tables are read and written since steps 8 and 9 (see the rows below) |
+| 2026-10 | `member.name`, `email`, `phone` and `active` were dropped (migration `014.drop-legacy-member-columns.sql`, plan step 12, the contract step): name, email and phone live on `person` only, written by `MemberDbRepository.save` through the linked person (`MemberPersistenceMapper.writeToPerson`); the status replaces `active` in the JSON, the request and the CSV; the overdue list sorts by `person.name`; payment and delivery list queries join member and person | Expand, then contract: reads moved to `person` at step 9 and the drift query stayed at 0 for a release before the columns went; one home per fact, no dual-write to keep in step | In use (each DROP has a rollback that restores the values from `person`) |
+| 2026-10 | A household is real but minimal (name, address, notes; no head, no dues): `/api/households` (VOLUNTEER read, STAFF write, ADMIN delete), members join through `person.household_id` via an optional `householdId` on the member request (absent keeps, null clears); a household with any person cannot be deleted (409), archived members stay in it and only an ADMIN sees them | Decisions a and f of the person plan; people must never lose their household behind their back | In use (API and screens, step 10) |
+| 2026-10 | People without a membership (dependents) are persons with no `member` row: `/api/people` (VOLUNTEER read, STAFF write and start a membership, ADMIN delete only when there is none); a household detail lists its `people` (every person) beside `members` (the memberships) and its list adds `personCount`; dues, reminders, messages, exports and dashboard counts stay on `member` rows | Decision f of the person plan: dues are per membership, and a dependent must never leak into a members-only number | In use (API and the people list on the household detail, step 11; the drift query was retired with step 12) |
 | 2026-10 | A signed-in user is matched to a member by email for `GET /api/me/dues`: person email, trimmed and case-insensitive, status not ARCHIVED; no match or more than one match answers 404, never a guess | A shared family email must not expose another person's dues; an explicit user-to-member link is the follow-up if emails prove unreliable | In use |
-| 2026-10 | Roles ADMIN > STAFF > VOLUNTEER > MEMBER with `RoleHierarchy` | Replaces ADMIN/MANAGER/USER and the planned TREASURER/VIEWER | Done (3cf5d84; frontend routes in this change) |
+| 2026-10 | Roles ADMIN > STAFF > VOLUNTEER > MEMBER with `RoleHierarchy` | Replaces ADMIN/MANAGER/USER and the planned TREASURER/VIEWER | Done (3cf5d84) |

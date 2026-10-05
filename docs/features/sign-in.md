@@ -34,7 +34,7 @@ The auth endpoints have no `@PreAuthorize`; `/api/auth/**` is public (`infrastru
 7. On page reload, the router guard asks `GET /users/me` once to restore the session (`router/index.js`, `authStore.js`).
 
 ### Sign out
-1. The user picks Sign out in the left rail, which is the menu drawer on small screens (`App.vue`, `handleLogout`).
+1. The user picks Sign out in the left rail (from `lg`), or on More on a phone; a MEMBER has it in the top bar (`App.vue`, `handleLogout`).
 2. The store stops the idle timer, posts `/api/auth/logout`, then clears local state even if the call fails (`authStore.js`).
 3. The server only clears both cookies (`AuthController.java`). The user lands on `/login`.
 

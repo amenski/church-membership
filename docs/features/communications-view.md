@@ -10,7 +10,7 @@ Paths below are relative to `frontend/src/`.
 - Page head "Messages", lead "Email members and see what was delivered." From `lg` the head is the full-width band (title only, no lead) with the content in a padded area under it (see [../design.md](../design.md#layout)).
 - **New message card (STAFF and above only; a VOLUNTEER sees no form):**
   - "Send to": "Everyone", "Behind on dues" or "One member" (all three map onto the existing send endpoints; the backend needed no change).
-  - For behind: "At least this many months behind" (number, min 1, default 1). For one member: "Member" (the searchable `MemberPicker` over ACTIVE members only, see [payments-view.md](payments-view.md#record-payment-dialog); the paid months for its "Due this month" and "Paid up" badges are the ones loaded for the year strips, so without them a row only shows "N months behind"). The old " (no email)" suffix on the options is gone: choosing a member with no email shows "This member has no email address." under the field when sending.
+  - For behind: "At least this many months behind" (number, min 1, default 1). For one member: "Member" (the searchable `MemberPicker` over MEMBER-status members only, see [payments-view.md](payments-view.md#record-payment-dialog); the paid months for its "Due this month" and "Paid up" badges are the ones loaded for the year strips, so without them a row only shows "N months behind"). The old " (no email)" suffix on the options is gone: choosing a member with no email shows "This member has no email address." under the field when sending.
   - "Subject" (up to 200 characters), "Message" (up to 5000, counter) with the helper line "Write {{member_name}} to insert each member's name."
   - The send button reads "Send to N people" ("Send to 1 person"; busy label "Sending..."). N is the number of recipients who will get an email. When anyone is skipped, a note beside it says so ("1 person has no email and will be skipped.", or "N people will be skipped." when a shared address is involved).
 - **Who gets this card**, beside the form from the `lg` breakpoint (two columns, the form wide and the card 28rem) and stacked below it on smaller screens (STAFF and above only). It is computed on the client from the members list and the paid months of the last 12 (`api.getPaidMonths(12)`, `GET /api/payments/paid-months`, turned into a member-to-months map by `paidMonthsFromMap`, the same way the Members screen does); the browser never downloads the payments. A paid-months failure only hides the strips.
@@ -53,7 +53,7 @@ Component `data()` (`views/CommunicationsView.vue`), not the Pinia store:
 
 ## Backend facts
 - `GET /api/communications` items carry `recipientCount` (int) and `deliverySummary` `{ sent, failed, pending, delivered }`; `deliveries` is not in the list, `GET /api/communications/{id}/deliveries` has them. The draft endpoint `POST /api/communications` no longer exists, so the view and `api.js` have no `createCommunication`.
-- Sending to nobody answers 400 "There is nobody to send this to." and stores nothing. "Overdue" means ACTIVE members only on the server.
+- Sending to nobody answers 400 "There is nobody to send this to." and stores nothing. "Behind" means members with status MEMBER only on the server.
 - Send endpoints: `sendToAllMembers`, `sendToOverdueMembers(months, payload)`, `sendToMember(memberId, payload)`, retry `retryDelivery(communicationId, deliveryId)`.
 
 ## Collaborators
