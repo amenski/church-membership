@@ -194,6 +194,7 @@ import { buildPaymentRequest, PAYMENT_METHODS } from '@/utils/paymentPayload'
 import { filterPayments, methodLabel, paymentsSummary, periodLabel, receiptNumber, sortPayments } from '@/utils/paymentHistory'
 import { countsForDues } from '@/utils/memberStatus'
 import { longMonth, owedSummary } from '@/utils/dues'
+import { nextMonthCovered } from '@/utils/nextMonthCovered'
 import { paidMonthsByMember, stripCells } from '@/utils/yearStrip'
 import AlertBanner from '@/components/AlertBanner.vue'
 import BaseButton from '@/components/BaseButton.vue'
@@ -267,7 +268,9 @@ export default {
       selectedPayment: null,
       receiptOpen: false,
       // the amount the last chosen member's most recent payment put in the field; a different value there was typed by the user
-      prefilledAmount: ''
+      prefilledAmount: '',
+      // the month the form last put in Month covered; a different value there was typed by the user
+      autoPeriod: ''
     }
   },
   computed: {
@@ -286,7 +289,7 @@ export default {
       return member ? owedSummary(stripCells(this.stripArgs(member))) : { oldest: '', sentence: '' }
     },
     periodHint() {
-      return this.owed.oldest && this.owed.oldest !== this.currentPeriod && this.form.period === this.owed.oldest ? `${longMonth(this.owed.oldest)}, the oldest month not paid.` : ''
+      return this.owed.oldest && this.owed.oldest !== this.currentPeriod && this.form.period === this.owed.oldest && this.form.period === this.autoPeriod ? `${longMonth(this.owed.oldest)}, the oldest month not paid.` : ''
     },
     activeMembers() {
       return this.members.filter(countsForDues).sort((a, b) => a.name.localeCompare(b.name))
@@ -312,8 +315,12 @@ export default {
   watch: {
     // The month covered starts at the oldest month the member has not paid and the amount at what
     // that member paid last. Only choosing a member sets them, so a month typed afterwards stays.
+    // A member with no unpaid month (or none chosen) puts the month back to the current one, but only
+    // when the field still holds what this set: a typed month is never replaced.
     'form.memberId'(memberId) {
-      if (this.owed.oldest) this.form.period = this.owed.oldest
+      const next = nextMonthCovered(this.autoPeriod, this.form.period, this.owed.oldest, this.currentPeriod)
+      this.form.period = next.period
+      this.autoPeriod = next.auto
       this.prefillAmount(memberId)
     },
     // a link to /payments?search= while this screen is already open
@@ -383,6 +390,7 @@ export default {
     openRecord() {
       this.form = emptyForm()
       this.prefilledAmount = ''
+      this.autoPeriod = this.form.period
       this.today = localISODate()
       this.formError = ''
       this.formErrors = { ...EMPTY_ERRORS }
