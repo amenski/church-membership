@@ -35,10 +35,7 @@
                 inputmode="numeric"
                 :error="formErrors.monthsOverdue"
               />
-              <BaseSelect v-else-if="form.recipientType === 'SPECIFIC'" id="message-member" v-model="form.memberId" label="Member" :error="formErrors.memberId">
-                <option value="" disabled>Choose a member</option>
-                <option v-for="member in activeMembers" :key="member.id" :value="String(member.id)">{{ member.name }}{{ member.email ? '' : ' (no email)' }}</option>
-              </BaseSelect>
+              <MemberPicker v-else-if="form.recipientType === 'SPECIFIC'" id="message-member" v-model="form.memberId" label="Member" :members="activeMembers" :paid-by-member="paidByMember" :current-month="today.slice(0, 7)" :error="formErrors.memberId" />
             </div>
             <BaseInput id="message-subject" v-model="form.subject" label="Subject" maxlength="200" autocomplete="off" :error="formErrors.subject" />
             <BaseTextarea
@@ -247,6 +244,7 @@ import BaseSelect from '@/components/BaseSelect.vue'
 import BaseTextarea from '@/components/BaseTextarea.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import EmptyNote from '@/components/EmptyNote.vue'
+import MemberPicker from '@/components/MemberPicker.vue'
 import PageHead from '@/components/PageHead.vue'
 import SectionTitle from '@/components/SectionTitle.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
@@ -265,7 +263,7 @@ const emptyForm = () => ({ recipientType: 'ALL', memberId: '', monthsOverdue: '1
 
 export default {
   name: 'CommunicationsView',
-  components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, BaseTextarea, ConfirmDialog, EmptyNote, PageHead, SectionTitle, StatusBadge, StatusLabel, TextButton, YearStrip },
+  components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, BaseTextarea, ConfirmDialog, EmptyNote, MemberPicker, PageHead, SectionTitle, StatusBadge, StatusLabel, TextButton, YearStrip },
   setup() {
     return {
       authStore: useAuthStore(),
