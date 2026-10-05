@@ -61,7 +61,7 @@
               <span class="text-right">Behind</span>
             </div>
             <ul class="m-0 list-none p-0">
-              <li v-for="member in ledgerRows" :key="member.id" :class="[ledgerGrid, 'min-h-(--list-row-h) border-b border-rule py-2']">
+              <li v-for="member in shownLedgerRows" :key="member.id" :class="[ledgerGrid, 'min-h-(--list-row-h) border-b border-rule py-2']">
                 <span class="min-w-0 font-medium [overflow-wrap:anywhere]"><router-link :to="`/members/${member.id}`">{{ member.name }}</router-link></span>
                 <span v-if="paidByMember" class="max-sm:order-3 max-sm:col-span-2"><YearStrip v-bind="stripProps(member)" :size="wide ? 'ledger' : 'compact'" /></span>
                 <span v-else class="text-muted max-sm:order-3"><span aria-hidden="true">&ndash;</span><span class="sr-only">Months paid did not load</span></span>
@@ -80,6 +80,9 @@
             </div>
             </div>
             </div>
+            <p v-if="ledgerRows.length > LEDGER_LIMIT" class="mt-3 mb-0 text-sm text-muted">
+              Showing {{ LEDGER_LIMIT }} of {{ ledgerRows.length }} members who are behind or due. <router-link to="/members?dues=behind">See all<span class="sr-only"> members who are behind</span></router-link>
+            </p>
           </template>
           <EmptyNote v-else-if="activeCount > 0">No overdue members. Everyone is paid up for this month.</EmptyNote>
           <EmptyNote v-else>No active members yet. Add the first one under Members.</EmptyNote>
@@ -173,6 +176,8 @@ const LEGEND = [
 ]
 // The large grid needs about 720px for the ledger card; that fits from the 2xl breakpoint (1400px) up
 const WIDE_QUERY = '(min-width: 87.5rem)'
+// The ledger lists the most behind members and stops here; Members holds the whole list
+const LEDGER_LIMIT = 10
 // One row in a card's list: Latest payments and Recent activity
 const ROW = 'flex min-h-(--list-row-h) gap-3 border-b border-rule py-2.5 last:border-b-0 tabular-nums'
 // A small action link in the Call this week panel
@@ -187,6 +192,7 @@ export default {
       monthsBehind,
       formatMoney,
       LEDGER_GRID,
+      LEDGER_LIMIT,
       LEGEND,
       SQUARES,
       CALL_ACTION,
@@ -264,6 +270,9 @@ export default {
       return this.members
         .filter(member => countsForDues(member) && (member.consecutiveMonthsMissed > 0 || (this.paidByMember && !this.paidMonths(member).has(this.currentMonth))))
         .sort((a, b) => (b.consecutiveMonthsMissed || 0) - (a.consecutiveMonthsMissed || 0) || a.name.localeCompare(b.name))
+    },
+    shownLedgerRows() {
+      return this.ledgerRows.slice(0, LEDGER_LIMIT)
     },
     paidCount() {
       return Math.max(0, this.activeCount - this.behindMembers.length)
