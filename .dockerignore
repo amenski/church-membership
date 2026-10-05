@@ -1,0 +1,35 @@
+# Keep the build context small and the layer cache stable.
+.git
+.gitattributes
+.idea
+.claude
+.playwright-mcp
+.DS_Store
+*.log
+
+# Build output and tool caches are rebuilt inside the image (and may be for another OS or CPU)
+.gradle
+**/.gradle
+build
+**/build
+target
+bin
+out
+**/node_modules
+frontend/dist
+# The Gradle build downloads its own Node, and the lock file is not in git, so a build from a
+# clone and a build from this folder install the same packages
+frontend/package-lock.json
+
+# Local settings, secrets and data
+.env
+data
+
+# Not needed to build
+docs
+deploy
+README.md
+HELP.md
+docker-compose*.yml
+Dockerfile
+.dockerignore

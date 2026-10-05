@@ -1,0 +1,11 @@
+// Used only by the Dockerfile: downloads the libraries the jar build needs without any source code,
+// so they sit in their own cached image layer. Run: ./gradlew -I docker/resolve-deps.init.gradle :resolveDeps
+rootProject {
+    tasks.register('resolveDeps') {
+        doLast {
+            ['compileClasspath', 'runtimeClasspath', 'annotationProcessor'].each { name ->
+                configurations.getByName(name).resolve()
+            }
+        }
+    }
+}
