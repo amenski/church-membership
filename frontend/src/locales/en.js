@@ -697,7 +697,7 @@ export default {
     nameTooLong: 'Use 100 characters or fewer.',
     notesTooLong: 'Use 2000 characters or fewer.',
     personNameRequired: "Enter the person's name.",
-    emailInvalid: 'Enter a valid email address, like name@example.com.',
+    emailInvalid: "Enter a valid email address, like name{'@'}example.com.",
     phoneInvalid: 'Enter a phone number with 10 digits or more.',
     birthDatePast: 'The birth date must be in the past.',
     duesPerMember: 'Dues are per member: {who} {months} in total.',

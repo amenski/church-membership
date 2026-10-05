@@ -701,7 +701,7 @@ export default {
     nameTooLong: '100 ቁምፊዎች ወይም ከዚያ ያነሰ ይጠቀሙ።',
     notesTooLong: '2000 ቁምፊዎች ወይም ከዚያ ያነሰ ይጠቀሙ።',
     personNameRequired: 'የሰውየውን ስም ያስገቡ።',
-    emailInvalid: 'ትክክለኛ የኢሜይል አድራሻ ያስገቡ፣ ለምሳሌ name@example.com።',
+    emailInvalid: "ትክክለኛ የኢሜይል አድራሻ ያስገቡ፣ ለምሳሌ name{'@'}example.com።",
     phoneInvalid: 'ቢያንስ 10 አሃዞች ያለው የስልክ ቁጥር ያስገቡ።',
     birthDatePast: 'የልደት ቀን ያለፈ መሆን አለበት።',
     duesPerMember: 'መዋጮ በአባል ነው፦ {who} በአጠቃላይ {months}።',
