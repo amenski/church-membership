@@ -109,15 +109,3 @@ export function paidMonthsFromMap(map) {
   }
   return byMember
 }
-
-/** memberId -> Set of "yyyy-MM" periods, from the payments list. */
-export function paidMonthsByMember(payments) {
-  const byMember = new Map()
-  for (const payment of Array.isArray(payments) ? payments : []) {
-    const id = payment?.member?.id
-    if (id == null || !payment.period) continue
-    if (!byMember.has(id)) byMember.set(id, new Set())
-    byMember.get(id).add(String(payment.period))
-  }
-  return byMember
-}

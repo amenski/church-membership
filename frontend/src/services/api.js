@@ -388,10 +388,6 @@ const apiService = {
   },
 
   // Payments API
-  async getPayments(params = {}) {
-    return this.get('/payments', params)
-  },
-
   // GET /payments/page?page&size&search&method&sort (page is zero-based): {content, page, size, totalElements, totalPages}
   async getPaymentsPage(params = {}) {
     return this.get('/payments/page', params)
