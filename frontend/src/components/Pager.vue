@@ -1,10 +1,12 @@
 <template>
-  <!-- Hidden when the whole list fits in the smallest page size; only the count line when it fits in the current one.
-       The caller sets the padding (class falls through): a card footer is px-4 py-3, a list outside a card has none -->
+  <!-- Hidden when the whole list fits in the smallest page size. With more rows than that the count line and the "Rows per page"
+       select always show (a list that fits the current size must still be able to go back to a smaller one); the buttons only
+       when the list needs more than one page. Works the same for a list in the browser and one the server pages: it only
+       needs the total. The caller sets the padding (class falls through): a card footer is px-4 py-3, a list outside a card has none -->
   <nav v-if="total > smallest" aria-label="Pagination" class="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 text-sm text-muted">
     <p class="m-0 tabular-nums" aria-live="polite">Showing {{ range.from }} to {{ range.to }} of {{ total }}</p>
 
-    <div v-if="total > pageSize" class="flex flex-wrap items-center gap-x-4 gap-y-3 max-sm:w-full max-sm:justify-between">
+    <div class="flex flex-wrap items-center gap-x-4 gap-y-3 max-sm:w-full max-sm:justify-between">
       <div class="flex items-center gap-2">
         <label :for="`${uid}-size`" class="whitespace-nowrap">Rows per page</label>
         <select
@@ -17,7 +19,7 @@
         </select>
       </div>
 
-      <ul class="m-0 flex list-none flex-wrap items-center gap-1 p-0">
+      <ul v-if="total > pageSize" class="m-0 flex list-none flex-wrap items-center gap-1 p-0">
         <li>
           <button type="button" :class="BUTTON" :disabled="current <= 1" @click="go(current - 1)">Previous</button>
         </li>
@@ -50,7 +52,8 @@ import { ELLIPSIS, PAGE_SIZES, clampPage, pageItems, pageRange, totalPages } fro
 // One page button: 44px below lg, the control height from lg; the current page is the filled one (the segmented control's active look)
 const BUTTON = 'inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-sm border border-field bg-paper px-3 text-base font-medium text-ink hover:border-teal hover:bg-teal-tint disabled:pointer-events-none disabled:border-rule disabled:text-muted disabled:opacity-65 lg:min-h-(--control-h) lg:min-w-(--control-h) lg:px-2.5 lg:text-sm'
 
-// A page bar for a list that is already in the browser (utils/paging.js slices it). The caller owns page and pageSize.
+// A page bar. A list in the browser is sliced by the caller (utils/paging.js); a list the server pages passes the server's total.
+// Either way the caller owns page and pageSize.
 export default {
   name: 'Pager',
   props: {
