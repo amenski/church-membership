@@ -1,7 +1,9 @@
 <template>
-  <div>
-    <PageHead title="Messages" lead="Email members and see what was delivered." />
+  <!-- From lg the header is a full-width band, so the page's own padding (App.vue) is dropped here and the content area below carries it -->
+  <div class="lg:max-w-none! lg:p-0!">
+    <PageHead title="Messages" lead="Email members and see what was delivered." band />
 
+    <div class="lg:mx-auto lg:max-w-[1400px] lg:px-8 lg:pt-6 lg:pb-10">
     <AlertBanner v-if="loadError">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <span>The messages did not load. Check your connection and try again.</span>
@@ -96,7 +98,8 @@
             <EmptyNote>No messages yet.<template v-if="authStore.isStaff"> Use the form above to send the first one.</template></EmptyNote>
           </div>
 
-          <ul v-else class="m-0 list-none border-t border-rule p-0">
+          <!-- below lg: one row a message -->
+          <ul v-if="messages.length" class="m-0 list-none border-t border-rule p-0 lg:hidden">
             <li v-for="message in messages" :key="message.id" class="flex items-start justify-between gap-4 border-b border-rule py-3 text-(length:--text-body) max-sm:flex-col max-sm:gap-0">
               <div class="min-w-0">
                 <div class="font-sans font-bold text-ink [overflow-wrap:anywhere]">{{ message.title }}</div>
@@ -114,6 +117,52 @@
               </TextButton>
             </li>
           </ul>
+
+          <!-- lg and up: the sent messages in a bordered card (grey header row, hairline between rows, footer line) -->
+          <div v-if="messages.length" class="hidden overflow-x-auto rounded-md border border-rule bg-paper lg:block">
+            <div class="min-w-[52rem]">
+              <table :class="TABLE_FROM_LG">
+                <caption class="sr-only">Sent messages, newest first</caption>
+                <thead>
+                  <tr class="border-b border-rule">
+                    <th scope="col" :class="CARD_TH">Subject</th>
+                    <th scope="col" :class="CARD_TH">Sent to</th>
+                    <th scope="col" :class="CARD_TH">Sent</th>
+                    <th scope="col" :class="CARD_TH">Delivery</th>
+                    <th scope="col" :class="CARD_TH"><span class="sr-only">Deliveries</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="message in messages" :key="message.id" class="border-b border-rule align-top">
+                    <td :class="[CARD_TD, 'max-w-0 w-[34%] font-medium text-ink [overflow-wrap:anywhere]']">{{ message.title }}</td>
+                    <td :class="CARD_TD">
+                      {{ typeLabel(message.type) }}
+                      <div class="text-sm text-muted">
+                        <template v-if="message.recipientCount > 0">{{ message.recipientCount }} {{ message.recipientCount === 1 ? 'recipient' : 'recipients' }}</template>
+                        <template v-else>No deliveries recorded</template>
+                      </div>
+                    </td>
+                    <td :class="[CARD_TD, 'whitespace-nowrap text-muted']">{{ sentAt(message) }}</td>
+                    <td :class="CARD_TD">
+                      <div v-if="summaryParts(message).length" class="flex flex-wrap gap-1.5">
+                        <StatusBadge v-for="part in summaryParts(message)" :key="part.key" :tone="part.tone">{{ part.text }}</StatusBadge>
+                      </div>
+                      <span v-else class="text-muted"><span aria-hidden="true">&ndash;</span><span class="sr-only">No delivery counts</span></span>
+                    </td>
+                    <td :class="[CARD_TD, 'whitespace-nowrap text-right']">
+                      <TextButton @click="openDeliveries(message)">
+                        View deliveries<span class="sr-only"> for {{ message.title }}</span>
+                      </TextButton>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="flex flex-wrap justify-between gap-x-4 gap-y-2 px-4 py-3 text-sm text-muted">
+                <span>{{ messages.length }} {{ messages.length === 1 ? 'message' : 'messages' }} sent so far</span>
+                <span>Newest first</span>
+              </div>
+            </div>
+          </div>
         </template>
       </section>
     </div>
@@ -175,6 +224,7 @@
         <BaseButton variant="secondary" @click="deliveriesOpen = false">Close</BaseButton>
       </template>
     </BaseModal>
+    </div>
   </div>
 </template>
 
@@ -204,7 +254,7 @@ import StatusLabel from '@/components/StatusLabel.vue'
 import TextButton from '@/components/TextButton.vue'
 import YearStrip from '@/components/YearStrip.vue'
 
-import { CARD } from '@/ui/classes'
+import { CARD, TABLE_FROM_LG, TABLE_CARD_TH as CARD_TH, TABLE_CARD_TD as CARD_TD } from '@/ui/classes'
 const MESSAGE_MAX = 5000
 const SUBJECT_MAX = 200
 const EMPTY_ERRORS = { monthsOverdue: '', memberId: '', subject: '', message: '' }
@@ -227,6 +277,9 @@ export default {
       attemptsLabel,
       friendlyNotes,
       CARD,
+      TABLE_FROM_LG,
+      CARD_TH,
+      CARD_TD,
       MESSAGE_MAX
     }
   },

@@ -7,7 +7,7 @@ The Messages page: compose an email to members, see what was sent and inspect or
 Paths below are relative to `frontend/src/`.
 
 ## What the user sees
-- Page head "Messages", lead "Email members and see what was delivered."
+- Page head "Messages", lead "Email members and see what was delivered." From `lg` the head is the full-width band (title only, no lead) with the content in a padded area under it (see [../design.md](../design.md#layout)).
 - **New message card (STAFF and above only; a VOLUNTEER sees no form):**
   - "Send to": "Everyone", "Behind on dues" or "One member" (all three map onto the existing send endpoints; the backend needed no change).
   - For behind: "At least this many months behind" (number, min 1, default 1). For one member: "Member" (select of ACTIVE members only, sorted by name).
