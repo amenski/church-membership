@@ -122,21 +122,23 @@
       </div>
 
       <!-- Selection (STAFF+): the live region speaks the count, the bar holds what can be done with those members.
-           From lg the bar sits between the filter row and the table card in a slot as high as the bar, so the table does
-           not move when it appears (it grows only if the buttons wrap); the slot is sticky under the top bar -->
+           From lg the bar floats: fixed 16px from the bottom of the viewport, centred over the content area right of the 232px rail
+           (z 1050: above the table, below the row menu 1100 and dialogs 1200), and takes no room in the page. Below lg it is sticky above the cards -->
       <p class="sr-only" role="status" aria-live="polite">{{ selectionAnnouncement }}</p>
-      <div v-if="canSelect" class="contents lg:pointer-events-none lg:sticky lg:top-14 lg:z-30 lg:mb-4 lg:block lg:min-h-14">
-        <div v-if="selectedMembers.length" role="region" aria-label="Selected members" class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-teal-line bg-teal-tint px-4 py-2.5 max-lg:sticky max-lg:top-14 max-lg:z-30 max-lg:mb-4 lg:pointer-events-auto">
-          <span class="text-base font-semibold text-teal">{{ selectedMembers.length }} selected</span>
-          <span class="min-w-0 text-sm text-ink [overflow-wrap:anywhere]">{{ selectedNames }}</span>
-          <TextButton @click="selectedIds = []">Clear selection</TextButton>
-          <div class="flex flex-wrap gap-2 md:ml-auto">
-            <BaseButton variant="secondary" to="/communications">Send message</BaseButton>
-            <BaseButton variant="secondary" @click="exportSelected">Export selected</BaseButton>
-            <BaseButton variant="secondary" :disabled="!inactiveTargets.length" @click="bulkAction = 'inactive'">Mark inactive</BaseButton>
-            <button v-if="authStore.isAdmin" type="button" :class="[DELETE_BUTTON, 'min-h-(--control-h) px-3 py-1.5 text-base']" @click="bulkAction = 'archive'">Archive</button>
+      <div v-if="canSelect" class="contents lg:pointer-events-none lg:fixed lg:right-0 lg:bottom-4 lg:left-[232px] lg:z-[1050] lg:block lg:px-6">
+        <Transition enter-active-class="lg:transition lg:duration-150 lg:ease-out motion-reduce:transition-none" enter-from-class="lg:translate-y-3 lg:opacity-0">
+          <div v-if="selectedMembers.length" role="region" aria-label="Selected members" class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-teal-line bg-teal-tint px-4 py-2.5 max-lg:sticky max-lg:top-14 max-lg:z-30 max-lg:mb-4 lg:pointer-events-auto lg:mx-auto lg:max-w-[960px] lg:border-rule lg:bg-paper lg:shadow-modal">
+            <span class="text-base font-semibold text-teal">{{ selectedMembers.length }} selected</span>
+            <span class="min-w-0 text-sm text-ink [overflow-wrap:anywhere]">{{ selectedNames }}</span>
+            <TextButton @click="selectedIds = []">Clear selection</TextButton>
+            <div class="flex flex-wrap gap-2 md:ml-auto">
+              <BaseButton variant="secondary" to="/communications">Send message</BaseButton>
+              <BaseButton variant="secondary" @click="exportSelected">Export selected</BaseButton>
+              <BaseButton variant="secondary" :disabled="!inactiveTargets.length" @click="bulkAction = 'inactive'">Mark inactive</BaseButton>
+              <button v-if="authStore.isAdmin" type="button" :class="[DELETE_BUTTON, 'min-h-(--control-h) px-3 py-1.5 text-base']" @click="bulkAction = 'archive'">Archive</button>
+            </div>
           </div>
-        </div>
+        </Transition>
       </div>
       <label v-if="canSelect" class="mb-2 flex min-h-11 cursor-pointer items-center gap-3 text-base text-ink lg:hidden">
         <input type="checkbox" :class="CHECKBOX_PHONE" :checked="allSelected" :indeterminate="someSelected" @change="toggleAll($event.target.checked)">
@@ -220,7 +222,7 @@
 
       <!-- lg and up: the table in a bordered card (grey header row, hairline between rows, footer line). Between lg and xl it keeps a
            minimum width and scrolls sideways inside the card rather than squeezing the columns -->
-      <div v-else class="hidden overflow-x-auto rounded-md border border-rule bg-paper lg:block">
+      <div v-else :class="['hidden overflow-x-auto rounded-md border border-rule bg-paper lg:block', selectedMembers.length ? 'lg:mb-28' : '']">
         <div class="lg:min-w-[56rem] xl:min-w-0">
           <table :class="TABLE">
             <caption class="sr-only">Members</caption>
