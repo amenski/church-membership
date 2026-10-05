@@ -1,42 +1,37 @@
 # MemberTracker Project - Todo List
 
-*Last checked against the code: 4 October 2026.*
+*Last checked against the code: 5 October 2026.*
 
-This is the live backlog: only open work is listed. What was fixed, and in which commit, is in the Status section of [functionality-audit.md](functionality-audit.md#status-4-october-2026) and in `git log`. Doc index: [../README.md](../README.md).
+This is the live backlog: only open work is listed. What was fixed, and in which commit, is in the Status section of [functionality-audit.md](functionality-audit.md#status-5-october-2026) and in `git log`. The finished plans (person and household model, role checkpoints, validation, design plan and gap list) are in [archive/](archive/). Doc index: [../README.md](../README.md).
 
-Done and removed from this list (October 2026): auth hardening (token types, refresh cookie path, one login error, unlock after 15 minutes, per-IP and per-email throttle, password change ends other sessions, session renewal), CSRF, secrets out of config, HTTPS through Caddy with security headers, roles and route guards, activity log with the administrator screen, payment rules (back-dating, no payments for non-active members, duplicate check), send rules (recipients must exist, reminders as reminders, `{{member_name}}`), staff-only exports, archive instead of delete, member status, the empty `person` and `household` tables, optional and shared email, delivery attempts and retry, the Tailwind redesign (Bootstrap removed), and the QA fixes M1 to M3 and L1 to L5, and Docker Compose for the MySQL database with its data on disk.
+Larger roadmap items that nobody has started (import, user management, password reset, events, attendance, giving funds) are in the roadmap of [functionality-audit.md](functionality-audit.md); they are not repeated here.
 
-## (a) Next structural work
+## (a) Needs a decision
 
-[person-membership-plan.md](archive/person-membership-plan.md), Phase 4: steps 1 to 11 are done and step 12 is done in code (migration 014 waits for the owner to run it on the demo database).
-
-- [x] Restart the demo backend on the new build so migration 013 runs on `felege_selam` and step 9 starts reading `person` (done 4 October 2026: 11 members, 11 people, drift 0)
-- [x] Step 10: households (API and UI)
-- [x] Step 11, API: people without a membership (`/api/people`, start a membership, drift query adjusted; see [features/people.md](features/people.md))
-- [x] Step 11, UI: dependents on the household detail (list, add, edit, make a member, delete); checked in a browser 4 October 2026 (add, make a member); edit, delete and the VOLUNTEER view not yet
-- [x] Step 12: contract, the destructive step that drops the legacy columns (`name`, `email`, `phone`, `active` on `member`): migration `014`, dual-write and `active` removed; not yet applied to the demo database (run the section 6 dry run first)
-
-## (b) Small leftovers
-
-- [ ] Signed-out load makes one 401 and one 400 probe. Kept on purpose: it is how an expired access cookie with a valid refresh cookie signs the user back in.
-- [x] Members CSV has technical headers and a redundant `active` column: now `ID,Name,Email,Phone,Join date,Months behind,Status`
-- [x] Dashboard revenue-by-month chart: there is no chart library and the dashboard shows one monthly figure only — added "Collected by month", 12 CSS bars from `GET /api/dashboard/collected-by-month`, documented in `docs/features/dashboard.md`
-- [x] Coverage reports: no JaCoCo in `build.gradle` and no coverage script for the frontend — added JaCoCo (`jacocoTestReport`, xml + html, no threshold) and `npm run coverage` (Vitest + `@vitest/coverage-v8`), documented in `docs/development.md`
-- [ ] My dues match is by email; an explicit user-to-member link is the follow-up if emails turn out to be unreliable
-- [ ] Activity-log retention job: entries accumulate forever (see [features/activity.md](features/activity.md))
-- [ ] A durable send queue and an automatic later retry of FAILED deliveries (the cached thread pool loses unsent mail on a restart; only the manual Retry exists)
-- [ ] Server-side search and pagination: all lists load every row; deferred until a congregation above about 2,000 members or several campuses
-
-## (c) Needs a decision or an account
-
+- [ ] Activity-log retention: how long to keep entries before a job deletes them (today they accumulate forever, see [features/activity.md](features/activity.md))
+- [ ] Reminder policy: a pre-due window, automatic deactivation after missed months, or neither (there is no pre-due window and no automatic deactivation today; the old policy code was removed, recover it from git history if you decide to build it; see [features/payment-reminders.md](features/payment-reminders.md))
 - [ ] API timestamps (`createdDate`, `archivedAt`, etc.) are server-local `LocalDateTime` while MySQL stores UTC (JDBC `serverTimezone=UTC`), so they look 2 hours apart in CEST; decide on UTC everywhere or `Instant`, and check the monthly counter job's month boundary
-- [ ] SMS and WhatsApp (a provider account such as Twilio; today those channels are stubs that mark every delivery failed)
+- [ ] A second name field for Amharic names (the data has one name field, so the member page cannot show an Amharic name above the Latin one)
+- [ ] A monthly dues amount setting (the Overview cannot say "$100 of $250 expected" without one)
+- [ ] SMS and WhatsApp (needs a provider account such as Twilio; today those channels are stubs that mark every delivery failed)
 - [ ] Calendar integration
 - [ ] Online payment gateway
 - [ ] Mobile application
-- [ ] Reminder policy: there is no pre-due reminder window and no automatic deactivation after missed months (the old policy code was removed; recover it from git history if you decide to build it)
 
-## (d) Deferred by the user
+## (b) Small leftovers (each checked against the code on 5 October 2026)
+
+- [ ] A signed-out load makes one 401 and one 400 probe. Kept on purpose: it is how an expired access cookie with a valid refresh cookie signs the user back in.
+- [ ] A durable send queue and an automatic later retry of FAILED deliveries (`SendCommunicationToAllMembersUseCase` and `SendCommunicationToMembersUseCase` each use a cached thread pool, so unsent mail is lost on a restart; only the manual Retry exists)
+- [ ] The Activity "Show more" stops at 200 entries (`@Max(200)` on `GET /api/activity-log`, `MAX_LIMIT` in `ActivityView.vue`); older entries cannot be reached
+- [ ] Send message from the Members selection bar links to `/communications` without the selected members; Messages reads no member parameter, so the recipients are chosen again
+- [ ] The Payments phone list cannot change its sort: the sortable headers exist from `md` only, and a phone keeps whatever sort is in the URL
+- [ ] The Overview ledger "See all" link opens `/members?dues=behind`, which lists members who are behind; the ledger count also includes members who are only due this month, so the list can be shorter than the count
+- [ ] The member page has no History card: `GET /api/activity-log` is ADMIN only and has no per-member filter
+- [ ] Components and views with no test: `MemberDetailView`, the `MembersView` selection bar (bulk bar), the `CommunicationsView` recipient preview and the `MemberPicker` component
+- [ ] My dues finds the member by email; an explicit user-to-member link is the follow-up if emails turn out to be unreliable (see [architecture.md](architecture.md#decisions))
+- [ ] Members, Households and Messages still load every row and page in the browser (Payments pages on the server); move them to the server above about 2,000 members or with several campuses
+
+## (c) Deferred by the owner
 
 - [ ] Docker for the app: a Dockerfile and an app image (the MySQL database already has `docker-compose.yml`, see [development.md](development.md#mysql-with-docker-compose))
 - [ ] CI pipeline, and Testcontainers for database tests

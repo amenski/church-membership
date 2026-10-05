@@ -1,10 +1,10 @@
 # MemberTracker Functionality Audit
 
-*Audited: 3 October 2026. Status section last checked against the code: 4 October 2026.*
+*Audited: 3 October 2026. Status section last checked against the code: 5 October 2026.*
 *Branch: `feature/role-auth` @ `b117be4` plus working tree*
 *Method: source reading only. The app was not run, so no finding is confirmed at runtime.*
 
-## Status (4 October 2026)
+## Status (5 October 2026)
 
 The findings below are kept as written at audit time. This table says where each stands now. Open work is tracked in [todo.md](todo.md).
 
@@ -19,7 +19,7 @@ The findings below are kept as written at audit time. This table says where each
 | C7 Payment delete deletes nothing | Done (endpoint removed) | `2d0383f` |
 | C8 Member edit accepts system fields | Done | `605e51a` |
 | C9 Deleting a member erases payments | Done (archive; foreign keys RESTRICT) | `abc6164` |
-| C10 Email required and unique, no household | Email part done; households open | `9cc0d61`; steps 7 to 12 of [person-membership-plan.md](archive/person-membership-plan.md) |
+| C10 Email required and unique, no household | Done (email optional and shared, households, people without a membership; legacy member columns dropped in migration `014`) | `9cc0d61`, `bfdf6b4`, `87892f0`, `d637705`; plan in [archive/person-membership-plan.md](archive/person-membership-plan.md) |
 | CSRF off, default secrets and credentials | Done | `d4c5c0b`, `aff5705`, `5efd8cf`, `db563d5` |
 | No HTTPS configuration | Done (Caddy, security headers) | `723c489`, `c107b09` |
 | Lockout permanent, login throttling | Done | `6398240` |
@@ -30,15 +30,17 @@ The findings below are kept as written at audit time. This table says where each
 | Dashboard hides errors, counts all members | Done | `7ec4f94` |
 | Communication deliveries not stored, no retry | Done (attempts counted, manual retry) | `ec1be9c`, `884e918`, `b460af5` |
 | Member status is one boolean | Done (five statuses) | `f9accb8`, `9074602`, `472a30a` |
-| Search and filters | Done in the browser; server-side search and pagination deferred | `290a026`, `1553827` |
+| Search and filters | Done. Payments page, search and sort on the server (`GET /api/payments/page`); Members, Households and Messages page in the browser | `290a026`, `1553827`, `6598724`, `a821efa` |
 | Frontend routes ignore roles | Done | `14335ff` |
 | Bootstrap, plain UI | Done (Tailwind redesign) | `2b079ee`, `e789ca1` |
-| Households, visitors, events, attendance, groups | Open | steps 7 to 12 of the person plan; the rest is Phases 1 to 4 below |
-| Import, user management, password reset, MFA | Open | none |
+| Households and dependents (people without a membership) | Done | `bfdf6b4`, `87892f0`, `b370f41` |
+| Member self-service ("My dues") | Done (matched to the member by email) | `09508f6` |
+| Visitors, events, attendance, groups | Open | none; Phases 1 to 4 below |
+| Import, user management (there is no admin API to create or disable users), password reset, MFA | Open | none |
 | SMS and WhatsApp stubs, durable send queue | Open | none |
-| Giving funds, `BigDecimal` money, receipts and statements | Open | none |
-| Multi-campus field, configurable CORS | Open | none |
-| Docker, CI, monitoring, backups | Deferred by the owner | none |
+| Giving funds, `BigDecimal` money (amounts are still `Double`), receipts and statements | Open | none |
+| Multi-campus field, configurable CORS (the allowed origins are fixed in `WebMvcConfig`) | Open | none |
+| Docker for the app, CI, monitoring, backups | Deferred by the owner; the MySQL compose file is done | `a44c17a` |
 
 ## Verdict
 
@@ -112,58 +114,58 @@ Each of these was confirmed by reading the source on this branch. None was confi
 
 **C1. Every operational screen returns 403**
 The role rename left `hasRole('USER')` on 16 endpoints (6 in Payment, 6 in Communication, 4 in Dashboard). There is no `RoleHierarchy` bean, so Admin and Staff fail `hasRole('VOLUNTEER')` on member reads. Seed data and the `users.role` column default still write `USER`, which `UserRole.fromCode` rejects.
-`PaymentController.java:53` · `SecurityConfig.java` · `001.schema-creation.sql` · `002.sample-data.sql:12`
+`PaymentController.java` · `SecurityConfig.java` · `001.schema-creation.sql` · `002.sample-data.sql`
 > **Status (3 Oct 2026):** fixed in `3cf5d84` (role hierarchy, mapped roles, migration 004, `RoleAuthorizationTest` — 125 passing). Frontend routes now set `requiresRole`.
 
 **C2. Recording a payment overwrites the member**
 The payment request body carries a full `member` object, and the use case saves that object as the member. A client can rename, reactivate or blank a member while recording a gift.
-`RecordPaymentUseCase.java:27`
+`RecordPaymentUseCase.java`
 > **Status (3 Oct 2026):** fixed: `POST /api/payments` takes a `RecordPaymentRequest`; the use case loads the member by id.
 
 **C3. Reminders never run, and would spam if they did**
 There is no `@EnableScheduling`, so both jobs are dead. If enabled as written, the missed-months counter goes up every day (about 30 per month) and reminders go out every morning.
-`PaymentReminderScheduler.java:29`, `:43` · `Application.java`
+`PaymentReminderScheduler.java` · `Application.java`
 
 > **Status (3 Oct 2026):** fixed: `@EnableScheduling` (SchedulingConfig), monthly crons, idempotent counter (`member.last_missed_count_month`, changeset 005), active members only. Reminder text personalisation is C4.
 
 **C4. Reminder emails say "Dear {{member_name}}"**
 The template placeholder is never filled in before sending.
-`SendPaymentRemindersUseCase.java` · `EmailService.java:97`
+`SendPaymentRemindersUseCase.java` · `EmailService.java`
 
 > **Status (3 Oct 2026):** fixed: `MessageTemplates.personalize` applied at all three send sites.
 
 **C5. Sessions end after 30 minutes, and refresh tokens work as access tokens**
 The refresh cookie's path is `/v1/auth`, but the endpoint is `/api/auth/refresh`, so the browser never sends the cookie. Tokens carry no type claim, so a 30-day refresh token is accepted as a bearer access token.
-`CookieUtils.java:33`, `:50` · `JwtUtils.java`
+`CookieUtils.java` · `JwtUtils.java`
 > **Status (3 Oct 2026):** fixed: `typ` claim enforced by the filter and the refresh endpoint; refresh cookie path is `/api/auth`; covered by `AuthFlowIntegrationTest`; sessions renew: unauthenticated requests answer 401, which triggers the client refresh (audit C5 follow-up).
 
 ### Serious
 
 **C6. Login tells an attacker which emails exist**
 The raw domain message ("User with email '…' not found" vs "Invalid password provided") is returned to the client.
-`AuthController.java:80-81`
+`AuthController.java`
 > **Status (3 Oct 2026):** fixed: one message for unknown email and wrong password, equalised timing, only domain exceptions are surfaced.
 
 **C7. Deleting a payment reports success and deletes nothing**
 The handler checks that the payment exists and returns 200 without deleting it.
-`PaymentController.java:80`
+`PaymentController.java`
 > **Status (3 Oct 2026):** resolved by removing the endpoint (payments are financial records). A void-with-audit-trail feature is future work.
 
 **C8. Member edit accepts system-managed fields**
 PUT binds the whole domain object, so a client can set `active`, `consecutiveMonthsMissed` and `lastPaymentDate` directly.
-`MemberController.java:92`
+`MemberController.java`
 > **Status (3 Oct 2026):** fixed: `MemberRequest` DTO; PUT loads the stored member and never takes counters or last payment date from the client.
 
 **C9. Deleting a member erases financial records**
 Hard delete with `ON DELETE CASCADE` removes all payments and delivery history. Giving records usually have a legal retention period.
-`MemberController.java:103` · `001.schema-creation.sql`
+`MemberController.java` · `001.schema-creation.sql`
 > **Status (4 Oct 2026):** fixed: `DELETE /api/members/{id}` archives (status ARCHIVED, everything kept); migration `011` makes the payment and delivery foreign keys `ON DELETE RESTRICT` so the database refuses to erase history; `DELETE /api/members/{id}/permanent` (ADMIN) deletes only a member with no payments and no deliveries.
 
 **C10. The data model cannot hold a family**
 A unique, required email per member blocks children and shared inboxes, and there is no household table. Every people feature on the roadmap depends on changing this.
 `Member.java` · `idx_member_email`
 
-> **Status (Oct 2026):** the email part is fixed: email is optional and not unique (migration `009`). There is still no household table: see [person-membership-plan.md](archive/person-membership-plan.md).
+> **Status (5 Oct 2026):** fixed: email is optional and not unique (migration `009`), households and people without a membership exist (migrations `012` and `013`), and the legacy member columns are dropped (migration `014`); see [person-membership-plan.md](archive/person-membership-plan.md).
 
 ## 4. Other gaps
 
