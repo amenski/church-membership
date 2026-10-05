@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The real migrations in the real order, for the Liquibase integration tests on H2.
+  Only 003 is replaced: it adds four columns in one ALTER TABLE, which MySQL accepts and H2 (MySQL mode) does not.
+  The context filter and everything else comes from the application properties, as in production.
+-->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <include file="db/sql/001.schema-creation.sql"/>
+    <include file="db/sql/002.sample-data.sql"/>
+    <include file="db/h2-003.add-user-profile-fields.sql"/>
+    <include file="db/sql/004.migrate-user-role-to-member.sql"/>
+    <include file="db/sql/005.add-member-last-missed-count-month.sql"/>
+    <include file="db/sql/006.add-user-locked-until.sql"/>
+    <include file="db/sql/007.add-activity-log-actor.sql"/>
+    <include file="db/sql/008.add-message-delivery-attempts.sql"/>
+    <include file="db/sql/009.make-member-email-optional.sql"/>
+    <include file="db/sql/010.add-member-status.sql"/>
+    <include file="db/sql/011.payment-delivery-fk-restrict.sql"/>
+    <include file="db/sql/012.create-person-household.sql"/>
+    <include file="db/sql/013.backfill-person-from-member.sql"/>
+    <include file="db/sql/014.drop-legacy-member-columns.sql"/>
+</databaseChangeLog>

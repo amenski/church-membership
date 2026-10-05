@@ -1,6 +1,8 @@
 -- liquibase formatted sql
 
--- changeset aman:sample-data
+-- Sample data for development and demos only: the `dev` context keeps it off a production database.
+-- The context is not part of the checksum, so databases that already ran this changeset are unaffected.
+-- changeset aman:sample-data context:dev
 -- Insert admin user with ADMIN role
 -- Password: admin (BCrypt hashed with strength 10)
 INSERT INTO users (email, password, role, enabled, account_non_locked, credentials_non_expired, failed_login_attempts) VALUES
