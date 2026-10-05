@@ -1,10 +1,13 @@
 package io.github.membertracker.domain.repository;
 
 import io.github.membertracker.domain.model.Member;
+import io.github.membertracker.domain.model.PageResult;
 import io.github.membertracker.domain.model.Payment;
+import io.github.membertracker.domain.model.PaymentPageQuery;
 
 import java.time.YearMonth;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface PaymentRepository {
@@ -21,6 +24,15 @@ public interface PaymentRepository {
 
     /** Newest payment date first, then newest id. */
     List<Payment> findRecent(int limit);
+
+    /** One filtered, sorted page (see {@link PaymentPageQuery}): a count statement and a page statement. */
+    PageResult<Payment> findPage(PaymentPageQuery query);
+
+    /**
+     * The distinct billing months paid from {@code from} to {@code to}, both inclusive, per member id, oldest first;
+     * members with none are absent. One grouped statement.
+     */
+    Map<Long, List<YearMonth>> findPaidMonthsBetween(YearMonth from, YearMonth to);
 
     /** How many payments this member has, whatever their period. */
     long countByMemberId(Long memberId);

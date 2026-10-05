@@ -1,22 +1,34 @@
 package io.github.membertracker.infrastructure.persistence.repository;
 
 import io.github.membertracker.domain.model.Member;
+import io.github.membertracker.domain.model.PageResult;
 import io.github.membertracker.domain.model.Payment;
+import io.github.membertracker.domain.model.PaymentPageQuery;
 import io.github.membertracker.domain.repository.PaymentRepository;
 import io.github.membertracker.infrastructure.persistence.entity.MemberEntity;
 import io.github.membertracker.infrastructure.persistence.entity.PaymentEntity;
 import io.github.membertracker.infrastructure.persistence.mapper.MemberPersistenceMapper;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 import java.time.YearMonth;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Repository
 public class PaymentDbRepository implements PaymentRepository {
+
+    /** "r-000141", "r000141", "000141" or "141": the receipt number is the payment id padded to 6 digits. */
+    private static final Pattern RECEIPT_SEARCH = Pattern.compile("(?:r-?)?(\\d{1,18})");
 
     private final PaymentJpaRepository paymentJpaRepository;
     private final MemberDbRepository memberDbRepository;
@@ -64,6 +76,45 @@ public class PaymentDbRepository implements PaymentRepository {
         return paymentJpaRepository.findAll(PageRequest.of(0, limit, newestFirst)).stream()
                 .map(this::mapToPayment)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public PageResult<Payment> findPage(PaymentPageQuery query) {
+        String search = query.search().toLowerCase(Locale.ROOT);
+        String namePattern = search.isEmpty() ? "%" : "%" + escapeLike(search) + "%";
+        Matcher receipt = RECEIPT_SEARCH.matcher(search);
+        long receiptId = receipt.matches() ? Long.parseLong(receipt.group(1)) : -1L;
+        String method = query.method() == null ? "" : query.method().name();
+
+        Page<PaymentEntity> page = paymentJpaRepository.findPage(method, namePattern, receiptId,
+                PageRequest.of(query.page(), query.size(), sortOf(query)));
+        List<Payment> content = page.getContent().stream().map(this::mapToPayment).collect(Collectors.toList());
+        return new PageResult<>(content, page.getNumber(), page.getSize(), page.getTotalElements(), page.getTotalPages());
+    }
+
+    @Override
+    public Map<Long, List<YearMonth>> findPaidMonthsBetween(YearMonth from, YearMonth to) {
+        Map<Long, List<YearMonth>> paidMonths = new LinkedHashMap<>();
+        for (Object[] row : paymentJpaRepository.findPaidMonthsBetween(from, to)) {
+            paidMonths.computeIfAbsent((Long) row[0], id -> new ArrayList<>()).add((YearMonth) row[1]);
+        }
+        return paidMonths;
+    }
+
+    /** The chosen field first, then the newest id, so equal values never reorder between pages. */
+    private static Sort sortOf(PaymentPageQuery query) {
+        Sort.Direction direction = query.ascending() ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Sort.Order primary = switch (query.sortField()) {
+            case PAYMENT_DATE -> new Sort.Order(direction, "paymentDate");
+            case PERIOD -> new Sort.Order(direction, "period");
+            case AMOUNT -> new Sort.Order(direction, "amount");
+            case MEMBER -> new Sort.Order(direction, "pe.name").ignoreCase();
+        };
+        return Sort.by(primary, Sort.Order.desc("id"));
+    }
+
+    private static String escapeLike(String text) {
+        return text.replace("!", "!!").replace("%", "!%").replace("_", "!_");
     }
 
     @Override

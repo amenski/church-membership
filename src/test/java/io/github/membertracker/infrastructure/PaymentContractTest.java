@@ -45,6 +45,8 @@ class PaymentContractTest {
     @MockitoBean private RecordActivityUseCase recordActivityUseCase;
     @MockitoBean private GetMemberByIdUseCase getMemberByIdUseCase;
     @MockitoBean private GetAllPaymentsUseCase getAllPaymentsUseCase;
+    @MockitoBean private GetPaymentPageUseCase getPaymentPageUseCase;
+    @MockitoBean private GetPaidMonthsUseCase getPaidMonthsUseCase;
     @MockitoBean private GetPaymentByIdUseCase getPaymentByIdUseCase;
     @MockitoBean private GetPaymentsByMemberUseCase getPaymentsByMemberUseCase;
     @MockitoBean private RecordPaymentUseCase recordPaymentUseCase;

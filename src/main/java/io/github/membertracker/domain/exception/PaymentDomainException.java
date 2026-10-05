@@ -17,6 +17,7 @@ public class PaymentDomainException extends DomainException {
     public static final String PAYMENT_METHOD_NOT_SUPPORTED = "PAYMENT_003";
     public static final String PAYMENT_PERIOD_IN_FUTURE = "PAYMENT_007";
     public static final String PAYMENT_DATE_IN_FUTURE = "PAYMENT_008";
+    public static final String INVALID_PAGE_QUERY = "PAYMENT_009";
 
     public PaymentDomainException(String message, String errorCode) {
         super(message, errorCode, "Payment");
@@ -24,6 +25,10 @@ public class PaymentDomainException extends DomainException {
 
     public PaymentDomainException(String message, String errorCode, Throwable cause) {
         super(message, errorCode, "Payment", cause);
+    }
+
+    private PaymentDomainException(String message, String errorCode, String field) {
+        super(message, errorCode, "Payment", field);
     }
 
     // Factory methods for common payment domain violations
@@ -68,5 +73,10 @@ public class PaymentDomainException extends DomainException {
             String.format("Payment period %s is in the future. Cannot process payments for future periods", MonthLabel.of(period)),
             PAYMENT_PERIOD_IN_FUTURE
         );
+    }
+
+    /** A query parameter of the paged list or the paid-months list is out of range; reported as a field error. */
+    public static PaymentDomainException invalidPageQuery(String field, String message) {
+        return new PaymentDomainException(message, INVALID_PAGE_QUERY, field);
     }
 }

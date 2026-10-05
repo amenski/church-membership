@@ -1,7 +1,12 @@
 package io.github.membertracker.infrastructure;
 
 import io.github.membertracker.domain.enumeration.ActivityType;
+import io.github.membertracker.domain.enumeration.PaymentMethod;
+import io.github.membertracker.domain.enumeration.PaymentSortField;
+import io.github.membertracker.domain.exception.PaymentDomainException;
+import io.github.membertracker.domain.model.PageResult;
 import io.github.membertracker.domain.model.Payment;
+import io.github.membertracker.domain.model.PaymentPageQuery;
 import io.github.membertracker.infrastructure.dto.RecordPaymentRequest;
 import io.github.membertracker.infrastructure.security.ArchivedVisibility;
 import io.swagger.v3.oas.annotations.Operation;
@@ -9,6 +14,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.github.membertracker.usecase.*;
 import io.github.membertracker.utils.CsvUtils;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -19,12 +26,15 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/payments")
@@ -32,7 +42,11 @@ import java.util.Locale;
 @Tag(name = "Payments", description = "Membership dues: record, list and export payments.")
 public class PaymentController {
 
+    private static final int MAX_SEARCH_LENGTH = 100;
+
     private final GetAllPaymentsUseCase getAllPaymentsUseCase;
+    private final GetPaymentPageUseCase getPaymentPageUseCase;
+    private final GetPaidMonthsUseCase getPaidMonthsUseCase;
     private final GetPaymentByIdUseCase getPaymentByIdUseCase;
     private final GetPaymentsByMemberUseCase getPaymentsByMemberUseCase;
     private final RecordPaymentUseCase recordPaymentUseCase;
@@ -41,12 +55,16 @@ public class PaymentController {
 
     @Autowired
     public PaymentController(GetAllPaymentsUseCase getAllPaymentsUseCase,
+                            GetPaymentPageUseCase getPaymentPageUseCase,
+                            GetPaidMonthsUseCase getPaidMonthsUseCase,
                             GetPaymentByIdUseCase getPaymentByIdUseCase,
                             GetPaymentsByMemberUseCase getPaymentsByMemberUseCase,
                             RecordPaymentUseCase recordPaymentUseCase,
                             GetMemberByIdUseCase getMemberByIdUseCase,
                             RecordActivityUseCase recordActivityUseCase) {
         this.getAllPaymentsUseCase = getAllPaymentsUseCase;
+        this.getPaymentPageUseCase = getPaymentPageUseCase;
+        this.getPaidMonthsUseCase = getPaidMonthsUseCase;
         this.getPaymentByIdUseCase = getPaymentByIdUseCase;
         this.getPaymentsByMemberUseCase = getPaymentsByMemberUseCase;
         this.recordPaymentUseCase = recordPaymentUseCase;
@@ -59,6 +77,28 @@ public class PaymentController {
     @Operation(summary = "List payments (VOLUNTEER+)")
     public List<Payment> getAllPayments() {
         return ArchivedVisibility.redact(getAllPaymentsUseCase.invoke());
+    }
+
+    @GetMapping("/page")
+    @PreAuthorize("hasRole('VOLUNTEER')")
+    @Operation(summary = "One page of payments, filtered and sorted (VOLUNTEER+)")
+    public PageResult<Payment> getPaymentPage(
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "25") @Min(1) @Max(100) int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String method,
+            @RequestParam(defaultValue = "paymentDate,desc") String sort) {
+        PaymentPageQuery query = pageQuery(page, size, search, method, sort);
+        PageResult<Payment> result = getPaymentPageUseCase.invoke(query);
+        ArchivedVisibility.redact(result.content());
+        return result;
+    }
+
+    @GetMapping("/paid-months")
+    @PreAuthorize("hasRole('VOLUNTEER')")
+    @Operation(summary = "The months each member paid within the last N months (VOLUNTEER+)")
+    public Map<Long, List<YearMonth>> getPaidMonths(@RequestParam(defaultValue = "12") @Min(1) @Max(36) int months) {
+        return getPaidMonthsUseCase.invoke(months);
     }
 
     @GetMapping("/{id}")
@@ -108,5 +148,28 @@ public class PaymentController {
         recordActivityUseCase.record(ActivityType.PAYMENTS_EXPORTED, "Exported " + payments.size()
                 + (payments.size() == 1 ? " payment" : " payments"), "PAYMENT", null);
         return CsvUtils.attachment("payments.csv", csv.toString());
+    }
+
+    private static PaymentPageQuery pageQuery(int page, int size, String search, String method, String sort) {
+        String trimmed = search == null ? "" : search.trim();
+        if (trimmed.length() > MAX_SEARCH_LENGTH) {
+            throw PaymentDomainException.invalidPageQuery("search", "Search must be at most " + MAX_SEARCH_LENGTH + " characters");
+        }
+        PaymentMethod paymentMethod = null;
+        if (method != null && !method.isBlank()) {
+            try {
+                paymentMethod = PaymentMethod.fromCode(method.trim());
+            } catch (PaymentDomainException e) {
+                throw PaymentDomainException.invalidPageQuery("method", "Unknown payment method");
+            }
+        }
+        String[] parts = sort.split(",", -1);
+        PaymentSortField field = PaymentSortField.fromParameter(parts[0].trim()).orElseThrow(() ->
+                PaymentDomainException.invalidPageQuery("sort", "Sort by paymentDate, period, amount or member"));
+        String direction = parts.length == 1 ? "asc" : parts[1].trim().toLowerCase(Locale.ROOT);
+        if (parts.length > 2 || !(direction.equals("asc") || direction.equals("desc"))) {
+            throw PaymentDomainException.invalidPageQuery("sort", "Sort direction must be asc or desc");
+        }
+        return new PaymentPageQuery(page, size, trimmed, paymentMethod, field, direction.equals("asc"));
     }
 }
