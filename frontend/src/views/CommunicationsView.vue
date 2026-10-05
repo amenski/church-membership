@@ -97,7 +97,7 @@
 
           <!-- below lg: one row a message -->
           <ul v-if="messages.length" class="m-0 list-none border-t border-rule p-0 lg:hidden">
-            <li v-for="message in messages" :key="message.id" class="flex items-start justify-between gap-4 border-b border-rule py-3 text-(length:--text-body) max-sm:flex-col max-sm:gap-0">
+            <li v-for="message in pagedMessages" :key="message.id" class="flex items-start justify-between gap-4 border-b border-rule py-3 text-(length:--text-body) max-sm:flex-col max-sm:gap-0">
               <div class="min-w-0">
                 <div class="font-sans font-bold text-ink [overflow-wrap:anywhere]">{{ message.title }}</div>
                 <div class="text-sm text-muted tabular-nums">
@@ -114,6 +114,7 @@
               </TextButton>
             </li>
           </ul>
+          <Pager v-if="messages.length" v-bind="pagerProps" class="mt-4 lg:hidden" @update:page="setPage" @update:page-size="setPageSize" />
 
           <!-- lg and up: the sent messages in a bordered card (grey header row, hairline between rows, footer line) -->
           <div v-if="messages.length" class="hidden overflow-x-auto rounded-md border border-rule bg-paper lg:block">
@@ -130,7 +131,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="message in messages" :key="message.id" class="border-b border-rule align-top">
+                  <tr v-for="message in pagedMessages" :key="message.id" class="border-b border-rule align-top">
                     <td :class="[CARD_TD, 'max-w-0 w-[34%] font-medium text-ink [overflow-wrap:anywhere]']">{{ message.title }}</td>
                     <td :class="CARD_TD">
                       {{ typeLabel(message.type) }}
@@ -154,9 +155,10 @@
                   </tr>
                 </tbody>
               </table>
-              <div class="flex flex-wrap justify-between gap-x-4 gap-y-2 px-4 py-3 text-sm text-muted">
-                <span>{{ messages.length }} {{ messages.length === 1 ? 'message' : 'messages' }} sent so far</span>
-                <span>Newest first</span>
+              <Pager v-bind="pagerProps" class="px-4 py-3" @update:page="setPage" @update:page-size="setPageSize" />
+              <div :class="['flex flex-wrap justify-between gap-x-4 gap-y-2 px-4 text-sm text-muted', pagerShown ? 'pb-3' : 'py-3']">
+                <span v-if="!pagerShown">{{ messages.length }} {{ messages.length === 1 ? 'message' : 'messages' }} sent so far</span>
+                <span class="ml-auto">Newest first</span>
               </div>
             </div>
           </div>
@@ -190,7 +192,7 @@
           <StatusBadge v-for="part in deliveryTotals" :key="part.key" :tone="part.tone">{{ part.text }}</StatusBadge>
         </div>
         <ul class="m-0 list-none border-t border-rule p-0">
-          <li v-for="delivery in orderedDeliveries" :key="delivery.id" class="flex items-start justify-between gap-3 border-b border-rule py-3">
+          <li v-for="delivery in pagedDeliveries" :key="delivery.id" class="flex items-start justify-between gap-3 border-b border-rule py-3">
             <div class="min-w-0">
               <div class="flex flex-wrap items-baseline gap-x-4">
                 <span class="font-medium [overflow-wrap:anywhere]">{{ delivery.recipient?.name || 'Unknown' }}</span>
@@ -216,6 +218,7 @@
             </BaseButton>
           </li>
         </ul>
+        <Pager :page="deliveryPage" :page-size="deliveryPageSize" :total="orderedDeliveries.length" compact class="mt-3" @update:page="deliveryPage = $event" @update:page-size="setDeliveryPageSize" />
       </template>
       <template #footer>
         <BaseButton variant="secondary" @click="deliveriesOpen = false">Close</BaseButton>
@@ -236,6 +239,8 @@ import { attemptsLabel, friendlyNotes, countDeliveries, deliveryStatus, failedFi
 import { countsForDues } from '@/utils/memberStatus'
 import { monthsBehind } from '@/utils/dues'
 import { paidMonthsByMember } from '@/utils/yearStrip'
+import { PAGE_SIZES, clampPage, pageSlice } from '@/utils/paging'
+import { queryPaging } from '@/utils/queryPaging'
 import AlertBanner from '@/components/AlertBanner.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import BaseInput from '@/components/BaseInput.vue'
@@ -246,6 +251,7 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import EmptyNote from '@/components/EmptyNote.vue'
 import MemberPicker from '@/components/MemberPicker.vue'
 import PageHead from '@/components/PageHead.vue'
+import Pager from '@/components/Pager.vue'
 import SectionTitle from '@/components/SectionTitle.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import StatusLabel from '@/components/StatusLabel.vue'
@@ -253,6 +259,9 @@ import TextButton from '@/components/TextButton.vue'
 import YearStrip from '@/components/YearStrip.vue'
 
 import { CARD, TABLE_FROM_LG, TABLE_CARD_TH as CARD_TH, TABLE_CARD_TD as CARD_TD } from '@/ui/classes'
+// Sent messages: 10 a page; the deliveries of one message in its dialog: 25 a page (no URL state there)
+const MESSAGES_PER_PAGE = 10
+const DELIVERIES_PER_PAGE = 25
 const MESSAGE_MAX = 5000
 const SUBJECT_MAX = 200
 const EMPTY_ERRORS = { monthsOverdue: '', memberId: '', subject: '', message: '' }
@@ -263,7 +272,8 @@ const emptyForm = () => ({ recipientType: 'ALL', memberId: '', monthsOverdue: '1
 
 export default {
   name: 'CommunicationsView',
-  components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, BaseTextarea, ConfirmDialog, EmptyNote, MemberPicker, PageHead, SectionTitle, StatusBadge, StatusLabel, TextButton, YearStrip },
+  mixins: [queryPaging({ defaultSize: MESSAGES_PER_PAGE })],
+  components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, BaseTextarea, ConfirmDialog, EmptyNote, MemberPicker, PageHead, Pager, SectionTitle, StatusBadge, StatusLabel, TextButton, YearStrip },
   setup() {
     return {
       authStore: useAuthStore(),
@@ -297,6 +307,8 @@ export default {
       selectedMessage: null,
       deliveriesOpen: false,
       deliveries: [],
+      deliveryPage: 1,
+      deliveryPageSize: DELIVERIES_PER_PAGE,
       deliveriesLoading: false,
       deliveriesError: false,
       retryingIds: []
@@ -308,6 +320,19 @@ export default {
     },
     messages() {
       return sortMessages(this.communications)
+    },
+    currentPage() {
+      return clampPage(this.page, this.messages.length, this.pageSize)
+    },
+    // the rows on screen: one page of the sent messages
+    pagedMessages() {
+      return pageSlice(this.messages, this.currentPage, this.pageSize)
+    },
+    pagerProps() {
+      return { page: this.currentPage, pageSize: this.pageSize, total: this.messages.length }
+    },
+    pagerShown() {
+      return this.messages.length > Math.min(...PAGE_SIZES)
     },
     recipients() {
       const { recipientType, monthsOverdue, memberId } = this.form
@@ -332,8 +357,17 @@ export default {
     orderedDeliveries() {
       return failedFirst(this.deliveries)
     },
+    pagedDeliveries() {
+      return pageSlice(this.orderedDeliveries, this.deliveryPage, this.deliveryPageSize)
+    },
     deliveryTotals() {
       return deliverySummaryParts(countDeliveries(this.deliveries))
+    }
+  },
+  watch: {
+    // the list changed length (loaded, a message sent): a page beyond the last becomes the last
+    'messages.length'(length) {
+      if (this.loaded) this.settlePage(length)
     }
   },
   async created() {
@@ -437,6 +471,8 @@ export default {
         this.formErrors = { ...EMPTY_ERRORS }
         this.notify('success', 'Sending started', `${personLabel(count)} will get it in the next few minutes. Check the delivery status below.`)
         await this.refreshMessages()
+        // the new message is the first row of the newest-first list
+        this.resetPage()
       } catch (error) {
         console.error('Error sending message:', error)
         this.confirmOpen = false
@@ -463,8 +499,13 @@ export default {
     async openDeliveries(message) {
       this.selectedMessage = message
       this.deliveries = []
+      this.deliveryPage = 1
       this.deliveriesOpen = true
       await this.loadDeliveries()
+    },
+    setDeliveryPageSize(size) {
+      this.deliveryPageSize = size
+      this.deliveryPage = 1
     },
     async loadDeliveries() {
       this.deliveriesLoading = true
