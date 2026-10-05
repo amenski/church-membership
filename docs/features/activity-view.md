@@ -14,7 +14,7 @@ The Activity page: who changed or exported what, newest first. Route `/activity`
 - Keyboard: the select works with the arrow and letter keys; "Show more" and "Try again" are real buttons (Enter and Space).
 
 ## Who may open it
-ADMIN only. For STAFF, VOLUNTEER and MEMBER the nav item is not rendered, and opening `/activity` directly shows the existing "Access denied" warning ("You don't have access to that page.") and goes to their home page (`/dashboard`, or `/profile` for a MEMBER). The API answers 403 as well. Covered by `frontend/src/__tests__/router/guard.test.js`.
+ADMIN only. For STAFF, VOLUNTEER and MEMBER the nav item is not rendered, and opening `/activity` directly shows the existing "Access denied" warning ("You don't have access to that page.") and goes to their home page (`/dashboard`, or `/my-dues` for a MEMBER). The API answers 403 as well. Covered by `frontend/src/__tests__/router/guard.test.js`.
 
 ## Endpoints
 | Method | Path | api.js | Used by |

@@ -8,10 +8,10 @@ Roles from `@PreAuthorize` and route meta; hierarchy ADMIN > STAFF > VOLUNTEER >
 | Task | Minimum role | Screen / endpoint |
 |------|--------------|-------------------|
 | Run the monthly counter and reminder jobs | nobody (scheduled) | `src/main/java/io/github/membertracker/scheduler/PaymentReminderScheduler.java` |
-| See who is overdue | VOLUNTEER | Payment filter "Overdue" on `/members` (`frontend/src/views/MembersView.vue`), overdue list on `/dashboard` ([dashboard.md](dashboard.md)) |
+| See who is overdue | VOLUNTEER | Dues filter "Behind" on `/members` (`frontend/src/views/MembersView.vue`), Call this week and the dues ledger on `/dashboard` ([dashboard.md](dashboard.md)) |
 | See the reminder message and its deliveries | VOLUNTEER | `/communications` ([communications.md](communications.md)) |
-| Email all overdue members by hand | STAFF | "Overdue Members" on `/communications`, `POST /api/communications/send-to-overdue/{months}` (`src/main/java/io/github/membertracker/infrastructure/CommunicationController.java`) |
-| Email one overdue member by hand | STAFF | Send Reminder on `/dashboard`, `POST /api/communications/send-to-member/{memberId}` (`CommunicationController.java`) |
+| Email all overdue members by hand | STAFF | "Behind on dues" on `/communications`, `POST /api/communications/send-to-overdue/{months}` (`src/main/java/io/github/membertracker/infrastructure/CommunicationController.java`) |
+| Email one overdue member by hand | STAFF | "Send reminder" on the Overview opens `/communications`, where "One member" calls `POST /api/communications/send-to-member/{memberId}` (`CommunicationController.java`) |
 | Change when or how the jobs run | developer | cron expressions and `app.payment.reminder.months-threshold` (`PaymentReminderScheduler.java`) |
 
 There is no screen to start, stop or inspect the jobs. Role details of the screens: [members.md](members.md), [communications.md](communications.md), [dashboard.md](dashboard.md).
@@ -19,15 +19,15 @@ There is no screen to start, stop or inspect the jobs. Role details of the scree
 ## How it works
 ### The monthly cycle
 1. On the 1st of each month at 06:00 (server time zone) the counter job runs (`PaymentReminderScheduler.java`).
-2. It looks at the previous month and takes every ACTIVE member (`src/main/java/io/github/membertracker/usecase/UpdateMissingPaymentCountersUseCase.java`).
+2. It looks at the previous month and takes every member with status MEMBER (`src/main/java/io/github/membertracker/usecase/UpdateMissingPaymentCountersUseCase.java`).
 3. It skips members who joined after the end of that month; a member with no join date is not skipped (`UpdateMissingPaymentCountersUseCase.java`).
 4. It skips members who have a payment recorded for that month (`UpdateMissingPaymentCountersUseCase.java`, `src/main/java/io/github/membertracker/usecase/HasPaymentForMonthUseCase.java`).
 5. For everyone else it raises the missed-months counter (`consecutiveMonthsMissed`) by 1 and saves (`UpdateMissingPaymentCountersUseCase.java`).
-6. At 09:00 the reminder job runs (`PaymentReminderScheduler.java`). It takes members whose counter is at or above the threshold and who are ACTIVE (`src/main/java/io/github/membertracker/usecase/SendPaymentRemindersUseCase.java`). Sending then leaves out members without an email and sends one message per address (`Recipients.reachable`, applied in `SendCommunicationToMembersUseCase`).
+6. At 09:00 the reminder job runs (`PaymentReminderScheduler.java`). It takes members whose counter is at or above the threshold and whose status is MEMBER (`src/main/java/io/github/membertracker/usecase/SendPaymentRemindersUseCase.java`). Sending then leaves out members without an email and sends one message per address (`Recipients.reachable`, applied in `SendCommunicationToMembersUseCase`).
 7. Threshold: `app.payment.reminder.months-threshold`, 3 by default, 2 under the `dev` profile (`src/main/resources/application.properties`, `src/main/resources/application-dev.properties`).
 8. If nobody qualifies, nothing is sent and nothing is stored (`SendPaymentRemindersUseCase.java`).
 9. Otherwise one message titled "Payment Reminder", type REMINDER, is created for all of them: "Dear {{member_name}}, this is a friendly reminder that your membership payment is overdue. Please contact us at your earliest convenience." (`SendPaymentRemindersUseCase.java`). Each email carries the member's own name ([communications.md](communications.md#what-happens-after-send)).
-10. Sending, retries, statuses and the 100 ms pause between emails are the same as for manual sends ([communications.md](communications.md#what-happens-after-send)). The members are read by status (MEMBER) and their address comes from the linked person row; the old `member.active` column no longer exists (step 12). Mail settings: [../email.md](../email.md).
+10. Sending, retries, statuses and the 100 ms pause between emails are the same as for manual sends ([communications.md](communications.md#what-happens-after-send)). The members are read by status (MEMBER) and their address comes from the linked person row; the old `member.active` column no longer exists (migration `014`). Mail settings: [../email.md](../email.md).
 
 Example with the default threshold 3, for a member who paid through September and then stops: 1 Nov counter 1 (October missed), 1 Dec counter 2, 1 Jan counter 3 and the first reminder at 09:00; the reminder repeats every 1st until they pay.
 
@@ -45,20 +45,20 @@ Example with the default threshold 3, for a member who paid through September an
 2. Deactivating does not change the counter. Inactive members are not counted and not reminded by the jobs.
 
 ### What the admin sees
-1. Members screen: payment badge "N months overdue", and the "Overdue" filter shows members with a counter above 0 (`frontend/src/utils/memberFilters.js`, `MembersView.vue`).
-2. Dashboard: the Overdue Members card and list, with a Send Reminder button for STAFF+ ([dashboard.md](dashboard.md)).
+1. Members screen: "N months" in the Dues column, and the Dues filter "Behind" shows MEMBER-status members with a counter above 0 (`frontend/src/utils/memberFilters.js`, `MembersView.vue`).
+2. Overview: the Call this week card (the three furthest behind) and the dues ledger, with a Send reminder link for STAFF+ that opens Messages ([dashboard.md](dashboard.md)).
 3. Communications: the "Payment Reminder" message appears in the list with the date the job ran, and its deliveries (one per overdue member, with SENT or FAILED status) in the dialog.
 4. The jobs write to the application log only ("Starting payment reminder process", errors) (`PaymentReminderScheduler.java`).
 
 ### Manual alternatives
-1. Send to overdue: on Communications, choose Overdue Members and a number of months; it emails the active members whose counter is at or above that number (nobody matching is a 400 and nothing is stored) ([communications.md](communications.md#send-to-members-behind-by-n-months-staff)).
-2. Send Reminder: on the Dashboard, one click emails one overdue member a fixed text ([dashboard.md](dashboard.md#send-a-reminder-to-one-overdue-member-staff)).
+1. Send to behind: on Messages, choose "Behind on dues" and a number of months; it emails the MEMBER-status members whose counter is at or above that number (nobody matching is a 400 and nothing is stored) ([communications.md](communications.md#send-to-members-behind-by-n-months-staff)).
+2. One member: on Messages, choose "One member" and write the text ([communications.md](communications.md#send-to-one-member-staff)); the Overview's "Send reminder" link only opens that screen ([dashboard.md](dashboard.md#send-reminder-staff)).
 3. Neither changes any counter, and neither is limited by the threshold.
 
 ## Rules
-- The counter job counts only ACTIVE members, only the previous month, once per member per month (`UpdateMissingPaymentCountersUseCase.java`).
+- The counter job counts only MEMBER-status members, only the previous month, once per member per month (`UpdateMissingPaymentCountersUseCase.java`).
 - A member who joined after the end of the counted month is not counted for it.
-- Reminders go to ACTIVE members with a counter at or above the threshold, every month, until they pay: there is no "already reminded" state (`SendPaymentRemindersUseCase.java`).
+- Reminders go to MEMBER-status members with a counter at or above the threshold, every month, until they pay: there is no "already reminded" state (`SendPaymentRemindersUseCase.java`).
 - The reminder threshold is unrelated to the 3-month rule of automatic deactivation, which does not exist (see Known issues).
 - A run missed because the application was down at 06:00 or 09:00 on the 1st is not repeated: that month is never counted, and the next run counts only the next month (`PaymentReminderScheduler.java`; [payment-reminder-scheduler.md](payment-reminder-scheduler.md#errors)).
 - One application instance is assumed. With two running, both fire the jobs: the counter job is safe (once per month), the reminder job would email every overdue member twice.

@@ -22,8 +22,8 @@ Request body is `SendCommunicationRequest` (`infrastructure/dto/SendCommunicatio
 ## Flows
 | Flow | Audience | Sends email | Thread |
 |------|----------|-------------|--------|
-| send-to-all | active members only, `findByActive(true)`, then `Recipients.reachable` (no email dropped, one per address); none -> 400 `COMMUNICATION_006`, nothing stored (`usecase/SendCommunicationToAllMembersUseCase.java`) | yes, sets `sentToAllMembers` | save on request; emails on background thread |
-| send-to-overdue | ACTIVE members with `consecutiveMonthsMissed >= months`, longest behind first (`GetMembersWithMissedPaymentsUseCase`); none -> 400 `COMMUNICATION_006`, nothing stored; channel fixed to EMAIL | yes | save on request; emails on background thread (`usecase/SendCommunicationToMembersUseCase.java`) |
+| send-to-all | members with status MEMBER (`findDuesPaying()`), then `Recipients.reachable` (no email dropped, one per address); none -> 400 `COMMUNICATION_006`, nothing stored (`usecase/SendCommunicationToAllMembersUseCase.java`) | yes, sets `sentToAllMembers` | save on request; emails on background thread |
+| send-to-overdue | MEMBER-status members with `consecutiveMonthsMissed >= months`, longest behind first (`GetMembersWithMissedPaymentsUseCase`); none -> 400 `COMMUNICATION_006`, nothing stored; channel fixed to EMAIL | yes | save on request; emails on background thread (`usecase/SendCommunicationToMembersUseCase.java`) |
 | send-to-member | the single member loaded by id (`CommunicationController.java`); unknown id -> 400; no email -> 400 `COMMUNICATION_007` | yes | save on request; emails on background thread (`usecase/SendCommunicationToMembersUseCase.java`) |
 | retry | one delivery | yes, once | request thread, blocks until the SMTP attempts finish (`usecase/RetryDeliveryUseCase.java`) |
 
@@ -48,7 +48,7 @@ Format: [../architecture.md](../architecture.md).
 |--------|--------|
 | 400 | `@Valid` body failure, `errors[{field,message}]` (`infrastructure/handler/GlobalExceptionHandler.java`) |
 | 400 | `@Positive` / `@Min(1)` path failure (`GlobalExceptionHandler.java`) |
-| 400 | any `CommunicationDomainException`, with `code` (`GlobalExceptionHandler.java`); codes `COMMUNICATION_001`-`007` (`domain/exception/CommunicationDomainException.java`): delivery not found, delivery/communication mismatch, not retryable, communication not found, already sent, no recipients, member has no email |
+| 400 | any `CommunicationDomainException`, with `code` (`GlobalExceptionHandler.java`); codes `COMMUNICATION_001`-`008` (`domain/exception/CommunicationDomainException.java`): delivery not found, delivery/communication mismatch, not retryable, communication not found, already sent, no recipients, member has no email, member cannot receive messages (status other than MEMBER) |
 | 403 | role too low (`GlobalExceptionHandler.java`) |
 | 401 | not authenticated (`GlobalExceptionHandler.java`) |
 | 404 | `GET /{id}` with unknown id only, empty body (`CommunicationController.java`) |
@@ -68,4 +68,4 @@ Format: [../architecture.md](../architecture.md).
 - `CommunicationDbRepository.save` writes the deliveries of the communication it is given; `findAll`/`findById` never load them, and saving a communication that has no deliveries (for example one read back with `findById`) leaves the stored delivery rows alone (no orphan removal). Covered by `CommunicationDeliveryPersistenceTest`.
 - There is no draft endpoint: `POST /api/communications` was removed (the browser stopped using it when "Specific member" moved to send-to-member), so it answers 405. The three send endpoints each build a new communication from the request body; no endpoint sends an existing communication by id.
 - A client-supplied `sentDate` in the body is ignored, not rejected: the request DTO has no such field.
-- send-to-overdue reaches active members only (same as send-to-all); send-to-member sends to the member given, active or not.
+- send-to-overdue reaches MEMBER-status members only (same as send-to-all); send-to-member sends to the member given only when their status is MEMBER and they have an email, else 400 `COMMUNICATION_008` or `COMMUNICATION_007`.

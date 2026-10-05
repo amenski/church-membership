@@ -10,15 +10,15 @@ Roles from `@PreAuthorize` and route meta; hierarchy ADMIN > STAFF > VOLUNTEER >
 | Open the Messages screen | VOLUNTEER | `/communications` (`frontend/src/router/index.js`) |
 | View the list of sent messages | VOLUNTEER | `GET /api/communications` (`src/main/java/io/github/membertracker/infrastructure/CommunicationController.java`) |
 | View one message's deliveries | VOLUNTEER | deliveries dialog, `GET /api/communications/{id}/deliveries` (`CommunicationController.java`) |
-| Send to all active members | STAFF | `POST /api/communications/send-to-all` (`CommunicationController.java`) |
-| Send to active members behind by N months | STAFF | `POST /api/communications/send-to-overdue/{months}` (`CommunicationController.java`) |
+| Send to all members (status MEMBER) | STAFF | `POST /api/communications/send-to-all` (`CommunicationController.java`) |
+| Send to members behind by N months | STAFF | `POST /api/communications/send-to-overdue/{months}` (`CommunicationController.java`) |
 | Send to one member | STAFF | `POST /api/communications/send-to-member/{memberId}` (`CommunicationController.java`) |
 | Retry a failed delivery | STAFF | "Retry" button, `POST /api/communications/{id}/deliveries/{deliveryId}/retry` (`CommunicationController.java`) |
 
 Role view of the screen:
 - VOLUNTEER sees the list and the deliveries dialog, without the "New message" card and without "Retry" buttons (`frontend/src/views/CommunicationsView.vue`).
 - STAFF and ADMIN see the compose card and "Retry" (`isStaff`, `frontend/src/stores/authStore.js`).
-- MEMBER cannot open the screen: the route guard shows an "Access denied" warning toast and sends them to their profile (`frontend/src/router/index.js`, `frontend/src/stores/authStore.js`); the API answers 403.
+- MEMBER cannot open the screen: the route guard shows an "Access denied" warning toast and sends them to My dues (`frontend/src/router/index.js`, `frontend/src/stores/authStore.js`); the API answers 403.
 
 ## How it works
 ### View the list of sent messages
@@ -39,7 +39,7 @@ Role view of the screen:
 9. Failure (blank title, unknown member, months below 1, nobody to send to, 403): the dialog closes, the card shows the server's message in a banner and an error toast "Could not send message" repeats it (no toast for 403, the shared handler already shows one); the form keeps what was typed (`CommunicationsView.vue`, `frontend/src/services/api.js`).
 10. Server limits: title up to 200 characters, message up to 5000 ([communication-controller.md](communication-controller.md)).
 
-### Send to all active members (STAFF+)
+### Send to all members (STAFF+)
 1. Choose "Everyone". The send button and the confirm dialog count the people with an email in the loaded list (`previewRecipients`).
 2. `POST /api/communications/send-to-all` (`CommunicationsView.vue`).
 3. The server looks up the MEMBER-status members, drops those without an email and keeps one member per address (`Recipients.reachable`: the lowest id wins, case and spaces ignored); with none left it answers 400 `COMMUNICATION_006` "There is nobody to send this to." and stores nothing (`src/main/java/io/github/membertracker/usecase/SendCommunicationToAllMembersUseCase.java`, `src/main/java/io/github/membertracker/domain/exception/CommunicationDomainException.java`).
@@ -55,7 +55,7 @@ Role view of the screen:
 1. Choose "One member" and pick the member (active members only). The preview shows that member; the confirm dialog reads "Send to 1 person?".
 2. `POST /api/communications/send-to-member/{memberId}` (`CommunicationsView.vue`).
 3. A member with no email returns 400 `COMMUNICATION_007` "Member '<name>' has no email address, so there is nothing to send to." and stores nothing. An unknown member id returns 400 (`CommunicationController.java`); otherwise one PENDING delivery is created and the send runs in the background (`CommunicationController.java`).
-4. The Overview's "Send reminder" button uses this same endpoint and stores the message as a REMINDER: [dashboard.md](dashboard.md).
+4. The Overview's "Send reminder" link only opens this screen; it sends nothing itself ([dashboard.md](dashboard.md)).
 
 ### Inspect deliveries
 1. Click "View deliveries" on a row (`CommunicationsView.vue`).
@@ -93,7 +93,7 @@ Role view of the screen:
 ## Known issues
 - The confirm count comes from the member list loaded when the screen opened, so it can differ from what the server sends (`CommunicationsView.vue`).
 - The list and the dialog do not refresh by themselves; pending sends show only after a reload or reopening the dialog.
-- The screen sends every message as an ANNOUNCEMENT (the shared request builder has no type); only the Overview's reminder is stored as a REMINDER.
+- The screen sends every message as an ANNOUNCEMENT (the shared request builder has no type); only the automatic monthly reminder is stored as a REMINDER ([payment-reminders.md](payment-reminders.md)).
 - Only two audiences (everyone, behind) plus one member; no unsubscribe link or consent record; no durable queue ([../email.md](../email.md#known-gaps)).
 - The unused `communicationStore.js` was removed in `chore(ui): remove dead frontend code` ([communications-view.md](communications-view.md#gotchas)).
 
