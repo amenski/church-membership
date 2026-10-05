@@ -1,6 +1,7 @@
 <template>
-  <div>
-    <PageHead title="Members" lead="Everyone on the register: who is paid up and who is behind." compact>
+  <!-- From lg the header is a full-width band, so the page's own padding (App.vue) is dropped here and the content area below carries it -->
+  <div class="lg:max-w-none! lg:p-0!">
+    <PageHead title="Members" compact band>
       <template v-if="authStore.isStaff" #actions>
         <!-- below lg Export CSV sits in the count line under the filters -->
         <BaseButton variant="secondary" class="max-lg:hidden" @click="exportMembers">
@@ -12,6 +13,7 @@
       </template>
     </PageHead>
 
+    <div class="lg:mx-auto lg:max-w-[1400px] lg:px-8 lg:pt-6 lg:pb-10">
     <AlertBanner v-if="loadError">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <span>The member list did not load. Check your connection and try again.</span>
@@ -326,6 +328,7 @@
 
     <!-- Archive (ADMIN only) -->
     <MemberArchiveDialog v-model="deleteOpen" :member="selectedMember" @archived="reloadLists" />
+    </div>
   </div>
 </template>
 
