@@ -5,11 +5,14 @@ Membership and monthly-dues tracking for a church: members, payments, and email 
 ## Quick start
 
 ```bash
-./gradlew bootRun                           # backend on :8080 (needs MySQL, see docs)
+docker compose up -d --wait                 # MySQL on :3306, data kept in ./data/mysql
+./gradlew bootRun                           # backend on :8080
 cd frontend && npm install && npm run dev   # frontend on http://localhost:3000
 ```
 
 `bootRun` uses the `dev` profile automatically; a production JAR needs `DB_USERNAME`, `DB_PASSWORD` and `JWT_SECRET` in the environment.
+
+`docker-compose.yml` runs only the database, with the dev profile's credentials; copy `.env.example` to `.env` to change them. Without Docker, any MySQL 8 with a `felege_selam` database works.
 
 Full setup, build and deployment steps are in [docs/development.md](docs/development.md).
 

@@ -1,6 +1,6 @@
 # Development and Deployment
 
-*Last checked against the code: 3 October 2026.*
+*Last checked against the code: 5 October 2026.*
 
 How to run MemberTracker locally, build it, and deploy it.
 
@@ -8,7 +8,7 @@ How to run MemberTracker locally, build it, and deploy it.
 
 - Java 17 (set by the Gradle toolchain)
 - Node.js 20 and npm. Gradle downloads Node 20.9.0 for its own frontend build.
-- MySQL 8 on `localhost:3306` with a database named `felege_selam`. The `dev` profile connects as user `root`, password `password`; see [Configuration](#configuration).
+- MySQL 8 on `localhost:3306` with a database named `felege_selam`. The `dev` profile connects as user `root`, password `password`; see [Configuration](#configuration). The quickest way is the Docker Compose setup in [MySQL with Docker Compose](#mysql-with-docker-compose) (needs Docker).
 
 ## Run locally
 
@@ -84,14 +84,62 @@ From `frontend/.env.example`:
 | `VITE_CSP_ENABLED` | `false` | Content Security Policy toggle |
 | `VITE_APP_TITLE`, `VITE_APP_VERSION` | | Display only |
 
-### Run against a real MySQL
+### MySQL with Docker Compose
 
-The unit and integration tests run on H2 and cannot catch MySQL type mismatches, so check payments and a send on a real MySQL before releasing.
+`docker-compose.yml` at the repo root runs MySQL 8.4 with the settings the `dev` profile expects: user `root`, password `password`, database `felege_selam`, UTC time zone, `utf8mb4`. The database files are kept in a folder on your machine (`./data/mysql` by default), not inside the container, so the data stays when the container is removed. The unit and integration tests run on H2 and cannot catch MySQL type mismatches, so check payments and a send on a real MySQL before releasing.
 
 ```bash
-docker run --rm -d --name mt-demo -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password -e MYSQL_DATABASE=felege_selam mysql:8
-./gradlew bootRun    # dev profile; Liquibase creates the schema and sample data
+docker compose up -d --wait   # first start downloads the image, creates the database, and returns when it is healthy
+./gradlew bootRun             # dev profile; Liquibase creates the schema and sample data
 ```
+
+| Command | What it does |
+|---------|--------------|
+| `docker compose ps` | Show the container and its health (`healthy` once MySQL accepts connections) |
+| `docker compose logs mysql` | Show the MySQL log (add `-f` to follow it) |
+| `docker compose stop` | Stop the container. Data and container stay; `docker compose start` runs it again |
+| `docker compose down` | Remove the container and network. **The data stays** in `./data/mysql` and the next `up -d` uses it |
+| `rm -rf ./data/mysql` (after `down`) | Delete all the data. The next `up -d` starts with an empty database |
+
+Settings are optional. To change them, copy `.env.example` to `.env` (git ignores it):
+
+| Variable | Default | Meaning |
+|----------|---------|---------|
+| `MYSQL_ROOT_PASSWORD` | `password` | Root password. The `dev` profile has `password` built in, so if you change it, start the app with `SPRING_DATASOURCE_PASSWORD` set to the same value |
+| `MYSQL_PORT` | `3306` | Port on your machine. The container listens only on `127.0.0.1` |
+| `MYSQL_DATA_DIR` | `./data/mysql` | Folder that holds the database files |
+
+The password and database name apply only when the data folder is empty (first start). Changing `MYSQL_ROOT_PASSWORD` later does not change the password stored in an existing data folder.
+
+This is for local development only. The `data/` folder holds real database files and is ignored by git: never commit it. On macOS with Docker Desktop, the data folder must be under a path Docker may share. The repo folder is, since Docker Desktop shares your home folder by default.
+
+#### Moving existing data
+
+If you already have data in another MySQL container (for example one started with `docker run`), dump it and load it into the compose one. Both containers cannot use port 3306 at the same time, so either stop the old one first or start the new one on another port (`MYSQL_PORT=3307 docker compose up -d`; the app then needs `SPRING_DATASOURCE_URL='jdbc:mysql://localhost:3307/felege_selam?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true'`, because the `dev` profile has port 3306 built in).
+
+```bash
+# 1. Dump from the old container (here called old-mysql; use its name and password)
+docker exec old-mysql mysqldump -uroot -ppassword --single-transaction --routines felege_selam > backup.sql
+
+# 2. Start the compose one and wait for "healthy"
+docker compose up -d --wait
+
+# 3. Load the dump into the compose container
+docker exec -i membertracker-mysql mysql -uroot -ppassword felege_selam < backup.sql
+```
+
+Check the row counts, then stop or remove the old container when you are sure. `backup.sql` holds real data: keep it out of git (do not commit it).
+
+If the app has already run against the compose database, Liquibase has created the tables, and the dump would hit "table already exists". Restore into an empty database instead: `docker exec membertracker-mysql mysql -uroot -ppassword -e "DROP DATABASE felege_selam; CREATE DATABASE felege_selam"`, then step 3.
+
+#### Backups
+
+- Dump (works while the database runs): `docker exec membertracker-mysql mysqldump -uroot -ppassword --single-transaction --routines felege_selam > backup.sql`
+- Copy the folder: only after `docker compose stop` (or `down`). A copy of a running database can be corrupt.
+
+A backup on the same disk does not protect against losing the disk; keep a copy somewhere else.
+
+#### Create a login
 
 The seeded user hashes in `002.sample-data.sql` do not match their comments, so create a login yourself. Generate a BCrypt hash:
 
@@ -99,7 +147,7 @@ The seeded user hashes in `002.sample-data.sql` do not match their comments, so 
 htpasswd -bnBC 12 "" 'YourPassword1!' | tr -d ':\n' | sed 's/^\$2y/\$2a/'
 ```
 
-then set it:
+then set it (in `docker exec -it membertracker-mysql mysql -uroot -ppassword felege_selam`):
 
 ```sql
 UPDATE users SET password = '<hash>' WHERE email = 'admin@membertracker.com';
@@ -188,7 +236,7 @@ EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
 ```
 
-With MySQL, using `docker-compose.yml`:
+An example compose file for the app and MySQL together (not in the repo; the `docker-compose.yml` in the repo runs only the database, see [MySQL with Docker Compose](#mysql-with-docker-compose)):
 
 ```yaml
 services:

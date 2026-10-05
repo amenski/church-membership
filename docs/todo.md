@@ -4,7 +4,7 @@
 
 This is the live backlog: only open work is listed. What was fixed, and in which commit, is in the Status section of [functionality-audit.md](functionality-audit.md#status-4-october-2026) and in `git log`. Doc index: [../README.md](../README.md).
 
-Done and removed from this list (October 2026): auth hardening (token types, refresh cookie path, one login error, unlock after 15 minutes, per-IP and per-email throttle, password change ends other sessions, session renewal), CSRF, secrets out of config, HTTPS through Caddy with security headers, roles and route guards, activity log with the administrator screen, payment rules (back-dating, no payments for non-active members, duplicate check), send rules (recipients must exist, reminders as reminders, `{{member_name}}`), staff-only exports, archive instead of delete, member status, the empty `person` and `household` tables, optional and shared email, delivery attempts and retry, the Tailwind redesign (Bootstrap removed), and the QA fixes M1 to M3 and L1 to L5.
+Done and removed from this list (October 2026): auth hardening (token types, refresh cookie path, one login error, unlock after 15 minutes, per-IP and per-email throttle, password change ends other sessions, session renewal), CSRF, secrets out of config, HTTPS through Caddy with security headers, roles and route guards, activity log with the administrator screen, payment rules (back-dating, no payments for non-active members, duplicate check), send rules (recipients must exist, reminders as reminders, `{{member_name}}`), staff-only exports, archive instead of delete, member status, the empty `person` and `household` tables, optional and shared email, delivery attempts and retry, the Tailwind redesign (Bootstrap removed), and the QA fixes M1 to M3 and L1 to L5, and Docker Compose for the MySQL database with its data on disk.
 
 ## (a) Next structural work
 
@@ -38,7 +38,7 @@ Done and removed from this list (October 2026): auth hardening (token types, ref
 
 ## (d) Deferred by the user
 
-- [ ] Docker and Docker Compose
+- [ ] Docker for the app: a Dockerfile and an app image (the MySQL database already has `docker-compose.yml`, see [development.md](development.md#mysql-with-docker-compose))
 - [ ] CI pipeline, and Testcontainers for database tests
 - [ ] Monitoring: health checks, structured (JSON) logging, error tracking
 - [ ] Backup and recovery procedures
