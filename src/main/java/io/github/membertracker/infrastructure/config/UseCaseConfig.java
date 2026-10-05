@@ -11,6 +11,7 @@ import io.github.membertracker.domain.repository.UserRepository;
 import io.github.membertracker.domain.service.CurrentActor;
 import io.github.membertracker.infrastructure.service.EmailService;
 import io.github.membertracker.usecase.AuthenticateUserUseCase;
+import io.github.membertracker.usecase.BootstrapFirstAdminUseCase;
 import io.github.membertracker.usecase.GetActivityLogUseCase;
 import io.github.membertracker.usecase.RecordActivityUseCase;
 import io.github.membertracker.usecase.ChangePasswordUseCase;
@@ -95,6 +96,11 @@ public class UseCaseConfig {
     @Bean
     public UpdateUserProfileUseCase updateUserProfileUseCase(UserRepository userRepository) {
         return new UpdateUserProfileUseCase(userRepository);
+    }
+
+    @Bean
+    public BootstrapFirstAdminUseCase bootstrapFirstAdminUseCase(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+        return new BootstrapFirstAdminUseCase(userRepository, passwordEncoder);
     }
 
     @Bean

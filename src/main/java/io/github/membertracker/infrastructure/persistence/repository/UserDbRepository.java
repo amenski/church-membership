@@ -67,6 +67,11 @@ public class UserDbRepository implements UserRepository {
         return userJpaRepository.existsByEmail(email);
     }
 
+    @Override
+    public long count() {
+        return userJpaRepository.count();
+    }
+
     private User toDomain(UserEntity entity) {
         User user = new User();
         user.setId(entity.getId());

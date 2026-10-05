@@ -16,6 +16,8 @@ public interface UserRepository {
 
     boolean existsByEmail(String email);
 
+    long count();
+
     /**
      * Atomically counts one failed sign-in and, once the counter reaches {@code maxAttempts},
      * locks the account until {@code lockedUntil}. Touches only those columns.
