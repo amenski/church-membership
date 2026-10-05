@@ -472,7 +472,7 @@ export default {
     subject: 'Subject',
     message: 'Message',
     bodyHint: "Write {token} to insert each member's name.",
-    nameToken: '{{member_name}}',
+    nameToken: "{'{'}{'{'}member_name{'}'}{'}'}",
     sending: 'Sending…',
     sendToCount: 'Send to {label}',
     whoGetsThis: 'Who gets this',

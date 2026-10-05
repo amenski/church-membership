@@ -230,6 +230,7 @@
 
 <script>
 import api from '@/services/api'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/authStore'
 import { useAppStore } from '../stores/appStore'
 import { formatDate, localISODate } from '@/utils'
@@ -275,6 +276,7 @@ export default {
   mixins: [queryPaging({ defaultSize: MESSAGES_PER_PAGE })],
   components: { AlertBanner, BaseButton, BaseInput, BaseModal, BaseSelect, BaseTextarea, ConfirmDialog, EmptyNote, MemberPicker, PageHead, Pager, SectionTitle, StatusBadge, StatusLabel, TextButton, YearStrip },
   setup() {
+    const { t } = useI18n()
     return {
       authStore: useAuthStore(),
       appStore: useAppStore(),

@@ -476,7 +476,7 @@ export default {
     subject: 'ርዕስ',
     message: 'መልዕክት',
     bodyHint: 'የእያንዳንዱን አባል ስም ለማስገባት {token} ይጻፉ።',
-    nameToken: '{{member_name}}',
+    nameToken: "{'{'}{'{'}member_name{'}'}{'}'}",
     sending: 'በመላክ ላይ…',
     sendToCount: 'ለ{label} ላክ',
     whoGetsThis: 'ማን ይቀበለዋል',
