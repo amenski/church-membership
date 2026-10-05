@@ -18,7 +18,7 @@ The signed-in user's own profile and password, for any authenticated role. Base 
 ### Request validation
 | DTO | Field | Rule |
 |-----|-------|------|
-| `UpdateUserProfileRequest` | `firstName`, `lastName` | max 50 (`UpdateUserProfileRequest.java,11`) |
+| `UpdateUserProfileRequest` | `firstName`, `lastName` | max 50 (`UpdateUserProfileRequest.java`) |
 | | `phone` | regex `^\+?[0-9\s\-\(\)]{10,}$`; a blank phone is set to null by the setter, so `""` passes |
 | | `bio` | max 500 |
 | `ChangePasswordRequest` | `currentPassword` | not blank only (the seeded admin's is 5 characters) (`ChangePasswordRequest.java`) |

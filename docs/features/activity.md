@@ -29,7 +29,9 @@ Each entry has a type, a plain description, the kind and id of the record it is 
 | `MEMBER_DELETED` | a member with no history is deleted permanently (API only) | Member Jane Smith was deleted permanently | `usecase/DeleteMemberPermanentlyUseCase.java` |
 | `MEMBER_HOUSEHOLD_CHANGED` | a member is put in, moved to or removed from a household | Member Jane Smith was moved to household Smith family | `usecase/SaveMemberUseCase.java`, `usecase/UpdateMemberUseCase.java` |
 | `HOUSEHOLD_CREATED`, `HOUSEHOLD_UPDATED`, `HOUSEHOLD_DELETED` | a household is created, edited or deleted | Household Smith family was created | `usecase/CreateHouseholdUseCase.java`, `UpdateHouseholdUseCase.java`, `DeleteHouseholdUseCase.java` |
-| `MEMBERS_EXPORTED` | either members CSV export | Exported 11 members | `MemberController.java` |
+| `PERSON_CREATED`, `PERSON_UPDATED`, `PERSON_DELETED` | a person without a membership is added, edited or deleted | Person Sara Smith was added | `usecase/CreatePersonUseCase.java`, `UpdatePersonUseCase.java`, `DeletePersonUseCase.java` |
+| `MEMBERSHIP_STARTED` | a person is made a member | Person Sara Smith became a member | `usecase/StartMembershipUseCase.java` |
+| `MEMBERS_EXPORTED` | either members CSV export on the server (not "Export selected" in the Members selection bar, which is built in the browser) | Exported 11 members | `MemberController.java` |
 | `PAYMENT_RECORDED` | a payment is recorded | Payment of 50.00 for 2026-10 was recorded for John Doe | `usecase/RecordPaymentUseCase.java` |
 | `PAYMENTS_EXPORTED` | the payments CSV export | Exported 42 payments | `PaymentController.java` |
 | `MESSAGE_SENT` | a message is sent to all, to overdue members or to one member (the monthly reminder job too) | Message "Feast day" was sent to 8 members | `usecase/SendCommunicationToAllMembersUseCase.java`, `usecase/SendCommunicationToMembersUseCase.java` |

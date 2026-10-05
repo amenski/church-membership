@@ -115,4 +115,4 @@ Code: `frontend/src/views/HouseholdsView.vue` (the household detail panel), `fro
 ## Related
 - [members.md](members.md): memberships and the member API
 - [households.md](households.md): a household now lists its people, dependents included
-- [activity.md](activity.md), [../person-membership-plan.md](../archive/person-membership-plan.md), [../architecture.md](../architecture.md)
+- [activity.md](activity.md), [../archive/person-membership-plan.md](../archive/person-membership-plan.md), [../architecture.md](../architecture.md)

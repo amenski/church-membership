@@ -2,7 +2,7 @@
 
 `frontend/src/views/ActivityView.vue` (no Pinia store for data)
 
-The Activity page: who changed or exported what, newest first. Route `/activity`, minimum role ADMIN (`frontend/src/router/index.js`; the guard that turns a lower role away is `frontend/src/router/index.js`). The rail shows its link only to ADMIN (`frontend/src/App.vue`, icon `bi-clock-history`). Overview and rules: [activity.md](activity.md); API: [activity-log-controller.md](activity-log-controller.md).
+The Activity page: who changed or exported what, newest first. Route `/activity`, minimum role ADMIN (`frontend/src/router/index.js`, whose guard turns a lower role away). The rail shows its link only to ADMIN (`frontend/src/App.vue`, icon `clock`). Overview and rules: [activity.md](activity.md); API: [activity-log-controller.md](activity-log-controller.md).
 
 ## What the user sees
 - Page head "Activity", lead "Who changed or exported what, newest first. Only administrators can see this." From `lg` the head is the full-width band (title only) with the content in a padded area under it; the lead sentence moves to a line at the top of that area. The "Show" select is a 32px row with its label visually hidden.

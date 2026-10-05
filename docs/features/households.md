@@ -110,4 +110,4 @@ Code: `frontend/src/views/HouseholdsView.vue` (route `/households`, minimum role
 ## Related
 - [members.md](members.md): the `householdId` field of a member
 - [people.md](people.md): the people of a household, dependents included
-- [activity.md](activity.md), [../person-membership-plan.md](../archive/person-membership-plan.md), [../architecture.md](../architecture.md)
+- [activity.md](activity.md), [../archive/person-membership-plan.md](../archive/person-membership-plan.md), [../architecture.md](../architecture.md)

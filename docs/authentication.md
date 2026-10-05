@@ -1,6 +1,6 @@
 # Authentication and Authorization
 
-*Last checked against the code: 3 October 2026, branch `feature/role-auth` plus working tree.*
+*Last checked against the code: 5 October 2026, branch `main`.*
 
 How users sign in, how sessions are kept, and which role can call which endpoint. Backend and frontend are both covered here.
 
@@ -101,8 +101,10 @@ The old `USER` role was removed. Migration `004.migrate-user-role-to-member.sql`
 
 | Area | VOLUNTEER and above | STAFF and above | ADMIN only |
 |------|--------------------|-----------------|------------|
-| Members `/api/members` | List, get, active, inactive, overdue | Create, update, export, export selected | Delete (archives, see below), `?archived=true` list, read and export of archived members |
-| Payments `/api/payments` | List, get, by member | Record, export | |
+| Members `/api/members` | List, get, active, inactive, overdue | Create, update, export, export selected | Delete (archives, see below), delete for good (`/{id}/permanent`), `?archived=true` list, read and export of archived members |
+| Households `/api/households` | List, get | Create, update | Delete |
+| People `/api/people` | List, get | Create, update, start a membership | Delete |
+| Payments `/api/payments` | List, page, paid-months, summary, get, by member | Record, export | |
 | Communications `/api/communications` | List, get, deliveries | Send to all, send to one member, send to overdue, retry failed delivery | |
 | Dashboard `/api/dashboard/*` | All | | |
 | Activity log `/api/activity-log` | | | View the activity log (who changed or exported what) |
@@ -152,7 +154,7 @@ await authStore.logout()
 | `requiresGuest: true` | Signed-in users go to their home page (used by `/` and `/login`) |
 | `requiresRole: 'VOLUNTEER'` | Minimum role, using the same hierarchy as the backend. Users without it see an "Access denied" warning notification and go to their home page (`/dashboard`, or `/my-dues` for MEMBER) with no query parameter |
 
-Dashboard, members, payments and communications require VOLUNTEER; `/profile` and `/my-dues` are open to every signed-in user.
+Dashboard, members (and a member's page), households, payments, communications and More require VOLUNTEER; `/activity` requires ADMIN; `/profile` and `/my-dues` are open to every signed-in user.
 
 ## Manual test
 

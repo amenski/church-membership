@@ -23,8 +23,8 @@ All under `/api/auth`. No `@PreAuthorize`; `/api/auth/**` is `permitAll` (`infra
 ## Collaborators
 - `usecase/AuthenticateUserUseCase.java`: lookup by email; for an unknown email a dummy BCrypt check (hash memoised in `dummyHash()`) then `invalidCredentials()`; clears an expired lock, rejects a locked account with the generic error (dummy BCrypt, password not checked), BCrypt match (a failure goes to `recordFailedLogin`), then checks enabled and credentials non-expired; `resetFailedLogins` on success. No full-user save.
 - `usecase/LoadUserByUsernameUseCase.java`: used by `refresh` (`AuthController.java`).
-- `utils/CookieUtils.java,28,40,47`: builds access, refresh and clearing cookies from `AuthProperties`.
-- `utils/JwtUtils.java,62,98`: HS256 token generation and typed validation. Tokens carry subject, `iat`, `exp`, a `typ` claim (`access` / `refresh`) and `auth_time` (original sign-in, epoch seconds).
+- `utils/CookieUtils.java`: builds access, refresh and clearing cookies from `AuthProperties`.
+- `utils/JwtUtils.java`: HS256 token generation and typed validation. Tokens carry subject, `iat`, `exp`, a `typ` claim (`access` / `refresh`) and `auth_time` (original sign-in, epoch seconds).
 - `infrastructure/config/AuthProperties.java`: `auth.*` (TTLs, cookie names and flags, secret).
 - `infrastructure/filter/JwtAuthenticationFilter.java`: accepts only `access` tokens from the `sid` cookie, then the Bearer header, on every request, including the public `/api/auth/**` paths. If the token's user cannot be loaded, the request continues unauthenticated.
 - Models: `domain/model/User` (returned by the use case; only email + role leave the controller).

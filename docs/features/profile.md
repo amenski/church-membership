@@ -1,6 +1,6 @@
 # Profile and password
 
-Every signed-in user views and edits their own name, phone and bio, and changes their own password. For MEMBER users it is the only screen they have.
+Every signed-in user views and edits their own name, phone and bio, and changes their own password. A MEMBER has two screens: this one and [My dues](my-dues.md).
 
 ## Who can do what
 | Task | Minimum role | Screen / endpoint |
@@ -16,7 +16,7 @@ Every signed-in user views and edits their own name, phone and bio, and changes 
 
 ## How it works
 ### View own profile
-1. Open "Profile" in the rail; it is shown to every role (`frontend/src/App.vue`).
+1. Click your name in the account block of the rail (`frontend/src/App.vue`), or choose Profile on More on a phone; every role has it.
 2. The page loads `GET /users/me` and fills the form (`frontend/src/views/ProfileView.vue`). While it loads the page says "Loading profile...".
 3. The page head is "Profile" ("Your details and password."). Two paper cards follow: "Your details" and "Password". "Your details" starts with Email and Role as plain text and the line "Your email cannot be changed here." (`ProfileView.vue`). The role is shown as a word in sentence case ("Staff").
 4. The fields are always editable: there is no Edit or Cancel toggle. A load failure replaces the cards with a banner "Failed to load profile. Check your connection and try again." and a "Try again" button (`ProfileView.vue`).

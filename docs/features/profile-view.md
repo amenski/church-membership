@@ -2,7 +2,7 @@
 
 `frontend/src/views/ProfileView.vue`
 
-"Profile" page ("Your details and password."): view and edit own name, phone, bio, and change password. Route `/profile`, any signed-in user (`requiresAuth`, `frontend/src/router/index.js`); MEMBER's home page. Guards: see [../authentication.md](../authentication.md). Built on Tailwind and the shared components (`PageHead`, `SectionTitle`, `BaseInput`, `BaseButton`, `BaseModal`, `AlertBanner`); no Bootstrap classes, JavaScript or scoped CSS. One column, max 640px, left aligned, two paper cards. It follows the shell's `data-density` (comfortable for a MEMBER: 48px primary button, full width below 640px; dense for staff).
+"Profile" page ("Your details and password."): view and edit own name, phone, bio, and change password. Route `/profile`, any signed-in user (`requiresAuth`, `frontend/src/router/index.js`); a MEMBER's home is My dues, which links here. Guards: see [../authentication.md](../authentication.md). Built on Tailwind and the shared components (`PageHead`, `SectionTitle`, `BaseInput`, `BaseButton`, `BaseModal`, `AlertBanner`); no Bootstrap classes, JavaScript or scoped CSS. One column, max 640px, left aligned, two paper cards. It follows the shell's `data-density` (comfortable for a MEMBER: 48px primary button, full width below 640px; dense for staff).
 
 ## State
 Local `ref`s; no store of its own. Reads `useAuthStore().user` only as the initial `user` value.
@@ -57,4 +57,4 @@ Local `ref`s; no store of its own. Reads `useAuthStore().user` only as the initi
 - Email and role are shown as plain text (no disabled input); the role word is the stored role in sentence case ("Staff").
 - The old Account Information card showed a hard-coded "Active" status, an always-N/A "Member Since" and an "Export Data" button with no handler; all were removed. Showing a real status or join date would need `enabled`/`createdAt` in the API first (`UserResponseDto` has no `createdAt`).
 - The Change password dialog is teleported to `body`, outside the shell's `data-density` scope, so its sizes are fixed (18px inputs), not density variables.
-- A MEMBER sent here after trying a staff URL sees the router guard's "Access denied" warning toast; the view itself reads nothing.
+- A MEMBER who tries a staff URL is sent to My dues, not here; the router guard's "Access denied" toast is raised before this view loads.
